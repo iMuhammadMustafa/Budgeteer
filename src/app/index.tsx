@@ -1,45 +1,29 @@
-import { Link } from "expo-router";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { useAuth } from "../providers/AuthProvider";
-import { supabase } from "../lib/supabase";
+import { Redirect, router } from "expo-router";
+import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView } from "react-native";
+import { useAuth } from "@/src/providers/AuthProvider";
+
+import cards from "@/assets/images/cards.png";
 
 export default function Index() {
-  const { session, loading } = useAuth();
+  const { session } = useAuth();
 
-  if (loading) {
-    return <ActivityIndicator />;
-  }
-
-  if (!session) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}>
-        <Text>Not logged in</Text>
-        <Link href={"Register"}>
-          <Text>Register</Text>
-        </Link>
-        <Link href={"Login"}>
-          <Text>Login</Text>
-        </Link>
-      </View>
-    );
+  if (session) {
+    return <Redirect href="/Home" />;
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}>
-      <Text>Welcome {session.user.email}</Text>
-      <Pressable onPress={() => supabase.auth.signOut()}>
-        <Text>Sign Out</Text>
-      </Pressable>
-    </View>
+    <SafeAreaView className={`bg-background h-full`}>
+      <TouchableOpacity onPress={() => router.push("/Home")}>
+        <Text className={`text-primary font-psemibold text-lg`}>Go to Home</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push("/Login")}>
+        <Text className={`text-primary font-psemibold text-lg`}>Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push("/Register")}>
+        <Text className={`text-primary font-psemibold text-lg`}>Register</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }

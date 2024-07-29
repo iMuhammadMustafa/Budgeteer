@@ -27,6 +27,7 @@ class SupabaseStorage {
   }
 }
 
+//TODO:
 const supabaseUrl = "https://syeltrexylnsbzfitxjp.supabase.co";
 const supabaseAnonKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5ZWx0cmV4eWxuc2J6Zml0eGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIwMDAzMzUsImV4cCI6MjAzNzU3NjMzNX0.Nx3p_HW6R07L-Fld9Dl3KgeEHZfGt6YlQOyYaF0UNCA";
