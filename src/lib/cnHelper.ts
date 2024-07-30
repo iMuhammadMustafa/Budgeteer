@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,6 +12,13 @@ import { useEffect } from "react";
 
 export function useColorScheme() {
   const { colorScheme, setColorScheme, toggleColorScheme } = useNativewindColorScheme();
+
+  useEffect(()=> {
+    (async ()=> {
+      if(colorScheme) await AsyncStorage.setItem("theme", colorScheme);
+
+    })()
+  }, [colorScheme])
 
   return {
     colorScheme: colorScheme ?? "dark",
