@@ -52,9 +52,11 @@ export default function RootLayout() {
     return null;
   }
 
+
   return (
     <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-      <StatusBar className={isDarkColorScheme ? "light" : "dark"} />
+      {/* <StatusBar className={isDarkColorScheme ? "light-content" : "dark-content"} /> */}
+      <StatusBar barStyle={isDarkColorScheme ? "light-content" : "dark-content"} />
       <AuthProvider>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />

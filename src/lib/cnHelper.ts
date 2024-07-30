@@ -11,10 +11,6 @@ import { useEffect } from "react";
 export function useColorScheme() {
   const { colorScheme, setColorScheme, toggleColorScheme } = useNativewindColorScheme();
 
-  useEffect(() => {
-    console.log(colorScheme);
-  }, [colorScheme]);
-
   return {
     colorScheme: colorScheme ?? "dark",
     isDarkColorScheme: colorScheme === "dark",
