@@ -9,8 +9,8 @@ export default function Index() {
   const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
 
   return (
-    <SafeAreaView className="flex-col justify-center items-center">
-      <Image source={cards} className="max-w-[380px] max-h-[380px]" resizeMode="contain" />
+    <SafeAreaView className="flex-col justify-center items-center w-full h-full">
+      <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
       <View>
         <Text className="text-foreground">Welcome!</Text>
@@ -29,7 +29,7 @@ export default function Index() {
           onPress={() => {
             toggleColorScheme();
           }}
-        >
+          >
           <Text className="text-foreground font-psemibold text-lg text-center">Change Theme</Text>
         </TouchableOpacity>
       </View>
