@@ -2,8 +2,11 @@ const { fontFamily } = require("tailwindcss/defaultTheme");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // darkMode: "selector",
+  // darkMode: ["class"],
   darkMode: "class",
   content: ["src/**/*.{ts,tsx}"],
+  presets: [require("nativewind/preset")],
   theme: {
     container: {
       center: true,
