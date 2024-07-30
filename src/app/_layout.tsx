@@ -29,7 +29,6 @@ export default function RootLayout() {
       if (Platform.OS === "web") {
         // Adds the background color to the html element to prevent white background on overscroll.
         document.documentElement.classList.add(`bg-background`);
-        // document.documentElement.classList.add(`${theme}`);
       }
       if (!theme) {
         await AsyncStorage.setItem("theme", colorScheme);
@@ -48,11 +47,6 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     });
   }, []);
-
-  useEffect(() => {
-    console.log("Theme Changed");
-    console.log(colorScheme);
-  }, [isDarkColorScheme]);
 
   if (!isColorSchemeLoaded) {
     return null;

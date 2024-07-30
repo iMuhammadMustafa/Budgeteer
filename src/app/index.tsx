@@ -4,20 +4,9 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useColorScheme } from "../lib/cnHelper";
 
 import cards from "@/assets/images/cards.png";
-import { useEffect } from "react";
 
 export default function Index() {
-  const { session } = useAuth();
   const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
-
-  useEffect(() => {
-    console.log("Theme Changed");
-    console.log(colorScheme);
-  }, [colorScheme]);
-
-  if (session) {
-    return <Redirect href="/Home" />;
-  }
 
   return (
     <SafeAreaView className="flex-col justify-center items-center">
