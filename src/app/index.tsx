@@ -7,13 +7,14 @@ import cards from "@/assets/images/cards.png";
 
 export default function Index() {
   const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
+  const {session} = useAuth();
 
   return (
     <SafeAreaView className="flex-col justify-center items-center w-full h-full">
       <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
       <View>
-        <Text className="text-foreground">Welcome!</Text>
+        <Text className="text-foreground">Welcome! {session?.user.email}</Text>
       </View>
       <View className="mt-5 w-[35%]">
         <TouchableOpacity className="bg-primary rounded p-2 w-full my-1" onPress={() => router.push("/Login")}>
