@@ -2,6 +2,16 @@ import "react-native-url-polyfill/auto";
 import * as SecureStore from "expo-secure-store"; //TODO: Throwing a warning about size
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
+import { Database } from "./database.types";
+
+export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
+
+export type Transaction = Tables<"transactions">;
+export type Account = Tables<"accounts">;
+export type Categorie = Tables<"categories">;
+export type UserAccount = Tables<"useraccounts">;
+export type Profile = Tables<"profiles">;
 
 class SupabaseStorage {
   async getItem(key: string) {
@@ -27,16 +37,16 @@ class SupabaseStorage {
   }
 }
 
-//TODO:
-const supabaseUrl = "https://syeltrexylnsbzfitxjp.supabase.co";
-const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5ZWx0cmV4eWxuc2J6Zml0eGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIwMDAzMzUsImV4cCI6MjAzNzU3NjMzNX0.Nx3p_HW6R07L-Fld9Dl3KgeEHZfGt6YlQOyYaF0UNCA";
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: new SupabaseStorage(),
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+//TODO
+export const supabase = createClient<Database>(
+  process.env.EXPO_PUBLIC_SUPA_URL as string,
+  process.env.EXPO_PUBLIC_SUPA_ANON_KEY as string,
+  {
+    auth: {
+      storage: new SupabaseStorage(),
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  }
+);

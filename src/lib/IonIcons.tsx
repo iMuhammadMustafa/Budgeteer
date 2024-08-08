@@ -5,12 +5,13 @@ interface IconProps {
   name: string;
   size?: number;
   color?: string;
+  style?: any;
 }
 
-const Icon = ({ name, size, color }: IconProps) => {
+const Icon = ({ name, size, color, style }: IconProps) => {
   const LucideIcon = icons[name as keyof typeof icons];
 
-  return <LucideIcon color={color} size={size} />;
+  return <LucideIcon color={color} size={size} style={style} />;
   // const IonIcon = <LucideIcon color={color} size={size} />;
 
   // return iconWithClassName(IonIcon);
