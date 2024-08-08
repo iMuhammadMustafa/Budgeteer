@@ -7,7 +7,7 @@ import cards from "@/assets/images/cards.png";
 
 export default function Index() {
   const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
-  const {session} = useAuth();
+  const { session } = useAuth();
 
   return (
     <SafeAreaView className="flex-col justify-center items-center w-full h-full">
@@ -21,8 +21,12 @@ export default function Index() {
           <Text className="text-foreground font-psemibold text-lg text-center">Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="bg-primary rounded p-2 w-full my-1" onPress={() => router.push("/Register")}>
+        <TouchableOpacity className="bg-primary rounded p-2 w-full my-1" onPress={() => router.push("/Accounts")}>
           <Text className="text-foreground font-psemibold text-lg text-center">Register</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity className="bg-primary rounded p-2 w-full my-1" onPress={() => router.push("/Dashboard")}>
+          <Text className="text-foreground font-psemibold text-lg text-center">Dashboard</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -30,7 +34,7 @@ export default function Index() {
           onPress={() => {
             toggleColorScheme();
           }}
-          >
+        >
           <Text className="text-foreground font-psemibold text-lg text-center">Change Theme</Text>
         </TouchableOpacity>
       </View>
