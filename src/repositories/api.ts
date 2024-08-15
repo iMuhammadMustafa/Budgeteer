@@ -1,4 +1,31 @@
+import { useQuery } from "@tanstack/react-query";
 import { Account, supabase } from "../lib/supabase";
+
+export const useGetList = <T>(key: string) => {
+  return useQuery<T[]>({
+    queryKey: [key],
+    queryFn: async () => {
+      const { data, error } = await supabase.from(key).select("*").eq("isdeleted", false);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
+    },
+  });
+};
+
+export const useAccountList = () => {
+  return useQuery<Account[]>({
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("accounts").select("*").eq("isdeleted", false);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
+    },
+  });
+};
 
 export const fetchAllAccounts = async () => {
   const { data, error } = await supabase.from("accounts").select("*").eq("isdeleted", false);
