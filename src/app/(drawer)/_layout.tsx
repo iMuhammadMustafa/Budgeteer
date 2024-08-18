@@ -1,30 +1,30 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Drawer } from "expo-router/drawer";
 import Icon from "@/src/lib/IonIcons";
-import { Text, TouchableOpacity } from "react-native";
-import { NAV_THEME, useColorScheme } from "@/src/lib/cnHelper";
+import { TouchableOpacity } from "react-native";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 export default function DrawerLayout() {
-  const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
         screenOptions={{
           drawerType: "slide",
-          headerTintColor: colorScheme === "dark" ? "white" : "black",
+          headerTintColor: isDarkMode ? "white" : "black",
 
           headerRight: () => {
             return (
               <TouchableOpacity
                 onPress={() => {
-                  toggleColorScheme();
+                  toggleTheme();
                 }}
               >
                 <Icon
-                  name={colorScheme === "dark" ? "Sun" : "Moon"}
+                  name={isDarkMode ? "Sun" : "Moon"}
                   size={24}
-                  color={colorScheme === "dark" ? "white" : "black"}
+                  color={isDarkMode ? "white" : "black"}
                   style={{ marginRight: 30 }}
                 />
               </TouchableOpacity>

@@ -3,22 +3,26 @@ import AuthProvider from "../providers/AuthProvider";
 import "./global.css";
 import ThemeProvider from "../providers/ThemeProvider";
 import QueryProvider from "../providers/QueryProvider";
+import { Suspense } from "react";
+import { SafeAreaView, Text } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <QueryProvider>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-          </Stack>
-        </QueryProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <Suspense fallback={<Text>Load...</Text>}>
+      <ThemeProvider>
+        <AuthProvider>
+          <QueryProvider>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+            </Stack>
+          </QueryProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </Suspense>
   );
 }
 
