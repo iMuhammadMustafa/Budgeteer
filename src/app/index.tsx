@@ -17,7 +17,7 @@ export default function Index() {
   const { session } = useAuth();
 
   return (
-    <SafeAreaView className="flex-col justify-center items-center w-full h-full bg-background-0">
+    <SafeAreaView className="flex-col justify-center items-center w-full h-full">
       <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
       <View>

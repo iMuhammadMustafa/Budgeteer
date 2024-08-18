@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from "react-native";
 
 interface FormProps<T> {
@@ -8,7 +8,11 @@ interface FormProps<T> {
 }
 
 function Form<T>({ initialValues, onSubmit, fields }: FormProps<T>) {
-  const [values, setValues] = useState<T>(initialValues);
+  const [values, setValues] = useState({ ...initialValues });
+
+  useEffect(() => {
+    setValues({ ...initialValues });
+  }, [initialValues]);
 
   const handleChange = (key: keyof T, value: string) => {
     setValues({ ...values, [key]: value as any });
@@ -22,7 +26,7 @@ function Form<T>({ initialValues, onSubmit, fields }: FormProps<T>) {
           <TextInput
             style={styles.input}
             className="text-foreground dark:bg-muted"
-            value={values[key as keyof T] as unknown as string}
+            value={(values[key as keyof T] as unknown as string) ?? ""}
             onChangeText={text => handleChange(key as keyof T, text)}
             keyboardType={field.type === "number" ? "numeric" : "default"}
           />

@@ -29,7 +29,7 @@ export default function Accounts() {
   return (
     <Box className="my-4 mx-5 flex">
       <Box className="self-end my-2 bg-success">
-        <Link href="/Accounts/Create">
+        <Link href="/Accounts/Create/null">
           <Icon name="Plus" />
         </Link>
       </Box>
@@ -61,7 +61,7 @@ export default function Accounts() {
                   <TableData>{account.notes}</TableData>
                   <TableData>{new Date(account.createdat).toLocaleDateString("en-GB")}</TableData>
                   <TableData className="flex justify-center items-center gap-2">
-                    <Link href={`/accounts/edit/${account.id}`}>
+                    <Link href={`/Accounts/Create/${account.id}`}>
                       <Icon name="Pencil" />
                     </Link>
                     <TouchableOpacity onPress={() => deleteAccount(account.Id)}>
