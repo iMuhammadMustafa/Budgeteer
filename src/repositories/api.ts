@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Account, supabase } from "../lib/supabase";
 
-export const useGetList = <T>(key: string) => {
+export const useGetList = <T>(key: any) => {
   return useQuery<T[]>({
     queryKey: [key],
     queryFn: async () => {
