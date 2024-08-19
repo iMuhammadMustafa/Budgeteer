@@ -1,4 +1,4 @@
-import { LucideIcon, icons } from "lucide-react-native";
+import { LucideIcon, PlusIcon, icons } from "lucide-react-native";
 import { cssInterop } from "nativewind";
 
 interface IconProps {
@@ -6,21 +6,24 @@ interface IconProps {
   size?: number;
   color?: string;
   style?: any;
+  className?: string;
 }
 
-const Icon = ({ name, size, color, style }: IconProps) => {
+const Icon = ({ name, size, color, style, className }: IconProps) => {
   const LucideIcon = icons[name as keyof typeof icons];
 
   return <LucideIcon color={color} size={size} style={style} />;
-  // const IonIcon = <LucideIcon color={color} size={size} />;
 
-  // return iconWithClassName(IonIcon);
+  // const IonIcon = <LucideIcon color={color} size={size} />;
+  // iconWithClassName(IonIcon);
+  // return IonIcon;
+
 };
 
 export function iconWithClassName(icon: LucideIcon) {
   cssInterop(icon, {
     className: {
-      target: "style",
+      target: 'style',
       nativeStyleToProp: {
         color: true,
         opacity: true,
@@ -29,4 +32,10 @@ export function iconWithClassName(icon: LucideIcon) {
   });
 }
 
+
+iconWithClassName(Icon)
+iconWithClassName(PlusIcon)
+
 export default Icon;
+
+export {PlusIcon};

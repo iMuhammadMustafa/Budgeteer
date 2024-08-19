@@ -44,4 +44,3 @@ export default function Index() {
     </SafeAreaView>
   );
 }
-//size={24} color={isDarkMode ? "black" : "white"}

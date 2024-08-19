@@ -14,7 +14,7 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { Box } from "@/components/ui/box";
-import Icon from "@/src/lib/IonIcons";
+import Icon, { PlusIcon } from "@/src/lib/IonIcons";
 
 export default function Accounts() {
   const { data, isLoading, error } = useGetList<Account>("accounts");
@@ -28,9 +28,9 @@ export default function Accounts() {
 
   return (
     <Box className="my-4 mx-5 flex">
-      <Box className="self-end my-2 bg-success">
+      <Box className="self-end my-2">
         <Link href="/Accounts/Create/null">
-          <Icon name="Plus" />
+          <Icon name="Plus" className="text-foreground" />
         </Link>
       </Box>
       <Box className="border border-solid border-outline-200 rounded-lg overflow-hidden">
@@ -62,10 +62,10 @@ export default function Accounts() {
                   <TableData>{new Date(account.createdat).toLocaleDateString("en-GB")}</TableData>
                   <TableData className="flex justify-center items-center gap-2">
                     <Link href={`/Accounts/Create/${account.id}`}>
-                      <Icon name="Pencil" />
+                      <Icon name="Pencil" size={20} className="text-primary-300"/>
                     </Link>
                     <TouchableOpacity onPress={() => deleteAccount(account.Id)}>
-                      <Icon name="Trash2" />
+                      <Icon name="Trash2" size={20} className="text-red-600" />
                     </TouchableOpacity>
                   </TableData>
                 </TableRow>
