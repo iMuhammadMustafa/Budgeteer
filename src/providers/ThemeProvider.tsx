@@ -5,7 +5,7 @@ import { SplashScreen } from "expo-router";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { Platform, StatusBar } from "react-native";
 
-import { config } from "@/components/ui/gluestack-ui-provider/config";
+import { config, darkVars, lightVars } from "@/components/ui/gluestack-ui-provider/config";
 
 type ModeType = "dark" | "light" | "system";
 type ThemeContextType = {
@@ -64,15 +64,17 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const convertGlueStackUIThemeToReactNativeColors = (mode: ModeType) => {
+    const styles = mode === "dark" ? darkVars : lightVars;
+
     const result = {
       dark: mode === "dark",
       colors: {
-        background: `rgb(${config[mode]["--background"].replace(/ /g, ",")})`, // background
-        text: `rgb(${config[mode]["--foreground"].replace(/ /g, ",")})`, // foreground
-        card: `rgb(${config[mode]["--card"].replace(/ /g, ",")})`, // card
-        border: `rgb(${config[mode]["--border"].replace(/ /g, ",")})`, // border
-        primary: `rgb(${config[mode]["--primary"].replace(/ /g, ",")})`, // primary
-        notification: `rgb(${config[mode]["--destructive"].replace(/ /g, ",")})`, // destructive
+        background: `rgb(${styles["--background"].replace(/ /g, ",")})`, // background
+        text: `rgb(${styles["--foreground"].replace(/ /g, ",")})`, // foreground
+        card: `rgb(${styles["--card"].replace(/ /g, ",")})`, // card
+        border: `rgb(${styles["--border"].replace(/ /g, ",")})`, // border
+        primary: `rgb(${styles["--primary"].replace(/ /g, ",")})`, // primary
+        notification: `rgb(${styles["--destructive"].replace(/ /g, ",")})`, // destructive
       },
     };
     return result;
