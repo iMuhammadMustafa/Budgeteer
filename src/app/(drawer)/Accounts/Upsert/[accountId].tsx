@@ -2,15 +2,17 @@
 import Form from "@/src/components/Form";
 import { Account, supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { createAccount, updateAccount, useGetList, useGetOneById } from "@/src/repositories/api";
+import { createAccount, upsertAccount, useGetList, useGetOneById } from "@/src/repositories/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useGlobalSearchParams } from "expo-router";
+import { useGlobalSearchParams, useLocalSearchParams } from "expo-router";
 import React, { useEffect } from "react";
 import { Text } from "react-native";
+import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 
 export default function Create() {
-  const { accountId } = useGlobalSearchParams();
+  let { accountId } = useLocalSearchParams();
+
   const { session } = useAuth();
   const queryClient = useQueryClient();
 
@@ -32,22 +34,15 @@ export default function Create() {
   };
 
   const mutation = useMutation({
-    mutationFn: async (account: Account) => {
-      const { data, error } = await supabase
-        .from("accounts")
-        .upsert({ ...account })
-        .select();
-    },
+    mutationFn: upsertAccount,
     onSuccess: d => {
       queryClient.invalidateQueries({ queryKey: ["account", "accounts"] });
     },
   });
 
-  if (accountId && accountId != "null") {
+  if (accountId && accountId != "null" && accountId != "new") {
     const { data } = useGetOneById<Account>("account", accountId as string, "accounts");
     if (data) initialValues = { ...initialValues, ...data };
-
-    console.log(data);
   }
 
   const handleSubmit = async (values: Account) => {

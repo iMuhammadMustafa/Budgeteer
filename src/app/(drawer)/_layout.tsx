@@ -41,7 +41,7 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
-          name="Accounts"
+          name="Accounts/index"
           options={{
             drawerLabel: "Accounts",
             title: "Accounts",
@@ -49,7 +49,14 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
-          name="Categories"
+          name="Accounts/Upsert/[accountId]"
+          options={{
+            title: "Account",
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+        <Drawer.Screen
+          name="Categories/index"
           options={{
             drawerLabel: "Categories",
             title: "Categories",

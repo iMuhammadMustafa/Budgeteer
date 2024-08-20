@@ -9,7 +9,7 @@ export type Enums<T extends keyof Database["public"]["Enums"]> = Database["publi
 
 export type Transaction = Tables<"transactions">;
 export type Account = Tables<"accounts">;
-export type Categorie = Tables<"categories">;
+export type Category = Tables<"categories">;
 export type UserAccount = Tables<"useraccounts">;
 export type Profile = Tables<"profiles">;
 
@@ -48,5 +48,5 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: false,
     },
-  }
+  },
 );
