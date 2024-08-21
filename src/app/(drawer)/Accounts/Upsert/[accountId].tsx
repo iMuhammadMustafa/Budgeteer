@@ -1,14 +1,15 @@
 // components/AccountForm.tsx
 import Form from "@/src/components/Form";
-import { Account, supabase } from "@/src/lib/supabase";
+import { Account } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { createAccount, upsertAccount, useGetList, useGetOneById } from "@/src/repositories/api";
+import { upsertAccount, useGetOneById } from "@/src/repositories/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useGlobalSearchParams, useLocalSearchParams } from "expo-router";
-import React, { useEffect } from "react";
+import { useLocalSearchParams } from "expo-router";
+import React from "react";
 import { Text } from "react-native";
 import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
+// import { v4 as uuidv4 } from "uuid";
+import * as uuid from "uuid";
 
 export default function Create() {
   let { accountId } = useLocalSearchParams();
@@ -17,7 +18,7 @@ export default function Create() {
   const queryClient = useQueryClient();
 
   let initialValues: Account = {
-    id: uuidv4(),
+    id: uuid.v4(),
     name: "",
     category: "",
     type: "",
@@ -25,13 +26,18 @@ export default function Create() {
     currentbalance: 0,
     currency: "USD",
     notes: "",
-    createdat: new Date(Date.now()),
-    updatedat: new Date(Date.now()),
-    createdby: session?.user.id,
+    createdat: new Date(Date.now()).toISOString(),
+    updatedat: new Date(Date.now()).toISOString(),
+    createdby: session?.user.id ?? "",
     updatedby: null,
     isdeleted: false,
-    tenantid: session?.user.id,
+    tenantid: session?.user.id ?? "",
   };
+
+  if (accountId && accountId != "null" && accountId != "new") {
+    const { data } = useGetOneById<Account>("account", accountId as string, "accounts");
+    if (data) initialValues = { ...initialValues, ...data };
+  }
 
   const mutation = useMutation({
     mutationFn: upsertAccount,
@@ -39,15 +45,6 @@ export default function Create() {
       queryClient.invalidateQueries({ queryKey: ["account", "accounts"] });
     },
   });
-
-  if (accountId && accountId != "null" && accountId != "new") {
-    const { data } = useGetOneById<Account>("account", accountId as string, "accounts");
-    if (data) initialValues = { ...initialValues, ...data };
-  }
-
-  const handleSubmit = async (values: Account) => {
-    mutation.mutate(values);
-  };
 
   const fields = {
     name: { label: "Name" },
@@ -63,7 +60,7 @@ export default function Create() {
       {mutation.isPending && <Text>Adding...</Text>}
       {mutation.isError && <Text>Adding...</Text>}
 
-      <Form initialValues={initialValues} onSubmit={handleSubmit} fields={fields} />
+      <Form initialValues={initialValues} onSubmit={values => mutation.mutate(values)} fields={fields} />
     </>
   );
 }
