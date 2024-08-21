@@ -1,8 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Account, Category, supabase, Transaction } from "../lib/supabase";
-import { useAuth } from "../providers/AuthProvider";
-
-const { session } = useAuth();
 
 export const useGetList = <T>(key: any) => {
   return useQuery<T[]>({
@@ -45,11 +42,6 @@ export const getAccountById = async (id: string) => {
 export const createAccount = async (account: Account) => {
   const { data, error } = await supabase.from("accounts").insert({
     ...account,
-    isdeleted: false,
-    createdat: new Date(Date.now()),
-    createdby: session?.user.id,
-    updatedat: null,
-    updatedby: null,
   });
   if (error) throw error;
   return data;
@@ -59,11 +51,6 @@ export const upsertAccount = async (account: Account) => {
     .from("accounts")
     .upsert({
       ...account,
-      isdeleted: false,
-      createdat: new Date(Date.now()),
-      createdby: session?.user.id,
-      updatedat: new Date(Date.now()),
-      updatedby: session?.user.id,
     })
     .select();
 
@@ -89,27 +76,12 @@ export const getCategoryById = async (id: string) => {
 export const createCategory = async (category: Category) => {
   const { data, error } = await supabase.from("categories").insert({
     ...category,
-    isdeleted: false,
-    createdat: new Date(Date.now()),
-    createdby: session?.user.id,
-    updatedat: null,
-    updatedby: null,
   });
   if (error) throw error;
   return data;
 };
 export const upsertCategory = async (category: Category) => {
-  const { data, error } = await supabase
-    .from("categories")
-    .upsert({
-      ...category,
-      isdeleted: false,
-      createdat: new Date(Date.now()),
-      createdby: session?.user.id,
-      updatedat: new Date(Date.now()),
-      updatedby: session?.user.id,
-    })
-    .select();
+  const { data, error } = await supabase.from("categories").upsert(category).select();
 
   if (error) throw error;
   return data;
@@ -133,11 +105,6 @@ export const getTransactionById = async (id: string) => {
 export const createTransaction = async (transaction: Transaction) => {
   const { data, error } = await supabase.from("transactions").insert({
     ...transaction,
-    isdeleted: false,
-    createdat: new Date(Date.now()),
-    createdby: session?.user.id,
-    updatedat: null,
-    updatedby: null,
   });
   if (error) throw error;
   return data;
@@ -147,11 +114,6 @@ export const upsertTransaction = async (transaction: Transaction) => {
     .from("transactions")
     .upsert({
       ...transaction,
-      isdeleted: false,
-      createdat: new Date(Date.now()),
-      createdby: session?.user.id,
-      updatedat: new Date(Date.now()),
-      updatedby: session?.user.id,
     })
     .select();
 

@@ -21,10 +21,6 @@ export default function Accounts() {
     onMutate: () => setIsActionLoading(true),
   });
 
-  const handleDelete = async (id: string) => {
-    await mutation.mutateAsync(id);
-  };
-
   if (isLoading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;
 
@@ -61,7 +57,7 @@ export default function Accounts() {
               {isActionLoading ? (
                 <Icon name="Loader" size={20} className="text-primary-300" />
               ) : (
-                <TouchableOpacity onPress={() => handleDelete(account.id)}>
+                <TouchableOpacity onPress={() => mutation.mutateAsync(account.id)}>
                   <Icon name="Trash2" size={20} className="text-red-600" />
                 </TouchableOpacity>
               )}

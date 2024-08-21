@@ -30,5 +30,8 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
   return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>;
 }
-
 export const useAuth = () => useContext(AuthContext);
+// export const useAuth = () => {
+//   if (!AuthContext) throw new Error("useAuth must be used within an AuthProvider");
+//   return useContext(AuthContext);
+// };

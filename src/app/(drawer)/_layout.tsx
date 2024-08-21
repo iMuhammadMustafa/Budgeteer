@@ -56,7 +56,7 @@ export default function DrawerLayout() {
           }}
         /> */}
         <Drawer.Screen
-          name="Categories/index"
+          name="Categories"
           options={{
             drawerLabel: "Categories",
             title: "Categories",
