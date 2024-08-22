@@ -1,11 +1,31 @@
 import { useQuery } from "@tanstack/react-query";
 import { Account, Category, supabase, Transaction } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 export const useGetList = <T>(key: any) => {
   return useQuery<T[]>({
     queryKey: [key],
     queryFn: async () => {
       const { data, error } = await supabase.from(key).select("*").eq("isdeleted", false);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
+    },
+  });
+};
+
+export const getAllTransactions = () => {
+  return useQuery<Transaction[]>({
+    queryKey: ["Transaction"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select(
+          "*, account:accounts!transactions_accountid_fkey(*), category:categories!transactions_categoryid_fkey(*), destinationAccount:accounts!transactions_destinationid_fkey(*)",
+        )
+        .eq("isdeleted", false);
+      console.log(data);
       if (error) {
         throw new Error(error.message);
       }
@@ -102,7 +122,24 @@ export const getTransactionById = async (id: string) => {
   if (error) throw error;
   return data[0];
 };
-export const createTransaction = async (transaction: Transaction) => {
+export const createTransaction = async ({
+  transaction,
+  srcAccount,
+  destAccount,
+}: {
+  transaction: Transaction;
+  srcAccount: Account;
+  destAccount?: Account;
+}) => {
+  const type = transaction.type;
+
+  const amount = type === "Income" ? transaction.amount : -transaction.amount;
+  upsertAccount({ ...srcAccount, currentbalance: srcAccount?.currentbalance + amount }); // Balance = Balance + Amount (Income) or Balance - Amount (Expense)
+
+  if (type === "Transfer" && destAccount) {
+    upsertAccount({ ...destAccount, currentbalance: destAccount?.currentbalance - amount }); // Balance = Balance - (- Amount) = Balance + Amount
+  }
+
   const { data, error } = await supabase.from("transactions").insert({
     ...transaction,
   });
@@ -122,6 +159,24 @@ export const upsertTransaction = async (transaction: Transaction) => {
 };
 export const deleteTransaction = async (id: string) => {
   const { data, error } = await supabase.from("transactions").update({ isdeleted: true }).eq("id", id);
+  const transaction = data as Transaction | null;
+
+  if (transaction) {
+    const type = transaction.type;
+    const { data: account } = useGetOneById<Account>("accounts", transaction.accountid);
+
+    if (account) {
+      upsertAccount({ ...account, currentbalance: account?.currentbalance - transaction.amount });
+    }
+    if (transaction.destinationid) {
+      //If transaction.Type === "Transfer"
+      const { data: destAccount } = useGetOneById<Account>("accounts", transaction.destinationid);
+      if (destAccount) {
+        upsertAccount({ ...destAccount, currentbalance: destAccount?.currentbalance + transaction.amount });
+      }
+    }
+  }
+
   if (error) throw error;
   return data;
 };

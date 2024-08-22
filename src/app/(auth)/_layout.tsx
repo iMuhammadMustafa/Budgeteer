@@ -3,7 +3,7 @@ import { Redirect, Slot, Stack } from "expo-router";
 import { ActivityIndicator } from "react-native";
 
 export default function AuthLayout() {
-  const { session, loading } = useAuth();
+  const { session, isSessionLoading: loading } = useAuth();
 
   if (loading) {
     return <ActivityIndicator />;

@@ -27,11 +27,14 @@ export default function Categories() {
   return (
     <List
       data={data!}
-      columns={["Name", "Type", "Description", "Create Date", "Actions"]}
+      columns={["Icon", "Name", "Type", "Description", "Create Date", "Actions"]}
       createLink={{ pathname: "/Categories/Upsert/[categoryId]", params: { categoryId: "new" } }}
       renderItem={(category: Category) => {
         return (
           <TableRow key={category.id} className="text-center">
+            <TableData className="flex justify-center items-center">
+              <Icon name={category.icon ?? "CaseUpper"} size={20} className="text-primary-300" />
+            </TableData>
             <TableData>{category.name}</TableData>
             <TableData>{category.description}</TableData>
             <TableData>{category.type}</TableData>

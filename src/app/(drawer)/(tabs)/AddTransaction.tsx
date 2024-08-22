@@ -3,24 +3,21 @@ import TextInputField from "@/src/components/TextInputField";
 import { Account, Category, Transaction } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { createTransaction, upsertAccount, useGetList } from "@/src/repositories/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
 import "react-native-get-random-values";
-import { create } from "react-test-renderer";
 import { v4 } from "uuid";
 
 type TransactionTypes = "Income" | "Expense" | "Transfer";
 
 export default function AddTransaction() {
-  // const { session, loading } = useAuth();
-
-  // if (loading) return <Text>Loading...</Text>;
-
-  console.log("d8d5efae-da25-4b50-870f-8774b83d73e9");
-
+  const { session, isSessionLoading } = useAuth();
+  if (isSessionLoading) return <Text>Loading...</Text>;
   const initalValues: Transaction = {
     id: v4(),
     amount: 0,
+    type: "Expense",
     categoryid: "",
     accountid: "",
     destinationid: null,
@@ -30,42 +27,38 @@ export default function AddTransaction() {
     notes: "",
 
     createdat: new Date(Date.now()).toISOString(),
-    createdby: "d8d5efae-da25-4b50-870f-8774b83d73e9",
+    createdby: session?.user.id ?? "",
     updatedat: null,
     updatedby: null,
 
     isdeleted: false,
-    tenantid: "d8d5efae-da25-4b50-870f-8774b83d73e9",
+    tenantid: session?.user.id ?? "",
   };
 
-  const [type, setType] = useState<TransactionTypes>("Expense");
   const [transaction, setTransaction] = useState({ ...initalValues });
+
+  useEffect(() => {
+    setTransaction({ ...initalValues });
+  }, []);
 
   const { data: accounts, isLoading: isAccountLoading } = useGetList<Account>("accounts");
   const { data: categories, isLoading: isCategoriesLoading } = useGetList<Category>("categories");
 
+  const client = useQueryClient();
+
   const handleSubmit = () => {
-    const sourceAccount = accounts?.find(account => account.id === transaction.accountid);
-    const destinationAccount = accounts?.find(account => account.id === transaction.destinationid);
+    const srcAccount = accounts?.find(account => account.id === transaction.accountid);
+    const destAccount = accounts?.find(account => account.id === transaction.destinationid);
 
-    const amount = type === "Income" ? transaction.amount : -transaction.amount;
-
-    const currentTransaction = {
-      ...transaction,
-      createdby: "d8d5efae-da25-4b50-870f-8774b83d73e9"!,
-      tenantid: "d8d5efae-da25-4b50-870f-8774b83d73e9"!,
-      amount: amount,
-    };
-
-    createTransaction(currentTransaction);
-
-    upsertAccount({ ...sourceAccount, currentbalance: sourceAccount?.currentbalance + amount });
-
-    if (type === "Transfer") {
-      upsertAccount({ ...destinationAccount, currentbalance: destinationAccount?.currentbalance + amount });
+    console.log(transaction);
+    if (!srcAccount) {
+      throw new Error("Source account not found");
+      return;
     }
+    createTransaction({ transaction, srcAccount, destAccount });
 
     setTransaction({ ...initalValues });
+    client.refetchQueries({ queryKey: ["transactions", "accounts"] });
   };
 
   if (isAccountLoading || isCategoriesLoading) return <Text>Loading...</Text>;
@@ -73,7 +66,7 @@ export default function AddTransaction() {
     <SafeAreaView className="p-5">
       <DropdownField
         label="Type"
-        onSelect={type => setType(type.name)}
+        onSelect={({ name }: { name: TransactionTypes }) => setTransaction({ ...transaction, type: name })}
         list={[
           { id: "Income", name: "Income" },
           { id: "Expense", name: "Expense" },
@@ -94,13 +87,19 @@ export default function AddTransaction() {
       <DropdownField
         label="Account"
         onSelect={(account: Account) => setTransaction({ ...transaction, accountid: account.id })}
-        list={accounts}
+        list={accounts?.map(account => ({
+          ...account,
+          name: `${account.name} - ${account.category} - ${account.currentbalance}`,
+        }))}
       />
-      {type === "Transfer" && (
+      {transaction.type === "Transfer" && (
         <DropdownField
           label="Destination"
           onSelect={(account: Account) => setTransaction({ ...transaction, destinationid: account.id })}
-          list={accounts}
+          list={accounts?.map(account => ({
+            ...account,
+            name: `${account.name} - ${account.category} - ${account.currentbalance}`,
+          }))}
         />
       )}
 
