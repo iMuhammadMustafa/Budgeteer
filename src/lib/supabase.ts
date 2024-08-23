@@ -13,6 +13,13 @@ export type Category = Tables<"categories">;
 export type UserAccount = Tables<"useraccounts">;
 export type Profile = Tables<"profiles">;
 
+export enum TransactionType {
+  Income = "Income",
+  Expense = "Expense",
+  Transfer = "Transfer",
+  Adjustment = "Adjustment",
+}
+
 class SupabaseStorage {
   async getItem(key: string) {
     if (Platform.OS === "web") {
