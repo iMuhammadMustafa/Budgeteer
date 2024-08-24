@@ -1282,6 +1282,11 @@
   dependencies:
     "@react-native-aria/focus" "^0.2.7"
 
+"@gluestack-ui/spinner@^0.1.14":
+  version "0.1.14"
+  resolved "https://registry.npmjs.org/@gluestack-ui/spinner/-/spinner-0.1.14.tgz"
+  integrity sha512-6uLUvyJMhYR/sIMU/purfaYPqaKiLqnBi0n0LiWRsJNGDgENqdWVHMJpGTdWaFuCLxumZ7xnp0wG2KAdG9UyyQ==
+
 "@gluestack-ui/toast@^1.0.7":
   version "1.0.7"
   resolved "https://registry.npmjs.org/@gluestack-ui/toast/-/toast-1.0.7.tgz"

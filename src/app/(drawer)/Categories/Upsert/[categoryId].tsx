@@ -14,15 +14,12 @@ import { icons } from "lucide-react-native";
 
 export default function Create() {
   let { categoryId } = useLocalSearchParams();
-  const iconNames = Object.keys(icons);
-
   const { session, isSessionLoading } = useAuth();
+  const iconNames = Object.keys(icons);
+  const queryClient = useQueryClient();
+  const [filteredIcons, setFilterdIcons] = useState(iconNames);
 
   if (isSessionLoading) return <Text>Loading...</Text>;
-
-  const queryClient = useQueryClient();
-
-  const [filteredIcons, setFilterdIcons] = useState(iconNames);
 
   let initialValues: Category = {
     id: uuid.v4(),
@@ -85,13 +82,15 @@ export default function Create() {
           horizontal
           renderItem={({ item }) => (
             <Pressable
+              key={item}
               onPress={() => {
                 setIcon(item);
                 setFilterdIcons(iconNames.filter(i => i === item));
               }}
             >
               <View className="flex justify-center items-center">
-                <Icon name={item} size={20} /> <Text>{item}</Text>
+                <Icon name={item} size={20} />
+                <Text>{item}</Text>
               </View>
             </Pressable>
           )}

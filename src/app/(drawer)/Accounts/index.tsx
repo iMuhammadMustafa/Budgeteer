@@ -38,7 +38,7 @@ export default function Accounts() {
         "Created At",
         "Actions",
       ]}
-      createLink={{ pathname: "/Accounts/Upsert/[accountId]", params: { accountId: "new" } }}
+      createLink="/Accounts/Upsert/"
       renderItem={(account: Account) => {
         return (
           <TableRow key={account.id} className="text-center">

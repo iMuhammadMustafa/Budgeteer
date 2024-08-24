@@ -1,7 +1,7 @@
 import { TableData, TableRow } from "@/components/ui/table";
 import List from "@/src/components/List";
 import Icon from "@/src/lib/IonIcons";
-import { Account, Transaction } from "@/src/lib/supabase";
+import { Account, Transaction, TransactionTypes } from "@/src/lib/supabase";
 import { deleteTransaction, getAllTransactions } from "@/src/repositories/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "expo-router";
@@ -28,30 +28,36 @@ export default function Transactions() {
   return (
     <List
       data={transactions!}
-      columns={["Icon", "Account", "Amount", "Destination", "Date", "Notes", "Tags"]}
+      columns={["", "Type", "Account", "Amount", "Destination", "Date", "Notes", "Tags", "Actions"]}
       createLink="../AddTransaction"
       renderItem={(transaction: Transaction) => {
+        const iconProp = { name: "CircleHelp", color: "text-muted-foreground", size: 20 };
+        if (transaction.type === TransactionTypes.Income) {
+          iconProp.name = "Plus";
+          iconProp.color = "text-success-500";
+        }
+        if (transaction.type === TransactionTypes.Expense) {
+          iconProp.name = "Minus";
+          iconProp.color = "text-error-500";
+        }
+        if (transaction.type === TransactionTypes.Transfer) {
+          iconProp.name = "ArrowLeftRight";
+          iconProp.color = "text-info-500";
+        }
+        if (transaction.type === TransactionTypes.Adjustment) {
+          iconProp.name = "Wrench";
+          iconProp.color = "text-warning-500";
+        }
+
         return (
           <TableRow key={transaction.id} className="text-center">
-            <TableData className="flex justify-center items-center">
-              <Icon
-                name={
-                  transaction.category?.icon ??
-                  (transaction.type === "Income" ? "Plus" : transaction.type === "Expense" ? "Minus" : "ArrowLeftRight")
-                }
-                size={20}
-                className={
-                  transaction.type === "Income"
-                    ? "text-success-500"
-                    : transaction.type === "Expense"
-                      ? "text-error-500"
-                      : "text-info-500"
-                }
-              />
+            <TableData className="flex justify-evenly items-center">
+              <Icon name={iconProp.name} size={iconProp.size} className={iconProp.color} />
             </TableData>
+            <TableData>{transaction.type}</TableData>
             <TableData>{transaction.account.name}</TableData>
             <TableData>{transaction.amount}</TableData>
-            <TableData>{transaction.destinationAccount?.name ?? transaction.category.name}</TableData>
+            <TableData>{transaction.destinationAccount?.name ?? transaction.category?.name ?? ""}</TableData>
             <TableData>{new Date(transaction.date).toLocaleDateString("en-GB")}</TableData>
             <TableData>{transaction.notes}</TableData>
             <TableData>{transaction.tags}</TableData>

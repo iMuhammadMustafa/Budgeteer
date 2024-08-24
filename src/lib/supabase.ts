@@ -13,7 +13,7 @@ export type Category = Tables<"categories">;
 export type UserAccount = Tables<"useraccounts">;
 export type Profile = Tables<"profiles">;
 
-export enum TransactionType {
+export enum TransactionTypes {
   Income = "Income",
   Expense = "Expense",
   Transfer = "Transfer",

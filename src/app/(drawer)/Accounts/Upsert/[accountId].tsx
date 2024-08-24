@@ -1,66 +1,96 @@
-// components/AccountForm.tsx
-import Form from "@/src/components/Form";
-import { Account } from "@/src/lib/supabase";
+import TextInputField from "@/src/components/TextInputField";
+import { Account, TransactionTypes } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { upsertAccount, useGetOneById } from "@/src/repositories/api";
+import * as accountService from "@/src/repositories/account.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import React from "react";
-import { Text } from "react-native";
+import React, { useEffect, useState } from "react";
+import { SafeAreaView, ScrollView, Text } from "react-native";
 import "react-native-get-random-values";
-// import { v4 as uuidv4 } from "uuid";
-import * as uuid from "uuid";
+import { v4 } from "uuid";
+import { Button, ButtonText, ButtonSpinner, ButtonIcon, ButtonGroup } from "@/components/ui/button";
+import Loading from "@/src/components/Loading";
+import Icon from "@/src/lib/IonIcons";
 
 export default function Create() {
   let { accountId } = useLocalSearchParams();
-
-  const { session } = useAuth();
+  const { session, isSessionLoading } = useAuth();
   const queryClient = useQueryClient();
+  const { data, error, isLoading } = useGetOneById<Account>("account", accountId as string, "accounts");
+  const [formData, setFormData] = useState<Account>(data!);
 
-  let initialValues: Account = {
-    id: uuid.v4(),
-    name: "",
-    category: "",
-    type: "",
-    openbalance: 0,
-    currentbalance: 0,
-    currency: "USD",
-    notes: "",
-    createdat: new Date(Date.now()).toISOString(),
-    updatedat: new Date(Date.now()).toISOString(),
-    createdby: session?.user.id ?? "",
-    updatedby: null,
-    isdeleted: false,
-    tenantid: session?.user.id ?? "",
-  };
-
-  if (accountId && accountId != "null" && accountId != "new") {
-    const { data } = useGetOneById<Account>("account", accountId as string, "accounts");
-    if (data) initialValues = { ...initialValues, ...data };
-  }
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   const mutation = useMutation({
-    mutationFn: upsertAccount,
-    onSuccess: d => {
-      queryClient.invalidateQueries({ queryKey: ["account", "accounts"] });
+    mutationFn: async (values: Account) => {
+      await upsertAccount({
+        ...values,
+        ...{
+          updatedby: session?.user.id ?? "",
+          updatedat: new Date(Date.now()).toISOString(),
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
 
-  const fields = {
-    name: { label: "Name" },
-    category: { label: "Category" },
-    type: { label: "Type" },
-    openbalance: { label: "Open Balance", type: "number" },
-    currency: { label: "Currency" },
-    notes: { label: "Notes" },
-  };
+  if (error) return <Text>Error: {error.message}</Text>;
+
+  if (isSessionLoading || isLoading || !data) return <Loading />;
 
   return (
-    <>
-      {mutation.isPending && <Text>Adding...</Text>}
-      {mutation.isError && <Text>Adding...</Text>}
-
-      <Form initialValues={initialValues} onSubmit={values => mutation.mutate(values)} fields={fields} />
-    </>
+    <SafeAreaView className="p-5">
+      <ScrollView>
+        <TextInputField
+          label="Name"
+          value={formData?.name ?? ""}
+          onChange={name => setFormData({ ...formData, name })}
+        />
+        <TextInputField
+          label="Category"
+          value={formData?.category ?? ""}
+          onChange={category => setFormData({ ...formData, category })}
+        />
+        <TextInputField
+          label="Type"
+          value={formData?.type ?? ""}
+          onChange={type => setFormData({ ...formData, type })}
+        />
+        <TextInputField
+          label="Currency"
+          value={formData?.currency ?? ""}
+          onChange={currency => setFormData({ ...formData, currency })}
+        />
+        <TextInputField
+          label="Current Balance"
+          value={formData?.currentbalance ?? "".toString()}
+          onChange={currentbalance => setFormData({ ...formData, currentbalance })}
+          keyboardType="numeric"
+        />
+        <TextInputField
+          label="Open Balance"
+          value={formData?.openbalance ?? "".toString()}
+          onChange={openbalance => setFormData({ ...formData, openbalance })}
+        />
+        <TextInputField
+          label="Notes"
+          value={formData?.notes ?? ""}
+          onChange={notes => setFormData({ ...formData, notes })}
+        />
+        <Button
+          className="p-3 flex justify-center items-center"
+          disabled={isLoading}
+          onPress={() => mutation.mutate(formData)}
+        >
+          {isLoading ? <ButtonSpinner /> : <ButtonText className="font-medium text-sm ml-2">Save</ButtonText>}
+        </Button>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
