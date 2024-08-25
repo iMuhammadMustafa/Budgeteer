@@ -11,57 +11,109 @@ export type Database = {
     Tables: {
       accounts: {
         Row: {
-          category: string
+          balance: number
+          categoryid: string
           createdat: string
           createdby: string
           currency: string | null
-          currentbalance: number
           id: string
           isdeleted: boolean
           name: string
           notes: string | null
-          openbalance: number
           tenantid: string | null
-          type: string
           updatedat: string | null
           updatedby: string | null
         }
         Insert: {
-          category: string
+          balance: number
+          categoryid: string
           createdat?: string
           createdby: string
           currency?: string | null
-          currentbalance: number
-          id: string
+          id?: string
           isdeleted?: boolean
           name: string
           notes?: string | null
-          openbalance: number
           tenantid?: string | null
-          type: string
           updatedat?: string | null
           updatedby?: string | null
         }
         Update: {
-          category?: string
+          balance?: number
+          categoryid?: string
           createdat?: string
           createdby?: string
           currency?: string | null
-          currentbalance?: number
           id?: string
           isdeleted?: boolean
           name?: string
           notes?: string | null
-          openbalance?: number
           tenantid?: string | null
-          type?: string
           updatedat?: string | null
           updatedby?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "accounts_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "accountscategories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accounts_createdby_fkey"
             columns: ["createdby"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountscategories: {
+        Row: {
+          createdat: string
+          createdby: string
+          id: string
+          isdeleted: boolean
+          name: string | null
+          tenantid: string | null
+          type: Database["public"]["Enums"]["accountcategorytype"] | null
+          updatedat: string | null
+          updatedby: string | null
+        }
+        Insert: {
+          createdat?: string
+          createdby: string
+          id?: string
+          isdeleted?: boolean
+          name?: string | null
+          tenantid?: string | null
+          type?: Database["public"]["Enums"]["accountcategorytype"] | null
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Update: {
+          createdat?: string
+          createdby?: string
+          id?: string
+          isdeleted?: boolean
+          name?: string | null
+          tenantid?: string | null
+          type?: Database["public"]["Enums"]["accountcategorytype"] | null
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountcategory_createdby_fkey"
+            columns: ["createdby"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountcategory_updatedby_fkey"
+            columns: ["updatedby"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -87,7 +139,7 @@ export type Database = {
           createdby: string
           description?: string | null
           icon?: string | null
-          id: string
+          id?: string
           isdeleted?: boolean
           name: string
           tenantid?: string | null
@@ -161,7 +213,7 @@ export type Database = {
           createdat: string
           createdby: string
           date: string
-          destinationid: string | null
+          description: string | null
           id: string
           isdeleted: boolean
           notes: string | null
@@ -178,8 +230,8 @@ export type Database = {
           createdat?: string
           createdby: string
           date: string
-          destinationid?: string | null
-          id: string
+          description?: string | null
+          id?: string
           isdeleted?: boolean
           notes?: string | null
           tags?: string[] | null
@@ -195,7 +247,7 @@ export type Database = {
           createdat?: string
           createdby?: string
           date?: string
-          destinationid?: string | null
+          description?: string | null
           id?: string
           isdeleted?: boolean
           notes?: string | null
@@ -227,13 +279,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "transactions_destinationid_fkey"
-            columns: ["destinationid"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
         ]
       }
       useraccounts: {
@@ -254,7 +299,7 @@ export type Database = {
           accountid: string
           createdat?: string
           createdby: string
-          id: string
+          id?: string
           isdeleted?: boolean
           tenantid?: string | null
           updatedat?: string | null
@@ -305,7 +350,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      transactiontype: "Expense" | "Income" | "Transfer" | "Adjustment"
+      accountcategorytype: "Asset" | "Liability"
+      transactiontype:
+        | "Expense"
+        | "Income"
+        | "Transfer"
+        | "Adjustment"
+        | "Initial"
+        | "Refund"
     }
     CompositeTypes: {
       [_ in never]: never

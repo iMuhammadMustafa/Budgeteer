@@ -70,7 +70,7 @@
     "jscodeshift": "^0.15.2",
     "prettier": "^3.3.3",
     "react-test-renderer": "18.2.0",
-    "supabase": "^1.187.10",
+    "supabase": "^1.190.0",
     "typescript": "~5.3.3"
   },
   "private": true,

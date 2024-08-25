@@ -5,19 +5,25 @@ import { Platform } from "react-native";
 import { Database } from "./database.types";
 
 export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+export type Updates<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Update"];
+export type Inserts<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"];
 export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
 
 export type Transaction = Tables<"transactions">;
+
 export type Account = Tables<"accounts">;
 export type Category = Tables<"categories">;
 export type UserAccount = Tables<"useraccounts">;
 export type Profile = Tables<"profiles">;
+export type TransactionTypes = Enums<"transactiontype">;
+export type AccountCategoryTypes = Enums<"accountcategorytype">;
 
-export enum TransactionTypes {
-  Income = "Income",
-  Expense = "Expense",
-  Transfer = "Transfer",
-  Adjustment = "Adjustment",
+export enum TableNames {
+  Transactions = "transactions",
+  Accounts = "accounts",
+  Categories = "categories",
+  UserAccounts = "useraccounts",
+  Profiles = "profiles",
 }
 
 class SupabaseStorage {
