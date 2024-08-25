@@ -22,7 +22,8 @@ export const useGetOneById = <T>(key: any, id: string, table?: string) => {
         .from(table ?? key)
         .select()
         .eq("isdeleted", false)
-        .eq("id", id);
+        .eq("id", id)
+        .single();
       if (error) throw new Error(error.message);
       return data[0];
     },

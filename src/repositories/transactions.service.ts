@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGetOneById } from "./api";
 import { Inserts, TableNames, Transaction, Updates, supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
+import { useAuth } from "../providers/AuthProvider";
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
@@ -45,9 +47,10 @@ export const useUpsertTransaction = (formTransaction: Transaction | Updates<Tabl
 
 export const useDeleteTransaction = (id: string) => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      return await deleteTransaction(id);
+      return await deleteTransaction(id, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -56,9 +59,10 @@ export const useDeleteTransaction = (id: string) => {
 };
 export const useRestoreTransaction = (id: string) => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      return await restoreTransaction(id);
+      return await restoreTransaction(id, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -70,6 +74,7 @@ export const updateTransaction = async (transaction: Updates<TableNames.Transact
   const { data, error } = await supabase
     .from("transactions")
     .update({ ...transaction })
+    .select()
     .single();
 
   if (error) throw error;
@@ -77,23 +82,52 @@ export const updateTransaction = async (transaction: Updates<TableNames.Transact
 };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert({ ...transaction })
-    .single();
+  const { data, error } = await supabase.from("transactions").insert(transaction).select().single();
 
   if (error) throw error;
   return data;
 };
-export const deleteTransaction = async (id: string) => {
-  return updateTransaction({ id, isdeleted: true });
+export const deleteTransaction = async (id: string, session?: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .update({
+      isdeleted: true,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 };
-export const restoreTransaction = async (id: string) => {
-  return updateTransaction({ id, isdeleted: false });
+export const restoreTransaction = async (id: string, session?: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .update({
+      isdeleted: false,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+  return data;
 };
-export const deleteAccountTransactions = async (accountId: string) => {
-  return supabase.from(TableNames.Transactions).update({ isdeleted: true }).eq("accountid", accountId);
+export const deleteAccountTransactions = async (accountId: string, session?: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .update({ isdeleted: true, updatedat: new Date().toISOString(), updatedby: session?.user?.email })
+    .eq("accountid", accountId)
+    .select();
+
+  console.log(data);
+
+  if (error) throw error;
+  return data;
 };
-export const restoreAccountTransactions = async (accountId: string) => {
-  return supabase.from(TableNames.Transactions).update({ isdeleted: false }).eq("accountid", accountId);
+export const restoreAccountTransactions = async (accountId: string, session?: Session | null) => {
+  return supabase
+    .from(TableNames.Transactions)
+    .update({ isdeleted: false, updatedat: new Date().toISOString(), updatedby: session?.user?.email })
+    .eq("accountid", accountId);
 };

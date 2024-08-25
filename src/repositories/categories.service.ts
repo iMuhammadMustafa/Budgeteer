@@ -1,7 +1,8 @@
-import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { TableNames, Category, Tables, supabase } from "../lib/supabase";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { TableNames, Category, supabase } from "../lib/supabase";
 import { useGetList, useGetOneById } from "./api";
 import { useAuth } from "../providers/AuthProvider";
+import { Session } from "@supabase/supabase-js";
 
 export const useGetCategories = () => {
   const { session } = useAuth();
@@ -27,9 +28,10 @@ export const useUpsertCategory = (formCategory: Category) => {
 };
 export const useDeleteCategory = (id: string) => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      return await deleteCategory(id);
+      return await deleteCategory(id, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Categories] });
@@ -38,9 +40,10 @@ export const useDeleteCategory = (id: string) => {
 };
 export const useRestoreCategory = (id: string) => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      return await restoreCategory(id);
+      return await restoreCategory(id, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Categories] });
@@ -48,22 +51,40 @@ export const useRestoreCategory = (id: string) => {
   });
 };
 export const createCategory = async (category: Category) => {
-  const { data, error } = await supabase.from(TableNames.Categories).insert(category).single();
+  const { data, error } = await supabase.from(TableNames.Categories).insert(category).select().single();
   if (error) throw error;
   return data;
 };
 export const updateCategory = async (category: Category) => {
-  const { data, error } = await supabase.from(TableNames.Categories).update(category).single();
+  const { data, error } = await supabase.from(TableNames.Categories).update(category).select().single();
   if (error) throw error;
   return data;
 };
-export const deleteCategory = async (id: string) => {
-  const { data, error } = await supabase.from(TableNames.Categories).delete().eq("id", id).single();
+export const deleteCategory = async (id: string, session: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Categories)
+    .update({
+      isdeleted: true,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 };
-export const restoreCategory = async (id: string) => {
-  const { data, error } = await supabase.from(TableNames.Categories).update({ isdeleted: false }).eq("id", id).single();
+export const restoreCategory = async (id: string, session: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Categories)
+    .update({
+      isdeleted: false,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 };

@@ -1,11 +1,20 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountsCategories, TableNames, supabase } from "../lib/supabase";
-import { useGetList, useGetOneById } from "./api";
+import { useGetOneById } from "./api";
+import { Session } from "@supabase/supabase-js";
+import { useAuth } from "../providers/AuthProvider";
 
-export const useGetAccountCategories = async () => {
-  useGetList<TableNames.AccountCategories>(TableNames.AccountCategories);
+export const useGetAccountCategories = () => {
+  return useQuery<AccountsCategories[]>({
+    queryKey: [TableNames.AccountCategories],
+    queryFn: async () => {
+      const { data, error } = await supabase.from(TableNames.AccountCategories).select("*").eq("isdeleted", false);
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
 };
-export const useGetAccountCategoryById = async (id: string) => {
+export const useGetAccountCategoryById = (id: string) => {
   useGetOneById<TableNames.AccountCategories>(TableNames.AccountCategories, id);
 };
 export const useUpsertAccountCategory = async (formAccountCategory: AccountsCategories) => {
@@ -19,16 +28,18 @@ export const useUpsertAccountCategory = async (formAccountCategory: AccountsCate
   });
 };
 export const useDeleteAccountCategory = async (id: string) => {
+  const { session } = useAuth();
   useMutation({
     mutationFn: async () => {
-      return await deleteAccountCategory(id);
+      return await deleteAccountCategory(id, session);
     },
   });
 };
 export const useRestoreAccountCategory = async (id: string) => {
+  const { session } = useAuth();
   useMutation({
     mutationFn: async () => {
-      return await restoreAccountCategory(id);
+      return await restoreAccountCategory(id, session);
     },
   });
 };
@@ -42,16 +53,30 @@ export const updateAccountCategory = async (accountCategory: AccountsCategories)
   if (error) throw error;
   return data;
 };
-export const deleteAccountCategory = async (id: string) => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).delete().eq("id", id).single();
+export const deleteAccountCategory = async (id: string, session: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.AccountCategories)
+    .update({
+      isdeleted: true,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 };
-export const restoreAccountCategory = async (id: string) => {
+export const restoreAccountCategory = async (id: string, session: Session | null) => {
   const { data, error } = await supabase
     .from(TableNames.AccountCategories)
-    .update({ isdeleted: false })
+    .update({
+      isdeleted: true,
+      updatedby: session?.user.id,
+      updatedat: new Date().toISOString(),
+    })
     .eq("id", id)
+    .select()
     .single();
   if (error) throw error;
   return data;
