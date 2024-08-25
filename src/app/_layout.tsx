@@ -5,6 +5,8 @@ import ThemeProvider from "../providers/ThemeProvider";
 import QueryProvider from "../providers/QueryProvider";
 import { Suspense } from "react";
 import { SafeAreaView, Text } from "react-native";
+import { DevToolsBubble } from "react-native-react-query-devtools";
+import NotificationsProvider from "../providers/NotificationsProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,11 +16,14 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <QueryProvider>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-            </Stack>
+            <NotificationsProvider>
+              <Stack>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+              </Stack>
+            </NotificationsProvider>
+            <DevToolsBubble />
           </QueryProvider>
         </AuthProvider>
       </ThemeProvider>
