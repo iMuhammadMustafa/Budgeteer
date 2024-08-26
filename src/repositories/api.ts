@@ -14,18 +14,18 @@ export const useGetList = <T>(key: any) => {
   });
 };
 
-export const useGetOneById = <T>(key: any, id: string, table?: string) => {
+export const useGetOneById = <T>(key: any, id?: string, table?: string) => {
   return useQuery<T>({
-    queryKey: [key],
+    queryKey: [key, id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from(table ?? key)
         .select()
         .eq("isdeleted", false)
-        .eq("id", id)
-        .single();
+        .eq("id", id);
       if (error) throw new Error(error.message);
       return data[0];
     },
+    enabled: !!id,
   });
 };

@@ -1,25 +1,18 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AccountsCategories, TableNames, supabase } from "../lib/supabase";
-import { useGetOneById } from "./api";
+import { AccountsCategory, TableNames, supabase } from "../lib/supabase";
+import { useGetList, useGetOneById } from "./api";
 import { Session } from "@supabase/supabase-js";
 import { useAuth } from "../providers/AuthProvider";
 
 export const useGetAccountCategories = () => {
-  return useQuery<AccountsCategories[]>({
-    queryKey: [TableNames.AccountCategories],
-    queryFn: async () => {
-      const { data, error } = await supabase.from(TableNames.AccountCategories).select("*").eq("isdeleted", false);
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
+  return useGetList<AccountsCategory>(TableNames.AccountCategories);
 };
 export const useGetAccountCategoryById = (id: string) => {
   useGetOneById<TableNames.AccountCategories>(TableNames.AccountCategories, id);
 };
-export const useUpsertAccountCategory = async (formAccountCategory: AccountsCategories) => {
-  useMutation({
-    mutationFn: async () => {
+export const useUpsertAccountCategory = () => {
+  return useMutation({
+    mutationFn: async (formAccountCategory: AccountsCategory) => {
       if (formAccountCategory.id) {
         return await updateAccountCategory(formAccountCategory);
       }
@@ -27,28 +20,28 @@ export const useUpsertAccountCategory = async (formAccountCategory: AccountsCate
     },
   });
 };
-export const useDeleteAccountCategory = async (id: string) => {
+export const useDeleteAccountCategory = () => {
   const { session } = useAuth();
-  useMutation({
-    mutationFn: async () => {
+  return useMutation({
+    mutationFn: async (id: string) => {
       return await deleteAccountCategory(id, session);
     },
   });
 };
-export const useRestoreAccountCategory = async (id: string) => {
+export const useRestoreAccountCategory = () => {
   const { session } = useAuth();
-  useMutation({
-    mutationFn: async () => {
+  return useMutation({
+    mutationFn: async (id: string) => {
       return await restoreAccountCategory(id, session);
     },
   });
 };
-export const createAccountCategory = async (accountCategory: AccountsCategories) => {
+export const createAccountCategory = async (accountCategory: AccountsCategory) => {
   const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).single();
   if (error) throw error;
   return data;
 };
-export const updateAccountCategory = async (accountCategory: AccountsCategories) => {
+export const updateAccountCategory = async (accountCategory: AccountsCategory) => {
   const { data, error } = await supabase.from(TableNames.AccountCategories).update(accountCategory).single();
   if (error) throw error;
   return data;

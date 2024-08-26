@@ -10,12 +10,9 @@ export const useGetTransactions = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TableNames.Transactions)
-        .select(
-          "*, account:accounts!transactions_accountid_fkey(*), category:categories!transactions_categoryid_fkey(*)",
-        )
-        .eq("isdeleted", false)
-        .filter("account.isdeleted", "is", false);
-      // .not("account.isdeleted", "eq", true);
+        .select("*, account:accounts!inner(*), category:categories!inner(*)")
+        .eq("account.isdeleted", false)
+        .eq("isdeleted", false);
 
       if (error) throw new Error(error.message);
 
@@ -24,15 +21,15 @@ export const useGetTransactions = () => {
   });
 };
 
-export const useGetTransactionById = (id: string) => {
+export const useGetTransactionById = (id?: string) => {
   return useGetOneById<Transaction>(TableNames.Transactions, id);
 };
 
-export const useUpsertTransaction = (formTransaction: Transaction | Updates<TableNames.Transactions>) => {
+export const useUpsertTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (formTransaction: Transaction | Updates<TableNames.Transactions>) => {
       if (formTransaction.id) {
         return await updateTransaction(formTransaction);
       }
@@ -45,11 +42,11 @@ export const useUpsertTransaction = (formTransaction: Transaction | Updates<Tabl
   });
 };
 
-export const useDeleteTransaction = (id: string) => {
+export const useDeleteTransaction = () => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (id: string) => {
       return await deleteTransaction(id, session);
     },
     onSuccess: async () => {
@@ -116,7 +113,7 @@ export const restoreTransaction = async (id: string, session?: Session | null) =
 export const deleteAccountTransactions = async (accountId: string, session?: Session | null) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
-    .update({ isdeleted: true, updatedat: new Date().toISOString(), updatedby: session?.user?.email })
+    .update({ isdeleted: true, updatedat: new Date().toISOString(), updatedby: session?.user?.id })
     .eq("accountid", accountId)
     .select();
 
