@@ -11,6 +11,21 @@ import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
 import { Box } from "@/components/ui/box";
 import Icon from "../lib/IonIcons";
 import { useNotifications } from "../providers/NotificationsProvider";
+import Notification from "../components/Notification";
+import {
+  Select,
+  SelectTrigger,
+  SelectInput,
+  SelectIcon,
+  SelectPortal,
+  SelectBackdrop,
+  SelectContent,
+  SelectDragIndicatorWrapper,
+  SelectDragIndicator,
+  SelectItem,
+} from "@/components/ui/select";
+import { ChevronDownIcon } from "lucide-react-native";
+import React from "react";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -28,6 +43,8 @@ export default function Index() {
         <Text className=" color-primary-100">Welcome! {session?.user.email}</Text>
         {notifications.length > 0 && <Text>{JSON.stringify(notifications)}</Text>}
       </View>
+
+      <Notification />
 
       <View className="mt-5 w-[35%] ">
         <Button variant="solid" className="p-2 my-1" action="primary" onPress={() => router.push("/Login")}>

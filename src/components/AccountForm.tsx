@@ -13,7 +13,7 @@ export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.
 
 export default function AccountForm({ account }: { account: AccountFormType }) {
   const [formData, setFormData] = useState<AccountFormType>(account);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const { data: accountCategories } = useGetAccountCategories();
   const router = useRouter();
 

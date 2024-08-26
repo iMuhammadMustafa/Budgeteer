@@ -48,7 +48,16 @@ export default function DrawerLayout() {
             drawerIcon: ({ color }) => <Icon name="Landmark" color={color} size={24} />,
           }}
         />
+
         {/* <Drawer.Screen
+          name="Accounts/Categories"
+          options={{
+            drawerLabel: "Account Types",
+            title: "Account Types",
+            drawerIcon: ({ color }) => <Icon name="Landmark" color={color} size={24} />,
+          }}
+        />
+        <Drawer.Screen
           name="Accounts/Upsert/[accountId]"
           options={{
             title: "Account",

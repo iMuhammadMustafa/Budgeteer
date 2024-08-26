@@ -15,6 +15,10 @@ export default function DropdownField({ label, list, onSelect }: any) {
     setFilteredList([]);
   };
 
+  useEffect(() => {
+    setFilteredList(list);
+  }, [list]);
+
   return (
     <ScrollView className="mb-4">
       <Text className="text-foreground">{label}</Text>

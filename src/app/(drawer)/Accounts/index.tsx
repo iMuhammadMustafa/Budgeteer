@@ -19,32 +19,16 @@ export default function Accounts() {
   return (
     <List
       data={data!}
-      columns={["Name", "Category", "Type", "Currency", "Balance", "Notes", "Created At", "Actions"]}
-      createLink="/Accounts/Upsert"
-      renderItem={(account: Account) => {
-        return (
-          <TableRow key={account.id} className="text-center">
-            <TableData>{account.name}</TableData>
-            <TableData>{account.category.name}</TableData>
-            <TableData>{account.category.type}</TableData>
-            <TableData>{account.currency}</TableData>
-            <TableData>{account.balance}</TableData>
-            <TableData>{account.notes}</TableData>
-            <TableData>{new Date(account.createdat).toLocaleDateString("en-GB")}</TableData>
-            <TableData className="flex justify-center items-center gap-2">
-              <Link href={`/Accounts/Upsert?accountId=${account.id}`}>
-                <Icon name="Pencil" size={20} className="text-primary-300" />
-              </Link>
-              {isActionLoading ? (
-                <Icon name="Loader" size={20} className="text-primary-300" />
-              ) : (
-                <TouchableOpacity onPress={() => mutate(account.id)}>
-                  <Icon name="Trash2" size={20} className="text-red-600" />
-                </TouchableOpacity>
-              )}
-            </TableData>
-          </TableRow>
-        );
+      columns={["Name", "Category", "Type", "Currency", "Balance", "Notes", "Created At"]}
+      properties={["name", "category.name", "type", "currency", "balance", "notes", "createdat"]}
+      createLinks={["/Accounts/Categories", "/Accounts/Upsert"]}
+      actions={{
+        editLink: `/Accounts/Upsert?accountId=`,
+        onDelete: (item: Account) => {
+          setIsActionLoading(true);
+          return mutate(item.id, { onSuccess: () => setIsActionLoading(false) });
+        },
+        isLoading: isActionLoading,
       }}
     />
   );

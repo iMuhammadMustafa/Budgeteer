@@ -47,17 +47,15 @@ export const useUpsertAccount = () => {
       formAccount: Account | Updates<TableNames.Accounts>;
       originalData?: Account;
     }) => {
+      if (formAccount.id) {
+        formAccount.updatedby = user?.id;
+        formAccount.updatedat = new Date().toISOString();
+
+        return await updateAccount(formAccount as Updates<TableNames.Accounts>, originalData);
+      }
       formAccount.createdby = user?.id;
       formAccount.createdat = new Date().toISOString();
-
-      if (!formAccount.id) {
-        return await createAccount(formAccount as Account);
-      }
-
-      formAccount.updatedby = user?.id;
-      formAccount.updatedat = new Date().toISOString();
-
-      return await updateAccount(formAccount as Updates<TableNames.Accounts>, originalData);
+      return await createAccount(formAccount as Account);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -160,7 +158,6 @@ export const deleteAccount = async (id: string, session?: Session | null) => {
       updatedat: new Date().toISOString(),
     })
     .eq("id", id)
-    .select()
     .single();
   if (error) throw error;
   return data;

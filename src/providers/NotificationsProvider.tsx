@@ -6,17 +6,17 @@ export enum ActionTypes {
   Remove = "REMOVE",
   Clear = "CLEAR",
 }
-type NotificationType = {
-  id: string;
+export type NotificationType = {
+  id?: string;
   message: string;
   type: "success" | "error" | "info" | "warning";
 };
-type NotificationActionType =
+export type NotificationActionType =
   | { type: ActionTypes.Add; payload: NotificationType }
   | { type: ActionTypes.Remove; payload: string }
   | { type: ActionTypes.Clear };
 
-type NotificationContextType = {
+export type NotificationContextType = {
   notifications: NotificationType[];
   //   dispatch: Dispatch<NotificationActionType>;
   addNotification: (notification: NotificationType) => void;

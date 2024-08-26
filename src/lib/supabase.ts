@@ -15,7 +15,7 @@ export type Account = Tables<"accounts">;
 export type Category = Tables<"categories">;
 export type UserAccount = Tables<"useraccounts">;
 export type Profile = Tables<"profiles">;
-export type AccountsCategories = Tables<"accountscategories">;
+export type AccountsCategory = Tables<"accountscategories">;
 export type TransactionTypes = Enums<"transactiontype">;
 export type AccountCategoryTypes = Enums<"accountcategorytype">;
 
