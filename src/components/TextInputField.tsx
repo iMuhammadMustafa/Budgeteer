@@ -9,7 +9,12 @@ type TextInputFieldProps = {
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
-  return prevProps.label === nextProps.label && prevProps.value === nextProps.value;
+  return (
+    prevProps.label === nextProps.label &&
+    prevProps.value === nextProps.value &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.keyboardType === nextProps.keyboardType
+  );
 };
 
 export function TextInputFieldMemo({ label, value, onChange, keyboardType = "default" }: TextInputFieldProps) {
