@@ -30,5 +30,7 @@ export default function Upsert() {
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
+  console.log("initialValues", initialValues);
+
   return <AccountForm account={initialValues} />;
 }
