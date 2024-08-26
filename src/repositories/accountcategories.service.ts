@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccountsCategory, TableNames, supabase } from "../lib/supabase";
 import { useGetList, useGetOneById } from "./api";
 import { Session } from "@supabase/supabase-js";
@@ -21,28 +21,41 @@ export const useUpsertAccountCategory = () => {
   });
 };
 export const useDeleteAccountCategory = () => {
+  const queryClient = useQueryClient();
   const { session } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
       return await deleteAccountCategory(id, session);
     },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+    },
   });
 };
 export const useRestoreAccountCategory = () => {
+  const queryClient = useQueryClient();
   const { session } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
       return await restoreAccountCategory(id, session);
     },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+    },
   });
 };
 export const createAccountCategory = async (accountCategory: AccountsCategory) => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).single();
+  const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).select().single();
   if (error) throw error;
   return data;
 };
 export const updateAccountCategory = async (accountCategory: AccountsCategory) => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).update(accountCategory).single();
+  const { data, error } = await supabase
+    .from(TableNames.AccountCategories)
+    .update(accountCategory)
+    .eq("id", accountCategory.id!)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 };

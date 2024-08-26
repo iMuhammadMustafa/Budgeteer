@@ -12,6 +12,7 @@ export const useGetTransactions = () => {
         .from(TableNames.Transactions)
         .select("*, account:accounts!inner(*), category:categories!inner(*)")
         .eq("account.isdeleted", false)
+        .eq("category.isdeleted", false)
         .eq("isdeleted", false);
 
       if (error) throw new Error(error.message);
@@ -27,12 +28,17 @@ export const useGetTransactionById = (id?: string) => {
 
 export const useUpsertTransaction = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth().session || {};
 
   return useMutation({
     mutationFn: async (formTransaction: Transaction | Updates<TableNames.Transactions>) => {
       if (formTransaction.id) {
+        formTransaction.updatedby = user?.id;
+        formTransaction.updatedat = new Date().toISOString();
         return await updateTransaction(formTransaction);
       }
+      formTransaction.createdby = user?.id;
+      formTransaction.createdat = new Date().toISOString();
       return await createTransaction(formTransaction as Transaction);
     },
     onSuccess: async ({ id }) => {
@@ -67,10 +73,17 @@ export const useRestoreTransaction = (id: string) => {
   });
 };
 
+export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
+  const { data, error } = await supabase.from(TableNames.Transactions).insert(transaction).select().single();
+
+  if (error) throw error;
+  return data;
+};
 export const updateTransaction = async (transaction: Updates<TableNames.Transactions>) => {
   const { data, error } = await supabase
-    .from("transactions")
-    .update({ ...transaction })
+    .from(TableNames.Transactions)
+    .update(transaction)
+    .eq("id", transaction.id!)
     .select()
     .single();
 
@@ -78,12 +91,6 @@ export const updateTransaction = async (transaction: Updates<TableNames.Transact
   return data;
 };
 
-export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
-  const { data, error } = await supabase.from("transactions").insert(transaction).select().single();
-
-  if (error) throw error;
-  return data;
-};
 export const deleteTransaction = async (id: string, session?: Session | null) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Account, supabase, TableNames, Updates } from "../lib/supabase";
+import { Account, Inserts, supabase, TableNames, Updates } from "../lib/supabase";
 import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "./transactions.service";
 import { useAuth } from "../providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
@@ -44,18 +44,18 @@ export const useUpsertAccount = () => {
       formAccount,
       originalData,
     }: {
-      formAccount: Account | Updates<TableNames.Accounts>;
+      formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
       originalData?: Account;
     }) => {
       if (formAccount.id) {
         formAccount.updatedby = user?.id;
         formAccount.updatedat = new Date().toISOString();
 
-        return await updateAccount(formAccount as Updates<TableNames.Accounts>, originalData);
+        return await updateAccount(formAccount, originalData);
       }
       formAccount.createdby = user?.id;
       formAccount.createdat = new Date().toISOString();
-      return await createAccount(formAccount as Account);
+      return await createAccount(formAccount as Inserts<TableNames.Accounts>);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -79,9 +79,11 @@ export const useDeleteAccount = () => {
       return await deleteAccount(id, session);
     },
     onSuccess: async (_, id) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      await Promise.all([
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] }),
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
+      ]);
     },
   });
 };
@@ -104,7 +106,7 @@ export const useRestoreAccount = () => {
   });
 };
 
-export const createAccount = async (account: Account) => {
+export const createAccount = async (account: Inserts<TableNames.Accounts>) => {
   const { data, error } = await supabase.from(TableNames.Accounts).insert(account).select().single();
 
   if (data) {
@@ -158,6 +160,7 @@ export const deleteAccount = async (id: string, session?: Session | null) => {
       updatedat: new Date().toISOString(),
     })
     .eq("id", id)
+    .select()
     .single();
   if (error) throw error;
   return data;

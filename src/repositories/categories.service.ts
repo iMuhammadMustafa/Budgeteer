@@ -26,13 +26,13 @@ export const useUpsertCategory = () => {
       return await createCategory(formCategory as Inserts<TableNames.Categories>);
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: [TableNames.Categories] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Categories] });
     },
   });
 };
 export const useDeleteCategory = () => {
-  const queryClient = useQueryClient();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       return await deleteCategory(id, session);
@@ -60,7 +60,12 @@ export const createCategory = async (category: Inserts<TableNames.Categories>) =
   return data;
 };
 export const updateCategory = async (category: Updates<TableNames.Categories>) => {
-  const { data, error } = await supabase.from(TableNames.Categories).update(category).eq("id", category.id!).select();
+  const { data, error } = await supabase
+    .from(TableNames.Categories)
+    .update(category)
+    .eq("id", category.id!)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 };
@@ -74,6 +79,7 @@ export const deleteCategory = async (id: string, session: Session | null) => {
       updatedat: new Date().toISOString(),
     })
     .eq("id", id)
+    .select()
     .single();
 
   if (error) throw error;
