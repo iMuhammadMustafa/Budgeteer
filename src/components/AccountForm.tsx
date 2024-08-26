@@ -13,7 +13,7 @@ export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.
 
 export default function AccountForm({ account }: { account: AccountFormType }) {
   const [formData, setFormData] = useState<AccountFormType>(account);
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { data: accountCategories } = useGetAccountCategories();
   const router = useRouter();
 
@@ -27,6 +27,18 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prevData => ({ ...prevData, [field]: value }));
   };
+  const handleSubmit = () => {
+    setIsLoading(true);
+    mutate(
+      { formAccount: formData, originalData: account as Account },
+      {
+        onSuccess: () => {
+          addNotification({ message: "Account Created Successfully", type: "success" });
+          router.back();
+        },
+      },
+    );
+  };
 
   return (
     <SafeAreaView className="p-5">
@@ -35,7 +47,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
         <DropdownField
           label="Category"
-          initalValue={formData.categoryid}
+          initalValue={accountCategories?.find(item => item.id === formData.categoryid)?.name}
           list={accountCategories?.map(item => ({ name: item.name + "-" + item.type, id: item.id }))}
           onSelect={(category: any) => setFormData({ ...formData, categoryid: category.id })}
         />
@@ -53,21 +65,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         />
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
-        <Button
-          className="p-3 flex justify-center items-center"
-          disabled={isLoading}
-          onPress={() =>
-            mutate(
-              { formAccount: formData, originalData: account as Account },
-              {
-                onSuccess: () => {
-                  addNotification({ message: "Account Created Successfully", type: "success" });
-                  router.back();
-                },
-              },
-            )
-          }
-        >
+        <Button className="p-3 flex justify-center items-center" disabled={isLoading} onPress={handleSubmit}>
           {isLoading ? <ButtonSpinner /> : <ButtonText className="font-medium text-sm ml-2">Save</ButtonText>}
         </Button>
       </ScrollView>

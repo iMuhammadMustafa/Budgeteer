@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { FlatList, ScrollView, Text, TextInput, View } from "react-native";
 
-export default function DropdownField({ label, list, onSelect, initalValue = "" }: any) {
-  const [value, setValue] = useState<string>(initalValue);
+export default function DropdownField({ label, list, onSelect, initalValue }: any) {
+  const [value, setValue] = useState<string>(initalValue ?? "");
   const [filteredList, setFilteredList] = useState<string[]>(list);
 
   const handleChange = (text: string) => {
@@ -18,6 +18,10 @@ export default function DropdownField({ label, list, onSelect, initalValue = "" 
   useEffect(() => {
     setFilteredList(list);
   }, []);
+
+  useEffect(() => {
+    setValue(initalValue ?? "");
+  }, [initalValue]);
 
   return (
     <ScrollView className="mb-4">
