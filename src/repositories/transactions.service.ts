@@ -6,24 +6,17 @@ import { useAuth } from "../providers/AuthProvider";
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
-    queryKey: [TableNames.Transactions],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(TableNames.Transactions)
-        .select("*, account:accounts!inner(*), category:categories!inner(*)")
-        .eq("account.isdeleted", false)
-        .eq("category.isdeleted", false)
-        .eq("isdeleted", false);
-
-      if (error) throw new Error(error.message);
-
-      return data;
-    },
+    queryKey: ["transactions"],
+    queryFn: async () => getAllTransactions(),
   });
 };
 
 export const useGetTransactionById = (id?: string) => {
-  return useGetOneById<Transaction>(TableNames.Transactions, id);
+  return useQuery<Transaction>({
+    queryKey: [TableNames.Transactions, id],
+    queryFn: async () => getTransactionById(id!),
+    enabled: !!id,
+  });
 };
 
 export const useUpsertTransaction = () => {
@@ -71,6 +64,32 @@ export const useRestoreTransaction = (id: string) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
     },
   });
+};
+
+export const getAllTransactions = async () => {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, account:accounts(*), category:categories(*)")
+    // .select("*")
+    // .select("*, account:accounts!inner(*), category:categories!inner(*)")
+    // .eq("account.isdeleted", false)
+    // .eq("category.isdeleted", false)
+    .eq("isdeleted", false);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+};
+
+export const getTransactionById = async (id: string) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .select()
+    .eq("isdeleted", false)
+    .eq("id", id)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {

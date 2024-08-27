@@ -27,12 +27,16 @@ export default function Transactions() {
               <TransactionTypeIcon transaction={transaction} />
             </TableData>
             <TableData>{transaction.type}</TableData>
-            <TableData>{transaction.account.name}</TableData>
+            <TableData>{transaction.account?.name ?? ""}</TableData>
             <TableData>{transaction.amount}</TableData>
             <TableData className="flex justify-center items-center gap-2">
-              <Icon name={transaction.category.icon} size={20} className="text-muted-foreground" />
+              {transaction.category?.icon ? (
+                <Icon name={transaction.category?.icon} size={20} className="text-muted-foreground" />
+              ) : (
+                ""
+              )}
             </TableData>
-            <TableData>{transaction.category.name}</TableData>
+            <TableData>{transaction.category?.name ?? ""}</TableData>
             <TableData>{new Date(transaction.date).toLocaleDateString("en-GB")}</TableData>
             <TableData>{transaction.notes}</TableData>
             <TableData>{transaction.tags}</TableData>
