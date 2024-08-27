@@ -6,6 +6,7 @@ import ThemeProvider from "@/src/providers/ThemeProvider";
 import AuthProvider from "@/src/providers/AuthProvider";
 import NotificationsProvider from "@/src/providers/NotificationsProvider";
 import { supabase } from "@/src/lib/supabase";
+import * as transactionsService from "../transactions.service";
 
 const mockData = [
   {
@@ -68,9 +69,9 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 jest.mock("uuid", () => ({ v4: () => "00000000-0000-0000-0000-000000000000" }));
 
-jest.mock("../transactions.service", () => ({
-  getAllTransactions: jest.fn().mockImplementation(() => mockData),
-}));
+// jest.mock("../transactions.service", () => ({
+//   getAllTransactions: jest.fn().mockReturnValue(new Promise(resolve => resolve(mockData))),
+// }));
 const wrapper = ({ children }: { children: any }) => {
   return (
     <ThemeProvider>
@@ -95,19 +96,16 @@ describe("useGetTransactions", () => {
     expect(result.current.isError).toBe(false);
   });
 
-  //   it("Should return an error if the query fails", async () => {
-  // const mockError = new Error("Failed to fetch transactions");
-  //     (supabase.eq as jest.Mock).mockImplementation(() => ({
-  //       data: null,
-  //       error: mockError,
-  //     }));
+  it("Should return an error if the query fails", async () => {
+    const mockError = new Error("Failed to fetch transactions");
+    jest.spyOn(transactionsService, "getAllTransactions").mockRejectedValue(mockError);
 
-  //     const { result } = renderHook(() => useGetTransactions(), { wrapper });
+    const { result } = renderHook(() => useGetTransactions(), { wrapper });
 
-  //     await waitFor(() => result.current.isSuccess);
+    await waitFor(() => result.current.isSuccess);
 
-  //     console.log(result.current.data);
+    console.log(result.current.data);
 
-  //     expect(result.current.error).toBe(error);
-  //   });
+    expect(result.current.error).toBe(error);
+  });
 });
