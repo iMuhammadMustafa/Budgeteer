@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useGetOneById } from "./api";
-import { Inserts, TableNames, Transaction, Updates, supabase } from "../lib/supabase";
-import { Session } from "@supabase/supabase-js";
+import { getAllTransactions } from "./api";
+import { TableNames, Transaction, Updates, supabase } from "@/src/lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
 
 export const useGetTransactions = () => {
+  console.log(TableNames);
+
   return useQuery<Transaction[]>({
-    queryKey: ["transactions"],
-    queryFn: async () => getAllTransactions(),
+    queryKey: [TableNames.Transactions],
+    queryFn: getAllTransactions,
   });
 };
 
@@ -66,91 +67,207 @@ export const useRestoreTransaction = (id: string) => {
   });
 };
 
-export const getAllTransactions = async () => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("*, account:accounts(*), category:categories(*)")
-    // .select("*")
-    // .select("*, account:accounts!inner(*), category:categories!inner(*)")
-    // .eq("account.isdeleted", false)
-    // .eq("category.isdeleted", false)
-    .eq("isdeleted", false);
+// __mocks__/supabase.ts
+// export const mockSupabase = {
+//   from: jest.fn().mockReturnThis(),
+//   select: jest.fn().mockReturnThis(),
+//   eq: jest.fn().mockReturnThis(),
+//   single: jest.fn().mockResolvedValue({ data: null, error: null }),
+//   insert: jest.fn().mockReturnThis(),
+//   update: jest.fn().mockReturnThis(),
+//   // You can add more methods if needed
+// };
 
-  if (error) throw new Error(error.message);
+// // transactions.service.test.ts
+// import {
+//   getAllTransactions,
+//   getTransactionById,
+//   createTransaction,
+//   updateTransaction,
+//   deleteTransaction,
+//   restoreTransaction,
+//   deleteAccountTransactions,
+//   restoreAccountTransactions
+// } from './transactions.service';
+// import { mockSupabase } from './__mocks__/supabase';
+// import { supabase } from './supabaseClient'; // Adjust the import according to your setup
 
-  return data;
-};
+// jest.mock('./supabaseClient', () => ({
+//   supabase: mockSupabase,
+// }));
 
-export const getTransactionById = async (id: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .select()
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+// describe('Transactions Service', () => {
+//   beforeEach(() => {
+//     jest.clearAllMocks();
+//   });
 
-export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
-  const { data, error } = await supabase.from(TableNames.Transactions).insert(transaction).select().single();
+//   test('getAllTransactions should return data', async () => {
+//     const mockData = [{ id: '1', amount: 100 }];
+//     mockSupabase.select.mockResolvedValueOnce({ data: mockData, error: null });
 
-  if (error) throw error;
-  return data;
-};
-export const updateTransaction = async (transaction: Updates<TableNames.Transactions>) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .update(transaction)
-    .eq("id", transaction.id!)
-    .select()
-    .single();
+//     const result = await getAllTransactions();
+//     expect(result).toEqual(mockData);
+//   });
 
-  if (error) throw error;
-  return data;
-};
+//   test('getTransactionById should return a single transaction', async () => {
+//     const mockData = { id: '1', amount: 100 };
+//     mockSupabase.single.mockResolvedValueOnce({ data: mockData, error: null });
 
-export const deleteTransaction = async (id: string, session?: Session | null) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .update({
-      isdeleted: true,
-      updatedby: session?.user.id,
-      updatedat: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreTransaction = async (id: string, session?: Session | null) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .update({
-      isdeleted: false,
-      updatedby: session?.user.id,
-      updatedat: new Date().toISOString(),
-    })
-    .eq("id", id);
-  if (error) throw error;
-  return data;
-};
-export const deleteAccountTransactions = async (accountId: string, session?: Session | null) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .update({ isdeleted: true, updatedat: new Date().toISOString(), updatedby: session?.user?.id })
-    .eq("accountid", accountId)
-    .select();
+//     const result = await getTransactionById('1');
+//     expect(result).toEqual(mockData);
+//   });
 
-  console.log(data);
+//   test('createTransaction should create and return a transaction', async () => {
+//     const mockData = { id: '1', amount: 100 };
+//     mockSupabase.insert.mockResolvedValueOnce({ data: mockData, error: null });
 
-  if (error) throw error;
-  return data;
-};
-export const restoreAccountTransactions = async (accountId: string, session?: Session | null) => {
-  return supabase
-    .from(TableNames.Transactions)
-    .update({ isdeleted: false, updatedat: new Date().toISOString(), updatedby: session?.user?.email })
-    .eq("accountid", accountId);
-};
+//     const result = await createTransaction({ amount: 100 });
+//     expect(result).toEqual(mockData);
+//   });
+
+//   test('updateTransaction should update and return a transaction', async () => {
+//     const mockData = { id: '1', amount: 100 };
+//     mockSupabase.update.mockResolvedValueOnce({ data: mockData, error: null });
+
+//     const result = await updateTransaction({ id: '1', amount: 100 });
+//     expect(result).toEqual(mockData);
+//   });
+
+//   test('deleteTransaction should mark transaction as deleted', async () => {
+//     const mockData = { id: '1', isdeleted: true };
+//     mockSupabase.update.mockResolvedValueOnce({ data: mockData, error: null });
+
+//     const result = await deleteTransaction('1');
+//     expect(result).toEqual(mockData);
+//   });
+
+//   test('restoreTransaction should restore a deleted transaction', async () => {
+//     const mockData = { id: '1', isdeleted: false };
+//     mockSupabase.update.mockResolvedValueOnce({ data: mockData, error: null });
+
+//     const result = await restoreTransaction('1');
+//     expect(result).toEqual(mockData);
+//   });
+
+//   test('deleteAccountTransactions should mark transactions of an account as deleted', async () => {
+//     const mockData = [{ id: '1', isdeleted: true }];
+//     mockSupabase.update.mockResolvedValueOnce({ data: mockData, error: null });
+
+//     const result = await deleteAccountTransactions('accountId');
+//     expect(result).toEqual(mockData);
+//   });
+
+//   test('restoreAccountTransactions should restore transactions of an account', async () => {
+//     const mockData = [{ id: '1', isdeleted: false }];
+//     mockSupabase.update.mockResolvedValueOnce({ data: mockData, error: null });
+
+//     const result = await restoreAccountTransactions('accountId');
+//     expect(result).toEqual(mockData);
+//   });
+// });
+//--
+import { renderHook, waitFor } from "@testing-library/react-native";
+// import { useGetTransactions } from "../transactions.service";
+// import QueryProvider from "@/src/providers/QueryProvider";
+// import ThemeProvider from "@/src/providers/ThemeProvider";
+// import AuthProvider from "@/src/providers/AuthProvider";
+// import NotificationsProvider from "@/src/providers/NotificationsProvider";
+// import { supabase } from "@/src/lib/supabase";
+// import * as transactionsService from "../transactions.service";
+// import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// const mockData = [
+//   {
+//     id: "27d7d854-4ec2-4339-88f4-77b6259503b6",
+//     amount: 0,
+//     date: "2024-08-26T02:07:11.259+00:00",
+//     categoryid: null,
+//     tags: null,
+//     notes: null,
+//     accountid: "e04e02d4-aa4b-4d81-b89c-8ef8fefc5adf",
+//     createdby: "d8d5efae-da25-4b50-870f-8774b83d73e9",
+//     createdat: "2024-08-26T02:07:11.346321+00:00",
+//     updatedby: null,
+//     updatedat: null,
+//     isdeleted: false,
+//     tenantid: null,
+//     type: "Initial",
+//     description: "Account Opened",
+//     account: {
+//       id: "e04e02d4-aa4b-4d81-b89c-8ef8fefc5adf",
+//       name: "ACC",
+//       notes: "",
+//       balance: 1000,
+//       currency: "USD",
+//       tenantid: null,
+//       createdat: "2024-08-26T02:07:11.259+00:00",
+//       createdby: "d8d5efae-da25-4b50-870f-8774b83d73e9",
+//       isdeleted: true,
+//       updatedat: "2024-08-26T13:21:47.437+00:00",
+//       updatedby: "d8d5efae-da25-4b50-870f-8774b83d73e9",
+//       categoryid: "2624d252-8fc9-45a0-a1ca-42e9a7b4e02e",
+//     },
+//     category: null,
+//   },
+// ];
+// // Mock supabase client
+// jest.mock("@/src/lib/supabase", () => ({
+//   supabase: {
+//     from: jest.fn().mockReturnThis(),
+//     select: jest.fn().mockReturnThis(),
+//     eq: jest.fn().mockImplementation((column, value) => {
+//       return {
+//         data: mockData.filter(item => item[column] === value),
+//         error: null,
+//       };
+//     }),
+//     auth: {
+//       onAuthStateChange: jest.fn(),
+//       getSession: jest.fn().mockResolvedValue({
+//         data: { session: { user: { id: "00000000-0000-0000-0000-000000000000" } } },
+//         error: null,
+//       }),
+//     },
+//   },
+// }));
+// jest.mock("@react-native-async-storage/async-storage", () => ({
+//   getItem: jest.fn().mockResolvedValue(Promise.resolve("light")),
+//   setItem: jest.fn().mockResolvedValue(null),
+//   removeItem: jest.fn().mockResolvedValue(null),
+// }));
+// jest.mock("uuid", () => ({ v4: () => "00000000-0000-0000-0000-000000000000" }));
+
+// jest.mock("../transactions.service.ts", () => ({
+//   getAllTransactions: jest.fn().mockImplementation(async () => Promise.resolve(mockData)),
+// }));
+
+// const queryClient = new QueryClient({
+//   defaultOptions: {
+//     queries: {
+//       retry: false,
+//     },
+//   },
+// });
+// const wrapper = ({ children }: { children: any }) => {
+//   return (
+//     <ThemeProvider>
+//       <AuthProvider>
+//         <QueryClientProvider client={queryClient}>
+//           <NotificationsProvider>{children}</NotificationsProvider>
+//         </QueryClientProvider>
+//       </AuthProvider>
+//     </ThemeProvider>
+//   );
+// };
+
+//   // it("Should return an error if the query fails", async () => {
+//   //   const expectedError = new Error("Failed to fetch transactions");
+
+//   //   jest.spyOn(transactionsService, "getAllTransactions").mockRejectedValue(expectedError);
+
+//   //   const { result } = renderHook(() => useGetTransactions(), { wrapper });
+
+//   //   await waitFor(() => result.current.isError);
+
+//   //   expect(result.current.error).toBe(expectedError);
+//   // });

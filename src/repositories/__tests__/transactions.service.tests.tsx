@@ -1,12 +1,7 @@
-import { renderHook } from "@testing-library/react-native";
-import { waitFor } from "@testing-library/react-native";
-import { useGetTransactions } from "../transactions.service";
-import QueryProvider from "@/src/providers/QueryProvider";
-import ThemeProvider from "@/src/providers/ThemeProvider";
-import AuthProvider from "@/src/providers/AuthProvider";
-import NotificationsProvider from "@/src/providers/NotificationsProvider";
-import { supabase } from "@/src/lib/supabase";
-import * as transactionsService from "../transactions.service";
+import { renderHook, waitFor } from "@testing-library/react-native";
+import { useGetTransactions } from "@/src/repositories/transactions.service";
+import * as api from "@/src/repositories/api.ts";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const mockData = [
   {
@@ -42,17 +37,12 @@ const mockData = [
     category: null,
   },
 ];
-// Mock supabase client
+
 jest.mock("@/src/lib/supabase", () => ({
   supabase: {
     from: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockImplementation((column, value) => {
-      return {
-        data: mockData.filter(item => item[column] === value),
-        error: null,
-      };
-    }),
+    eq: jest.fn().mockReturnThis(),
     auth: {
       onAuthStateChange: jest.fn(),
       getSession: jest.fn().mockResolvedValue({
@@ -62,50 +52,54 @@ jest.mock("@/src/lib/supabase", () => ({
     },
   },
 }));
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn().mockResolvedValue(null),
-  setItem: jest.fn().mockResolvedValue(null),
-  removeItem: jest.fn().mockResolvedValue(null),
-}));
-jest.mock("uuid", () => ({ v4: () => "00000000-0000-0000-0000-000000000000" }));
 
-// jest.mock("../transactions.service", () => ({
-//   getAllTransactions: jest.fn().mockReturnValue(new Promise(resolve => resolve(mockData))),
-// }));
+jest.mock("@/src/repositories/api.ts", () => ({
+  getAllTransactions: jest.fn(),
+}));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
 const wrapper = ({ children }: { children: any }) => {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <QueryProvider>
-          <NotificationsProvider>{children}</NotificationsProvider>
-        </QueryProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe("useGetTransactions", () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
+  });
+
   it("should fetch transactions successfully", async () => {
+    jest.spyOn(api, "getAllTransactions").mockResolvedValue(mockData);
+
     const { result } = renderHook(() => useGetTransactions(), { wrapper });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.data).toBeDefined();
     expect(Array.isArray(result.current.data)).toBe(true);
     expect(result.current.data.length).toBe(mockData.length);
     expect(result.current.isError).toBe(false);
   });
-
-  it("Should return an error if the query fails", async () => {
-    const mockError = new Error("Failed to fetch transactions");
-    jest.spyOn(transactionsService, "getAllTransactions").mockRejectedValue(mockError);
+  it("should return error when fetching transactions", async () => {
+    jest.spyOn(api, "getAllTransactions").mockRejectedValue(new Error("error"));
 
     const { result } = renderHook(() => useGetTransactions(), { wrapper });
 
-    await waitFor(() => result.current.isSuccess);
+    await waitFor(() => expect(result.current.isError).toBe(true));
 
-    console.log(result.current.data);
-
-    expect(result.current.error).toBe(error);
+    expect(result.current.isError).toBe(true);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.message).toBe("error");
   });
 });

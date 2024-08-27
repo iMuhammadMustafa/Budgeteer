@@ -28,3 +28,18 @@ export const useGetOneById = <T>(table: Table, id?: string) => {
     enabled: !!id,
   });
 };
+
+export const getAllTransactions = async () => {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, account:accounts(*), category:categories(*)")
+    // .select("*")
+    // .select("*, account:accounts!inner(*), category:categories!inner(*)")
+    // .eq("account.isdeleted", false)
+    // .eq("category.isdeleted", false)
+    .eq("isdeleted", false);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+};
