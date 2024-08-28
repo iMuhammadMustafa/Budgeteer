@@ -19,15 +19,6 @@ export type AccountsCategory = Tables<"accountscategories">;
 export type TransactionTypes = Enums<"transactiontype">;
 export type AccountCategoryTypes = Enums<"accountcategorytype">;
 
-export const TableNames = {
-  Transactions: "transactions",
-  Accounts: "accounts",
-  Categories: "categories",
-  UserAccounts: "useraccounts",
-  Profiles: "profiles",
-  AccountCategories: "accountscategories",
-};
-
 class SupabaseStorage {
   async getItem(key: string) {
     if (Platform.OS === "web") {

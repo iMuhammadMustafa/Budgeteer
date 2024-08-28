@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Account, AccountsCategory, Category, supabase, TableNames, Transaction } from "../lib/supabase";
+import { supabase } from "@/src/lib/supabase";
 
 export const useGetList = <T>(key: any) => {
   return useQuery<T[]>({
@@ -14,10 +14,7 @@ export const useGetList = <T>(key: any) => {
   });
 };
 
-type Table = TableNames.AccountCategories | TableNames.Accounts | TableNames.Categories | TableNames.Transactions;
-type GetOneType = Account | Transaction | AccountsCategory | Transaction | Category;
-
-export const useGetOneById = <T>(table: Table, id?: string) => {
+export const useGetOneById = <T>(table: any, id?: string) => {
   return useQuery<T>({
     queryKey: [table, id],
     queryFn: async () => {

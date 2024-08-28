@@ -1,13 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAllTransactions } from "./api";
-import { TableNames, Transaction, Updates, supabase } from "@/src/lib/supabase";
-import { useAuth } from "../providers/AuthProvider";
+import { Transaction, Updates } from "@/src/lib/supabase";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { TableNames } from "@/src/consts/TableNames";
+
+import {
+  getTransactionById,
+  updateTransaction,
+  createTransaction,
+  deleteTransaction,
+  restoreTransaction,
+} from "./transactions.api";
 
 export const useGetTransactions = () => {
-  console.log(TableNames);
-
   return useQuery<Transaction[]>({
-    queryKey: [TableNames.Transactions],
+    queryKey: ["transactions"],
     queryFn: getAllTransactions,
   });
 };
@@ -166,7 +173,7 @@ export const useRestoreTransaction = (id: string) => {
 //   });
 // });
 //--
-import { renderHook, waitFor } from "@testing-library/react-native";
+//
 // import { useGetTransactions } from "../transactions.service";
 // import QueryProvider from "@/src/providers/QueryProvider";
 // import ThemeProvider from "@/src/providers/ThemeProvider";

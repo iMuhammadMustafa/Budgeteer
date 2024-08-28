@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
 import { useGetTransactions } from "@/src/repositories/transactions.service";
-import * as api from "@/src/repositories/api.ts";
+import * as api from "@/src/repositories/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const mockData = [
@@ -53,18 +53,18 @@ jest.mock("@/src/lib/supabase", () => ({
   },
 }));
 
-jest.mock("@/src/repositories/api.ts", () => ({
+jest.mock("@/src/repositories/api", () => ({
   getAllTransactions: jest.fn(),
 }));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-});
 const wrapper = ({ children }: { children: any }) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
@@ -80,7 +80,7 @@ describe("useGetTransactions", () => {
   });
 
   it("should fetch transactions successfully", async () => {
-    jest.spyOn(api, "getAllTransactions").mockResolvedValue(mockData);
+    jest.spyOn(api, "getAllTransactions").mockResolvedValue(mockData as any);
 
     const { result } = renderHook(() => useGetTransactions(), { wrapper });
 
@@ -88,7 +88,7 @@ describe("useGetTransactions", () => {
 
     expect(result.current.data).toBeDefined();
     expect(Array.isArray(result.current.data)).toBe(true);
-    expect(result.current.data.length).toBe(mockData.length);
+    expect(result.current.data!.length).toBe(mockData.length);
     expect(result.current.isError).toBe(false);
   });
   it("should return error when fetching transactions", async () => {
