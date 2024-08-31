@@ -1,5 +1,6 @@
-import { Inserts, TableNames, Updates, supabase } from "@/src/lib/supabase";
+import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
+import { TableNames } from "@/src/consts/TableNames";
 
 export const getTransactionById = async (id: string) => {
   const { data, error } = await supabase
