@@ -1,5 +1,5 @@
 import { SafeAreaView, ScrollView } from "react-native";
-import { Account, Inserts, TableNames, Updates } from "../lib/supabase";
+import { Account, Inserts, Updates } from "../lib/supabase";
 import TextInputField from "./TextInputField";
 import { useEffect, useState } from "react";
 import { useUpsertAccount } from "../repositories/account.service";
@@ -8,6 +8,7 @@ import { useGetAccountCategories } from "../repositories/accountcategories.servi
 import DropdownField from "./DropdownField";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../providers/NotificationsProvider";
+import { TableNames } from "../consts/TableNames";
 
 export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
 

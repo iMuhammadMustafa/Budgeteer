@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Inserts, TableNames, TransactionTypes, Updates } from "../lib/supabase";
+import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
 import { useUpsertTransaction } from "../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../providers/NotificationsProvider";
@@ -9,6 +9,7 @@ import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../repositories/categories.service";
 import { useGetAccounts } from "../repositories/account.service";
 import DropdownField from "./DropdownField";
+import { TableNames } from "../consts/TableNames";
 
 export type TransactionFormType = Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
 
