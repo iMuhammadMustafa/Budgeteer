@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccountsCategory } from "../lib/supabase";
-import { useGetList, useGetOneById } from "./api";
 import { useAuth } from "../providers/AuthProvider";
 import { TableNames } from "../consts/TableNames";
 import {
@@ -8,14 +7,24 @@ import {
   createAccountCategory,
   deleteAccountCategory,
   restoreAccountCategory,
+  getAllAccountCategories,
+  getAccountCategoryById,
 } from "./accountcategories.api";
 
 export const useGetAccountCategories = () => {
-  return useGetList<AccountsCategory>(TableNames.AccountCategories);
+  return useQuery<AccountsCategory[]>({
+    queryKey: [TableNames.AccountCategories],
+    queryFn: getAllAccountCategories,
+  });
 };
 export const useGetAccountCategoryById = (id?: string) => {
-  return useGetOneById<TableNames.AccountCategories>(TableNames.AccountCategories, id);
+  return useQuery<AccountsCategory>({
+    queryKey: [TableNames.AccountCategories, id],
+    queryFn: async () => getAccountCategoryById(id),
+    enabled: !!id,
+  });
 };
+
 export const useUpsertAccountCategory = () => {
   return useMutation({
     mutationFn: async (formAccountCategory: AccountsCategory) => {

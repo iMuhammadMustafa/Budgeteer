@@ -1,16 +1,37 @@
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Category, Inserts, Updates } from "../lib/supabase";
-import { useGetList, useGetOneById } from "./api";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { Category, Inserts, supabase, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
 import { updateCategory, createCategory, deleteCategory, restoreCategory } from "./categories.api";
 import { TableNames } from "../consts/TableNames";
 import { updateCategoryTransactionsDelete } from "./transactions.api";
 
 export const useGetCategories = () => {
-  return useGetList<Category>(TableNames.Categories);
+  return useQuery<Category[]>({
+    queryKey: [TableNames.Categories],
+    queryFn: async () => {
+      const { data, error } = await supabase.from(TableNames.Categories).select("*").eq("isdeleted", false);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
+    },
+  });
 };
 export const useGetCategoryById = (id?: string) => {
-  return useGetOneById<Category>(TableNames.Categories, id);
+  return useQuery<Category>({
+    queryKey: [TableNames.Categories, id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(TableNames.Categories)
+        .select()
+        .eq("isdeleted", false)
+        .eq("id", id!)
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!id,
+  });
 };
 export const useUpsertCategory = () => {
   const queryClient = useQueryClient();

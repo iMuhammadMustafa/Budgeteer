@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Account, Inserts, supabase, Updates } from "../lib/supabase";
+import { Account, Inserts, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
 import {
   updateAccount,
@@ -44,9 +44,34 @@ export const useUpsertAccount = () => {
         formAccount.updatedat = new Date().toISOString();
 
         return await updateAccount(formAccount, originalData);
+
+        // if (originalData && account.balance && account.balance !== originalData.balance) {
+        //   await createTransaction({
+        //     amount: account.balance - originalData.balance,
+        //     accountid: originalData.id,
+        //     type: "Adjustment",
+        //     description: "Balance Adjustment",
+        //     createdby: originalData.createdby,
+        //     date: new Date().toISOString(),
+        //   });
+        // }
       }
       formAccount.createdby = user?.id;
       formAccount.createdat = new Date().toISOString();
+
+      // if(!formAccount.id){
+      //   if (data) {
+      //     await createTransaction({
+      //       amount: data.balance,
+      //       accountid: data.id,
+      //       type: "Initial",
+      //       description: "Account Opened",
+      //       createdby: data.createdby,
+      //       date: data.createdat,
+      //     });
+      //   }
+      // }
+
       return await createAccount(formAccount as Inserts<TableNames.Accounts>);
     },
     onSuccess: async (_, data) => {

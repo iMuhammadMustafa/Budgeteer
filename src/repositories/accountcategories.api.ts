@@ -2,6 +2,24 @@ import { TableNames } from "../consts/TableNames";
 import { AccountsCategory, supabase } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
+export const getAllAccountCategories = async () => {
+  const { data, error } = await supabase.from(TableNames.AccountCategories).select("*").eq("isdeleted", false);
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data;
+};
+export const getAccountCategoryById = async (id?: string) => {
+  const { data, error } = await supabase
+    .from(TableNames.AccountCategories)
+    .select()
+    .eq("isdeleted", false)
+    .eq("id", id!)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 export const createAccountCategory = async (accountCategory: AccountsCategory) => {
   const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).select().single();
   if (error) throw error;
