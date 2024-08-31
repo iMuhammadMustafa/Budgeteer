@@ -44,15 +44,13 @@ class SupabaseStorage {
 }
 
 //TODO
-export const supabase = createClient<Database>(
-  process.env.EXPO_PUBLIC_SUPA_URL as string,
-  process.env.EXPO_PUBLIC_SUPA_ANON_KEY as string,
-  {
-    auth: {
-      storage: new SupabaseStorage(),
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
+const supaUrl = process.env.EXPO_PUBLIC_SUPA_URL as string;
+const supaKey = process.env.EXPO_PUBLIC_SUPA_ANON_KEY as string;
+export const supabase = createClient<Database>(supaUrl, supaKey, {
+  auth: {
+    storage: new SupabaseStorage(),
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
   },
-);
+});
