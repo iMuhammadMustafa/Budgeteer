@@ -50,7 +50,7 @@ export default function Transactions() {
               ) : (
                 <TouchableOpacity
                   onPress={() =>
-                    mutation.mutateAsync(transaction.id, {
+                    mutation.mutateAsync(transaction, {
                       onSuccess: () => setIsActionLoading(false),
                       onError: () => setIsActionLoading(false),
                     })

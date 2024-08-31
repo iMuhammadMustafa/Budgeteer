@@ -11,6 +11,7 @@ import {
   restoreTransaction,
   getAllTransactions,
 } from "./transactions.api";
+import { getAccountById, updateAccount } from "./account.api";
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
@@ -33,6 +34,12 @@ export const useUpsertTransaction = () => {
 
   return useMutation({
     mutationFn: async (formTransaction: Transaction | Updates<TableNames.Transactions>) => {
+      const acc = await getAccountById(formTransaction.accountid);
+      await updateAccount({
+        id: acc.id,
+        balance: acc.balance + formTransaction.amount,
+      });
+
       if (formTransaction.id) {
         formTransaction.updatedby = user?.id;
         formTransaction.updatedat = new Date().toISOString();
@@ -53,8 +60,14 @@ export const useDeleteTransaction = () => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   return useMutation({
-    mutationFn: async (id: string) => {
-      return await deleteTransaction(id, session);
+    mutationFn: async (formTransaction: Transaction) => {
+      const acc = await getAccountById(formTransaction.accountid);
+      await updateAccount({
+        id: acc.id,
+        balance: acc.balance - formTransaction.amount,
+      });
+
+      return await deleteTransaction(formTransaction.id, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });

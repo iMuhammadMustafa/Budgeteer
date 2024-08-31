@@ -1,37 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Account, Inserts, supabase, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
-import { updateAccount, createAccount, deleteAccount, restoreAccount } from "./account.api";
+import {
+  updateAccount,
+  createAccount,
+  deleteAccount,
+  restoreAccount,
+  getAccountById,
+  getAllAccounts,
+} from "./account.api";
 import { TableNames } from "../consts/TableNames";
 import { deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
 
 export const useGetAccounts = () => {
   return useQuery<Account[]>({
     queryKey: [TableNames.Accounts],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(TableNames.Accounts)
-        .select("*, category:accountscategories!accounts_categoryid_fkey(*)")
-        .eq("isdeleted", false);
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    queryFn: getAllAccounts,
   });
 };
 
 export const useGetAccountById = (id?: string) => {
   return useQuery<Account>({
     queryKey: [TableNames.Accounts, id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(TableNames.Accounts)
-        .select()
-        .eq("isdeleted", false)
-        .eq("id", id!)
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    queryFn: async () => getAccountById(id),
     enabled: !!id,
   });
 };

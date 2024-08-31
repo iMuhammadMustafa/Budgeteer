@@ -3,6 +3,24 @@ import { Account, Inserts, supabase, Updates } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { createTransaction } from "./transactions.api";
 
+export const getAllAccounts = async () => {
+  const { data, error } = await supabase
+    .from(TableNames.Accounts)
+    .select("*, category:accountscategories!accounts_categoryid_fkey(*)")
+    .eq("isdeleted", false);
+  if (error) throw new Error(error.message);
+  return data;
+};
+export const getAccountById = async (id?: string) => {
+  const { data, error } = await supabase
+    .from(TableNames.Accounts)
+    .select()
+    .eq("isdeleted", false)
+    .eq("id", id!)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+};
 export const createAccount = async (account: Inserts<TableNames.Accounts>) => {
   const { data, error } = await supabase.from(TableNames.Accounts).insert(account).select().single();
 
