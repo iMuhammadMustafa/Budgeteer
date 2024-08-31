@@ -13,8 +13,8 @@ import {
 export const useGetAccountCategories = () => {
   return useGetList<AccountsCategory>(TableNames.AccountCategories);
 };
-export const useGetAccountCategoryById = (id: string) => {
-  useGetOneById<TableNames.AccountCategories>(TableNames.AccountCategories, id);
+export const useGetAccountCategoryById = (id?: string) => {
+  return useGetOneById<TableNames.AccountCategories>(TableNames.AccountCategories, id);
 };
 export const useUpsertAccountCategory = () => {
   return useMutation({

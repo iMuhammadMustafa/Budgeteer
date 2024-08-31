@@ -20,7 +20,7 @@ export default function AccountsCategories() {
       properties={["name", "description", "createdat"]}
       createLinks={["/Accounts/Categories/Upsert"]}
       actions={{
-        editLink: "/Accounts/Categories/Upsert",
+        editLink: "/Accounts/Categories/Upsert?categoryId=",
         onDelete: (item: AccountsCategory) => {
           setIsActionLoading(true);
           return mutate(item.id, { onSuccess: () => setIsActionLoading(false) });

@@ -1,31 +1,32 @@
-import AccountForm, { AccountFormType } from "@/src/components/AccountForm";
-import { Account, Inserts, TableNames, Updates } from "@/src/lib/supabase";
-import { useGetAccountById } from "@/src/repositories/account.service";
+import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/AccountCategoryForm";
+import { TableNames } from "@/src/consts/TableNames";
+import { Inserts, Updates } from "@/src/lib/supabase";
+import { useGetAccountCategoryById } from "@/src/repositories/accountcategories.service";
 import { useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";
 
 const initialAccountState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
   name: "",
-  type: null,
+  type: "Liability",
 };
 
 export default function Upsert() {
-  const { accountId } = useLocalSearchParams<{ accountId?: string }>();
-  const [initialValues, setInitialValues] = useState<AccountFormType>(initialAccountState);
+  const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
+  const [initialValues, setInitialValues] = useState<AccountCategoryFormType>(initialAccountState);
 
-  const { data, isLoading, error } = useGetAccountById(accountId);
+  const { data, isLoading, error } = useGetAccountCategoryById(categoryId);
 
   useEffect(() => {
-    if (accountId && data) {
+    if (categoryId && data) {
       setInitialValues({
         ...data,
       });
     }
-  }, [accountId, data]);
+  }, [categoryId, data]);
 
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
-  return <AccountForm account={initialValues} />;
+  return <AccountCategoryForm category={initialValues} />;
 }
