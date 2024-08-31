@@ -16,8 +16,8 @@ export default function AccountsCategories() {
   return (
     <List
       data={data!}
-      columns={["Name", "Description", "Created At"]}
-      properties={["name", "description", "createdat"]}
+      columns={["Name", "Type", "Created At"]}
+      properties={["name", "type", "createdat"]}
       createLinks={["/Accounts/Categories/Upsert"]}
       actions={{
         editLink: "/Accounts/Categories/Upsert?categoryId=",
