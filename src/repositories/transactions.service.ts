@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllTransactions } from "./api";
 import { Transaction, Updates } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames } from "@/src/consts/TableNames";
@@ -10,11 +9,12 @@ import {
   createTransaction,
   deleteTransaction,
   restoreTransaction,
+  getAllTransactions,
 } from "./transactions.api";
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
-    queryKey: ["transactions"],
+    queryKey: [TableNames.Transactions],
     queryFn: getAllTransactions,
   });
 };

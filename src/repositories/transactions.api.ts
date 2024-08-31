@@ -2,6 +2,20 @@ import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { TableNames } from "@/src/consts/TableNames";
 
+export const getAllTransactions = async () => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .select("*, account:accounts(*), category:categories(*)")
+    // .select("*")
+    // .select("*, account:accounts!inner(*), category:categories!inner(*)")
+    // .eq("account.isdeleted", false)
+    // .eq("category.isdeleted", false)
+    .eq("isdeleted", false);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+};
 export const getTransactionById = async (id: string) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
@@ -57,14 +71,30 @@ export const restoreTransaction = async (id: string, session?: Session | null) =
   if (error) throw error;
   return data;
 };
+export const updateCategoryTransactionsDelete = async (categoryId: string, session?: Session | null) => {
+  const { data: otherId, error: otherError } = await supabase
+    .from(TableNames.Categories)
+    .select("id")
+    .eq("name", "Other")
+    .single();
+
+  if (otherError) throw otherError;
+
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .update({ categoryid: otherId.id, updatedat: new Date().toISOString(), updatedby: session?.user?.id })
+    .eq("categoryid", categoryId)
+    .select();
+
+  if (error) throw error;
+  return data;
+};
 export const deleteAccountTransactions = async (accountId: string, session?: Session | null) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
     .update({ isdeleted: true, updatedat: new Date().toISOString(), updatedby: session?.user?.id })
     .eq("accountid", accountId)
     .select();
-
-  console.log(data);
 
   if (error) throw error;
   return data;
