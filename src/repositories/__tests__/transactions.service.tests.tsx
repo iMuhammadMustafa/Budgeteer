@@ -22,7 +22,7 @@ const mockData = [
     description: "Account Opened",
     account: {
       id: "e04e02d4-aa4b-4d81-b89c-8ef8fefc5adf",
-      name: "ACC",
+      name: "ZZZZZZZZZZ",
       notes: "",
       balance: 1000,
       currency: "USD",
@@ -37,22 +37,6 @@ const mockData = [
     category: null,
   },
 ];
-
-jest.mock("@/src/lib/supabase", () => ({
-  supabase: {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    auth: {
-      onAuthStateChange: jest.fn(),
-      getSession: jest.fn().mockResolvedValue({
-        data: { session: { user: { id: "00000000-0000-0000-0000-000000000000" } } },
-        error: null,
-      }),
-    },
-  },
-}));
-
 jest.mock("@/src/repositories/api", () => ({
   getAllTransactions: jest.fn(),
 }));
@@ -69,14 +53,8 @@ const wrapper = ({ children }: { children: any }) => {
 };
 
 describe("useGetTransactions", () => {
-  afterEach(() => {
-    jest.resetAllMocks();
-    jest.restoreAllMocks();
-  });
-
-  beforeEach(() => {
-    jest.resetAllMocks();
-    jest.restoreAllMocks();
+  afterAll(() => {
+    jest.clearAllMocks();
   });
 
   it("should fetch transactions successfully", async () => {
@@ -98,6 +76,7 @@ describe("useGetTransactions", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
+    expect(result.current.data).toBe(undefined);
     expect(result.current.isError).toBe(true);
     expect(result.current.error).toBeDefined();
     expect(result.current.error?.message).toBe("error");
