@@ -11,6 +11,7 @@ export const getAllTransactions = async () => {
     // .eq("account.isdeleted", false)
     // .eq("category.isdeleted", false)
     .eq("isdeleted", false);
+  // .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
 
@@ -22,6 +23,16 @@ export const getTransactionById = async (id: string) => {
     .select()
     .eq("isdeleted", false)
     .eq("id", id)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+};
+export const getTransactionByTransferId = async (id: string) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .select()
+    .eq("isdeleted", false)
+    .eq("transferid", id)
     .single();
   if (error) throw new Error(error.message);
   return data;

@@ -11,14 +11,15 @@ import { useGetAccounts } from "../repositories/account.service";
 import DropdownField from "./DropdownField";
 import { TableNames } from "../consts/TableNames";
 
-export type TransactionFormType = Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+export type TransactionFormType =
+  | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
+  | (Updates<TableNames.Transactions> & { amount: number; destAccountId?: string });
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
   const [formData, setFormData] = useState<TransactionFormType>(transaction);
-  const [destination, setDestination] = useState<string>("");
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
   const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,48 +29,32 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { mutate } = useUpsertTransaction();
   const { addNotification } = useNotifications();
 
-  const handleTextChange = (name: keyof TransactionFormType, text: string) => {
+  const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
   const handleSubmit = () => {
     mutate(
       {
-        ...formData,
-        amount: formData.type === "Income" ? Math.abs(formData.amount ?? 0) : -Math.abs(formData.amount ?? 0),
-        date: new Date().toISOString(),
+        fullFormTransaction: {
+          ...formData,
+          amount: Math.abs(formData.amount ?? 0),
+        },
+        originalData: transaction,
       },
       {
         onSuccess: () => {
-          if (type !== "Transfer") {
-            addNotification({ message: "Transaction Created Successfully", type: "success" });
-            router.replace("/Transactions");
-          }
+          addNotification({ message: "Transaction Created Successfully", type: "success" });
+          setIsLoading(false);
+          router.replace("/Transactions");
         },
       },
     );
-
-    if (formData.type === "Transfer") {
-      mutate(
-        {
-          ...formData,
-          accountid: destination,
-          amount: Math.abs(formData.amount ?? 0),
-          date: new Date().toISOString(),
-        },
-        {
-          onSuccess: () => {
-            addNotification({ message: "Transaction Created Successfully", type: "success" });
-            router.replace("/Transactions");
-          },
-        },
-      );
-    }
   };
 
   if (isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
 
   return (
-    <SafeAreaView className="p-5">
+    <SafeAreaView className="p-5 flex-1">
       <ScrollView>
         <TextInputField
           label="Description"
@@ -83,7 +68,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           value={formData.amount?.toString()}
           keyboardType="numeric"
           onChange={text => {
-            handleTextChange("amount", parseFloat(text));
+            handleTextChange("amount", text);
           }}
         />
         <DropdownField
@@ -101,22 +86,22 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           list={categories}
           value={formData.categoryid}
           options={categories?.map(category => ({ label: category.name, value: category.id }))}
-          onSelect={value => handleTextChange("categoryid", value.id)}
+          onSelect={(value: any) => handleTextChange("categoryid", value.id)}
         />
         <DropdownField
           label="Account"
           list={accounts}
           value={formData.accountid}
           options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-          onSelect={value => handleTextChange("accountid", value.id)}
+          onSelect={(value: any) => handleTextChange("accountid", value.id)}
         />
         {formData.type === "Transfer" && (
           <DropdownField
             label="Destinaton Account"
             list={accounts}
-            value={destination}
+            value={formData.destAccountId}
             options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-            onSelect={value => setDestination(value.id)}
+            onSelect={(value: any) => handleTextChange("destAccountId", value.id)}
           />
         )}
 

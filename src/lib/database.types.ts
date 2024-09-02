@@ -219,6 +219,7 @@ export type Database = {
           notes: string | null
           tags: string[] | null
           tenantid: string | null
+          transferid: string | null
           type: Database["public"]["Enums"]["transactiontype"] | null
           updatedat: string | null
           updatedby: string | null
@@ -236,6 +237,7 @@ export type Database = {
           notes?: string | null
           tags?: string[] | null
           tenantid?: string | null
+          transferid?: string | null
           type?: Database["public"]["Enums"]["transactiontype"] | null
           updatedat?: string | null
           updatedby?: string | null
@@ -253,6 +255,7 @@ export type Database = {
           notes?: string | null
           tags?: string[] | null
           tenantid?: string | null
+          transferid?: string | null
           type?: Database["public"]["Enums"]["transactiontype"] | null
           updatedat?: string | null
           updatedby?: string | null
@@ -277,6 +280,13 @@ export type Database = {
             columns: ["createdby"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]

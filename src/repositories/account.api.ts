@@ -64,3 +64,19 @@ export const restoreAccount = async (id: string, session?: Session | null) => {
   if (error) throw error;
   return data;
 };
+
+export const updateAccountBalance = async (
+  accountid: string,
+  amount: number,
+  currentTimestamp: string,
+  userId: string,
+) => {
+  const accData = await getAccountById(accountid);
+  if (!accData) throw new Error("Account is not found");
+  return await updateAccount({
+    id: accData.id,
+    balance: accData.balance + amount,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  });
+};

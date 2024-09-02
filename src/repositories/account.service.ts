@@ -10,7 +10,7 @@ import {
   getAllAccounts,
 } from "./account.api";
 import { TableNames } from "../consts/TableNames";
-import { deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
+import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
 
 export const useGetAccounts = () => {
   return useQuery<Account[]>({
@@ -29,7 +29,11 @@ export const useGetAccountById = (id?: string) => {
 
 export const useUpsertAccount = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth().session || {};
+  const { session } = useAuth();
+
+  if (!session || !session.user) {
+    throw new Error("User is not logged in");
+  }
 
   return useMutation({
     mutationFn: async ({
@@ -40,39 +44,9 @@ export const useUpsertAccount = () => {
       originalData?: Account;
     }) => {
       if (formAccount.id) {
-        formAccount.updatedby = user?.id;
-        formAccount.updatedat = new Date().toISOString();
-
-        return await updateAccount(formAccount, originalData);
-
-        // if (originalData && account.balance && account.balance !== originalData.balance) {
-        //   await createTransaction({
-        //     amount: account.balance - originalData.balance,
-        //     accountid: originalData.id,
-        //     type: "Adjustment",
-        //     description: "Balance Adjustment",
-        //     createdby: originalData.createdby,
-        //     date: new Date().toISOString(),
-        //   });
-        // }
+        return await upsertUpdateAccount(formAccount, session.user.id, originalData);
       }
-      formAccount.createdby = user?.id;
-      formAccount.createdat = new Date().toISOString();
-
-      // if(!formAccount.id){
-      //   if (data) {
-      //     await createTransaction({
-      //       amount: data.balance,
-      //       accountid: data.id,
-      //       type: "Initial",
-      //       description: "Account Opened",
-      //       createdby: data.createdby,
-      //       date: data.createdat,
-      //     });
-      //   }
-      // }
-
-      return await createAccount(formAccount as Inserts<TableNames.Accounts>);
+      return await upsertCreateAccount(formAccount, session.user.id);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -121,4 +95,45 @@ export const useRestoreAccount = () => {
       ]);
     },
   });
+};
+
+const upsertUpdateAccount = async (
+  formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
+  userId: string,
+  originalData?: Account,
+) => {
+  formAccount.updatedby = userId;
+  formAccount.updatedat = new Date().toISOString();
+
+  if (originalData && formAccount.balance && formAccount.balance !== originalData.balance) {
+    await createTransaction({
+      amount: formAccount.balance - originalData.balance,
+      accountid: originalData.id,
+      type: "Adjustment",
+      description: "Balance Adjustment",
+      createdby: originalData.createdby,
+      date: new Date().toISOString(),
+    });
+  }
+
+  return await updateAccount(formAccount);
+};
+const upsertCreateAccount = async (
+  formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
+  userId: string,
+) => {
+  formAccount.createdby = userId;
+  formAccount.createdat = new Date().toISOString();
+
+  const newAcc = await createAccount(formAccount as Inserts<TableNames.Accounts>);
+  await createTransaction({
+    amount: formAccount.balance ?? 0,
+    accountid: newAcc.id,
+    type: "Initial",
+    description: "Account Opened",
+    createdby: formAccount.createdby!,
+    date: formAccount.createdat,
+  });
+
+  return newAcc;
 };
