@@ -66,13 +66,13 @@ export default function Index() {
           <Notification />
 
           <View className="mt-5 ">
-            <DateTimePicker
+            {/* <DateTimePicker
               mode="single"
               date={date}
               displayFullDays
               timePicker
-              onChange={params => setDate(params.date)}
-            />
+              onChange={(params: any) => setDate(params.date)}
+            /> */}
             {/* <View className="my-5">
           <Dropdown
             label="Country"
