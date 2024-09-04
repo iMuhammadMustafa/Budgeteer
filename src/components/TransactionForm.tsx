@@ -3,7 +3,7 @@ import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
 import { useUpsertTransaction } from "../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../providers/NotificationsProvider";
-import { ActivityIndicator, SafeAreaView, ScrollView } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
 import TextInputField from "./TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../repositories/categories.service";
@@ -12,6 +12,7 @@ import DropdownField from "./DropdownField";
 import { TableNames } from "../consts/TableNames";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
+import { Box } from "@/components/ui/box";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -22,6 +23,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
   const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
   const [isLoading, setIsLoading] = useState(false);
+  const [showDate, setShowDate] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     );
   };
 
-  if (isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
+  if (isCategoriesLoading || isAccountLoading || isLoading) return <ActivityIndicator />;
 
   return (
     <SafeAreaView className="p-5 flex-1">
@@ -65,13 +67,32 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             handleTextChange("description", text);
           }}
         />
-        <DateTimePicker
-          mode="single"
-          date={dayjs(formData.date)}
-          displayFullDays
-          timePicker
-          onChange={(params: any) => setFormData(prevFormData => ({ ...prevFormData, date: params.toString() }))}
-        />
+
+        <Pressable
+          onPress={() => {
+            Keyboard.dismiss;
+            setShowDate(prev => !prev);
+          }}
+        >
+          <Text>{dayjs(formData.date).format("DD-MM-YYYY hh:mm:ss")}</Text>
+          {/* <TextInputField label="Date" value={dayjs(formData.date).format("DD-MM-YYYY HH:mm:ss")} /> */}
+        </Pressable>
+
+        {showDate && (
+          <Box className="m-auto">
+            <Box className="lg:max-w-sm">
+              <DateTimePicker
+                mode="single"
+                date={dayjs(formData.date)}
+                displayFullDays
+                timePicker
+                onChange={(params: any) =>
+                  setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
+                }
+              />
+            </Box>
+          </Box>
+        )}
 
         <TextInputField
           label="Amount"

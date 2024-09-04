@@ -22,6 +22,7 @@ export default function Transactions() {
   if (error) return <Text>Error: {error.message}</Text>;
 
   const groupedData = transactions.reduce((acc, curr) => {
+    console.log(curr);
     const date = curr.date.split("T")[0];
 
     if (!acc[date]) {
@@ -63,7 +64,7 @@ export default function Transactions() {
                       </View>
                     </View>
                     <Text className={`${groupedData[item].amount > 0 ? "text-success-500" : "text-error-500"}`}>
-                      {groupedData[item].amount > 0 ? `+${groupedData[item].amount}` : `-${groupedData[item].amount}`}
+                      {groupedData[item].amount > 0 ? `+${groupedData[item].amount}` : `${groupedData[item].amount}`}
                     </Text>
                   </View>
                   <FlatList

@@ -49,9 +49,6 @@ export const useUpsertTransaction = () => {
       const currentTimestamp = new Date().toISOString();
       const userId = session.user.id;
 
-      //TODO: take it from user
-      fullFormTransaction.date = currentTimestamp;
-
       if (!fullFormTransaction.id) {
         return await handleNewTransaction(fullFormTransaction, currentTimestamp, userId);
       }

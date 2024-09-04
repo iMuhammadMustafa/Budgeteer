@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 
 const initialState: TransactionFormType = {
   description: "",
-  date: dayjs().toString(),
+  date: dayjs().toISOString(),
   type: "Expense",
   categoryid: "",
   accountid: "",
