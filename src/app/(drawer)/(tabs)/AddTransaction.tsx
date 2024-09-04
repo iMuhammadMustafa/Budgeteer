@@ -3,10 +3,11 @@ import { useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
+import dayjs from "dayjs";
 
 const initialState: TransactionFormType = {
   description: "",
-  date: "",
+  date: dayjs().toString(),
   type: "Expense",
   categoryid: "",
   accountid: "",

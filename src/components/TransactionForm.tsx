@@ -10,6 +10,8 @@ import { useGetCategories } from "../repositories/categories.service";
 import { useGetAccounts } from "../repositories/account.service";
 import DropdownField from "./DropdownField";
 import { TableNames } from "../consts/TableNames";
+import DateTimePicker from "react-native-ui-datepicker";
+import dayjs from "dayjs";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -63,6 +65,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             handleTextChange("description", text);
           }}
         />
+        <DateTimePicker
+          mode="single"
+          date={dayjs(formData.date)}
+          displayFullDays
+          timePicker
+          onChange={(params: any) => setFormData(prevFormData => ({ ...prevFormData, date: params.toString() }))}
+        />
+
         <TextInputField
           label="Amount"
           value={formData.amount?.toString()}
