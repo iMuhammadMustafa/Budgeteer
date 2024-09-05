@@ -1,3 +1,4 @@
+import { useGetTransactions } from "@/src/repositories/transactions.service";
 import { View, Text, Dimensions } from "react-native";
 import {
   LineChart,
@@ -7,56 +8,52 @@ import {
   ContributionGraph,
   StackedBarChart,
 } from "react-native-chart-kit";
+import { CartesianChart, Bar } from "victory-native";
 
 export default function Dashboard() {
+  const { data: transactions, error, isLoading } = useGetTransactions();
+  const groupedData = transactions
+    .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)))
+    .reduce((acc, curr) => {
+      const date = dayjs(curr.date).format("ddd, DD MMM YYYY");
+      if (!acc[date]) {
+        acc[date] = {
+          amount: 0,
+          transactions: [],
+        };
+      }
+      acc[date].amount += curr.amount;
+      acc[date].transactions.push(curr);
+      return acc;
+    }, {});
+
   return (
     <View>
       <Text>Bezier Line Chart</Text>
+      {/* <View>
+        <CartesianChart data={groupedData} xKey="Days" yKeys={["Spent"]}>
+          {({ points, chartBounds }) => (
+            //👇 pass a PointsArray to the Bar component, as well as options.
+            <Bar
+              points={points.amount}
+              chartBounds={chartBounds}
+              color="red"
+              roundedCorners={{ topLeft: 10, topRight: 10 }}
+            />
+          )}
+        </CartesianChart>
+      </View>
       <View>
-        <LineChart
-          data={{
-            labels: ["January", "February", "March", "April", "May", "June"],
-            datasets: [
-              {
-                data: [
-                  Math.random() * 100,
-                  Math.random() * 100,
-                  Math.random() * 100,
-                  Math.random() * 100,
-                  Math.random() * 100,
-                  Math.random() * 100,
-                ],
-              },
-            ],
-          }}
-          width={Dimensions.get("window").width / 2} // from react-native
+        <BarChart
+          style={graphStyle}
+          data={groupedData.map()}
+          width={screenWidth}
           height={220}
           yAxisLabel="$"
-          yAxisSuffix="k"
-          yAxisInterval={1} // optional, defaults to 1
-          chartConfig={{
-            // backgroundColor: "#e26a00",
-            // backgroundGradientFrom: "#fb8c00",
-            // backgroundGradientTo: "#ffa726",
-            decimalPlaces: 2, // optional, defaults to 2dp
-            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#ffa726",
-            },
-          }}
-          bezier
-          style={{
-            marginVertical: 8,
-            borderRadius: 16,
-          }}
+          chartConfig={chartConfig}
+          verticalLabelRotation={30}
         />
-      </View>
+      </View> */}
     </View>
   );
 }
