@@ -23,7 +23,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
               </Stack>
             </NotificationsProvider>
-            <DevToolsBubble />
+            {/* <DevToolsBubble /> */}
           </QueryProvider>
         </AuthProvider>
       </ThemeProvider>
