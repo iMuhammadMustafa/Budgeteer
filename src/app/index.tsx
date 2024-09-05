@@ -31,6 +31,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import Dropdown from "react-native-input-select";
 import React, { useState } from "react";
 import { AutocompleteDropdown, AutocompleteDropdownContextProvider } from "react-native-autocomplete-dropdown";
+import Calculator from "./calculator";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -64,6 +65,9 @@ export default function Index() {
           </View>
 
           <Notification />
+
+
+          <Calculator />
 
           <View className="mt-5 ">
             {/* <DateTimePicker
