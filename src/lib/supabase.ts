@@ -5,6 +5,7 @@ import { Platform } from "react-native";
 import { Database } from "./database.types";
 
 export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+export type Views<T extends keyof Database["public"]["Views"]> = Database["public"]["Views"][T]["Row"];
 export type Updates<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Update"];
 export type Inserts<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"];
 export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
@@ -18,6 +19,9 @@ export type Profile = Tables<"profiles">;
 export type AccountsCategory = Tables<"accountscategories">;
 export type TransactionTypes = Enums<"transactiontype">;
 export type AccountCategoryTypes = Enums<"accountcategorytype">;
+export type Configurations = Tables<"configurations">;
+export type TransactionsCategoryDateSum = Views<"transactionscategorydatesum">;
+export type TransactionsDaySum = Views<"transactionsdaysum">;
 
 class SupabaseStorage {
   async getItem(key: string) {
