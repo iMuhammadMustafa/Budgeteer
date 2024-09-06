@@ -170,6 +170,56 @@ export type Database = {
           },
         ]
       }
+      configurations: {
+        Row: {
+          createdat: string
+          createdby: string
+          description: string | null
+          id: string
+          isdeleted: boolean
+          tableelement: string
+          tablename: string
+          tenantid: string | null
+          updatedat: string | null
+          updatedby: string | null
+          value: string
+        }
+        Insert: {
+          createdat?: string
+          createdby: string
+          description?: string | null
+          id?: string
+          isdeleted?: boolean
+          tableelement: string
+          tablename: string
+          tenantid?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
+          value: string
+        }
+        Update: {
+          createdat?: string
+          createdby?: string
+          description?: string | null
+          id?: string
+          isdeleted?: boolean
+          tableelement?: string
+          tablename?: string
+          tenantid?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configurations_createdby_fkey"
+            columns: ["createdby"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -276,6 +326,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionscategorydatesum"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_createdby_fkey"
             columns: ["createdby"]
             isOneToOne: false
@@ -354,13 +411,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      transactionscategorydatesum: {
+        Row: {
+          date: string | null
+          id: string | null
+          name: string | null
+          sum: number | null
+        }
+        Relationships: []
+      }
+      transactionsdaysum: {
+        Row: {
+          date: string | null
+          sum: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
       accountcategorytype: "Asset" | "Liability"
+      categoryconfigurations: "Other" | "Accounts"
       transactiontype:
         | "Expense"
         | "Income"
