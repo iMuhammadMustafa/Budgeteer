@@ -13,6 +13,9 @@ import { TableNames } from "../consts/TableNames";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
+import SearchableDropdown from "./SearchableDropdown";
+import VDropdown from "./VercelDropDown";
+import { EventProvider } from "react-native-outside-press";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -102,6 +105,18 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             handleTextChange("amount", text);
           }}
         />
+
+        <VDropdown
+          data={[
+            { label: "Income", value: "Income" },
+            { label: "Expense", value: "Expense" },
+            { label: "Transfer", value: "Transfer" },
+          ]}
+          onSelect={selectedItem => {
+            console.log(selectedItem);
+          }}
+        />
+
         <DropdownField
           label="Type"
           onSelect={({ name }: { name: TransactionTypes }) => handleTextChange("type", name)}

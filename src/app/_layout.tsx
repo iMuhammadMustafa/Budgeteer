@@ -3,10 +3,11 @@ import AuthProvider from "../providers/AuthProvider";
 import "./global.css";
 import ThemeProvider from "../providers/ThemeProvider";
 import QueryProvider from "../providers/QueryProvider";
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { SafeAreaView, Text } from "react-native";
 import { DevToolsBubble } from "react-native-react-query-devtools";
 import NotificationsProvider from "../providers/NotificationsProvider";
+import { EventProvider } from "react-native-outside-press";
 
 SplashScreen.preventAutoHideAsync();
 
