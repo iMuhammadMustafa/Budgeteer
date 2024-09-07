@@ -1,38 +1,19 @@
 import { router } from "expo-router";
-import { SafeAreaView, Text, View, Image, TouchableOpacity, KeyboardAvoidingView, ScrollView } from "react-native";
+import { SafeAreaView, Text, View, Image, ScrollView } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
-
-import { DevToolsBubble } from "react-native-react-query-devtools";
 
 import cards from "@/assets/images/cards.png";
 import { useTheme } from "../providers/ThemeProvider";
 
 import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
-import { Box } from "@/components/ui/box";
 import Icon from "../lib/IonIcons";
 import { useNotifications } from "../providers/NotificationsProvider";
 import Notification from "../components/Notification";
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
-  SelectItem,
-} from "@/components/ui/select";
-import { ChevronDownIcon } from "lucide-react-native";
-import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
-import DropDownPicker from "react-native-dropdown-picker";
-import Dropdown from "react-native-input-select";
 import React, { useState } from "react";
-import { AutocompleteDropdown, AutocompleteDropdownContextProvider } from "react-native-autocomplete-dropdown";
-import Calculator from "./calculator";
-import CalculatorModal from "./gptcalc";
+import CalculatorModal from "../components/CalculatorModal";
+import GptCalculator from "../components/GptCalculator";
+import VCalc from "../components/VCalc";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -67,9 +48,10 @@ export default function Index() {
 
           <Notification />
 
-        <CalculatorModal />
+          <VCalc />
 
-          {/* <Calculator /> */}
+          {/* <CalculatorModal />
+          <GptCalculator /> */}
 
           <View className="mt-5 ">
             {/* <DateTimePicker

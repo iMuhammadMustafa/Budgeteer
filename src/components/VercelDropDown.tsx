@@ -1,116 +1,118 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ViewStyle, TextStyle } from "react-native";
-import OutsidePressHandler from "react-native-outside-press";
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, TouchableOpacity, FlatList, LayoutChangeEvent } from "react-native";
 
 interface DropdownProps {
-  data: Array<{ label: string; value: any }>;
+  options?: Array<{ label: string; value: any }>;
   onSelect: (item: { label: string; value: any }) => void;
-  defaultButtonText?: string;
+  label?: string;
   buttonTextAfterSelection?: (selectedItem: { label: string; value: any }) => string;
   rowTextForSelection?: (item: { label: string; value: any }) => string;
-  buttonStyle?: ViewStyle;
-  buttonTextStyle?: TextStyle;
-  rowStyle?: ViewStyle;
-  rowTextStyle?: TextStyle;
+  buttonStyle?: string;
+  buttonTextStyle?: string;
+  rowStyle?: string;
+  rowTextStyle?: string;
+  selectedValue?: string | null;
 }
 
 const VDropdown: React.FC<DropdownProps> = ({
-  data,
+  options,
   onSelect,
-  defaultButtonText = "Select an option",
+  label = "Select an option",
   buttonTextAfterSelection = selectedItem => selectedItem.label,
   rowTextForSelection = item => item.label,
-  buttonStyle = {},
-  buttonTextStyle = {},
-  rowStyle = {},
-  rowTextStyle = {},
+  buttonStyle = "",
+  buttonTextStyle = "",
+  rowStyle = "",
+  rowTextStyle = "",
+  selectedValue = null,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ label: string; value: any } | null>(null);
+  const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0 });
+  const containerRef = useRef<View>(null);
+  const dropdownRef = useRef<View>(null);
 
-  const toggleDropdown = () => {
+  useEffect(() => {
+    if (options) {
+      const item = options.find(i => i.value === selectedValue) ?? null;
+      setSelectedItem(item);
+    }
+  }, [selectedValue, options]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: any) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("click", handleOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, [isOpen]);
+
+  const toggleDropdown = (): void => {
     setIsOpen(!isOpen);
   };
 
-  const onItemPress = (item: { label: string; value: any }) => {
+  const onItemPress = (item: { label: string; value: any }): void => {
     setSelectedItem(item);
-    onSelect(item);
+    onSelect(item.value);
     setIsOpen(false);
   };
 
-  const dropdownRef = React.useRef<View>(null);
-  // React.useEffect(() => {
-  //   document.addEventListener("mousedown", handlePressOutside);
-  //   return () => document.removeEventListener("mousedown", handlePressOutside);
-  // }, []);
-
-  // const handlePressOutside = (e: GestureResponderEvent) => {
-  //   console.log(e);
-  //   if (dropdownRef.current && !dropdownRef.current.isFocused()) {
-  //     setIsOpen(false);
-  //   }
-  // };
-
-  const renderItem = ({ item }: { item: { label: string; value: any } }) => (
-    <TouchableOpacity style={[styles.rowStyle, rowStyle]} onPress={() => onItemPress(item)}>
-      <Text style={[styles.rowTextStyle, rowTextStyle]}>{rowTextForSelection(item)}</Text>
-    </TouchableOpacity>
-  );
+  const onButtonLayout = (event: LayoutChangeEvent) => {
+    const { height, width, y } = event.nativeEvent.layout;
+    setButtonLayout({ height, width, top: y });
+  };
 
   return (
-    // <OutsidePressHandler
-    //   onOutsidePress={() => {
-    //     console.log("Pressed outside the box!");
-    //   }}
-    // >
-    <View style={styles.container} ref={dropdownRef}>
-      <TouchableOpacity style={[styles.button, buttonStyle]} onPress={toggleDropdown}>
-        <Text style={[styles.buttonText, buttonTextStyle]}>
-          {selectedItem ? buttonTextAfterSelection(selectedItem) : defaultButtonText}
+    <>
+      <Text className="text-foreground">{label}</Text>
+      <TouchableOpacity
+        className={`p-3 my-1 border border-gray-300 bg-white rounded-md -z-10 ${buttonStyle}`}
+        onPress={toggleDropdown}
+        onLayout={onButtonLayout}
+        ref={containerRef}
+      >
+        <Text className={`text-base ${buttonTextStyle} -z-10`}>
+          {selectedItem ? buttonTextAfterSelection(selectedItem) : label}
         </Text>
       </TouchableOpacity>
-      {isOpen && (
-        <View style={styles.dropdown}>
-          <FlatList data={data} renderItem={renderItem} keyExtractor={(item, index) => index.toString()} />
+
+      {isOpen && options && (
+        <View
+          ref={dropdownRef}
+          style={{ width: buttonLayout.width, top: buttonLayout.top + buttonLayout.height }}
+          className="bg-white shadow-md rounded-md z-10 absolute"
+        >
+          <FlatList
+            data={options}
+            renderItem={({ item }: { item: { label: string; value: any } }) => (
+              <TouchableOpacity
+                className={`p-2 border-b border-gray-300 ${rowStyle} relative z-10`}
+                onPress={() => onItemPress(item)}
+              >
+                <Text className={`text-base ${rowTextStyle} relative z-10`}>{rowTextForSelection(item)}</Text>
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerClassName="relative z-10"
+            className="max-h-40 border border-gray-300 rounded-md relative z-10"
+          />
         </View>
       )}
-    </View>
-    // </OutsidePressHandler>
+    </>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-    zIndex: 1,
-  },
-  button: {
-    padding: 10,
-    backgroundColor: "#efefef",
-    borderRadius: 5,
-  },
-  buttonText: {
-    fontSize: 16,
-  },
-  dropdown: {
-    position: "absolute",
-    top: 50,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    maxHeight: 150,
-  },
-  rowStyle: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-  },
-  rowTextStyle: {
-    fontSize: 16,
-  },
-});
 
 export default VDropdown;

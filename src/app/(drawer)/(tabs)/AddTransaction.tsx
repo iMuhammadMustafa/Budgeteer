@@ -4,6 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import dayjs from "dayjs";
+import TransactionFormNew from "@/src/components/TransactionFormNew";
 
 const initialState: TransactionFormType = {
   description: "",
@@ -35,5 +36,10 @@ export default function AddTransaction() {
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
-  return <TransactionForm transaction={initialValues} />;
+  return (
+    <>
+      <TransactionForm transaction={initialValues} />
+      {/* <TransactionFormNew transaction={initialValues} /> */}
+    </>
+  );
 }

@@ -11,7 +11,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import TextInputField from "./TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
 import Dropdown from "./Dropdown";
+import VCalc from "./VCalc";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -88,9 +89,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             padding: 12,
             borderRadius: 4,
             borderWidth: 1,
-            borderColor: '#ddd',
-            backgroundColor: '#fff',
-            alignItems: 'center',
+            borderColor: "#ddd",
+            backgroundColor: "#fff",
+            alignItems: "center",
           }}
         >
           <Text>{dayjs(formData.date).format("DD-MM-YYYY hh:mm:ss")}</Text>
@@ -98,7 +99,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
         {showDate && (
           <Box style={{ marginBottom: 16 }}>
-            <Box style={{ maxWidth: '100%' }}>
+            <Box style={{ maxWidth: "100%" }}>
               <DateTimePicker
                 mode="single"
                 date={dayjs(formData.date)}
@@ -112,12 +113,19 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           </Box>
         )}
 
-        <TextInputField
-          label="Amount"
-          value={formData.amount?.toString()}
-          keyboardType="numeric"
-          onChange={text => handleTextChange("amount", text)}
-        />
+        <Box className="flex-row justify-center items-center">
+          <TextInputField
+            label="Amount"
+            value={formData.amount?.toString()}
+            keyboardType="numeric"
+            onChange={text => handleTextChange("amount", text)}
+            className="flex-1"
+          />
+          <VCalc
+            onSubmit={result => handleTextChange("amount", result.toString())}
+            currentValue={formData.amount?.toString()}
+          />
+        </Box>
 
         <Dropdown
           label="Type"
@@ -159,18 +167,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           onChange={text => handleTextChange("tags", text.split(","))}
         />
 
-        <TextInputField
-          label="Notes"
-          value={formData.notes}
-          onChange={text => handleTextChange("notes", text)}
-        />
+        <TextInputField label="Notes" value={formData.notes} onChange={text => handleTextChange("notes", text)} />
 
         <Button
-          style={{ padding: 15, justifyContent: 'center', alignItems: 'center' }}
+          style={{ padding: 15, justifyContent: "center", alignItems: "center" }}
           disabled={isLoading}
           onPress={handleSubmit}
         >
-          {isLoading ? <ButtonSpinner /> : <ButtonText style={{ fontWeight: '500', fontSize: 16 }}>Save</ButtonText>}
+          {isLoading ? <ButtonSpinner /> : <ButtonText style={{ fontWeight: "500", fontSize: 16 }}>Save</ButtonText>}
         </Button>
       </ScrollView>
     </SafeAreaView>

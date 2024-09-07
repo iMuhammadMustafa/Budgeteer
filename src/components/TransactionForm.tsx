@@ -3,7 +3,7 @@ import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
 import { useUpsertTransaction } from "../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../providers/NotificationsProvider";
-import { ActivityIndicator, Keyboard, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
+import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
 import TextInputField from "./TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../repositories/categories.service";
@@ -16,6 +16,8 @@ import { Box } from "@/components/ui/box";
 import SearchableDropdown from "./SearchableDropdown";
 import VDropdown from "./VercelDropDown";
 import { EventProvider } from "react-native-outside-press";
+import VCalc from "./VCalc";
+import Dropdown from "./Dropdown";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -61,8 +63,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   if (isCategoriesLoading || isAccountLoading || isLoading) return <ActivityIndicator />;
 
   return (
-    <SafeAreaView className="p-5 flex-1">
-      <ScrollView>
+    <SafeAreaView className="flex-1">
+      <ScrollView className="p-5 px-6">
         <TextInputField
           label="Description"
           value={formData.description}
@@ -71,14 +73,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           }}
         />
 
+        <Text className="text-foreground">Date</Text>
         <Pressable
           onPress={() => {
             Keyboard.dismiss;
             setShowDate(prev => !prev);
           }}
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: "#ddd",
+            backgroundColor: "#fff",
+            alignItems: "center",
+          }}
         >
           <Text>{dayjs(formData.date).format("DD-MM-YYYY hh:mm:ss")}</Text>
-          {/* <TextInputField label="Date" value={dayjs(formData.date).format("DD-MM-YYYY HH:mm:ss")} /> */}
         </Pressable>
 
         {showDate && (
@@ -97,59 +108,97 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           </Box>
         )}
 
-        <TextInputField
-          label="Amount"
-          value={formData.amount?.toString()}
-          keyboardType="numeric"
-          onChange={text => {
-            handleTextChange("amount", text);
-          }}
-        />
+        <Box className="flex-row justify-center items-center">
+          <TextInputField
+            label="Amount"
+            value={formData.amount?.toString()}
+            keyboardType="numeric"
+            onChange={text => handleTextChange("amount", text)}
+            className="flex-1"
+          />
+          <VCalc
+            onSubmit={result => handleTextChange("amount", result.toString())}
+            currentValue={formData.amount?.toString()}
+          />
+        </Box>
 
-        <VDropdown
-          data={[
-            { label: "Income", value: "Income" },
-            { label: "Expense", value: "Expense" },
-            { label: "Transfer", value: "Transfer" },
-          ]}
-          onSelect={selectedItem => {
-            console.log(selectedItem);
-          }}
-        />
-
-        <DropdownField
-          label="Type"
-          onSelect={({ name }: { name: TransactionTypes }) => handleTextChange("type", name)}
-          list={[
-            { id: "Income", name: "Income" },
-            { id: "Expense", name: "Expense" },
-            { id: "Transfer", name: "Transfer" },
-          ]}
-        />
-
-        <DropdownField
-          label="Category"
-          list={categories}
-          value={formData.categoryid}
-          options={categories?.map(category => ({ label: category.name, value: category.id }))}
-          onSelect={(value: any) => handleTextChange("categoryid", value.id)}
-        />
-        <DropdownField
-          label="Account"
-          list={accounts}
-          value={formData.accountid}
-          options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-          onSelect={(value: any) => handleTextChange("accountid", value.id)}
-        />
-        {formData.type === "Transfer" && (
-          <DropdownField
-            label="Destinaton Account"
-            list={accounts}
-            value={formData.destAccountId}
-            options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-            onSelect={(value: any) => handleTextChange("destAccountId", value.id)}
+        {Platform.OS === "web" ? (
+          <VDropdown
+            label="Type"
+            options={[
+              { label: "Income", value: "Income" },
+              { label: "Expense", value: "Expense" },
+              { label: "Transfer", value: "Transfer" },
+              { label: "Adjustment", value: "Adjustment" },
+              { label: "Initial", value: "Initial" },
+              { label: "Refund", value: "Refund" },
+            ]}
+            selectedValue={formData.type}
+            onSelect={value => {
+              handleTextChange("type", value);
+            }}
+          />
+        ) : (
+          <Dropdown
+            label="Type"
+            options={[
+              { label: "Income", value: "Income" },
+              { label: "Expense", value: "Expense" },
+              { label: "Transfer", value: "Transfer" },
+            ]}
+            selectedValue={formData.type}
+            onSelect={(value: TransactionTypes) => handleTextChange("type", value)}
           />
         )}
+
+        {Platform.OS === "web" ? (
+          <VDropdown
+            label="Category"
+            selectedValue={formData.categoryid}
+            options={categories?.map(category => ({ label: category.name, value: category.id })) ?? []}
+            onSelect={(value: any) => handleTextChange("categoryid", value)}
+          />
+        ) : (
+          <Dropdown
+            label="Category"
+            selectedValue={formData.categoryid}
+            options={categories?.map(category => ({ label: category.name, value: category.id }))}
+            onSelect={(value: any) => handleTextChange("categoryid", value)}
+          />
+        )}
+
+        {Platform.OS === "web" ? (
+          <VDropdown
+            label="Account"
+            selectedValue={formData.accountid}
+            options={accounts?.map(account => ({ label: account.name, value: account.id }))}
+            onSelect={(value: any) => handleTextChange("accountid", value)}
+          />
+        ) : (
+          <Dropdown
+            label="Account"
+            selectedValue={formData.accountid}
+            options={accounts?.map(account => ({ label: account.name, value: account.id }))}
+            onSelect={(value: any) => handleTextChange("accountid", value)}
+          />
+        )}
+
+        {formData.type === "Transfer" &&
+          (Platform.OS === "web" ? (
+            <VDropdown
+              label="Destinaton Account"
+              selectedValue={formData.destAccountId}
+              options={accounts?.map(account => ({ label: account.name, value: account.id }))}
+              onSelect={(value: any) => handleTextChange("destAccountId", value)}
+            />
+          ) : (
+            <Dropdown
+              label="Destinaton Account"
+              selectedValue={formData.destAccountId}
+              options={accounts?.map(account => ({ label: account.name, value: account.id }))}
+              onSelect={(value: any) => handleTextChange("destAccountId", value)}
+            />
+          ))}
 
         <TextInputField
           label="Tags"

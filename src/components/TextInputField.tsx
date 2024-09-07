@@ -6,6 +6,7 @@ type TextInputFieldProps = {
   value: string | null | undefined;
   onChange: (text: any) => void;
   keyboardType?: "default" | "numeric" | "email-address";
+  className?: string;
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
@@ -17,12 +18,18 @@ const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps
   );
 };
 
-export function TextInputFieldMemo({ label, value, onChange, keyboardType = "default" }: TextInputFieldProps) {
+export function TextInputFieldMemo({
+  label,
+  value,
+  onChange,
+  keyboardType = "default",
+  className,
+}: TextInputFieldProps) {
   return (
-    <View className="mb-4">
+    <View className={`my-1 ${className ?? ""} `}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
-        className="text-foreground dark:bg-muted border rounded-md p-2"
+        className="text-foreground border rounded-md p-3 border-gray-300 bg-white"
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}

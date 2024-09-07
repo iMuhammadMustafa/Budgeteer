@@ -23,7 +23,7 @@ export default function Transactions() {
   if (error) return <Text>Error: {error.message}</Text>;
 
   const groupedData = transactions
-    .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)))
+    .sort((b, a) => dayjs(a.date).diff(dayjs(b.date)))
     .reduce((acc, curr) => {
       const date = dayjs(curr.date).format("ddd, DD MMM YYYY");
       if (!acc[date]) {
