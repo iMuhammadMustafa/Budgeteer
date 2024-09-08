@@ -12,7 +12,8 @@ import {
   getTransactionByTransferId,
   getTransactionsByDescription,
   getLastMonthCategoriesTransactionsSum,
-  getLastWeekTransactionsSum,
+  getLastWeekExpenses,
+  getLastQuraterTransactionsSum,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/TransactionForm";
@@ -39,8 +40,14 @@ export const useSearchTransactionsByDescription = (text: string) => {
 
 export const useGetLastWeekTransactionsSum = () => {
   return useQuery<TransactionsDaySum[]>({
-    queryKey: [ViewNames.TransactionsDaySum],
-    queryFn: getLastWeekTransactionsSum,
+    queryKey: [ViewNames.TransactionsDaySum + "lastweek"],
+    queryFn: getLastWeekExpenses,
+  });
+};
+export const useGetLastQuraterTransactionsSum = () => {
+  return useQuery<TransactionsDaySum[]>({
+    queryKey: [ViewNames.TransactionsDaySum + "lastQuarter"],
+    queryFn: getLastQuraterTransactionsSum,
   });
 };
 export const useGetLastMonthCategoriesTransactionsSum = () => {

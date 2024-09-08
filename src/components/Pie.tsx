@@ -1,39 +1,85 @@
-import React from "react";
-import { View, Dimensions } from "react-native";
-import { VictoryPie, VictoryLabel } from "victory-native";
+import React, { useState } from "react";
+import { View, Text, useWindowDimensions } from "react-native";
+import { VictoryPie, VictoryLegend, VictoryContainer, VictoryLabel, VictoryTheme } from "victory-native";
 
-const { width, height } = Dimensions.get("window");
+export default function PieChart({ data }) {
+  const { width } = useWindowDimensions();
+  const [selectedSlice, setSelectedSlice] = useState(null);
+  const chartWidth = Math.min(width, 600);
+  const chartHeight = chartWidth;
 
-export default function Pie({ pieChart }) {
+  const colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"];
+
+  const processedData = data.map((item, index) => ({
+    ...item,
+    y: Number(item.y),
+    color: colors[index % colors.length],
+  }));
+
+  const totalValue = processedData.reduce((sum, item) => sum + item.y, 0);
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <VictoryPie
-        width={width * 0.8}
-        height={height * 0.5}
-        padding={50}
-        animate={{
-          duration: 2000,
-        }}
-        // labelComponent={<VictoryLabel text={() => ""} />}
-        events={[
-          {
-            target: "data",
-            eventHandlers: {
-              onPress: () => {
-                return [
-                  {
-                    target: "data",
-                    mutation: ({ style }) => {
-                      return style.fill === "#c43a31" ? null : { style: { fill: "#c43a31" } };
-                    },
-                  },
-                ];
+    <View style={{ width: chartWidth, alignSelf: "center" }}>
+      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" }}>Categories</Text>
+      <VictoryContainer width={chartWidth} height={chartHeight} theme={VictoryTheme.material}>
+        <VictoryPie
+          standalone={false}
+          width={chartWidth * 0.7}
+          height={chartHeight * 0.7}
+          data={processedData}
+          colorScale={colors}
+          innerRadius={chartWidth * 0.15}
+          // padAngle={2}
+          origin={{ x: chartWidth * 0.5, y: chartHeight * 0.5 }}
+          labelRadius={({ innerRadius }) => innerRadius + (chartWidth * 0.4 - innerRadius) / 2}
+          style={{
+            parent: { overflow: "visible" },
+            labels: { fill: "black", fontSize: 10, fontWeight: "bold" },
+            data: {
+              fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.7),
+              stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
+              strokeWidth: 2,
+            },
+          }}
+          labelPlacement="parallel"
+          labels={({ datum }) => `${datum.x}\n${((datum.y / totalValue) * 100).toFixed(1)}%`}
+          events={[
+            {
+              target: "data",
+              eventHandlers: {
+                onPress: (_, props) => {
+                  setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                },
               },
             },
-          },
-        ]}
-        data={pieChart}
-      />
+          ]}
+        />
+        <VictoryLegend
+          standalone={false}
+          x={chartWidth * 0.8}
+          y={50}
+          gutter={15}
+          orientation="vertical"
+          style={{
+            labels: { fontSize: 10 },
+            data: { size: 8 },
+          }}
+          data={processedData.map(item => ({
+            name: `${item.x} - $${item.y.toFixed(0)}`,
+            symbol: { fill: item.color },
+          }))}
+        />
+        {selectedSlice !== null && (
+          <VictoryLabel
+            textAnchor="middle"
+            verticalAnchor="middle"
+            x={chartWidth * 0.5}
+            y={chartHeight * 0.5}
+            style={{ fontSize: 14, fontWeight: "bold" }}
+            text={`${selectedSlice}: ${processedData.find(item => item.x === selectedSlice).y}`}
+          />
+        )}
+      </VictoryContainer>
     </View>
   );
 }

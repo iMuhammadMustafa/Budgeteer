@@ -87,9 +87,13 @@ export default function Transactions() {
           <Text>{transaction.category?.name}</Text>
         </View>
       </View>
-      <View className="flex items-center">
+      <View className="flex items-end">
         <Text className={`${getTransactionProp(transaction.type).color}`}>
-          {transaction.amount} {transaction.account?.currency}
+          {transaction.amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{" "}
+          {transaction.account?.currency}
         </Text>
         <Text>{transaction.account?.name}</Text>
       </View>
@@ -127,7 +131,15 @@ export default function Transactions() {
                   </View>
                 </View>
                 <Text className={`${groupedData[item].amount > 0 ? "text-success-500" : "text-error-500"}`}>
-                  {groupedData[item].amount > 0 ? `+${groupedData[item].amount}` : `${groupedData[item].amount}`}
+                  {groupedData[item].amount > 0
+                    ? `+${groupedData[item].amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    : `${groupedData[item].amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`}
                 </Text>
               </View>
 
@@ -152,7 +164,7 @@ export default function Transactions() {
 
 const TransactionTypeIcon = ({ transaction }) => {
   const iconProp = getTransactionProp(transaction.type);
-  return <Icon name={iconProp.iconName} size={iconProp.size} className={iconProp.color} />;
+  return <Icon name={transaction.category.icon ?? iconProp.iconName} size={iconProp.size} className={iconProp.color} />;
 };
 
 const getTransactionProp = (type: string | null) => {

@@ -2,6 +2,7 @@ import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import dayjs from "dayjs";
 
 export const getAllTransactions = async () => {
@@ -53,13 +54,27 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
   return data.map(transaction => ({ id: transaction.id, label: transaction.description, item: transaction })) ?? [];
 };
 
-export const getLastWeekTransactionsSum = async () => {
+export const getLastWeekExpenses = async () => {
   const { data, error } = await supabase
     .from(ViewNames.TransactionsDaySum)
     .select("*")
-    .gte("date", dayjs().subtract(7, "day"))
-    .lte("date", dayjs())
+    .gte("date", dayjs().subtract(7, "day").toISOString())
+    .lte("date", dayjs().toISOString())
     .order("date");
+  if (error) throw new Error(error.message);
+  return data;
+};
+export const getLastQuraterTransactionsSum = async () => {
+  const start = dayjs().subtract(2, "month").startOf("month");
+  const end = dayjs().endOf("month");
+
+  const { data, error } = await supabase
+    .from(ViewNames.TransactionsDaySum)
+    .select("*")
+    .gte("date", start.toISOString())
+    .lte("date", end.toISOString())
+    .order("date");
+
   if (error) throw new Error(error.message);
   return data;
 };
