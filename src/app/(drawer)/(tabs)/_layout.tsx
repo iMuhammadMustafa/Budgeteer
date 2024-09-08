@@ -21,6 +21,7 @@ export default function DashboardLayout() {
         options={{
           title: "New Transaction",
           tabBarIcon: ({ color }) => <Icon name="ListPlus" color={color} size={24} />,
+          unmountOnBlur: true,
         }}
       />
       <Tabs.Screen

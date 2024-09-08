@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
-import { useUpsertTransaction } from "../repositories/transactions.service";
+import { useSearchTransactionsByDescription, useUpsertTransaction } from "../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../providers/NotificationsProvider";
 import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
@@ -8,16 +8,15 @@ import TextInputField from "./TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../repositories/categories.service";
 import { useGetAccounts } from "../repositories/account.service";
-import DropdownField from "./DropdownField";
 import { TableNames } from "../consts/TableNames";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
-import SearchableDropdown from "./SearchableDropdown";
 import VDropdown from "./VercelDropDown";
-import { EventProvider } from "react-native-outside-press";
 import VCalc from "./VCalc";
 import Dropdown from "./Dropdown";
+import SearchableDropdown, { SearchableDropdownItem } from "./SearchableDropdown";
+import { getTransactionsByDescription } from "../repositories/transactions.api";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -30,6 +29,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const [isLoading, setIsLoading] = useState(false);
   const [showDate, setShowDate] = useState(false);
   const router = useRouter();
+  // const [searchTerm, setSearchTerm] = useState("");
+  // const { data: searchResults } = useSearchTransactionsByDescription(searchTerm);
 
   useEffect(() => {
     setFormData(transaction);
@@ -60,17 +61,24 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     );
   };
 
+  const onSelectItem = (item: SearchableDropdownItem) => {
+    setFormData({ ...item.item, id: transaction.id });
+    console.log(item);
+  };
+
+  // useEffect(() => {}, []);
+
   if (isCategoriesLoading || isAccountLoading || isLoading) return <ActivityIndicator />;
 
   return (
     <SafeAreaView className="flex-1">
       <ScrollView className="p-5 px-6">
-        <TextInputField
+        <SearchableDropdown
           label="Description"
-          value={formData.description}
-          onChange={text => {
-            handleTextChange("description", text);
-          }}
+          searchAction={val => getTransactionsByDescription(val)}
+          initalValue={transaction.description}
+          onSelectItem={onSelectItem}
+          onChange={val => handleTextChange("description", val)}
         />
 
         <Text className="text-foreground">Date</Text>
@@ -117,7 +125,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             className="flex-1"
           />
           <VCalc
-            onSubmit={result => handleTextChange("amount", result.toString())}
+            onSubmit={(result: string) => handleTextChange("amount", result.toString())}
             currentValue={formData.amount?.toString()}
           />
         </Box>

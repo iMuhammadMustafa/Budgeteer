@@ -1,6 +1,7 @@
 import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { TableNames } from "@/src/consts/TableNames";
+import { SearchableDropdownItem } from "../components/SearchableDropdown";
 
 export const getAllTransactions = async () => {
   const { data, error } = await supabase
@@ -36,6 +37,19 @@ export const getTransactionByTransferId = async (id: string) => {
     .single();
   if (error) throw new Error(error.message);
   return data;
+};
+
+export const getTransactionsByDescription = async (text: string): Promise<SearchableDropdownItem[]> => {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select()
+    .ilike("description", `%${text}%`)
+    .order("date")
+    .limit(7);
+
+  if (error) throw error;
+
+  return data.map(transaction => ({ id: transaction.id, label: transaction.description, item: transaction })) ?? [];
 };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {

@@ -14,6 +14,9 @@ import React, { useState } from "react";
 import CalculatorModal from "../components/CalculatorModal";
 import GptCalculator from "../components/GptCalculator";
 import VCalc from "../components/VCalc";
+import AutocompleteInput from "../components/VSearch";
+import SearchableDropdown, { SearchableDropdownItem } from "../components/SearchableDropdown";
+import { supabase, Transaction } from "../lib/supabase";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -35,6 +38,31 @@ export default function Index() {
   const [country, setCountry] = useState();
   const [selectedItem, setSelectedItem] = useState(null);
 
+  // const fetchSuggestions = (text: string): string[] => {
+  //   // In a real app, this would be an API call
+  //   // await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+  //   return ["Apple", "Banana", "Cherry", "Date", "Elderberry"]
+  //     .filter(item => item.toLowerCase().includes(text.toLowerCase()))
+  //     .map(item => ({ id: item, value: item }));
+  // };
+
+  const fetchTransactionsByDescription = async (text: string): Promise<SearchableDropdownItem[]> => {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select()
+      .ilike("description", `%${text}%`)
+      .order("date")
+      .limit(7);
+
+    if (error) throw error;
+
+    return data.map(transaction => ({ id: transaction.id, label: transaction.description, item: transaction })) ?? [];
+  };
+
+  const onSelectSearch = (item: any) => {
+    console.log(item);
+  };
+
   return (
     <SafeAreaView className="w-full h-full">
       <ScrollView>
@@ -48,7 +76,14 @@ export default function Index() {
 
           <Notification />
 
-          <VCalc />
+          {/* <SearchableDropdown
+            searchAction={val => fetchTransactionsByDescription(val)}
+            // initalValue={"Apple"}
+            onSelectItem={onSelectSearch}
+            onChange={val => console.log(val)}
+          /> */}
+
+          <AutocompleteInput />
 
           {/* <CalculatorModal />
           <GptCalculator /> */}

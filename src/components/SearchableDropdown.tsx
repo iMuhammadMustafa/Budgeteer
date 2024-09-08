@@ -1,105 +1,127 @@
-import React, { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, FlatList } from 'react-native';
+import { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, LayoutChangeEvent, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const SearchableDropdown = ({ options, selectedValue, onSelect, label }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+export type SearchableDropdownItem = {
+  id: string;
+  label: string | null;
+  item: any;
+};
 
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+type SearchableDropdownType = {
+  label: string;
+  className?: string;
+  initalValue?: string | null;
+  placeholder?: string | null;
+  searchAction: (searchText: string) => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
+  onChange: (item: any) => void;
+  onSelectItem: (item: any) => void;
+};
 
-  const handleSelect = (value) => {
-    onSelect(value);
-    setSearchTerm('');
-    setIsOpen(false);
+export default function SearchableDropdown({
+  label,
+  className,
+  initalValue = "",
+  placeholder = null,
+  searchAction,
+  onChange,
+  onSelectItem,
+}: SearchableDropdownType) {
+  const [inputText, setInputText] = useState<string | null>(initalValue);
+  const [depouncedText, setDepouncedText] = useState<string>("");
+  const [ignoreFetch, setIgnoreFetch] = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchableDropdownItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [textLayout, setTextLayout] = useState<{ top: number; height: number; width: number }>({
+    top: 0,
+    height: 0,
+    width: 0,
+  });
+
+  useEffect(() => {
+    setInputText(initalValue);
+  }, [initalValue]);
+
+  useEffect(() => {
+    if (ignoreFetch) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (inputText && inputText !== initalValue) {
+        setDepouncedText(inputText);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [inputText, ignoreFetch]);
+
+  useEffect(() => {
+    const applySearch = async () => {
+      if (!ignoreFetch && depouncedText && depouncedText.length > 0) {
+        setIsLoading(true);
+        const data = await searchAction(depouncedText);
+        setSuggestions(data);
+        setIsLoading(false);
+      } else {
+        setSuggestions([]);
+      }
+    };
+    applySearch();
+  }, [depouncedText]);
+
+  const handleChange = (val: string) => {
+    setIgnoreFetch(false);
+    onChange(val);
+    setInputText(val);
+  };
+  const handleSelectSuggestion = (item: SearchableDropdownItem) => {
+    setIgnoreFetch(true);
+    setInputText(item.label);
+    onSelectItem(item);
+    setSuggestions([]);
+  };
+
+  const onLayoutChange = (event: LayoutChangeEvent) => {
+    const { height, width, y } = event.nativeEvent.layout;
+    setTextLayout({ height, width, top: y });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setIsOpen(!isOpen)}
-      >
-        <Text style={styles.selectedValue}>
-          {selectedValue ? options.find(option => option.value === selectedValue)?.label : 'Select an option'}
-        </Text>
-      </TouchableOpacity>
-      {isOpen && (
-        <View style={styles.dropdownContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-          <FlatList
-            data={filteredOptions}
-            keyExtractor={(item) => item.value}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.item}
-                onPress={() => handleSelect(item.value)}
-              >
-                <Text>{item.label}</Text>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={<Text style={styles.emptyText}>No options found</Text>}
-          />
-        </View>
+    <>
+      <View className={`my-1 ${className ?? ""} `}>
+        <Text className="text-foreground">{label}</Text>
+        <TextInput
+          className="p-2 border border-gray-400 rounded-md  "
+          value={inputText ?? ""}
+          placeholder={placeholder ?? "Type to search.."}
+          onChangeText={handleChange}
+          onLayout={onLayoutChange}
+        />
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator
+          className=" absolute z-10 bg-white"
+          style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
+        />
+      ) : (
+        suggestions &&
+        suggestions.length > 0 && (
+          <View
+            className={`absolute z-10 bg-white p-2 m-2 `}
+            style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
+          >
+            <FlatList
+              data={suggestions}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity className="border-b border-gray-100 p-2" onPress={() => handleSelectSuggestion(item)}>
+                  <Text>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )
       )}
-    </View>
+    </>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-    position: 'relative',
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  button: {
-    padding: 12,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  selectedValue: {
-    fontSize: 16,
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    maxHeight: 200,
-    zIndex: 1000,
-  },
-  searchInput: {
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  item: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  emptyText: {
-    padding: 12,
-    textAlign: 'center',
-    color: '#aaa',
-  },
-});
-
-export default SearchableDropdown;
+}

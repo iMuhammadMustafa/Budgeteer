@@ -10,16 +10,29 @@ import {
   restoreTransaction,
   getAllTransactions,
   getTransactionByTransferId,
+  getTransactionsByDescription,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/TransactionForm";
 import generateUuid from "../lib/uuidHelper";
+import { SearchableDropdownItem } from "../components/SearchableDropdown";
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
     queryKey: [TableNames.Transactions],
     queryFn: getAllTransactions,
   });
+};
+
+export const useSearchTransactionsByDescription = (text: string) => {
+  const { data, error } = useQuery<SearchableDropdownItem[]>({
+    queryKey: [TableNames.Transactions + text],
+    queryFn: async () => getTransactionsByDescription(text),
+    enabled: !!text,
+  });
+
+  if (error) throw error;
+  return data ?? [];
 };
 
 export const useGetTransactionById = (id?: string) => {
@@ -47,7 +60,7 @@ export const useUpsertTransaction = () => {
       originalData?: TransactionFormType;
     }) => {
       const currentTimestamp = new Date().toISOString();
-      const userId = session.user.id;
+      const userId = session!.user.id;
 
       if (!fullFormTransaction.id) {
         return await handleNewTransaction(fullFormTransaction, currentTimestamp, userId);
