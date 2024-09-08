@@ -1,7 +1,8 @@
 import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
-import { TableNames } from "@/src/consts/TableNames";
+import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
+import dayjs from "dayjs";
 
 export const getAllTransactions = async () => {
   const { data, error } = await supabase
@@ -50,6 +51,31 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
   if (error) throw error;
 
   return data.map(transaction => ({ id: transaction.id, label: transaction.description, item: transaction })) ?? [];
+};
+
+export const getLastWeekTransactionsSum = async () => {
+  const { data, error } = await supabase
+    .from(ViewNames.TransactionsDaySum)
+    .select("*")
+    .gte("date", dayjs().subtract(7, "day"))
+    .lte("date", dayjs())
+    .order("date");
+  if (error) throw new Error(error.message);
+  return data;
+};
+export const getLastMonthCategoriesTransactionsSum = async () => {
+  const startOfMonth = dayjs().startOf("month").toISOString();
+  const endOfMonth = dayjs().endOf("month").toISOString();
+
+  const { data, error } = await supabase
+    .from(ViewNames.TransactionsCategoryDateSum)
+    .select("*")
+    .gte("date", startOfMonth)
+    .lt("date", endOfMonth)
+    .order("date");
+
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {

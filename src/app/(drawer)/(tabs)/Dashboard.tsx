@@ -1,5 +1,9 @@
-import { useGetTransactions } from "@/src/repositories/transactions.service";
-import { View, Text, Dimensions, ActivityIndicator } from "react-native";
+import {
+  useGetLastMonthCategoriesTransactionsSum,
+  useGetLastWeekTransactionsSum,
+  useGetTransactions,
+} from "@/src/repositories/transactions.service";
+import { View, Text, Dimensions, ActivityIndicator, ScrollView, SafeAreaView } from "react-native";
 import {
   LineChart,
   BarChart,
@@ -11,29 +15,18 @@ import {
 import dayjs from "dayjs";
 
 export default function Dashboard() {
-  const { data: transactions, error, isLoading } = useGetTransactions();
+  const { data: lastWeekTransactions, isLoading: isLastWeekTransactionsLoading } = useGetLastWeekTransactionsSum();
+  const { data: lastMonthTransactionsCategories, isLoading: isLastMonthTransactionsCategoriesLoading } =
+    useGetLastMonthCategoriesTransactionsSum();
 
-  if (isLoading) {
+  const lastWeekExpense = lastWeekTransactions
+    ?.filter(item => item.type === "expense")
+    .map(item => ({ ...item, sum: Math.abs(item.sum) }));
+  const lastWeekIncome = lastWeekTransactions?.filter(item => item.type === "income");
+
+  if (isLastWeekTransactionsLoading || isLastMonthTransactionsCategoriesLoading) {
     return <ActivityIndicator />;
   }
-
-  const groupedData = transactions
-    .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)))
-    .reduce((acc, curr) => {
-      const date = dayjs(curr.date).format("DD MMM YYYY");
-      if (!acc[date]) {
-        acc[date] = {
-          amount: 0,
-          transactions: [],
-        };
-      }
-      acc[date].amount += curr.amount;
-      return acc;
-    }, {});
-
-  const points = Object.keys(groupedData).map(date => {
-    return { day: date, amount: groupedData[date].amount };
-  });
 
   const chartConfigs = [
     {
@@ -108,50 +101,115 @@ export default function Dashboard() {
   ];
   // console.log(points);
 
+  const getRandomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  };
+
   return (
-    <View>
-      <Text>Bezier Line Chart</Text>
-      <View>
-        {/* <CartesianChart data={points} xKey="Days" yKeys={["Spent"]}>
-          {({ points, chartBounds }) => (
-            //👇 pass a PointsArray to the Bar component, as well as options.
-
-            // console.log(points, chartBounds)
-            <Bar
-              points={points.amount}
-              chartBounds={chartBounds}
-              color="red"
-              roundedCorners={{ topLeft: 10, topRight: 10 }}
-            />
-          )}
-        </CartesianChart> */}
-      </View>
-
-      <View>
-        <BarChart
-          data={{ labels: points.map(i => i.day), datasets: [{ data: points.map(i => i.amount) }] }}
-          height={Dimensions.get("window").height / 2}
-          yAxisLabel="$"
-          verticalLabelRotation={45}
-          width={Dimensions.get("window").width} // from react-native
-          chartConfig={{
-            backgroundColor: "#ffffff",
-            backgroundGradientFrom: "#ffffff",
-            backgroundGradientTo: "#ffffff",
-            decimalPlaces: 0, // optional, defaults to 2dp
-            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#ffa726",
-            },
-          }}
-        />
-      </View>
-    </View>
+    <SafeAreaView className="w-full h-full m-auto">
+      <ScrollView>
+        <View>
+          <Text>Last Week Insights</Text>
+          <View className="w-full max-w-full m-5 p-5">
+            {lastWeekExpense && (
+              <BarChart
+                data={{
+                  labels: lastWeekExpense.map(i => dayjs(i.date).format("DD/MMM/YYYY")),
+                  datasets: [{ data: lastWeekExpense.map(i => i.sum) }],
+                }}
+                height={Dimensions.get("window").height / 2}
+                yAxisLabel="$"
+                verticalLabelRotation={45}
+                width={Dimensions.get("window").width} // from react-native
+                fromZero={true}
+                chartConfig={{
+                  backgroundColor: "#ffffff",
+                  backgroundGradientFrom: "#ffffff",
+                  backgroundGradientTo: "#ffffff",
+                  decimalPlaces: 0, // optional, defaults to 2dp
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  style: {
+                    borderRadius: 16,
+                  },
+                }}
+              />
+            )}
+          </View>
+          <View className="w-full max-w-full m-5 p-5">
+            {lastWeekIncome && (
+              <BarChart
+                data={{
+                  labels: lastWeekIncome.map(i => dayjs(i.date).format("DD/MMM/YYYY")),
+                  datasets: [{ data: lastWeekIncome.map(i => i.sum) }],
+                }}
+                height={Dimensions.get("window").height / 2}
+                yAxisLabel="$"
+                verticalLabelRotation={45}
+                width={Dimensions.get("window").width} // from react-native
+                fromZero={true}
+                chartConfig={{
+                  backgroundColor: "#ffffff",
+                  backgroundGradientFrom: "#ffffff",
+                  backgroundGradientTo: "#ffffff",
+                  decimalPlaces: 0, // optional, defaults to 2dp
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  style: {
+                    borderRadius: 16,
+                  },
+                  propsForDots: {
+                    r: "6",
+                    strokeWidth: "2",
+                    stroke: "#ffa726",
+                  },
+                }}
+              />
+            )}
+          </View>
+          <View className="w-full max-w-full m-5 p-5">
+            {lastMonthTransactionsCategories && (
+              <PieChart
+                accessor={"sum"}
+                backgroundColor={"transparent"}
+                center={[10, 50]}
+                absolute
+                data={lastMonthTransactionsCategories
+                  .filter(x => x.sum && x.sum < 0)
+                  .map(item => ({
+                    name: item.name,
+                    sum: Math.abs(item.sum!),
+                    color: getRandomColor(),
+                  }))}
+                height={Dimensions.get("window").height / 2}
+                yAxisLabel="$"
+                width={Dimensions.get("window").width} // from react-native
+                fromZero={true}
+                chartConfig={{
+                  backgroundColor: "#fff",
+                  backgroundGradientFrom: "#fff",
+                  backgroundGradientTo: "#fff",
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  style: {
+                    borderRadius: 16,
+                  },
+                  propsForDots: {
+                    r: "6",
+                    strokeWidth: "2",
+                    stroke: "#fff",
+                  },
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

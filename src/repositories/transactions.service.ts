@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inserts, Transaction } from "@/src/lib/supabase";
+import { Inserts, Transaction, TransactionsCategoryDateSum, TransactionsDaySum } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { TableNames } from "@/src/consts/TableNames";
+import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import {
   getTransactionById,
   updateTransaction,
@@ -11,6 +11,8 @@ import {
   getAllTransactions,
   getTransactionByTransferId,
   getTransactionsByDescription,
+  getLastMonthCategoriesTransactionsSum,
+  getLastWeekTransactionsSum,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/TransactionForm";
@@ -33,6 +35,19 @@ export const useSearchTransactionsByDescription = (text: string) => {
 
   if (error) throw error;
   return data ?? [];
+};
+
+export const useGetLastWeekTransactionsSum = () => {
+  return useQuery<TransactionsDaySum[]>({
+    queryKey: [ViewNames.TransactionsDaySum],
+    queryFn: getLastWeekTransactionsSum,
+  });
+};
+export const useGetLastMonthCategoriesTransactionsSum = () => {
+  return useQuery<TransactionsCategoryDateSum[]>({
+    queryKey: [ViewNames.TransactionsCategoryDateSum],
+    queryFn: getLastMonthCategoriesTransactionsSum,
+  });
 };
 
 export const useGetTransactionById = (id?: string) => {

@@ -6,3 +6,8 @@ export enum TableNames {
   Profiles = "profiles",
   AccountCategories = "accountscategories",
 }
+
+export enum ViewNames {
+  TransactionsCategoryDateSum = "transactionscategorydatesum",
+  TransactionsDaySum = "transactionsdaysum",
+}
