@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { SafeAreaView, Text, View, Image, ScrollView } from "react-native";
+import { SafeAreaView, Text, View, Image, ScrollView, LogBox } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 import cards from "@/assets/images/cards.png";
@@ -17,6 +17,7 @@ import VCalc from "../components/VCalc";
 import AutocompleteInput from "../components/VSearch";
 import SearchableDropdown, { SearchableDropdownItem } from "../components/SearchableDropdown";
 import { supabase, Transaction } from "../lib/supabase";
+import { VictoryBar, VictoryChart, VictoryPie, VictoryTheme } from "victory-native";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -62,6 +63,24 @@ export default function Index() {
   const onSelectSearch = (item: any) => {
     console.log(item);
   };
+  const testData = [
+    { name: "Category 1", sum: 50, color: "#ff0000" },
+    { name: "Category 2", sum: 30, color: "#00ff00" },
+    { name: "Category 3", sum: 20, color: "#0000ff" },
+  ];
+
+  const thisdata = [
+    { x: 1, y: 13, label: "one" },
+    { x: 2, y: 16, label: "two" },
+    { x: 3, y: 14, label: "three" },
+    { x: 4, y: 19, label: "four" },
+  ];
+
+  const handleClick = index => {
+    setClickedIndex(clickedIndex === index ? null : index);
+  };
+
+  LogBox.ignoreLogs(["Require cycle: node_modules/victory"]);
 
   return (
     <SafeAreaView className="w-full h-full">
@@ -76,6 +95,11 @@ export default function Index() {
 
           <Notification />
 
+          <View className="max-w-full ">
+            {/* <VictoryChart width={350} theme={VictoryTheme.material}>
+              <VictoryBar data={thisdata} x="quarter" y="earnings" />
+            </VictoryChart> */}
+          </View>
           {/* <SearchableDropdown
             searchAction={val => fetchTransactionsByDescription(val)}
             // initalValue={"Apple"}

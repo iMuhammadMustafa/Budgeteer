@@ -3,7 +3,7 @@ import {
   useGetLastWeekTransactionsSum,
   useGetTransactions,
 } from "@/src/repositories/transactions.service";
-import { View, Text, Dimensions, ActivityIndicator, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, Dimensions, ActivityIndicator, ScrollView, SafeAreaView, Alert } from "react-native";
 import {
   LineChart,
   BarChart,
@@ -12,7 +12,11 @@ import {
   ContributionGraph,
   StackedBarChart,
 } from "react-native-chart-kit";
+import MyPie from "@/src/components/PieChart";
 import dayjs from "dayjs";
+import { VictoryBar, VictoryChart, VictoryContainer, VictoryLabel, VictoryPie, VictoryTheme } from "victory-native";
+import Pie from "@/src/components/Pie";
+import Bar from "@/src/components/Bar";
 
 export default function Dashboard() {
   const { data: lastWeekTransactions, isLoading: isLastWeekTransactionsLoading } = useGetLastWeekTransactionsSum();
@@ -110,11 +114,59 @@ export default function Dashboard() {
     return color;
   };
 
+  const handleSlicePress = slice => {
+    Alert.alert("Pie Slice Clicked", `You clicked on ${slice.name}`);
+  };
+
+  const testData = [
+    { name: "Category 1", sum: 50, color: "#ff0000" },
+    { name: "Category 2", sum: 30, color: "#00ff00" },
+    { name: "Category 3", sum: 20, color: "#0000ff" },
+  ];
+
+  function randomNumber() {
+    return Math.floor(Math.random() * 26) + 125;
+  }
+  function generateRandomColor(): string {
+    // Generating a random number between 0 and 0xFFFFFF
+    const randomColor = Math.floor(Math.random() * 0xffffff);
+    // Converting the number to a hexadecimal string and padding with zeros
+    return `#${randomColor.toString(16).padStart(6, "0")}`;
+  }
+  const DATA = (numberPoints = 5) =>
+    Array.from({ length: numberPoints }, (_, index) => ({
+      value: randomNumber(),
+      color: generateRandomColor(),
+      label: `Label ${index + 1}`,
+    }));
+
+  const data = [
+    { quarter: 1, earnings: 13000 },
+    { quarter: 2, earnings: 16500 },
+    { quarter: 3, earnings: 14250 },
+    { quarter: 4, earnings: 19000 },
+  ];
+
+  const pieChart = lastMonthTransactionsCategories!
+    .filter(x => x.sum && x.sum < 0)
+    .map(item => ({
+      x: item.name ?? "null",
+      y: Math.abs(item.sum!),
+    }));
+  const { width, height } = Dimensions.get("window");
+
   return (
     <SafeAreaView className="w-full h-full m-auto">
       <ScrollView>
         <View>
           <Text>Last Week Insights</Text>
+          {lastWeekExpense && (
+            <Bar data={lastWeekExpense.map(i => ({ x: dayjs(i.date).format("DD/MM/YYYY"), y: i.sum }))} />
+          )}
+          {lastWeekIncome && (
+            <Bar data={lastWeekIncome.map(i => ({ x: dayjs(i.date).format("DD/MM/YYYY"), y: i.sum }))} />
+          )}
+
           <View className="w-full max-w-full m-5 p-5">
             {lastWeekExpense && (
               <BarChart
@@ -125,7 +177,7 @@ export default function Dashboard() {
                 height={Dimensions.get("window").height / 2}
                 yAxisLabel="$"
                 verticalLabelRotation={45}
-                width={Dimensions.get("window").width} // from react-native
+                width={width * 0.8} // from react-native
                 fromZero={true}
                 chartConfig={{
                   backgroundColor: "#ffffff",
@@ -151,7 +203,7 @@ export default function Dashboard() {
                 height={Dimensions.get("window").height / 2}
                 yAxisLabel="$"
                 verticalLabelRotation={45}
-                width={Dimensions.get("window").width} // from react-native
+                width={width * 0.8} // from react-native
                 fromZero={true}
                 chartConfig={{
                   backgroundColor: "#ffffff",
@@ -172,7 +224,16 @@ export default function Dashboard() {
               />
             )}
           </View>
-          <View className="w-full max-w-full m-5 p-5">
+
+          {lastMonthTransactionsCategories && (
+            // <VictoryContainer
+            //   responsive={false}
+            //   style={{ flex: 1, justifyContent: "center", alignItems: "center", position: "relative" }}
+            // >
+            <Pie pieChart={pieChart} />
+            // </VictoryContainer>
+          )}
+          {/* <View className="w-full max-w-full m-5 p-5">
             {lastMonthTransactionsCategories && (
               <PieChart
                 accessor={"sum"}
@@ -207,7 +268,7 @@ export default function Dashboard() {
                 }}
               />
             )}
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>
