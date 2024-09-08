@@ -16,7 +16,7 @@ type DataPoint = {
 
 export default function NetEarningsChart({ data }) {
   const { width } = useWindowDimensions();
-  const chartWidth = Math.min(width, 400);
+  const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth * 0.75;
 
   return (
@@ -43,7 +43,7 @@ export default function NetEarningsChart({ data }) {
             tickLabels: { fontSize: 10, padding: 5 },
           }}
         />
-        <VictoryGroup offset={35}>
+        <VictoryGroup offset={chartWidth / 10}>
           <VictoryBar
             data={data}
             x="x"
@@ -68,7 +68,7 @@ export default function NetEarningsChart({ data }) {
           />
         </VictoryGroup>
         <VictoryLegend
-          x={150}
+          x={chartWidth / 2}
           y={0}
           orientation="horizontal"
           gutter={20}

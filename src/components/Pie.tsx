@@ -1,8 +1,67 @@
-import React, { useState } from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import React, { Children, useState } from "react";
+import { View, Text, useWindowDimensions, ScrollView, Pressable } from "react-native";
 import { VictoryPie, VictoryLegend, VictoryContainer, VictoryLabel, VictoryTheme } from "victory-native";
 
-export default function PieChart({ data }) {
+export default function PieChart({}) {
+  const data = [
+    {
+      x: "Dining Out",
+      y: 33.01,
+    },
+    {
+      x: "Games",
+      y: 120.53,
+    },
+    {
+      x: "Electricity",
+      y: 168.36,
+    },
+    {
+      x: "Groceries",
+      y: 231.69,
+    },
+    {
+      x: "Fuel",
+      y: 12.32,
+    },
+    {
+      x: "Rent",
+      y: 850.0,
+    },
+    {
+      x: "Internet",
+      y: 45.99,
+    },
+    {
+      x: "Entertainment",
+      y: 78.4,
+    },
+    {
+      x: "Healthcare",
+      y: 92.25,
+    },
+    {
+      x: "Transportation",
+      y: 63.75,
+    },
+    {
+      x: "Clothing",
+      y: 47.89,
+    },
+    {
+      x: "Education",
+      y: 210.0,
+    },
+    {
+      x: "Pets",
+      y: 58.62,
+    },
+    {
+      x: "Miscellaneous",
+      y: 29.45,
+    },
+  ];
+
   const { width } = useWindowDimensions();
   const [selectedSlice, setSelectedSlice] = useState(null);
   const chartWidth = Math.min(width, 600);
@@ -19,7 +78,7 @@ export default function PieChart({ data }) {
   const totalValue = processedData.reduce((sum, item) => sum + item.y, 0);
 
   return (
-    <View style={{ width: chartWidth, alignSelf: "center" }}>
+    <View style={{ width: chartWidth, alignSelf: "center", position: "relative", flex: 1 }}>
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" }}>Categories</Text>
       <VictoryContainer width={chartWidth} height={chartHeight} theme={VictoryTheme.material}>
         <VictoryPie
@@ -43,6 +102,7 @@ export default function PieChart({ data }) {
           }}
           labelPlacement="parallel"
           labels={({ datum }) => `${datum.x}\n${((datum.y / totalValue) * 100).toFixed(1)}%`}
+          labelComponent={<VictoryLabel />}
           events={[
             {
               target: "data",
@@ -54,10 +114,14 @@ export default function PieChart({ data }) {
             },
           ]}
         />
-        <VictoryLegend
+
+        {/* <VictoryLegend
+          // containerComponent={chidlren => <ScrollView style={{ maxHeight: chartHeight * 0.2 }}>{Children}</ScrollView>}
+          // itemsPerRow={2}
+          labelComponent={<VictoryLabel angle={45} />}
           standalone={false}
-          x={chartWidth * 0.8}
-          y={50}
+          x={chartWidth * 0.7}
+          y={0}
           gutter={15}
           orientation="vertical"
           style={{
@@ -68,7 +132,8 @@ export default function PieChart({ data }) {
             name: `${item.x} - $${item.y.toFixed(0)}`,
             symbol: { fill: item.color },
           }))}
-        />
+        /> */}
+
         {selectedSlice !== null && (
           <VictoryLabel
             textAnchor="middle"
@@ -80,6 +145,27 @@ export default function PieChart({ data }) {
           />
         )}
       </VictoryContainer>
+
+      <ScrollView
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 0,
+          maxHeight: chartHeight * 0.2, // Limit height to fit next to the chart
+          // width: chartWidth * 0.3, // Set width proportionally
+          flex: 1,
+          padding: 5,
+        }}
+        nestedScrollEnabled={true}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>Legend</Text>
+        {processedData.map((item, index) => (
+          <View key={index} style={{ flexDirection: "row", alignItems: "center", marginBottom: 5, flex: 1 }}>
+            <View style={{ width: 10, height: 10, backgroundColor: item.color, marginRight: 5 }} />
+            <Text>{`${item.x} - $${item.y.toFixed(2)} (${((item.y / totalValue) * 100).toFixed(1)}%)`}</Text>
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
