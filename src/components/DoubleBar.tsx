@@ -2,26 +2,20 @@ import React from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 
-type DataPoint = {
+export type DoubleBarPoint = {
   x: string;
   income: number;
   expense: number;
 };
 
-// const data: DataPoint[] = [
-//   { x: "July 2024", income: 0, expense: 0 },
-//   { x: "August 2024", income: 9895.13, expense: 2655.06 },
-//   { x: "September 2024", income: 1978.1, expense: 565.91 },
-// ];
-
-export default function NetEarningsChart({ data }) {
+export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint[]; label: string }) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth * 0.75;
 
   return (
     <View style={{ width: chartWidth, alignSelf: "center" }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Net Earnings</Text>
+      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
       <VictoryChart
         width={chartWidth}
         height={chartHeight}

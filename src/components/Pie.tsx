@@ -67,14 +67,22 @@ export default function PieChart({}) {
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 
-  const colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"];
+  const colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#996666"];
 
-  const processedData = data.map((item, index) => ({
+  const sortedData = [...data].sort((a, b) => b.y - a.y);
+  const topItems = sortedData.slice(0, 5); // Top 5 items
+  const otherItems = sortedData.slice(5); // Remaining items
+
+  // Combine smaller items into 'Other' if there are more than 5
+  const otherTotal = otherItems.reduce((sum, item) => sum + item.y, 0);
+  const combinedData = [...topItems, { x: "Other", y: otherTotal.toFixed(2), originalItems: otherItems }];
+  const processedData = combinedData.map((item, index) => ({
     ...item,
     y: Number(item.y),
     color: colors[index % colors.length],
   }));
 
+  console.log(processedData);
   const totalValue = processedData.reduce((sum, item) => sum + item.y, 0);
 
   return (
@@ -156,12 +164,14 @@ export default function PieChart({}) {
           flex: 1,
           padding: 5,
         }}
+        // showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
+        className="custom-scrollbar"
       >
         <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>Legend</Text>
-        {processedData.map((item, index) => (
+        {sortedData.map((item, index) => (
           <View key={index} style={{ flexDirection: "row", alignItems: "center", marginBottom: 5, flex: 1 }}>
-            <View style={{ width: 10, height: 10, backgroundColor: item.color, marginRight: 5 }} />
+            <View style={{ width: 10, height: 10, backgroundColor: colors[index % colors.length], marginRight: 5 }} />
             <Text>{`${item.x} - $${item.y.toFixed(2)} (${((item.y / totalValue) * 100).toFixed(1)}%)`}</Text>
           </View>
         ))}

@@ -65,7 +65,7 @@ export const getLastWeekExpenses = async () => {
   return data;
 };
 export const getLastQuraterTransactionsSum = async () => {
-  const start = dayjs().subtract(2, "month").startOf("month");
+  const start = dayjs().subtract(5, "month").startOf("month");
   const end = dayjs().endOf("month");
 
   const { data, error } = await supabase

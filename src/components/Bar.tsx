@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Dimensions, useWindowDimensions } from "react-native";
+import { View, Dimensions, useWindowDimensions, Text } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryTheme } from "victory-native";
 
 type BarType = {
@@ -7,13 +7,25 @@ type BarType = {
   y: any;
 };
 
-export default function Bar({ data, color, hideY }: { data: BarType[]; color: any; hideY: boolean }) {
+export default function Bar({
+  data,
+  color,
+  hideY,
+  label,
+}: {
+  data: BarType[];
+  color: any;
+  hideY: boolean;
+  label: string;
+}) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 
   return (
     <View className="p-5 m-auto">
+      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
+
       <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>
         {/* {hideY && (
           <VictoryAxis
