@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import { Divider } from "@/components/ui/divider";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { View, Text, FlatList, ScrollView, SafeAreaView, ActivityIndicator, Pressable } from "react-native";
+import { useAuth } from "@/src/providers/AuthProvider";
 
 export default function Transactions() {
   const { data: transactions, error, isLoading } = useGetTransactions();
@@ -19,7 +20,7 @@ export default function Transactions() {
   const mutation = useDeleteTransaction();
   const router = useRouter(); // Expo Router hook for navigation
 
-  if (isLoading || !transactions) return <ActivityIndicator />;
+  if (isLoading || isSessionLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
   const groupedData = transactions
@@ -92,7 +93,7 @@ export default function Transactions() {
           {transaction.amount.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-          })}{" "}
+          })}
           {transaction.account?.currency}
         </Text>
         <Text>{transaction.account?.name}</Text>
@@ -106,6 +107,7 @@ export default function Transactions() {
         {/* Show selected count if any transaction is selected */}
         {selectedTransactions.length > 0 && (
           <View className="flex-row items-center">
+            <Text className="text-lg text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
             <Text className="text-lg text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
             <Pressable onPress={clearSelection}>
               <Text className="text-sm text-danger-500">Clear Selection</Text>

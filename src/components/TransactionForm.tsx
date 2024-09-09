@@ -14,7 +14,7 @@ import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
 import VDropdown from "./VercelDropDown";
 import VCalc from "./VCalc";
-import Dropdown from "./Dropdown";
+import DropdownModal from "./Dropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "./SearchableDropdown";
 import { getTransactionsByDescription } from "../repositories/transactions.api";
 
@@ -147,7 +147,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             }}
           />
         ) : (
-          <Dropdown
+          <DropdownModal
             label="Type"
             options={[
               { label: "Income", value: "Income" },
@@ -167,7 +167,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             onSelect={(value: any) => handleTextChange("categoryid", value)}
           />
         ) : (
-          <Dropdown
+          <DropdownModal
             label="Category"
             selectedValue={formData.categoryid}
             options={categories?.map(category => ({ label: category.name, value: category.id }))}
@@ -183,7 +183,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             onSelect={(value: any) => handleTextChange("accountid", value)}
           />
         ) : (
-          <Dropdown
+          <DropdownModal
             label="Account"
             selectedValue={formData.accountid}
             options={accounts?.map(account => ({ label: account.name, value: account.id }))}
@@ -200,7 +200,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               onSelect={(value: any) => handleTextChange("destAccountId", value)}
             />
           ) : (
-            <Dropdown
+            <DropdownModal
               label="Destinaton Account"
               selectedValue={formData.destAccountId}
               options={accounts?.map(account => ({ label: account.name, value: account.id }))}

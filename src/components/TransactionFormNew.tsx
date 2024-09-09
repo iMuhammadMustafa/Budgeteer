@@ -20,7 +20,7 @@ import { useGetAccounts } from "../repositories/account.service";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
-import Dropdown from "./Dropdown";
+import DropdownModal from "./Dropdown";
 import VCalc from "./VCalc";
 
 export type TransactionFormType =
@@ -127,7 +127,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </Box>
 
-        <Dropdown
+        <DropdownModal
           label="Type"
           options={[
             { label: "Income", value: "Income" },
@@ -138,14 +138,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           onSelect={(value: TransactionTypes) => handleTextChange("type", value)}
         />
 
-        <Dropdown
+        <DropdownModal
           label="Category"
           options={categoryOptions}
           selectedValue={formData.categoryid}
           onSelect={(value: string) => handleTextChange("categoryid", value)}
         />
 
-        <Dropdown
+        <DropdownModal
           label="Account"
           options={accountOptions}
           selectedValue={formData.accountid}
@@ -153,7 +153,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         />
 
         {formData.type === "Transfer" && (
-          <Dropdown
+          <DropdownModal
             label="Destination Account"
             options={accountOptions}
             selectedValue={formData.destAccountId}

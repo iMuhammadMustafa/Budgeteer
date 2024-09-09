@@ -267,6 +267,7 @@ export type Database = {
           id: string
           isdeleted: boolean
           notes: string | null
+          status: Database["public"]["Enums"]["transactionstatuses"]
           tags: string[] | null
           tenantid: string | null
           transferid: string | null
@@ -285,6 +286,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           notes?: string | null
+          status?: Database["public"]["Enums"]["transactionstatuses"]
           tags?: string[] | null
           tenantid?: string | null
           transferid?: string | null
@@ -303,6 +305,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           notes?: string | null
+          status?: Database["public"]["Enums"]["transactionstatuses"]
           tags?: string[] | null
           tenantid?: string | null
           transferid?: string | null
@@ -319,6 +322,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_accountid_fkey"
+            columns: ["accountid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["accountid"]
+          },
+          {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
@@ -333,6 +343,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["categoryid"]
+          },
+          {
             foreignKeyName: "transactions_createdby_fkey"
             columns: ["createdby"]
             isOneToOne: false
@@ -345,6 +362,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["transactionid"]
           },
         ]
       }
@@ -394,6 +418,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "useraccounts_accountid_fkey"
+            columns: ["accountid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["accountid"]
+          },
+          {
             foreignKeyName: "useraccounts_createdby_fkey"
             columns: ["createdby"]
             isOneToOne: false
@@ -411,6 +442,27 @@ export type Database = {
       }
     }
     Views: {
+      hypopg_hidden_indexes: {
+        Row: {
+          am_name: unknown | null
+          index_name: unknown | null
+          indexrelid: unknown | null
+          is_hypo: boolean | null
+          schema_name: unknown | null
+          table_name: unknown | null
+        }
+        Relationships: []
+      }
+      hypopg_list_indexes: {
+        Row: {
+          am_name: unknown | null
+          index_name: string | null
+          indexrelid: unknown | null
+          schema_name: unknown | null
+          table_name: unknown | null
+        }
+        Relationships: []
+      }
       transactionscategorydatesum: {
         Row: {
           date: string | null
@@ -424,16 +476,108 @@ export type Database = {
         Row: {
           date: string | null
           sum: number | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+        }
+        Relationships: []
+      }
+      transactionsview: {
+        Row: {
+          accountid: string | null
+          accountname: string | null
+          amount: number | null
+          categoryid: string | null
+          categoryname: string | null
+          categorytype: string | null
+          currency: string | null
+          date: string | null
+          description: string | null
+          notes: string | null
+          running_balance: number | null
+          status: Database["public"]["Enums"]["transactionstatuses"] | null
+          tags: string[] | null
+          transactionid: string | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
         }
         Relationships: []
       }
     }
     Functions: {
-      [_ in never]: never
+      hypopg: {
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
+      hypopg_create_index: {
+        Args: {
+          sql_order: string
+        }
+        Returns: Record<string, unknown>[]
+      }
+      hypopg_drop_index: {
+        Args: {
+          indexid: unknown
+        }
+        Returns: boolean
+      }
+      hypopg_get_indexdef: {
+        Args: {
+          indexid: unknown
+        }
+        Returns: string
+      }
+      hypopg_hidden_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          indexid: unknown
+        }[]
+      }
+      hypopg_hide_index: {
+        Args: {
+          indexid: unknown
+        }
+        Returns: boolean
+      }
+      hypopg_relation_size: {
+        Args: {
+          indexid: unknown
+        }
+        Returns: number
+      }
+      hypopg_reset: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      hypopg_reset_index: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      hypopg_unhide_all_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      hypopg_unhide_index: {
+        Args: {
+          indexid: unknown
+        }
+        Returns: boolean
+      }
+      index_advisor: {
+        Args: {
+          query: string
+        }
+        Returns: {
+          startup_cost_before: Json
+          startup_cost_after: Json
+          total_cost_before: Json
+          total_cost_after: Json
+          index_statements: string[]
+          errors: string[]
+        }[]
+      }
     }
     Enums: {
       accountcategorytype: "Asset" | "Liability"
       categoryconfigurations: "Other" | "Accounts"
+      transactionstatuses: "None" | "Cleared" | "Reconciled" | "Void"
       transactiontype:
         | "Expense"
         | "Income"

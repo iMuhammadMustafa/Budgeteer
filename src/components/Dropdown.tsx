@@ -1,95 +1,52 @@
 import { useState } from "react";
-import { Text, TouchableOpacity, View, StyleSheet, Modal } from "react-native";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import Modal from "react-native-modal";
 
-const Dropdown = ({ options, selectedValue, onSelect, label }) => {
+export default function DropdownModal({ options, selectedValue, onSelect, label }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSelect = (value) => {
+  const handleSelect = value => {
     onSelect(value);
     setIsOpen(false);
   };
 
   return (
-    <View style={styles.dropdownContainer}>
-      <Text style={styles.label}>{label}</Text>
+    <>
+      <Text className="text-base mb-2">{label}</Text>
       <TouchableOpacity
-        style={styles.dropdownButton}
+        className="p-3 rounded border border-gray-300 bg-white items-center"
         onPress={() => setIsOpen(!isOpen)}
       >
-        <Text style={styles.selectedValue}>
-          {selectedValue ? options.find(option => option.value === selectedValue)?.label : 'Select an option'}
+        <Text className="text-base">
+          {selectedValue ? options.find(option => option.value === selectedValue)?.label : "Select an option"}
         </Text>
       </TouchableOpacity>
       {isOpen && (
         <Modal
-          transparent={true}
-          animationType="fade"
-          visible={isOpen}
-          onRequestClose={() => setIsOpen(false)}
+          isVisible={isOpen}
+          onDismiss={() => setIsOpen(false)}
+          onBackButtonPress={() => setIsOpen(false)}
+          onBackdropPress={() => setIsOpen(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            onPress={() => setIsOpen(false)}
-          >
-            <View style={styles.dropdownList}>
-              {options.map(option => (
+          <FlatList
+            data={options}
+            className="flex-grow-0 m-auto "
+            contentContainerClassName="m-auto items-center justify-center bg-white rounded-md p-1"
+            keyExtractor={option => option.value}
+            renderItem={({ item }) => {
+              return (
                 <TouchableOpacity
-                  key={option.value}
-                  style={styles.dropdownItem}
-                  onPress={() => handleSelect(option.value)}
+                  key={item.value}
+                  className="p-3 border-b border-b-gray-300"
+                  onPress={() => handleSelect(item.value)}
                 >
-                  <Text>{option.label}</Text>
+                  <Text className="text-foreground">{item.label}</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
+              );
+            }}
+          />
         </Modal>
       )}
-    </View>
+    </>
   );
-};
-
-const styles = StyleSheet.create({
-  dropdownContainer: {
-    marginBottom: 16,
-    position: 'relative',
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  dropdownButton: {
-    padding: 12,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  selectedValue: {
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  dropdownList: {
-    width: '90%',
-    maxHeight: 200,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    zIndex: 1000,
-  },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-});
-
-export default Dropdown;
+}

@@ -8,6 +8,8 @@ import dayjs from "dayjs";
 import Pie from "@/src/components/Pie";
 import Bar from "@/src/components/Bar";
 import DoubleBar, { DoubleBarPoint } from "@/src/components/DoubleBar";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { router } from "expo-router";
 
 export default function Dashboard() {
   const { data: lastWeekTransactions, isLoading: isLastWeekTransactionsLoading } = useGetLastWeekTransactionsSum();
@@ -19,6 +21,7 @@ export default function Dashboard() {
   if (isLastWeekTransactionsLoading || isLastMonthTransactionsCategoriesLoading || isLastQuarterTransactionsLoading) {
     return <ActivityIndicator />;
   }
+
   const lastWeekExpense = lastWeekTransactions
     ?.filter(item => item.type === "Expense")
     .map(item => ({ ...item, sum: Math.abs(item.sum) }));

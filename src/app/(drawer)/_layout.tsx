@@ -1,11 +1,20 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Drawer } from "expo-router/drawer";
 import Icon from "@/src/lib/IonIcons";
-import { TouchableOpacity } from "react-native";
+import { ActivityIndicator, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { router } from "expo-router";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
+
+  const { session, isSessionLoading } = useAuth();
+
+  if (isSessionLoading) {
+    return <ActivityIndicator />;
+  }
+  if (!isSessionLoading && (!session || !session.user)) router.navigate("/(auth)/Login");
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
