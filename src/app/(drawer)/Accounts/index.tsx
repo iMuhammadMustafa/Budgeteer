@@ -19,8 +19,8 @@ export default function Accounts() {
   return (
     <List
       data={data!}
-      columns={["Name", "Category", "Type", "Currency", "Balance", "Notes", "Created At"]}
-      properties={["name", "category.name", "type", "currency", "balance", "notes", "createdat"]}
+      columns={["Name", "Category", "Currency", "Balance", "Notes", "Created At"]}
+      properties={["name", "category.name", "currency", "balance", "notes", "createdat"]}
       createLinks={["/Accounts/Categories", "/Accounts/Upsert"]}
       actions={{
         editLink: `/Accounts/Upsert?accountId=`,
