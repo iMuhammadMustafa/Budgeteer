@@ -48,22 +48,6 @@ export default function Dashboard() {
     },
   ];
 
-  const result = lastMonthTransactionsCategories?.reduce((acc: any, transaction: any) => {
-    const name = transaction.name ?? "Null";
-    if (transaction.sum >= 0) {
-      return acc;
-    }
-    if (!acc[name]) {
-      acc[name] = 0;
-    }
-    acc[name] += Math.abs(transaction.sum);
-    return acc;
-  }, {});
-
-  const pieChart = Object.keys(result).map(name => ({
-    x: name,
-    y: result[name],
-  }));
 
   const netEarningChartExpensesKeyd = lastQuarterTransactions?.reduce((acc: any, transaction: any) => {
     const month = dayjs(transaction.date).format("MMMM");
@@ -82,6 +66,41 @@ export default function Dashboard() {
   }, {});
   const netEarningChartExpenses = Object.values(netEarningChartExpensesKeyd) as DoubleBarPoint[];
 
+
+  const result = lastMonthTransactionsCategories?.reduce((acc: any, transaction: any) => {
+    const name = transaction.name ?? "Null";
+    if (transaction.sum >= 0) {
+      return acc;
+    }
+    if (!acc[name]) {
+      acc[name] = 0;
+    }
+    acc[name] += Math.abs(transaction.sum);
+    return acc;
+  }, {});
+
+  const pieChart = Object.keys(result).map(name => ({
+    x: name,
+    y: result[name],
+  }));
+
+  const resultGroups = lastMonthTransactionsCategories?.reduce((acc: any, transaction: any) => {
+    const name = transaction.group ?? "Null";
+    if (transaction.sum >= 0) {
+      return acc;
+    }
+    if (!acc[name]) {
+      acc[name] = 0;
+    }
+    acc[name] += Math.abs(transaction.sum);
+    return acc;
+  }, {});
+
+  const pieChartGroup = Object.keys(resultGroups).map(name => ({
+    x: name,
+    y: resultGroups[name],
+  }));
+
   return (
     <SafeAreaView className="w-full h-full m-auto">
       <ScrollView>
@@ -90,6 +109,7 @@ export default function Dashboard() {
           <DoubleBar data={netEarningChartExpenses} label="Net Earnings" />
 
           {lastMonthTransactionsCategories && <Pie data={pieChart} />}
+          {lastMonthTransactionsCategories && <Pie data={pieChartGroup} />}
         </View>
       </ScrollView>
     </SafeAreaView>

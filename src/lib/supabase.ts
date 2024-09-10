@@ -20,6 +20,7 @@ export type TransactionTypes = Enums<"transactiontype">;
 export type AccountCategoryTypes = Enums<"accountcategorytype">;
 export type Configurations = Tables<"configurations">;
 export type TransactionsCategoryDateSum = Views<"transactionscategorydatesum">;
+export type TransactionsCategoryTypeDateSum = Views<"transactionscategoryandtypedatesum">;
 export type TransactionsDaySum = Views<"transactionsdaysum">;
 
 class SupabaseStorage {

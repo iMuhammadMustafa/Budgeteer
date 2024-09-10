@@ -339,7 +339,21 @@ export type Database = {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
+            referencedRelation: "transactionscategoryandtypedatesum"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
             referencedRelation: "transactionscategorydatesum"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionscategorytypedatesum"
             referencedColumns: ["id"]
           },
           {
@@ -463,11 +477,30 @@ export type Database = {
         }
         Relationships: []
       }
+      transactionscategoryandtypedatesum: {
+        Row: {
+          date: string | null
+          group: string | null
+          id: string | null
+          name: string | null
+          sum: number | null
+        }
+        Relationships: []
+      }
       transactionscategorydatesum: {
         Row: {
           date: string | null
           id: string | null
           name: string | null
+          sum: number | null
+        }
+        Relationships: []
+      }
+      transactionscategorytypedatesum: {
+        Row: {
+          date: string | null
+          group: string | null
+          id: string | null
           sum: number | null
         }
         Relationships: []

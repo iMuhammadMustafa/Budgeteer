@@ -10,4 +10,5 @@ export enum TableNames {
 export enum ViewNames {
   TransactionsCategoryDateSum = "transactionscategorydatesum",
   TransactionsDaySum = "transactionsdaysum",
+  TransactionsCategoryTypeDateSum = "transactionscategoryandtypedatesum",
 }
