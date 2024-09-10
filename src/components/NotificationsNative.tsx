@@ -1,13 +1,5 @@
-import React, { useCallback, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  cancelAnimation,
-  runOnJS,
-  useAnimatedReaction,
-} from "react-native-reanimated";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, TouchableOpacity, Animated, StyleSheet, Platform } from "react-native";
 import { NotificationType, useNotifications } from "../providers/NotificationsProvider";
 
 export default function Notification() {
@@ -24,54 +16,55 @@ export default function Notification() {
 
 const NotificationAlert = ({ notification }: { notification: NotificationType }) => {
   const { removeNotification } = useNotifications();
-  const progress = useSharedValue(0);
-  const opacity = useSharedValue(1);
-  const isPaused = useSharedValue(false);
-  const remainingTime = useSharedValue(5000);
+  const progressAnimation = useRef(new Animated.Value(0)).current;
+  const opacityAnimation = useRef(new Animated.Value(1)).current;
+  const [isPaused, setIsPaused] = useState(false);
 
-  const handleCloseClick = useCallback(() => {
-    opacity.value = withTiming(0, { duration: 400 }, finished => {
+  const handleCloseClick = () => {
+    Animated.timing(opacityAnimation, {
+      toValue: 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      removeNotification(notification.id);
+    });
+  };
+
+  const startAnimation = () => {
+    Animated.timing(progressAnimation, {
+      toValue: 100,
+      duration: 5000, // 5 seconds
+      useNativeDriver: false,
+    }).start(({ finished }) => {
       if (finished) {
-        runOnJS(removeNotification)(notification.id);
+        handleCloseClick();
       }
     });
-  }, [opacity, removeNotification, notification.id]);
-
-  const startAnimation = useCallback(() => {
-    progress.value = withTiming(100, { duration: remainingTime.value });
-  }, [progress, remainingTime]);
+  };
 
   useEffect(() => {
-    startAnimation();
-    return () => {
-      cancelAnimation(progress);
-    };
-  }, [startAnimation]);
-
-  useAnimatedReaction(
-    () => progress.value,
-    currentProgress => {
-      if (currentProgress >= 100 && !isPaused.value) {
-        runOnJS(handleCloseClick)();
-      }
-    },
-    [isPaused.value],
-  );
-
-  const handleMouseEnter = useCallback(() => {
-    if (Platform.OS === "web") {
-      isPaused.value = true;
-      cancelAnimation(progress);
-      remainingTime.value = remainingTime.value * (1 - progress.value / 100);
-    }
-  }, [isPaused, progress, remainingTime]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (Platform.OS === "web") {
-      isPaused.value = false;
+    if (!isPaused) {
       startAnimation();
+    } else {
+      progressAnimation.stopAnimation();
     }
-  }, [isPaused, startAnimation]);
+
+    // return () => {
+    //   progressAnimation.stopAnimation();
+    // };
+  }, [isPaused]);
+
+  const handleMouseEnter = () => {
+    if (Platform.OS === "web") {
+      setIsPaused(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (Platform.OS === "web") {
+      setIsPaused(false);
+    }
+  };
 
   const backgroundColor =
     {
@@ -81,21 +74,9 @@ const NotificationAlert = ({ notification }: { notification: NotificationType })
       info: "#3B82F6",
     }[notification.type] || "#3B82F6";
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-    };
-  });
-
-  const progressBarStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progress.value}%`,
-    };
-  });
-
   return (
     <Animated.View
-      style={[styles.alertContainer, { backgroundColor }, animatedStyle]}
+      style={[styles.alertContainer, { backgroundColor, opacity: opacityAnimation }]}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -104,7 +85,17 @@ const NotificationAlert = ({ notification }: { notification: NotificationType })
         <Text style={styles.closeButtonText}>✕</Text>
       </TouchableOpacity>
       <View style={styles.progressBarContainer}>
-        <Animated.View style={[styles.progressBar, progressBarStyle]} />
+        <Animated.View
+          style={[
+            styles.progressBar,
+            {
+              width: progressAnimation.interpolate({
+                inputRange: [0, 100],
+                outputRange: ["0%", "100%"],
+              }),
+            },
+          ]}
+        />
       </View>
     </Animated.View>
   );

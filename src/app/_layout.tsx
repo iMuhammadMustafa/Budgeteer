@@ -8,6 +8,7 @@ import { SafeAreaView, Text } from "react-native";
 import { DevToolsBubble } from "react-native-react-query-devtools";
 import NotificationsProvider from "../providers/NotificationsProvider";
 import { EventProvider } from "react-native-outside-press";
+import Notification from "../components/Notification";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +19,7 @@ export default function RootLayout() {
         <AuthProvider>
           <QueryProvider>
             <NotificationsProvider>
+              <Notification />
               <Stack>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />

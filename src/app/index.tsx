@@ -81,25 +81,26 @@ export default function Index() {
   };
 
   LogBox.ignoreLogs(["Require cycle: node_modules/victory"]);
+  // LogBox.ignoreLogs(["onResponderTerminate"]);
 
   return (
-    <SafeAreaView className="w-full h-full">
+    <SafeAreaView className="w-full ">
       <ScrollView>
-        <View className="flex-col justify-center items-center">
+        <View className="justify-center items-center">
           <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
           <View>
-            <Text className=" color-primary-100">Welcome! {session?.user.email}</Text>
+            <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
             {notifications.length > 0 && <Text>{JSON.stringify(notifications)}</Text>}
           </View>
 
           <Notification />
 
-          <View className="max-w-full ">
-            {/* <VictoryChart width={350} theme={VictoryTheme.material}>
+          {/* <View className="max-w-full "> */}
+          {/* <VictoryChart width={350} theme={VictoryTheme.material}>
               <VictoryBar data={thisdata} x="quarter" y="earnings" />
             </VictoryChart> */}
-          </View>
+          {/* </View> */}
           {/* <SearchableDropdown
             searchAction={val => fetchTransactionsByDescription(val)}
             // initalValue={"Apple"}
@@ -107,7 +108,7 @@ export default function Index() {
             onChange={val => console.log(val)}
           /> */}
 
-          <AutocompleteInput />
+          {/* <AutocompleteInput /> */}
 
           {/* <CalculatorModal />
           <GptCalculator /> */}
@@ -183,13 +184,13 @@ export default function Index() {
               <ButtonText>Dashboard!</ButtonText>
             </Button>
             <Button variant="solid" className="p-2 my-1" action="primary" onPress={toggleTheme}>
-              <ButtonIcon as={Icon} name={isDarkMode ? "Moon" : "Sun"} />
+              <Icon name={isDarkMode ? "Moon" : "Sun"} className=" text-background-light dark:text-background-dark" />
             </Button>
             <Button
               variant="solid"
               className="p-2 my-1"
               action="primary"
-              onPress={() => addNotification({ message: "Hello", type: "success" })}
+              onPress={() => addNotification({ message: "Hello", type: "error" })}
             >
               <ButtonText>Add Notification</ButtonText>
             </Button>
