@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inserts, Transaction, TransactionsCategoryDateSum, TransactionsDaySum } from "@/src/lib/supabase";
+import { Inserts, Transaction, TransactionsCategoryDateSum, TransactionsCategoryTypeDateSum, TransactionsDaySum } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import {
@@ -51,8 +51,8 @@ export const useGetLastQuraterTransactionsSum = () => {
   });
 };
 export const useGetLastMonthCategoriesTransactionsSum = () => {
-  return useQuery<TransactionsCategoryDateSum[]>({
-    queryKey: [ViewNames.TransactionsCategoryDateSum],
+  return useQuery<TransactionsCategoryTypeDateSum[]>({
+    queryKey: [ViewNames.TransactionsCategoryTypeDateSum],
     queryFn: getLastMonthCategoriesTransactionsSum,
   });
 };

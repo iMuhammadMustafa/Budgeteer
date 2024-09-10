@@ -83,7 +83,7 @@ export const getLastMonthCategoriesTransactionsSum = async () => {
   const endOfMonth = dayjs().endOf("month").toISOString();
 
   const { data, error } = await supabase
-    .from(ViewNames.TransactionsCategoryDateSum)
+    .from(ViewNames.TransactionsCategoryTypeDateSum)
     .select("*")
     .gte("date", startOfMonth)
     .lt("date", endOfMonth)
