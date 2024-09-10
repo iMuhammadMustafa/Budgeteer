@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native
 import { Ionicons } from '@expo/vector-icons'; // Assuming Expo is used for icons
 import { useGetCategories, useDeleteCategory } from '@/src/repositories/categories.service';
 import Icon from '@/src/lib/IonIcons';
+import { router } from 'expo-router';
 
 const Categories = () => {
   const { data: categories, isLoading, error } = useGetCategories();
@@ -23,6 +24,10 @@ const Categories = () => {
       setSelectedIds(prev => 
         prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
       );
+    }else{
+      // Navigate to category detail page
+      router.push(`/Categories/Upsert?categoryId=${id}`);
+
     }
   };
 
@@ -35,7 +40,7 @@ const Categories = () => {
   const renderCategory = (category: any) => (
     <TouchableOpacity
       key={category.id}
-      className={`flex-row items-center p-4 border-b border-gray-200 ${selectedIds.includes(category.id) ? 'bg-green-50' : 'bg-white'}`}
+      className={`flex-row items-center px-5 py-3 border-b border-gray-200 ${selectedIds.includes(category.id) ? 'bg-green-50' : 'bg-white'}`}
       onLongPress={() => handleLongPress(category.id)}
       onPress={() => handlePress(category.id)}
     >
@@ -50,7 +55,7 @@ const Categories = () => {
   );
 
   return (
-    <View className={`flex-1 bg-gray-100 px-5 ${Platform.OS === 'web' ? 'max-w' : ''}`}>
+    <View className={`flex-1 bg-gray-100  ${Platform.OS === 'web' ? 'max-w' : ''}`}>
       <View className="flex-row justify-between items-center p-4 bg-white">
         <Text className="text-xl font-bold">Categories & Budget</Text>
         <TouchableOpacity>
