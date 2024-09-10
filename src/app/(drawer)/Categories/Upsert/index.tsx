@@ -9,7 +9,7 @@ const initialState: Inserts<TableNames.Categories> | Updates<TableNames.Categori
   name: "",
   type: "",
   description: "",
-  icon: "",
+  icon: "CircleHelp",
 };
 
 export default function Upsert() {

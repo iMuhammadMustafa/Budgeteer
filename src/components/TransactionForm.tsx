@@ -163,7 +163,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <VDropdown
             label="Category"
             selectedValue={formData.categoryid}
-            options={categories?.map(category => ({ label: category.name, value: category.id })) ?? []}
+            options={
+              categories?.map(category => ({ label: category.name, value: category.id, icon: category.icon })) ?? []
+            }
             onSelect={(value: any) => handleTextChange("categoryid", value)}
           />
         ) : (

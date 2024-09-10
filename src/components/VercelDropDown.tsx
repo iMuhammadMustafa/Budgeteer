@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, FlatList, LayoutChangeEvent } from "react-native";
 
 interface DropdownProps {
-  options?: Array<{ label: string; value: any }>;
+  options?: Array<{ label: string; value: any; icon?: any }>;
   onSelect: (item: { label: string; value: any }) => void;
   label?: string;
   buttonTextAfterSelection?: (selectedItem: { label: string; value: any }) => string;

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Assuming Expo is used for icons
-import { useGetCategories, useDeleteCategory } from '@/src/repositories/categories.service';
-import Icon from '@/src/lib/IonIcons';
-import { router } from 'expo-router';
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // Assuming Expo is used for icons
+import { useGetCategories, useDeleteCategory } from "@/src/repositories/categories.service";
+import Icon from "@/src/lib/IonIcons";
+import { Link, router } from "expo-router";
 
 const Categories = () => {
   const { data: categories, isLoading, error } = useGetCategories();
@@ -21,13 +21,10 @@ const Categories = () => {
 
   const handlePress = (id: string) => {
     if (isSelectionMode) {
-      setSelectedIds(prev => 
-        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-      );
-    }else{
+      setSelectedIds(prev => (prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]));
+    } else {
       // Navigate to category detail page
       router.push(`/Categories/Upsert?categoryId=${id}`);
-
     }
   };
 
@@ -40,12 +37,12 @@ const Categories = () => {
   const renderCategory = (category: any) => (
     <TouchableOpacity
       key={category.id}
-      className={`flex-row items-center px-5 py-3 border-b border-gray-200 ${selectedIds.includes(category.id) ? 'bg-green-50' : 'bg-white'}`}
+      className={`flex-row items-center px-5 py-3 border-b border-gray-200 ${selectedIds.includes(category.id) ? "bg-green-50" : "bg-white"}`}
       onLongPress={() => handleLongPress(category.id)}
       onPress={() => handlePress(category.id)}
     >
       <View className="w-10 h-10 rounded-full bg-gray-100 justify-center items-center mr-4">
-        <Icon name={category.icon} size={24} color="#000" />
+        {category.icon && <Icon name={category.icon} size={24} color="#000" />}
       </View>
       <View className="flex-1">
         <Text className="text-lg font-bold">{category.name}</Text>
@@ -55,12 +52,17 @@ const Categories = () => {
   );
 
   return (
-    <View className={`flex-1 bg-gray-100  ${Platform.OS === 'web' ? 'max-w' : ''}`}>
+    <View className={`flex-1 bg-gray-100  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <View className="flex-row justify-between items-center p-4 bg-white">
         <Text className="text-xl font-bold">Categories & Budget</Text>
-        <TouchableOpacity>
-          <Ionicons name="help-circle-outline" size={24} color="#000" />
-        </TouchableOpacity>
+        <View className="flex-row gap-2">
+          <Link href={"/Categories/Upsert"}>
+            <Ionicons name="add" size={24} color="#000" />
+          </Link>
+          <TouchableOpacity>
+            <Ionicons name="help-circle-outline" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
       </View>
       <View className="flex-row border-b border-gray-200 bg-white">
         <TouchableOpacity className="flex-1 py-3 items-center border-b-2 border-green-500">
