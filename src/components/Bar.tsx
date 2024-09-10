@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Dimensions, useWindowDimensions, Text } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryTheme } from "victory-native";
 
@@ -22,6 +22,7 @@ export default function Bar({
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 
+  const [selectedSlice, setSelectedSlice] = useState(null);
   return (
     <View className="p-5 m-auto">
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
@@ -41,7 +42,14 @@ export default function Bar({
 
         {hideY && <VictoryAxis style={{ grid: { stroke: "transparent" } }} />}
         <VictoryBar
-          style={{ data: { fill: `${color ?? ""}` } }}
+          style={{
+            data: {
+              fill: `${color ?? ""}`,
+              fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.8),
+              stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
+              strokeWidth: 2,
+            },
+          }}
           barRatio={0.5}
           alignment="middle"
           // barWidth={({ index }) => 30}
@@ -52,6 +60,27 @@ export default function Bar({
           //   onLoad: { duration: 500 },
           // }}
           data={data}
+          // data: {
+          //   fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.7),
+          //   stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
+          //   strokeWidth: 2,
+          // }
+          events={[
+            {
+              target: "data",
+              eventHandlers: {
+                onMouseEnter: (_, props) => {
+                  setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                },
+                onMouseLeave: (_, props) => {
+                  setSelectedSlice(null);
+                },
+                onPress: (_, props) => {
+                  console.log(props.datum.item);
+                },
+              },
+            },
+          ]}
         />
       </VictoryChart>
     </View>

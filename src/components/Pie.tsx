@@ -2,66 +2,7 @@ import React, { Children, useState } from "react";
 import { View, Text, useWindowDimensions, ScrollView, Pressable } from "react-native";
 import { VictoryPie, VictoryLegend, VictoryContainer, VictoryLabel, VictoryTheme } from "victory-native";
 
-export default function PieChart({}) {
-  const data = [
-    {
-      x: "Dining Out",
-      y: 33.01,
-    },
-    {
-      x: "Games",
-      y: 120.53,
-    },
-    {
-      x: "Electricity",
-      y: 168.36,
-    },
-    {
-      x: "Groceries",
-      y: 231.69,
-    },
-    {
-      x: "Fuel",
-      y: 12.32,
-    },
-    {
-      x: "Rent",
-      y: 850.0,
-    },
-    {
-      x: "Internet",
-      y: 45.99,
-    },
-    {
-      x: "Entertainment",
-      y: 78.4,
-    },
-    {
-      x: "Healthcare",
-      y: 92.25,
-    },
-    {
-      x: "Transportation",
-      y: 63.75,
-    },
-    {
-      x: "Clothing",
-      y: 47.89,
-    },
-    {
-      x: "Education",
-      y: 210.0,
-    },
-    {
-      x: "Pets",
-      y: 58.62,
-    },
-    {
-      x: "Miscellaneous",
-      y: 29.45,
-    },
-  ];
-
+export default function PieChart({ data }) {
   const { width } = useWindowDimensions();
   const [selectedSlice, setSelectedSlice] = useState(null);
   const chartWidth = Math.min(width, 600);
@@ -75,14 +16,13 @@ export default function PieChart({}) {
 
   // Combine smaller items into 'Other' if there are more than 5
   const otherTotal = otherItems.reduce((sum, item) => sum + item.y, 0);
-  const combinedData = [...topItems, { x: "Other", y: otherTotal.toFixed(2), originalItems: otherItems }];
+  const combinedData = [...topItems, { x: "Rest..", y: otherTotal.toFixed(2), originalItems: otherItems }];
   const processedData = combinedData.map((item, index) => ({
     ...item,
     y: Number(item.y),
     color: colors[index % colors.length],
   }));
 
-  console.log(processedData);
   const totalValue = processedData.reduce((sum, item) => sum + item.y, 0);
 
   return (
@@ -95,6 +35,7 @@ export default function PieChart({}) {
           height={chartHeight * 0.7}
           data={processedData}
           colorScale={colors}
+          // theme={VictoryTheme.material}
           innerRadius={chartWidth * 0.15}
           // padAngle={2}
           origin={{ x: chartWidth * 0.5, y: chartHeight * 0.5 }}

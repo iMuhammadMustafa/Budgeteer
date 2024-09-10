@@ -20,7 +20,7 @@ export default function Transactions() {
   const mutation = useDeleteTransaction();
   const router = useRouter(); // Expo Router hook for navigation
 
-  if (isLoading || isSessionLoading || !transactions) return <ActivityIndicator />;
+  if (isLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
   const groupedData = transactions

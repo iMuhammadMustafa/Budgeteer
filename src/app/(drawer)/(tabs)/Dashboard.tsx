@@ -11,6 +11,9 @@ import DoubleBar, { DoubleBarPoint } from "@/src/components/DoubleBar";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
 
+const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const today = dayjs().format("dddd");
+
 export default function Dashboard() {
   const { data: lastWeekTransactions, isLoading: isLastWeekTransactionsLoading } = useGetLastWeekTransactionsSum();
   const { data: lastMonthTransactionsCategories, isLoading: isLastMonthTransactionsCategoriesLoading } =
@@ -25,6 +28,25 @@ export default function Dashboard() {
   const lastWeekExpense = lastWeekTransactions
     ?.filter(item => item.type === "Expense")
     .map(item => ({ ...item, sum: Math.abs(item.sum) }));
+
+  const todaysTransactions = lastWeekExpense?.find(i => dayjs().get("date") === dayjs(i.date).get("date"));
+  const lastWeekData = [
+    ...daysOfWeek.map(day => ({
+      x: day,
+      y:
+        lastWeekExpense?.find(
+          i => dayjs(i.date).format("dddd") === day && dayjs().get("date") !== dayjs(i.date).get("date"),
+        )?.sum || 0,
+      item: lastWeekExpense?.find(
+        i => dayjs(i.date).format("dddd") === day && dayjs().get("date") !== dayjs(i.date).get("date"),
+      ),
+    })),
+    {
+      x: "Today",
+      y: todaysTransactions?.sum || 0,
+      item: todaysTransactions,
+    },
+  ];
 
   const result = lastMonthTransactionsCategories?.reduce((acc: any, transaction: any) => {
     const name = transaction.name ?? "Null";
@@ -64,14 +86,7 @@ export default function Dashboard() {
     <SafeAreaView className="w-full h-full m-auto">
       <ScrollView>
         <View>
-          {lastWeekExpense && (
-            <Bar
-              data={lastWeekExpense.map(i => ({ x: dayjs(i.date).format("dddd"), y: i.sum }))}
-              hideY
-              color="rgba(255, 0, 0, 0.6)"
-              label="Last Week Expenses"
-            />
-          )}
+          {lastWeekExpense && <Bar data={lastWeekData} hideY color="rgba(255, 0, 0, 0.6)" label="Last Week Expenses" />}
           <DoubleBar data={netEarningChartExpenses} label="Net Earnings" />
 
           {lastMonthTransactionsCategories && <Pie data={pieChart} />}
