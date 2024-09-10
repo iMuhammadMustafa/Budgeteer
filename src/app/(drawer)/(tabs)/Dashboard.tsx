@@ -3,13 +3,14 @@ import {
   useGetLastQuraterTransactionsSum,
   useGetLastWeekTransactionsSum,
 } from "@/src/repositories/transactions.service";
-import { View, Text, ActivityIndicator, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, ActivityIndicator, ScrollView, SafeAreaView, Platform } from "react-native";
 import dayjs from "dayjs";
 import Pie from "@/src/components/Pie";
 import Bar from "@/src/components/Bar";
 import DoubleBar, { DoubleBarPoint } from "@/src/components/DoubleBar";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
+import PieChartWeb from "@/src/components/Pie.web";
 
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const today = dayjs().format("dddd");
@@ -89,7 +90,8 @@ export default function Dashboard() {
           {lastWeekExpense && <Bar data={lastWeekData} hideY color="rgba(255, 0, 0, 0.6)" label="Last Week Expenses" />}
           <DoubleBar data={netEarningChartExpenses} label="Net Earnings" />
 
-          {lastMonthTransactionsCategories && <Pie data={pieChart} />}
+          {lastMonthTransactionsCategories &&
+            (Platform.OS === "web" ? <PieChartWeb data={pieChart} /> : <Pie data={pieChart} />)}
         </View>
       </ScrollView>
     </SafeAreaView>

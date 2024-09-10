@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { View, Dimensions, useWindowDimensions, Text } from "react-native";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryTheme } from "victory-native";
+import { View, Dimensions, useWindowDimensions, Text, Platform } from "react-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 
 type BarType = {
   x: any;
@@ -19,6 +19,7 @@ export default function Bar({
   label: string;
 }) {
   const { width } = useWindowDimensions();
+  console.log(width);
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 
@@ -40,7 +41,15 @@ export default function Bar({
           />
         )} */}
 
-        {hideY && <VictoryAxis style={{ grid: { stroke: "transparent" } }} />}
+        {Platform.OS === "web" ? (
+          <VictoryAxis style={{ grid: { stroke: "transparent" } }} />
+        ) : (
+          <VictoryAxis
+            tickLabelComponent={<VictoryLabel dx={10} angle={20} />}
+            style={{ grid: { stroke: "transparent" } }}
+          />
+        )}
+        {!hideY && <VictoryAxis dependentAxis style={{ grid: { stroke: "transparent" } }} />}
         <VictoryBar
           style={{
             data: {
@@ -65,6 +74,7 @@ export default function Bar({
           //   stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
           //   strokeWidth: 2,
           // }
+
           events={[
             {
               target: "data",
