@@ -6,7 +6,7 @@ import { ActivityIndicator, Text } from "react-native";
 import dayjs from "dayjs";
 import TransactionFormNew from "@/src/components/pages/TransactionFormNew";
 
-const initialState: TransactionFormType = {
+export const initialTransactionState: TransactionFormType = {
   description: "",
   date: dayjs().toISOString(),
   type: "Expense",
@@ -19,7 +19,7 @@ const initialState: TransactionFormType = {
 
 export default function AddTransaction() {
   const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();
-  const [initialValues, setInitialValues] = useState<TransactionFormType>(initialState);
+  const [initialValues, setInitialValues] = useState<TransactionFormType>(initialTransactionState);
 
   const { data: transaction, isLoading, error } = useGetTransactionById(transactionId);
 
@@ -29,7 +29,7 @@ export default function AddTransaction() {
         ...transaction,
       });
     } else {
-      setInitialValues(initialState);
+      setInitialValues(initialTransactionState);
     }
   }, [transactionId, transaction]);
 

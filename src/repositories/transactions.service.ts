@@ -134,6 +134,7 @@ export const useDeleteTransaction = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+
     },
   });
 };

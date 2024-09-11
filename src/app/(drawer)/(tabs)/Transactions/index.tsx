@@ -11,14 +11,19 @@ import { Divider } from "@/components/ui/divider";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { View, Text, FlatList, ScrollView, SafeAreaView, ActivityIndicator, Pressable } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { useNotifications } from "@/src/providers/NotificationsProvider";
 
 export default function Transactions() {
   const { data: transactions, error, isLoading } = useGetTransactions();
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
+  const [selectedSum, setSelectedSum] = useState(0);
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const mutation = useDeleteTransaction();
   const router = useRouter(); // Expo Router hook for navigation
+  const { addNotification } = useNotifications();
+
+  const deleteMutation = useDeleteTransaction();
 
   if (isLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
@@ -45,6 +50,7 @@ export default function Transactions() {
   const handleLongPress = (id: string) => {
     setSelectionMode(true);
     setSelectedTransactions(prev => (prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]));
+    setSelectedSum(prev => prev + (transactions.find(t => t.id === id)?.amount ?? 0));
   };
 
   // Short press behavior depends on selection mode
@@ -56,6 +62,14 @@ export default function Transactions() {
         : [...selectedTransactions, id];
 
       setSelectedTransactions(updatedSelections);
+
+      // Update selected sum
+      setSelectedSum(
+        updatedSelections.reduce((acc, curr) => {
+          const transaction = transactions.find(t => t.id === curr);
+          return acc + (transaction?.amount ?? 0);
+        }, 0),
+      );
 
       // Exit selection mode if no more items are selected
       if (updatedSelections.length === 0) {
@@ -70,7 +84,31 @@ export default function Transactions() {
 
   const clearSelection = () => {
     setSelectedTransactions([]);
+    setSelectedSum(0);
     setSelectionMode(false); // Clear selection mode when we clear selections
+  };
+
+  const deleteSelection = async () => {
+    setIsActionLoading(true);
+
+    // Delete selected transactions
+    await Promise.all(
+      selectedTransactions.map(id =>
+        deleteMutation.mutateAsync(
+          transactions.find(t => t.id === id),
+          {
+            onSuccess: () => {
+              addNotification({ message: "Transaction Created Successfully", type: "success" });
+              setIsActionLoading(false);
+            },
+          },
+        ),
+      ),
+    );
+
+    // Clear selections and exit selection
+
+    clearSelection();
   };
 
   const renderTransaction = transaction => (
@@ -108,9 +146,12 @@ export default function Transactions() {
         {selectedTransactions.length > 0 && (
           <View className="flex-row items-center">
             <Text className="text-lg text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
-            <Text className="text-lg text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
+            <Text className="text-lg text-primary-500 mr-4">{selectedSum} USD</Text>
+            <Pressable onPress={deleteSelection}>
+              <Icon name="Trash" className="text-error-500" />
+            </Pressable>
             <Pressable onPress={clearSelection}>
-              <Text className="text-sm text-danger-500">Clear Selection</Text>
+              <Icon name="X" className="text-danger-500" />
             </Pressable>
           </View>
         )}

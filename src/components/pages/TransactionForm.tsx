@@ -3,7 +3,17 @@ import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
 import { useSearchTransactionsByDescription, useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
-import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Keyboard,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../../repositories/categories.service";
@@ -19,6 +29,8 @@ import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdow
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
 import { default as MobileDateTimePicker } from "@react-native-community/datetimepicker";
 import Modal from "react-native-modal";
+import Icon from "@/src/lib/IonIcons";
+import { initialTransactionState } from "@/src/app/(drawer)/(tabs)/AddTransaction";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -43,6 +55,33 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
+  };
+  const handleOnMoreSubmit = () => {
+    const newItem = {
+      ...initialTransactionState,
+      date: dayjs(formData.date).toString(),
+      type: formData.type,
+      categoryid: formData.categoryid,
+      accountid: formData.accountid,
+    };
+    setFormData(newItem);
+    setIsLoading(true);
+    mutate(
+      {
+        fullFormTransaction: {
+          ...formData,
+          amount: Math.abs(formData.amount ?? 0),
+        },
+        originalData: transaction,
+      },
+      {
+        onSuccess: () => {
+          addNotification({ message: "Transaction Created Successfully", type: "success" });
+          setIsLoading(false);
+          setFormData(newItem);
+        },
+      },
+    );
   };
   const handleSubmit = () => {
     setIsLoading(true);
@@ -83,6 +122,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
   return (
     <SafeAreaView className="flex-1">
+      <TouchableOpacity
+        disabled={isLoading}
+        onPress={() => {
+          handleOnMoreSubmit();
+        }}
+      >
+        <Icon name="Plus" size={24} className="text-primary-300" />
+      </TouchableOpacity>
       <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
         <SearchableDropdown
           label="Description"
