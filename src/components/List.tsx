@@ -40,15 +40,17 @@ export default function List<T>({ data, columns, properties, renderItem, createL
           ))}
       </Box>
       <Box className="border border-solid border-outline-200 rounded-lg overflow-auto">
-        <ScrollView horizontal contentContainerClassName="w-full">
+        <ScrollView contentContainerClassName="w-full">
           <Table className="w-full">
             <TableHeader>
-              <TableRow className="border-b border-outline-200">
-                {columns.map((coloumn, index) => (
-                  <TableHead key={coloumn + index}>{coloumn}</TableHead>
-                ))}
-                <TableHead>Actions</TableHead>
-              </TableRow>
+              <ScrollView horizontal className="w-full">
+                <TableRow className="border-b border-outline-200">
+                  {columns.map((coloumn, index) => (
+                    <TableHead key={coloumn + index}>{coloumn}</TableHead>
+                  ))}
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </ScrollView>
             </TableHeader>
             <TableBody>
               {data &&
@@ -57,33 +59,35 @@ export default function List<T>({ data, columns, properties, renderItem, createL
                   return renderItem ? (
                     renderItem(item)
                   ) : (
-                    <TableRow key={item.id} className="text-center">
-                      {properties &&
-                        properties.length > 0 &&
-                        properties.map((property, index) => {
-                          return property.includes("icon") ? (
-                            <TableData key={index} className="flex justify-center items-center">
-                              <Icon name={getPropertyValue(item, property)} size={20} />
-                            </TableData>
-                          ) : (
-                            <TableData key={index}>{getPropertyValue(item, property)}</TableData>
-                          );
-                        })}
-                      {actions && (
-                        <TableData className="flex justify-center items-center gap-2">
-                          <Link href={actions.editLink + item.id}>
-                            <Icon name="Pencil" size={20} className="text-primary-300" />
-                          </Link>
-                          {actions.isLoading ? (
-                            <Icon name="Loader" size={20} className="text-primary-300" />
-                          ) : (
-                            <TouchableOpacity onPress={() => actions.onDelete(item)}>
-                              <Icon name="Trash2" size={20} className="text-red-600" />
-                            </TouchableOpacity>
-                          )}
-                        </TableData>
-                      )}
-                    </TableRow>
+                    <ScrollView horizontal key={item.id} className="w-full">
+                      <TableRow key={item.id} className="text-center">
+                        {properties &&
+                          properties.length > 0 &&
+                          properties.map((property, index) => {
+                            return property.includes("icon") ? (
+                              <TableData key={index} className="flex justify-center items-center">
+                                <Icon name={getPropertyValue(item, property)} size={20} />
+                              </TableData>
+                            ) : (
+                              <TableData key={index}>{getPropertyValue(item, property)}</TableData>
+                            );
+                          })}
+                        {actions && (
+                          <TableData className="flex justify-center items-center gap-2">
+                            <Link href={actions.editLink + item.id}>
+                              <Icon name="Pencil" size={20} className="text-primary-300" />
+                            </Link>
+                            {actions.isLoading ? (
+                              <Icon name="Loader" size={20} className="text-primary-300" />
+                            ) : (
+                              <TouchableOpacity onPress={() => actions.onDelete(item)}>
+                                <Icon name="Trash2" size={20} className="text-red-600" />
+                              </TouchableOpacity>
+                            )}
+                          </TableData>
+                        )}
+                      </TableRow>
+                    </ScrollView>
                   );
                 })}
             </TableBody>
