@@ -3,7 +3,7 @@ import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
 import { useSearchTransactionsByDescription, useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
-import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
+import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../../repositories/categories.service";
@@ -17,6 +17,8 @@ import VCalc from "../VCalc";
 import DropdownModal from "../Dropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
+import { default as MobileDateTimePicker } from "@react-native-community/datetimepicker";
+import Modal from "react-native-modal";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
@@ -81,7 +83,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="p-5 px-6">
+      <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
         <SearchableDropdown
           label="Description"
           searchAction={val => getTransactionsByDescription(val)}
@@ -109,21 +111,69 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <Text>{dayjs(formData.date).format("DD-MM-YYYY hh:mm:ss")}</Text>
         </Pressable>
 
-        {showDate && (
+        {showDate &&
+          (Platform.OS === "web" ? (
+            <Box className="m-auto">
+              <Box className="lg:max-w-sm">
+                <DateTimePicker
+                  mode="single"
+                  date={dayjs(formData.date)}
+                  displayFullDays
+                  timePicker
+                  onChange={(params: any) =>
+                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
+                  }
+                />
+              </Box>
+            </Box>
+          ) : (
+            <Modal
+              isVisible={showDate}
+              onDismiss={() => setShowDate(false)}
+              onBackButtonPress={() => setShowDate(false)}
+              onBackdropPress={() => setShowDate(false)}
+              // className="bg-white m-auto"
+            >
+              <View className="m-auto items-center justify-center bg-white rounded-md p-1">
+                <DateTimePicker
+                  mode="single"
+                  date={dayjs(formData.date)}
+                  displayFullDays
+                  timePicker
+                  onChange={(params: any) =>
+                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
+                  }
+                />
+              </View>
+            </Modal>
+          ))}
+
+        {/* {showDate && (
           <Box className="m-auto">
             <Box className="lg:max-w-sm">
-              <DateTimePicker
-                mode="single"
-                date={dayjs(formData.date)}
-                displayFullDays
-                timePicker
-                onChange={(params: any) =>
-                  setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
-                }
-              />
+              {Platform.OS === "web" ? (
+                <DateTimePicker
+                  mode="single"
+                  date={dayjs(formData.date)}
+                  displayFullDays
+                  timePicker
+                  onChange={(params: any) =>
+                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
+                  }
+                />
+              ) : (
+                <>
+                  <MobileDateTimePicker
+                    value={dayjs(formData.date).toDate()}
+                    mode={"time"}
+                    is24Hour={true}
+                    onChange={e => console.log(e)}
+                  />
+                </>
+              )}
             </Box>
           </Box>
-        )}
+        )} */}
 
         <Box className="flex-row justify-center items-center">
           <TextInputField

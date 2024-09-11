@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { SafeAreaView, Text, View, Image, ScrollView, LogBox } from "react-native";
+import { SafeAreaView, Text, View, Image, ScrollView, LogBox, Platform } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 import cards from "@/assets/images/cards.png";
@@ -18,6 +18,8 @@ import AutocompleteInput from "../components/VSearch";
 import SearchableDropdown, { SearchableDropdownItem } from "../components/SearchableDropdown";
 import { supabase, Transaction } from "../lib/supabase";
 import { VictoryBar, VictoryChart, VictoryPie, VictoryTheme } from "victory-native";
+import RNDateTimePicker, { default as MobileDateTimePicker } from "@react-native-community/datetimepicker";
+import DateTimePicker from "../components/Datetimepicker.web";
 
 export default function Index() {
   // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
@@ -27,7 +29,7 @@ export default function Index() {
 
   const { session } = useAuth();
 
-  const [date, setDate] = useState(dayjs());
+  // const [date, setDate] = useState(dayjs());
 
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
@@ -80,8 +82,24 @@ export default function Index() {
     setClickedIndex(clickedIndex === index ? null : index);
   };
 
+  const [show, setShow] = useState(false);
+  const showMode = currentMode => {
+    setShow(true);
+    setMode(currentMode);
+  };
+
+  const showDatepicker = () => {
+    showMode("date");
+  };
+
+  const showTimepicker = () => {
+    showMode("time");
+  };
+
   LogBox.ignoreLogs(["Require cycle: node_modules/victory"]);
   // LogBox.ignoreLogs(["onResponderTerminate"]);
+  const [date, setDate] = useState(new Date(1598051730000));
+  const [mode, setMode] = useState("date");
 
   return (
     <SafeAreaView className="w-full ">
@@ -95,6 +113,37 @@ export default function Index() {
           </View>
 
           <Notification />
+
+          {/* <MobileDateTimePicker /> */}
+
+          {/* <Button onPress={showDatepicker} title="Show date picker!" />
+          <Button onPress={showTimepicker} title="Show time picker!" />
+          <Text>selected: {date.toLocaleString()}</Text>
+          {show && (
+            <MobileDateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode={mode}
+              is24Hour={true}
+              onChange={e => console.log(e)}
+            />
+          )}
+          {Platform.OS === "web" && (
+            <>
+              <DateTimePicker />
+
+              <input
+                type="date"
+                value={date.toISOString().split("T")[0]}
+                onChange={e => setDate(new Date(e.target.value))}
+              />
+              <input
+                type="time"
+                value={date.toISOString().split("T")[1]}
+                onChange={e => setDate(new Date(e.target.value))}
+              />
+            </>
+          )} */}
 
           {/* <View className="max-w-full "> */}
           {/* <VictoryChart width={350} theme={VictoryTheme.material}>
