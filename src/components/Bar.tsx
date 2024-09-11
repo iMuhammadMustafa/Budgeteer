@@ -19,7 +19,6 @@ export default function Bar({
   label: string;
 }) {
   const { width } = useWindowDimensions();
-  console.log(width);
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 

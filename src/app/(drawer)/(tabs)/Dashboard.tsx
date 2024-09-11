@@ -11,7 +11,12 @@ import DoubleBar, { DoubleBarPoint } from "@/src/components/DoubleBar";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
 import PieChartWeb from "@/src/components/Pie.web";
+import utc from "dayjs/plugin/utc";
 
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const today = dayjs().format("dddd");
 
@@ -30,7 +35,10 @@ export default function Dashboard() {
     ?.filter(item => item.type === "Expense")
     .map(item => ({ ...item, sum: Math.abs(item.sum) }));
 
-  const todaysTransactions = lastWeekExpense?.find(i => dayjs().get("date") === dayjs(i.date).get("date"));
+  const todaysTransactions = lastWeekExpense?.find(
+    i => dayjs().utc().format("YYYY-MM-DD") === dayjs(i.date).format("YYYY-MM-DD"),
+  );
+  console.log(todaysTransactions, "");
   const lastWeekData = [
     ...daysOfWeek.map(day => ({
       x: day,
@@ -49,7 +57,6 @@ export default function Dashboard() {
     },
   ];
 
-
   const netEarningChartExpensesKeyd = lastQuarterTransactions?.reduce((acc: any, transaction: any) => {
     const month = dayjs(transaction.date).format("MMMM");
 
@@ -66,7 +73,6 @@ export default function Dashboard() {
     return acc;
   }, {});
   const netEarningChartExpenses = Object.values(netEarningChartExpensesKeyd) as DoubleBarPoint[];
-
 
   const result = lastMonthTransactionsCategories?.reduce((acc: any, transaction: any) => {
     const name = transaction.name ?? "Null";
@@ -115,13 +121,12 @@ export default function Dashboard() {
                 <PieChartWeb data={pieChart} />
                 <PieChartWeb data={pieChartGroup} />
               </>
-            ) :
-              (
-                <>
-                  <Pie data={pieChart} />
-                  <Pie data={pieChartGroup} />
-                </>
-              ))}
+            ) : (
+              <>
+                <Pie data={pieChart} />
+                <Pie data={pieChartGroup} />
+              </>
+            ))}
         </View>
       </ScrollView>
     </SafeAreaView>
