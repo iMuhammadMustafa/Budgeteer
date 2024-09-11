@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { AccountCategoryTypes, Inserts, Updates } from "../lib/supabase";
+import { AccountCategoryTypes, Inserts, Updates } from "../../lib/supabase";
 import { useRouter } from "expo-router";
-import { useNotifications } from "../providers/NotificationsProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import { SafeAreaView, ScrollView } from "react-native";
-import TextInputField from "./TextInputField";
+import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import { TableNames } from "../consts/TableNames";
-import DropdownField from "./DropdownField";
-import { useUpsertAccountCategory } from "../repositories/accountcategories.service";
+import { TableNames } from "../../consts/TableNames";
+import DropdownField from "../DropdownField";
+import { useUpsertAccountCategory } from "../../repositories/accountcategories.service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 

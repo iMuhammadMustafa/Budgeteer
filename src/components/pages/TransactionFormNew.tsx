@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
-import { useUpsertTransaction } from "../repositories/transactions.service";
+import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
+import { useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
-import { useNotifications } from "../providers/NotificationsProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import {
   ActivityIndicator,
   Keyboard,
@@ -13,15 +13,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import TextInputField from "./TextInputField";
+import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import { useGetCategories } from "../repositories/categories.service";
-import { useGetAccounts } from "../repositories/account.service";
+import { useGetCategories } from "../../repositories/categories.service";
+import { useGetAccounts } from "../../repositories/account.service";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
-import DropdownModal from "./Dropdown";
-import VCalc from "./VCalc";
+import DropdownModal from "../Dropdown";
+import VCalc from "../VCalc";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })

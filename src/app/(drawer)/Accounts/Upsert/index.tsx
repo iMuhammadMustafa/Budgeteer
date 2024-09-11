@@ -1,4 +1,4 @@
-import AccountForm, { AccountFormType } from "@/src/components/AccountForm";
+import AccountForm, { AccountFormType } from "@/src/components/pages/AccountForm";
 import { Account, Inserts, TableNames, Updates } from "@/src/lib/supabase";
 import { useGetAccountById } from "@/src/repositories/account.service";
 import { useLocalSearchParams } from "expo-router";

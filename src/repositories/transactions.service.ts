@@ -22,7 +22,7 @@ import {
   getLastQuraterTransactionsSum,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
-import { TransactionFormType } from "../components/TransactionForm";
+import { TransactionFormType } from "../components/pages/TransactionForm";
 import generateUuid from "../lib/uuidHelper";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
 

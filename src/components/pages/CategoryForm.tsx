@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Inserts, Updates } from "../lib/supabase";
-import { useUpsertCategory } from "../repositories/categories.service";
+import { Inserts, Updates } from "../../lib/supabase";
+import { useUpsertCategory } from "../../repositories/categories.service";
 import { useRouter } from "expo-router";
-import { useNotifications } from "../providers/NotificationsProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import { SafeAreaView, ScrollView } from "react-native";
-import TextInputField from "./TextInputField";
+import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import IconPicker from "./IconPicker";
-import { TableNames } from "../consts/TableNames";
+import IconPicker from "../IconPicker";
+import { TableNames } from "../../consts/TableNames";
 
 export type CategoryFormType = Inserts<TableNames.Categories> | Updates<TableNames.Categories>;
 

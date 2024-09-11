@@ -1,4 +1,4 @@
-import CategoryForm, { CategoryFormType } from "@/src/components/CategoryForm";
+import CategoryForm, { CategoryFormType } from "@/src/components/pages/CategoryForm";
 import { Inserts, TableNames, Updates } from "@/src/lib/supabase";
 import { useGetCategoryById } from "@/src/repositories/categories.service";
 import { useLocalSearchParams } from "expo-router";

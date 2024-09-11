@@ -1,4 +1,4 @@
-import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/AccountCategoryForm";
+import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/pages/AccountCategoryForm";
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
 import { useGetAccountCategoryById } from "@/src/repositories/accountcategories.service";

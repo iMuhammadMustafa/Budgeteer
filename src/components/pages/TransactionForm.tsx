@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
-import { Inserts, TransactionTypes, Updates } from "../lib/supabase";
-import { useSearchTransactionsByDescription, useUpsertTransaction } from "../repositories/transactions.service";
+import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
+import { useSearchTransactionsByDescription, useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
-import { useNotifications } from "../providers/NotificationsProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import { ActivityIndicator, Keyboard, Platform, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
-import TextInputField from "./TextInputField";
+import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import { useGetCategories } from "../repositories/categories.service";
-import { useGetAccounts } from "../repositories/account.service";
-import { TableNames } from "../consts/TableNames";
+import { useGetCategories } from "../../repositories/categories.service";
+import { useGetAccounts } from "../../repositories/account.service";
+import { TableNames } from "../../consts/TableNames";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
-import VDropdown from "./VercelDropDown";
-import VCalc from "./VCalc";
-import DropdownModal from "./Dropdown";
-import SearchableDropdown, { SearchableDropdownItem } from "./SearchableDropdown";
-import { getTransactionsByDescription } from "../repositories/transactions.api";
+import VDropdown from "../VercelDropDown";
+import VCalc from "../VCalc";
+import DropdownModal from "../Dropdown";
+import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
+import { getTransactionsByDescription } from "../../repositories/transactions.api";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })

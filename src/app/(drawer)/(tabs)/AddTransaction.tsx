@@ -1,10 +1,10 @@
-import TransactionForm, { TransactionFormType } from "@/src/components/TransactionForm";
+import TransactionForm, { TransactionFormType } from "@/src/components/pages/TransactionForm";
 import { useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import dayjs from "dayjs";
-import TransactionFormNew from "@/src/components/TransactionFormNew";
+import TransactionFormNew from "@/src/components/pages/TransactionFormNew";
 
 const initialState: TransactionFormType = {
   description: "",
