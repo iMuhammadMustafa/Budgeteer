@@ -43,15 +43,21 @@ export const getTransactionByTransferId = async (id: string) => {
 
 export const getTransactionsByDescription = async (text: string): Promise<SearchableDropdownItem[]> => {
   const { data, error } = await supabase
-    .from("transactions")
+    .from(ViewNames.TransactionDistinct)
     .select()
+    // .textSearch("description", text)
     .ilike("description", `%${text}%`)
-    .order("date")
+    // .order("date")
     .limit(7);
 
   if (error) throw error;
 
-  return data.map(transaction => ({ id: transaction.id, label: transaction.description, item: transaction })) ?? [];
+  return (
+    data.map(transaction => ({
+      label: transaction.description!,
+      item: { ...transaction, amount: Math.abs(transaction.amount ?? 0) },
+    })) ?? []
+  );
 };
 
 export const getLastWeekExpenses = async () => {

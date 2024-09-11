@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, LayoutChangeEvent, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export type SearchableDropdownItem = {
-  id: string;
-  label: string | null;
+  id?: string | null;
+  label: string;
   item: any;
 };
 
@@ -112,7 +112,7 @@ export default function SearchableDropdown({
           >
             <FlatList
               data={suggestions}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item.id ?? item.label}
               renderItem={({ item }) => (
                 <TouchableOpacity className="border-b border-gray-100 p-2" onPress={() => handleSelectSuggestion(item)}>
                   <Text>{item.label}</Text>

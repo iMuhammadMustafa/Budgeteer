@@ -43,6 +43,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
   const handleSubmit = () => {
+    setIsLoading(true);
     mutate(
       {
         fullFormTransaction: {
@@ -62,8 +63,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
 
   const onSelectItem = (item: SearchableDropdownItem) => {
-    setFormData({ ...item.item, id: transaction.id });
     console.log(item);
+    setFormData({
+      ...transaction,
+      ...item.item,
+      // id: transaction.id,
+      // date: transaction.date,
+      // createdat: transaction.createdat,
+      // updatedat: transaction.updatedat,
+      // updatedby: transaction.updatedby,
+    });
   };
 
   // useEffect(() => {}, []);

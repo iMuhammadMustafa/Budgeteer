@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inserts, Transaction, TransactionsCategoryDateSum, TransactionsCategoryTypeDateSum, TransactionsDaySum } from "@/src/lib/supabase";
+import {
+  Inserts,
+  Transaction,
+  TransactionsCategoryDateSum,
+  TransactionsCategoryTypeDateSum,
+  TransactionsDaySum,
+} from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import {
@@ -29,7 +35,7 @@ export const useGetTransactions = () => {
 
 export const useSearchTransactionsByDescription = (text: string) => {
   const { data, error } = useQuery<SearchableDropdownItem[]>({
-    queryKey: [TableNames.Transactions + text],
+    queryKey: [ViewNames.TransactionDistinct + text],
     queryFn: async () => getTransactionsByDescription(text),
     enabled: !!text,
   });

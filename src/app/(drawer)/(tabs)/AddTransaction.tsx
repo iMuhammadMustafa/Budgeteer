@@ -14,7 +14,7 @@ const initialState: TransactionFormType = {
   accountid: "",
   amount: 0,
   notes: "",
-  tags: [""],
+  tags: null,
 };
 
 export default function AddTransaction() {

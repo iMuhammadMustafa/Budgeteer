@@ -477,6 +477,83 @@ export type Database = {
         }
         Relationships: []
       }
+      transactiondistinct: {
+        Row: {
+          accountid: string | null
+          amount: number | null
+          categoryid: string | null
+          description: string | null
+          notes: string | null
+          status: Database["public"]["Enums"]["transactionstatuses"] | null
+          transferid: string | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_accountid_fkey"
+            columns: ["accountid"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_accountid_fkey"
+            columns: ["accountid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["accountid"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionscategoryandtypedatesum"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionscategorydatesum"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionscategorytypedatesum"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["categoryid"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["transactionid"]
+          },
+        ]
+      }
       transactionscategoryandtypedatesum: {
         Row: {
           date: string | null

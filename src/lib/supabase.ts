@@ -22,6 +22,7 @@ export type Configurations = Tables<"configurations">;
 export type TransactionsCategoryDateSum = Views<"transactionscategorydatesum">;
 export type TransactionsCategoryTypeDateSum = Views<"transactionscategoryandtypedatesum">;
 export type TransactionsDaySum = Views<"transactionsdaysum">;
+export type TransactionDistinct = Views<"transactiondistinct">;
 
 class SupabaseStorage {
   async getItem(key: string) {
