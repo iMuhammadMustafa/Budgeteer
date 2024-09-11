@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, FlatList, LayoutChangeEvent } from "react-native";
+import Icon from "../lib/IonIcons";
 
 interface DropdownProps {
   options?: Array<{ label: string; value: any; icon?: any }>;
@@ -97,11 +98,12 @@ const VDropdown: React.FC<DropdownProps> = ({
         >
           <FlatList
             data={options}
-            renderItem={({ item }: { item: { label: string; value: any } }) => (
+            renderItem={({ item }: { item: { label: string; value: any; icon: any } }) => (
               <TouchableOpacity
-                className={`p-2 border-b border-gray-300 ${rowStyle} relative z-10`}
+                className={`p-2 border-b border-gray-300 ${rowStyle} relative z-10 flex-row gap-2`}
                 onPress={() => onItemPress(item)}
               >
+                {item.icon && <Icon name={item.icon} className="text-base" />}
                 <Text className={`text-base ${rowTextStyle} relative z-10`}>{rowTextForSelection(item)}</Text>
               </TouchableOpacity>
             )}

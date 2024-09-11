@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
+import Icon from "../lib/IonIcons";
 
 export default function DropdownModal({ options, selectedValue, onSelect, label }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,20 +28,24 @@ export default function DropdownModal({ options, selectedValue, onSelect, label 
           onDismiss={() => setIsOpen(false)}
           onBackButtonPress={() => setIsOpen(false)}
           onBackdropPress={() => setIsOpen(false)}
+          className="rounded-md"
         >
           <FlatList
             data={options}
-            className="flex-grow-0 m-auto "
-            contentContainerClassName="m-auto items-center justify-center bg-white rounded-md p-1"
+            className="flex-grow-0 m-auto rounded-md"
+            contentContainerClassName="items-start justify-center bg-white rounded-md p-1"
             keyExtractor={option => option.value}
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity
                   key={item.value}
-                  className="p-3 border-b border-b-gray-300"
+                  className="p-3 flex-row border-b border-b-gray-300  rounded-md"
                   onPress={() => handleSelect(item.value)}
                 >
-                  <Text className="text-foreground">{item.label}</Text>
+                  <View className="w-full flex-row justify-start items-center gap-2">
+                    {item.icon && <Icon name={item.icon} className="text-black" />}
+                    <Text className="text-black ">{item.label}</Text>
+                  </View>
                 </TouchableOpacity>
               );
             }}
