@@ -225,7 +225,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         <Box className="flex-row justify-center items-center">
           <TextInputField
             label="Amount"
-            value={formData.amount?.toString()}
+            value={Math.abs(formData.amount ?? 0).toString()}
             keyboardType="numeric"
             onChange={text => handleTextChange("amount", text)}
             className="flex-1"
