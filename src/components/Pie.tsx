@@ -28,7 +28,7 @@ export default function PieChart({ data }) {
   return (
     <View style={{ width: chartWidth, alignSelf: "center", position: "relative", flex: 1 }}>
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" }}>Categories</Text>
-      <VictoryContainer width={chartWidth} height={chartHeight} theme={VictoryTheme.material}>
+      <VictoryContainer width={chartWidth} height={chartHeight} theme={VictoryTheme.material} disableContainerEvents>
         <VictoryPie
           standalone={false}
           width={chartWidth * 0.7}
