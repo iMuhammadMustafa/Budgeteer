@@ -8,16 +8,26 @@ import {
   useGetTransactions,
   useUpsertTransaction,
 } from "@/src/repositories/transactions.service";
-import { Link, useRouter } from "expo-router"; // Use `useRouter` for navigation
-import React, { useState } from "react";
+import { Link, useNavigation, useRouter } from "expo-router"; // Use `useRouter` for navigation
+import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Divider } from "@/components/ui/divider";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { View, Text, FlatList, ScrollView, SafeAreaView, ActivityIndicator, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  ScrollView,
+  SafeAreaView,
+  ActivityIndicator,
+  Pressable,
+  BackHandler,
+} from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useNotifications } from "@/src/providers/NotificationsProvider";
 import { TableNames } from "@/src/consts/TableNames";
 import { TransactionFormType } from "@/src/components/pages/TransactionFormNew";
+import * as Haptics from "expo-haptics";
 
 export default function Transactions() {
   const { data: transactions, error, isLoading } = useGetTransactions();
@@ -31,6 +41,12 @@ export default function Transactions() {
   const addMutation = useUpsertTransaction();
 
   const deleteMutation = useDeleteTransaction();
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+    return () => backHandler.remove();
+  }, [selectionMode]);
 
   if (isLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
@@ -55,6 +71,7 @@ export default function Transactions() {
 
   // Long press to start selection mode and select the first transaction
   const handleLongPress = (item: any) => {
+    Haptics.selectionAsync();
     setSelectionMode(true);
     setSelectedTransactions(prev => [...prev, item]);
     setSelectedSum(prev => prev + item.amount);
@@ -64,6 +81,7 @@ export default function Transactions() {
   const handlePress = (item: any) => {
     if (selectionMode) {
       // In selection mode, short press selects/deselects
+      Haptics.selectionAsync();
       const updatedSelections = selectedTransactions.find(i => i.id === item.id)
         ? selectedTransactions.filter(t => t.id !== item.id)
         : [...selectedTransactions, item];
@@ -147,9 +165,34 @@ export default function Transactions() {
     clearSelection();
   };
 
+  // const navigation = useNavigation();
+  // useEffect(() => {
+  //   if (selectionMode) {
+  //     navigation.addListener("beforeRemove", e => {
+  //       console.log(e);
+  //       e.preventDefault();
+  //       clearSelection();
+  //     });
+  //   } else {
+  //     // navigation.removeListener("beforeRemove", e => {
+  //     //   navigation.dispatch(e.data.action);
+  //     // });
+  //   }
+  // }, [selectionMode]);
+
+  const backAction = () => {
+    if (selectionMode) {
+      clearSelection();
+      return true;
+    } else {
+      router.back();
+    }
+  };
+
   const renderTransaction = transaction => {
     return (
       <Pressable
+        delayLongPress={300}
         onLongPress={() => handleLongPress(transaction)}
         onPress={() => handlePress(transaction)} // Handles selection or navigation based on selectionMode
         className={`m-3 flex-row items-center justify-between gap-7 flex-1 ${selectedTransactions.find(t => t.id === transaction.id) ? "bg-blue-200" : "bg-white"}`} // Highlighting selected items
