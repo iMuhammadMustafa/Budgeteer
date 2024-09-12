@@ -5,12 +5,10 @@ import {
 } from "@/src/repositories/transactions.service";
 import { View, Text, ActivityIndicator, ScrollView, SafeAreaView, Platform } from "react-native";
 import dayjs from "dayjs";
-import Pie from "@/src/components/Pie";
-import Bar from "@/src/components/Bar";
-import DoubleBar, { DoubleBarPoint } from "@/src/components/DoubleBar";
-import { useAuth } from "@/src/providers/AuthProvider";
-import { router } from "expo-router";
-import PieChartWeb from "@/src/components/Pie.web";
+import Pie from "@/src/components/Charts/Pie";
+import Bar from "@/src/components/Charts/Bar";
+import DoubleBar, { DoubleBarPoint } from "@/src/components/Charts/DoubleBar";
+import PieChartWeb from "@/src/components/Charts/Pie.web";
 import utc from "dayjs/plugin/utc";
 
 import timezone from "dayjs/plugin/timezone";

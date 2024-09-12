@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet, Platform } from "react-native";
-import { NotificationType, useNotifications } from "../providers/NotificationsProvider";
+import { NotificationType, useNotifications } from "../../providers/NotificationsProvider";
 
 export default function Notification() {
   const { notifications } = useNotifications();

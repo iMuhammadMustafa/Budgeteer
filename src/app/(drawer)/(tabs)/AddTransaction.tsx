@@ -1,21 +1,9 @@
-import TransactionForm, { TransactionFormType } from "@/src/components/pages/TransactionForm";
+import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/pages/TransactionForm";
 import { useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import dayjs from "dayjs";
-import TransactionFormNew from "@/src/components/pages/TransactionFormNew";
-
-export const initialTransactionState: TransactionFormType = {
-  description: "",
-  date: dayjs().toISOString(),
-  type: "Expense",
-  categoryid: "",
-  accountid: "",
-  amount: 0,
-  notes: "",
-  tags: null,
-};
 
 export default function AddTransaction() {
   const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();

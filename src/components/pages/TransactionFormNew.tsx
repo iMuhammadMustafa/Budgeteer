@@ -22,6 +22,7 @@ import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
 import DropdownModal from "../Dropdown";
 import VCalc from "../VCalc";
+import { TableNames } from "@/src/consts/TableNames";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })

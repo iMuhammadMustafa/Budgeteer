@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Icon from "../lib/IonIcons";
+import Icon from "../../lib/IonIcons";
 
 export default function DateTimePicker() {
   const [date, setDate] = useState("");

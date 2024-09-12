@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
-import { useSearchTransactionsByDescription, useUpsertTransaction } from "../../repositories/transactions.service";
+import { useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import {
@@ -30,11 +30,21 @@ import { getTransactionsByDescription } from "../../repositories/transactions.ap
 import { default as MobileDateTimePicker } from "@react-native-community/datetimepicker";
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
-import { initialTransactionState } from "@/src/app/(drawer)/(tabs)/AddTransaction";
 
 export type TransactionFormType =
   | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
   | (Updates<TableNames.Transactions> & { amount: number; destAccountId?: string });
+
+export const initialTransactionState: TransactionFormType = {
+  description: "",
+  date: dayjs().toISOString(),
+  type: "Expense",
+  categoryid: "",
+  accountid: "",
+  amount: 0,
+  notes: "",
+  tags: null,
+};
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
   const [formData, setFormData] = useState<TransactionFormType>(transaction);

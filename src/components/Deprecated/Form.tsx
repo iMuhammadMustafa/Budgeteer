@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from "react-native";
-import DropdownField from "./DropdownField";
+import DropdownField from "../DropdownField";
 
 interface FormProps<T> {
   initialValues: T;
