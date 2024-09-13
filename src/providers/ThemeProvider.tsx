@@ -24,10 +24,6 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
   const [colorMode, setColorMode] = useState<ModeType>("light");
   const [isColorSchemeLoaded, setIsColorSchemeLoaded] = useState(false);
 
-  const toggleColorMode = async () => {
-    setColorMode(prev => (prev === "light" ? "dark" : "light"));
-  };
-
   useEffect(() => {
     (async () => {
       const theme = await AsyncStorage.getItem("theme");
@@ -63,6 +59,10 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
+  const toggleColorMode = async () => {
+    setColorMode(prev => (prev === "light" ? "dark" : "light"));
+  };
+
   const convertGlueStackUIThemeToReactNativeColors = (mode: ModeType) => {
     const styles = mode === "dark" ? darkVars : lightVars;
 
@@ -78,17 +78,6 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       },
     };
     return result;
-    // if (mode === "dark") {
-    //   result.dark = true;
-    //   result.colors.background =
-    //   result.colors.text = `rgb(${config.dark["--color-typography-0"].replace(/ /g, ",")})`;
-    //   result.colors.card = `rgb(${config.dark["--color-background-100"].replace(/ /g, ",")})`;
-    //   result.colors.border = `rgb(${config.dark["--color-outline-0"].replace(/ /g, ",")})`;
-    //   result.colors.primary = `rgb(${config.dark["--color-primary-0"].replace(/ /g, ",")})`;
-    //   result.colors.notification = `rgb(${config.dark["--color-success-0"].replace(/ /g, ",")})`;
-
-    //   return result;
-    // }
   };
 
   return (

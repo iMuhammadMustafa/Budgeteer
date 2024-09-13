@@ -3,22 +3,19 @@ import {
   useGetLastQuraterTransactionsSum,
   useGetLastWeekTransactionsSum,
 } from "@/src/repositories/transactions.service";
-import { View, Text, ActivityIndicator, ScrollView, SafeAreaView, Platform } from "react-native";
+import { ActivityIndicator } from "react-native";
 import dayjs from "dayjs";
-import Pie from "@/src/components/Charts/Pie";
-import Bar from "@/src/components/Charts/Bar";
-import DoubleBar, { DoubleBarPoint } from "@/src/components/Charts/DoubleBar";
-import PieChartWeb from "@/src/components/Charts/Pie.web";
 import utc from "dayjs/plugin/utc";
 
 import timezone from "dayjs/plugin/timezone";
+import { DoubleBarPoint } from "@/src/components/Charts/DoubleBar";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const today = dayjs().format("dddd");
 
-export default function Dashboard() {
+export default function useDashboard() {
   const { data: lastWeekTransactions, isLoading: isLastWeekTransactionsLoading } = useGetLastWeekTransactionsSum();
   const { data: lastMonthTransactionsCategories, isLoading: isLastMonthTransactionsCategoriesLoading } =
     useGetLastMonthCategoriesTransactionsSum();
@@ -105,28 +102,4 @@ export default function Dashboard() {
     x: name,
     y: resultGroups[name],
   }));
-
-  return (
-    <SafeAreaView className="w-full h-full m-auto">
-      <ScrollView>
-        <View>
-          {lastWeekExpense && <Bar data={lastWeekData} hideY color="rgba(255, 0, 0, 0.6)" label="Last Week Expenses" />}
-          <DoubleBar data={netEarningChartExpenses} label="Net Earnings" />
-
-          {lastMonthTransactionsCategories &&
-            (Platform.OS === "web" ? (
-              <>
-                <PieChartWeb data={pieChart} />
-                <PieChartWeb data={pieChartGroup} />
-              </>
-            ) : (
-              <>
-                <Pie data={pieChart} />
-                <Pie data={pieChartGroup} />
-              </>
-            ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
 }

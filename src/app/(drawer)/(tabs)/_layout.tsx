@@ -5,8 +5,9 @@ export default function DashboardLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
-        name="Dashboard"
+        name="Dashboard/index"
         options={{
+          title: "Dashboard",
           tabBarIcon: ({ color }) => <Icon name="House" color={color} size={24} />,
         }}
       />

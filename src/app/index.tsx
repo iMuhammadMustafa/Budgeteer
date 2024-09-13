@@ -1,50 +1,57 @@
 import { router } from "expo-router";
-import { SafeAreaView, Text, View, Image, ScrollView, LogBox, Pressable } from "react-native";
+import { SafeAreaView, Text, View, Image, LogBox, Pressable, ActivityIndicator } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 import cards from "@/assets/images/cards.png";
 import { useTheme } from "../providers/ThemeProvider";
-
-import { Button, ButtonText } from "@/components/ui/button";
 import Icon from "../lib/IonIcons";
-import { useNotifications } from "../providers/NotificationsProvider";
+LogBox.ignoreLogs(["Require cycle: node_modules/"]);
+
+import { Calendar, CalendarList, Agenda } from "react-native-calendars";
+import React from "react";
 
 export default function Index() {
-  // const { toggleColorScheme, colorScheme, setColorScheme } = useColorScheme();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { session, isSessionLoading } = useAuth();
 
-  const { session } = useAuth();
-
-  LogBox.ignoreLogs(["Require cycle: node_modules/"]);
+  if (isSessionLoading) return <ActivityIndicator />;
 
   return (
-    <SafeAreaView className="w-full ">
-      <ScrollView>
-        <View className="justify-center items-center">
-          <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
-          <View>
-            <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
-            <Pressable className="p-2 my-1 bg-primary-0" onPress={toggleTheme}>
-              <Icon name={isDarkMode ? "Moon" : "Sun"} className=" text-background-light dark:text-background-dark" />
-            </Pressable>
-          </View>
+    <SafeAreaView className="justify-center items-center w-full">
+      <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
-          {session?.user ? (
-            <Button variant="solid" className="p-2 my-1" action="primary" onPress={() => router.push("/Dashboard")}>
-              <ButtonText>Dashboard!</ButtonText>
-            </Button>
-          ) : (
-            <>
-              <Button variant="solid" className="p-2 my-1" action="primary" onPress={() => router.push("/Login")}>
-                <ButtonText>Login!</ButtonText>
-              </Button>
-              <Button variant="solid" className="p-2 my-1" action="primary" onPress={() => router.push("/Accounts")}>
-                <ButtonText>Register!</ButtonText>
-              </Button>
-            </>
-          )}
-        </View>
-      </ScrollView>
+      <View>
+        <Calendar
+          markedDates={{
+            "2024-09-16": { selected: true, marked: true, selectedColor: "blue" },
+            "2024-09-17": { marked: true },
+            "2024-09-18": { marked: true, dotColor: "red", activeOpacity: 0 },
+            "2024-09-19": { disabled: true, disableTouchEvent: true },
+          }}
+        />
+      </View>
+
+      <View>
+        <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
+        <Pressable className="py-2 my-1 bg-primary items-center" onPress={toggleTheme}>
+          <Icon name={isDarkMode ? "Moon" : "Sun"} className=" text-primary-foreground" />
+        </Pressable>
+      </View>
+
+      {session?.user ? (
+        <Pressable className="p-2 my-1 bg-primary" onPress={() => router.push("/Dashboard")}>
+          <Text className="text-primary-foreground">Dashboard!</Text>
+        </Pressable>
+      ) : (
+        <>
+          <Pressable className="p-2 my-1 bg-primary" onPress={() => router.push("/Login")}>
+            <Text className="text-primary-foreground">Login!</Text>
+          </Pressable>
+          <Pressable className="p-2 my-1 bg-primary" onPress={() => router.push("/Accounts")}>
+            <Text className="text-primary-foreground">Register!</Text>
+          </Pressable>
+        </>
+      )}
     </SafeAreaView>
   );
 }
