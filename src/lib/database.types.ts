@@ -551,6 +551,7 @@ export type Database = {
           currency: string | null
           date: string | null
           description: string | null
+          icon: string | null
           notes: string | null
           running_balance: number | null
           status: Database["public"]["Enums"]["transactionstatuses"] | null
