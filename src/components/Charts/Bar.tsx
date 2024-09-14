@@ -23,8 +23,8 @@ export default function Bar({ data, label, color, hideY }: BarProps) {
 
   const [selectedSlice, setSelectedSlice] = useState(null);
   return (
-    <View className="p-5 m-auto">
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
+    <View className="p-5 m-auto bg-card my-1 rounded-md border border-muted">
+      <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
 
       <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>
         {Platform.OS === "web" ? (

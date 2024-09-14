@@ -22,8 +22,8 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
   const chartHeight = chartWidth * 0.75;
 
   return (
-    <View style={{ width: chartWidth, alignSelf: "center" }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
+    <View className="bg-card p-5 m-auto my-1 rounded-md border border-muted">
+      <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
       <VictoryChart
         width={chartWidth}
         height={chartHeight}
@@ -52,6 +52,9 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
             y={data => data.barOne.value}
             labels={({ datum }) => datum.barOne.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             style={{ data: { fill: ({ datum }) => datum.barOne.color || "black" } }}
+            animate={{
+              onLoad: { duration: 500 },
+            }}
           />
           <VictoryBar
             data={data}
@@ -63,6 +66,9 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
               })
             }
             style={{ data: { fill: ({ datum }) => datum.barTwo.color || "black" } }}
+            animate={{
+              onLoad: { duration: 500 },
+            }}
           />
         </VictoryGroup>
         <VictoryLegend

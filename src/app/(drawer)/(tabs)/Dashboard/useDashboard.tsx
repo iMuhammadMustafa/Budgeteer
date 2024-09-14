@@ -1,11 +1,12 @@
+import { useMemo } from "react";
 import { useMonthlyTransactions, useWeeklyTransactions } from "@/src/repositories/transactions.service";
-import { ActivityIndicator } from "react-native";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
 import timezone from "dayjs/plugin/timezone";
 import { DoubleBarPoint } from "@/src/components/Charts/DoubleBar";
 import { BarType } from "@/src/components/Charts/Bar";
+import { PieData } from "@/src/components/Charts/MyPie";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -16,70 +17,33 @@ const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Today"].ma
     y: 0,
   };
 });
-const shortDaysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const currentMonthShort = dayjs().format("MMM");
 const today = dayjs();
 
-interface DashboardProps {
-  isLoading: boolean;
-  lastWeekExpense: BarType[];
-}
-
-interface MonthlyObj {
-  categories: {
-    Expense: { [name: string]: number };
-    Income: { [name: string]: number };
-  };
-  groups: {
-    Expense: { [group: string]: number };
-    Income: { [group: string]: number };
-  };
-  months: {
-    [month: string]: {
-      Expense: number;
-      Income: number;
+type ChartsObject = {
+  [month: string]: {
+    Expense: number;
+    Income: number;
+    categories: {
+      [name: string]: {
+        [type: string]: number;
+      };
     };
+    groups: GroupType;
   };
-}
+};
+type GroupType = {
+  [group: string]: {
+    [type: string]: number;
+  };
+};
 
 export default function useDashboard() {
   const { data: monthlyTransactions, isLoading: isMonthlyLoading } = useMonthlyTransactions();
   const { data: weeklyTransactions, isLoading: isWeeklyLoading } = useWeeklyTransactions();
   const isLoading = isMonthlyLoading || isWeeklyLoading;
 
-  let lastWeekExpense: BarType[] = [];
-  const monthlyObj: MonthlyObj = {
-    categories: {
-      Expense: {},
-      Income: {},
-    },
-    groups: {
-      Expense: {},
-      Income: {},
-    },
-    months: {},
-  };
-
-  let monthlyNetEarnings: DoubleBarPoint[] = [];
-  let categoriesExpenses = [];
-  let categoriesIncomes = [];
-  let groupsExpenses = [];
-  let groupsIncomes = [];
-  let monthsExpenses = [];
-  let monthsIncomes = [];
-
-  if (isLoading) return { isLoading, lastWeekExpense, monthlyNetEarnings };
-
-  lastWeekExpense = [
-    ...daysOfWeek,
-    ...weeklyTransactions!
-      .filter(item => item.type === "Expense")
-      .map(item => {
-        const x = dayjs(item.date).isSame(dayjs(), "date") ? "Today" : dayjs(item.date).format("ddd");
-        const y = parseInt(Math.abs(item.sum ?? 0).toFixed(0));
-        const color = "rgba(255, 0, 0, 0.6)";
-        return { x, y, color, item };
-      }),
-  ];
+  const chartsObj: ChartsObject = {};
 
   monthlyTransactions!.forEach(transaction => {
     const { name, group, date, sum, type } = transaction;
@@ -88,47 +52,86 @@ export default function useDashboard() {
     if (!name || !group || !date || !sum || !type) return;
     if (type !== "Income" && type !== "Expense") return;
 
-    if (!monthlyObj.categories[type][name]) {
-      monthlyObj.categories[type][name] = 0;
-    }
-    monthlyObj.categories[type][name] += Math.abs(sum);
-
-    if (!monthlyObj.groups[type][group]) {
-      monthlyObj.groups[type][group] = 0;
-    }
-    monthlyObj.groups[type][group] += Math.abs(sum);
-
-    if (!monthlyObj.months[month]) {
-      monthlyObj.months[month] = {
+    if (!chartsObj[month]) {
+      chartsObj[month] = {
         Expense: 0,
         Income: 0,
+        categories: {},
+        groups: {},
       };
     }
-    if (!monthlyObj.months[month][type]) {
-      monthlyObj.months[month][type] = 0;
+    chartsObj[month][type] += Math.abs(sum);
+
+    if (Math.abs(sum) > 0) {
+      if (!chartsObj[month].categories[name]) {
+        chartsObj[month].categories[name] = {
+          Expense: 0,
+          Income: 0,
+        };
+      }
+      chartsObj[month].categories[name][type] += Math.abs(sum);
+
+      if (!chartsObj[month].groups[group]) {
+        chartsObj[month].groups[group] = {
+          Expense: 0,
+          Income: 0,
+        };
+      }
+      chartsObj[month].groups[group][type] += Math.abs(sum);
     }
-    monthlyObj.months[month][type] += Math.abs(sum);
   });
 
-  monthlyNetEarnings = Object.keys(monthlyObj.months).map(month => {
-    return {
+  const lastWeekExpense: BarType[] = useMemo(() => {
+    if (isLoading) {
+      return [];
+    }
+
+    return [
+      ...daysOfWeek,
+      ...(weeklyTransactions?.filter(item => item.type === "Expense") || []).map(item => {
+        const x = dayjs(item.date).isSame(today, "date") ? "Today" : dayjs(item.date).format("ddd");
+        const y = Math.abs(item.sum ?? 0);
+        return { x, y, color: "rgba(255, 0, 0, 0.6)", item };
+      }),
+    ];
+  }, [isLoading, weeklyTransactions, daysOfWeek]);
+
+  const monthlyNetEarnings: DoubleBarPoint[] = useMemo(() => {
+    return Object.keys(chartsObj).map(month => ({
       x: month,
       barOne: {
         label: "Income",
-        value: monthlyObj.months[month].Income,
+        value: chartsObj[month].Income,
         color: "rgba(76, 175, 80, 0.6)",
       },
       barTwo: {
         label: "Expense",
-        value: monthlyObj.months[month].Expense,
+        value: chartsObj[month].Expense,
         color: "rgba(244, 67, 54, 0.6)",
       },
-    };
-  });
+    }));
+  }, [chartsObj]);
+
+  const mapToPieData = (data: GroupType) => {
+    return Object.keys(data).map(key => ({
+      x: key,
+      y: data[key].Expense, // or data[key].Income if needed
+    }));
+  };
+
+  const categoriesExpensesThisMonth: PieData[] = useMemo(() => {
+    return mapToPieData(chartsObj[currentMonthShort].categories);
+  }, [chartsObj, currentMonthShort]);
+
+  const groupsExpensesThisMonth: PieData[] = useMemo(() => {
+    return mapToPieData(chartsObj[currentMonthShort].groups);
+  }, [chartsObj, currentMonthShort]);
 
   return {
     isLoading,
     lastWeekExpense,
     monthlyNetEarnings,
+    categoriesExpensesThisMonth,
+    groupsExpensesThisMonth,
   };
 }

@@ -1,46 +1,27 @@
-import { View, ScrollView, SafeAreaView, Platform } from "react-native";
-import Pie from "@/src/components/Charts/Pie";
+import { View, ScrollView, SafeAreaView, ActivityIndicator } from "react-native";
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
-import PieChartWeb from "@/src/components/Charts/Pie.web";
 import useDashboard from "./useDashboard";
+import MyPie, { PieData } from "@/src/components/Charts/MyPie";
+import React from "react";
 
 export default function Dashboard() {
-  const { isLoading, lastWeekExpense, monthlyNetEarnings } = useDashboard();
+  const { isLoading, lastWeekExpense, monthlyNetEarnings, groupsExpensesThisMonth, categoriesExpensesThisMonth } =
+    useDashboard();
 
   if (isLoading) {
-    return <View>Loading...</View>;
+    return <ActivityIndicator />;
   }
 
-  const sampleData = [
-    { x: "Food", y: 300 },
-    { x: "Travel", y: 150 },
-    { x: "Entertainment", y: 120 },
-    { x: "Utilities", y: 90 },
-    { x: "Rent", y: 500 },
-    { x: "Healthcare", y: 80 },
-    { x: "Education", y: 60 },
-    { x: "Miscellaneous", y: 40 },
-  ];
-
   return (
-    <SafeAreaView className="w-full h-full m-auto">
-      <ScrollView>
+    <SafeAreaView className="w-full h-full m-auto flex-1">
+      <ScrollView className="flex-1 h-full">
         <View>
           <Bar data={lastWeekExpense} hideY label="Last Week Expenses" />
           <DoubleBar data={monthlyNetEarnings} label="Net Earnings" />
 
-          {Platform.OS === "web" ? (
-            <>
-              <PieChartWeb data={sampleData} />
-              <PieChartWeb data={sampleData} />
-            </>
-          ) : (
-            <>
-              <Pie data={sampleData} />
-              <Pie data={sampleData} />
-            </>
-          )}
+          <MyPie data={categoriesExpensesThisMonth} label="Categories" />
+          <MyPie data={groupsExpensesThisMonth} label="Groups" />
         </View>
       </ScrollView>
     </SafeAreaView>
