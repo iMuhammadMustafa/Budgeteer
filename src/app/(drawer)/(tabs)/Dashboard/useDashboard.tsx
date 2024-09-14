@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useMonthlyTransactions, useWeeklyTransactions } from "@/src/repositories/transactions.service";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-
 import timezone from "dayjs/plugin/timezone";
 import { DoubleBarPoint } from "@/src/components/Charts/DoubleBar";
 import { BarType } from "@/src/components/Charts/Bar";
@@ -39,13 +38,13 @@ type GroupType = {
 };
 
 export default function useDashboard() {
-  const { data: monthlyTransactions, isLoading: isMonthlyLoading } = useMonthlyTransactions();
-  const { data: weeklyTransactions, isLoading: isWeeklyLoading } = useWeeklyTransactions();
+  const { data: monthlyTransactions = [], isLoading: isMonthlyLoading } = useMonthlyTransactions();
+  const { data: weeklyTransactions = [], isLoading: isWeeklyLoading } = useWeeklyTransactions();
   const isLoading = isMonthlyLoading || isWeeklyLoading;
 
   const chartsObj: ChartsObject = {};
 
-  monthlyTransactions!.forEach(transaction => {
+  monthlyTransactions.forEach(transaction => {
     const { name, group, date, sum, type } = transaction;
     const month = dayjs(date).format("MMM");
 
@@ -88,11 +87,13 @@ export default function useDashboard() {
 
     return [
       ...daysOfWeek,
-      ...(weeklyTransactions?.filter(item => item.type === "Expense") || []).map(item => {
-        const x = dayjs(item.date).isSame(today, "date") ? "Today" : dayjs(item.date).format("ddd");
-        const y = Math.abs(item.sum ?? 0);
-        return { x, y, color: "rgba(255, 0, 0, 0.6)", item };
-      }),
+      ...(weeklyTransactions
+        .filter(item => item.type === "Expense")
+        .map(item => {
+          const x = dayjs(item.date).isSame(today, "date") ? "Today" : dayjs(item.date).format("ddd");
+          const y = Math.abs(item.sum ?? 0);
+          return { x, y, color: "rgba(255, 0, 0, 0.6)", item };
+        }) || []),
     ];
   }, [isLoading, weeklyTransactions, daysOfWeek]);
 
@@ -120,11 +121,11 @@ export default function useDashboard() {
   };
 
   const categoriesExpensesThisMonth: PieData[] = useMemo(() => {
-    return mapToPieData(chartsObj[currentMonthShort].categories);
+    return currentMonthShort in chartsObj ? mapToPieData(chartsObj[currentMonthShort].categories) : [];
   }, [chartsObj, currentMonthShort]);
 
   const groupsExpensesThisMonth: PieData[] = useMemo(() => {
-    return mapToPieData(chartsObj[currentMonthShort].groups);
+    return currentMonthShort in chartsObj ? mapToPieData(chartsObj[currentMonthShort].groups) : [];
   }, [chartsObj, currentMonthShort]);
 
   return {

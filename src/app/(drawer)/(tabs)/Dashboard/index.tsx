@@ -2,7 +2,7 @@ import { View, ScrollView, SafeAreaView, ActivityIndicator } from "react-native"
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
 import useDashboard from "./useDashboard";
-import MyPie, { PieData } from "@/src/components/Charts/MyPie";
+import MyPie from "@/src/components/Charts/MyPie";
 import React from "react";
 
 export default function Dashboard() {
