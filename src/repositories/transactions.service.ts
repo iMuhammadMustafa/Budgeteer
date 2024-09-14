@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inserts, MonthlyTransactions, Transaction, WeeklyTransactions } from "@/src/lib/supabase";
+import { Inserts, MonthlyTransactions, Transaction, TransactionsView, WeeklyTransactions } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import {
@@ -30,7 +30,7 @@ interface CategorizedTransactions {
 }
 
 export const useGetTransactions = () => {
-  return useQuery<Transaction[]>({
+  return useQuery<TransactionsView[]>({
     queryKey: [TableNames.Transactions],
     queryFn: getAllTransactions,
   });
