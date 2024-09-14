@@ -8,8 +8,9 @@ export enum TableNames {
 }
 
 export enum ViewNames {
-  TransactionsCategoryDateSum = "transactionscategorydatesum",
-  TransactionsDaySum = "transactionsdaysum",
-  TransactionsCategoryTypeDateSum = "transactionscategoryandtypedatesum",
+  // TransactionsCategoryDateSum = "transactionscategorydatesum",
+  TransactionsView = "transactionsview",
   TransactionDistinct = "transactiondistinct",
+  MonthlyTransactions = "threemonthscategorytransactions",
+  WeeklyTransactions = "weekcategorytransactions",
 }

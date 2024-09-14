@@ -225,6 +225,7 @@ export type Database = {
           avatar_url: string | null
           full_name: string | null
           id: string
+          timezone: string | null
           updated_at: string | null
           username: string | null
           website: string | null
@@ -233,6 +234,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id: string
+          timezone?: string | null
           updated_at?: string | null
           username?: string | null
           website?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id?: string
+          timezone?: string | null
           updated_at?: string | null
           username?: string | null
           website?: string | null
@@ -339,21 +342,7 @@ export type Database = {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
-            referencedRelation: "transactionscategoryandtypedatesum"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionscategorydatesum"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionscategorytypedatesum"
+            referencedRelation: "threemonthscategorytransactions"
             referencedColumns: ["id"]
           },
           {
@@ -477,6 +466,17 @@ export type Database = {
         }
         Relationships: []
       }
+      threemonthscategorytransactions: {
+        Row: {
+          date: string | null
+          group: string | null
+          id: string | null
+          name: string | null
+          sum: number | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+        }
+        Relationships: []
+      }
       transactiondistinct: {
         Row: {
           accountid: string | null
@@ -514,21 +514,7 @@ export type Database = {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
-            referencedRelation: "transactionscategoryandtypedatesum"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionscategorydatesum"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionscategorytypedatesum"
+            referencedRelation: "threemonthscategorytransactions"
             referencedColumns: ["id"]
           },
           {
@@ -554,42 +540,6 @@ export type Database = {
           },
         ]
       }
-      transactionscategoryandtypedatesum: {
-        Row: {
-          date: string | null
-          group: string | null
-          id: string | null
-          name: string | null
-          sum: number | null
-        }
-        Relationships: []
-      }
-      transactionscategorydatesum: {
-        Row: {
-          date: string | null
-          id: string | null
-          name: string | null
-          sum: number | null
-        }
-        Relationships: []
-      }
-      transactionscategorytypedatesum: {
-        Row: {
-          date: string | null
-          group: string | null
-          id: string | null
-          sum: number | null
-        }
-        Relationships: []
-      }
-      transactionsdaysum: {
-        Row: {
-          date: string | null
-          sum: number | null
-          type: Database["public"]["Enums"]["transactiontype"] | null
-        }
-        Relationships: []
-      }
       transactionsview: {
         Row: {
           accountid: string | null
@@ -606,6 +556,14 @@ export type Database = {
           status: Database["public"]["Enums"]["transactionstatuses"] | null
           tags: string[] | null
           transactionid: string | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+        }
+        Relationships: []
+      }
+      weekcategorytransactions: {
+        Row: {
+          date: string | null
+          sum: number | null
           type: Database["public"]["Enums"]["transactiontype"] | null
         }
         Relationships: []

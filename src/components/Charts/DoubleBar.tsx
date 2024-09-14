@@ -4,8 +4,16 @@ import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, Vic
 
 export type DoubleBarPoint = {
   x: string;
-  income: number;
-  expense: number;
+  barOne: {
+    label: string;
+    value: number;
+    color: string;
+  };
+  barTwo: {
+    label: string;
+    value: number;
+    color: string;
+  };
 };
 
 export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint[]; label: string }) {
@@ -41,24 +49,20 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
           <VictoryBar
             data={data}
             x="x"
-            y="income"
-            labels={({ datum }) =>
-              datum._y.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
-              })
-            }
-            style={{ data: { fill: "#4CAF50" } }}
+            y={data => data.barOne.value}
+            labels={({ datum }) => datum.barOne.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            style={{ data: { fill: ({ datum }) => datum.barOne.color || "black" } }}
           />
           <VictoryBar
             data={data}
             x="x"
-            y="expense"
+            y={data => data.barTwo.value}
             labels={({ datum }) =>
-              datum._y.toLocaleString(undefined, {
+              datum.barTwo.value.toLocaleString(undefined, {
                 maximumFractionDigits: 0,
               })
             }
-            style={{ data: { fill: "#F44336" } }}
+            style={{ data: { fill: ({ datum }) => datum.barTwo.color || "black" } }}
           />
         </VictoryGroup>
         <VictoryLegend
@@ -67,10 +71,14 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
           orientation="horizontal"
           gutter={20}
           style={{ labels: { fontSize: 10 } }}
-          data={[
-            { name: "Income", symbol: { fill: "#4CAF50" } },
-            { name: "Expense", symbol: { fill: "#F44336" } },
-          ]}
+          data={
+            data.length > 0
+              ? [
+                  { name: data[0].barOne.label, symbol: { fill: data[0].barOne.color } },
+                  { name: data[0].barTwo.label, symbol: { fill: data[0].barTwo.color } },
+                ]
+              : []
+          }
         />
       </VictoryChart>
     </View>

@@ -1,11 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Inserts,
-  Transaction,
-  TransactionsCategoryDateSum,
-  TransactionsCategoryTypeDateSum,
-  TransactionsDaySum,
-} from "@/src/lib/supabase";
+import { Inserts, MonthlyTransactions, Transaction, WeeklyTransactions } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import {
@@ -17,14 +11,23 @@ import {
   getAllTransactions,
   getTransactionByTransferId,
   getTransactionsByDescription,
-  getLastMonthCategoriesTransactionsSum,
-  getLastWeekExpenses,
-  getLastQuraterTransactionsSum,
+  getMonthlyTransactions,
+  getWeeklyTransactions,
 } from "./transactions.api";
-import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
+import { updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
-import generateUuid from "../lib/uuidHelper";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
+
+interface CategorizedTransactions {
+  categories: {
+    expenses: MonthlyTransactions[];
+    income: MonthlyTransactions[];
+  };
+  groups: {
+    expenses: Record<string, MonthlyTransactions[]>;
+    income: Record<string, MonthlyTransactions[]>;
+  };
+}
 
 export const useGetTransactions = () => {
   return useQuery<Transaction[]>({
@@ -44,24 +47,45 @@ export const useSearchTransactionsByDescription = (text: string) => {
   return data ?? [];
 };
 
-export const useGetLastWeekTransactionsSum = () => {
-  return useQuery<TransactionsDaySum[]>({
-    queryKey: [ViewNames.TransactionsDaySum + "lastweek"],
-    queryFn: getLastWeekExpenses,
+export const useMonthlyTransactions = () => {
+  return useQuery<MonthlyTransactions[]>({
+    queryKey: [ViewNames.MonthlyTransactions],
+    queryFn: async () => getMonthlyTransactions(),
   });
 };
-export const useGetLastQuraterTransactionsSum = () => {
-  return useQuery<TransactionsDaySum[]>({
-    queryKey: [ViewNames.TransactionsDaySum + "lastQuarter"],
-    queryFn: getLastQuraterTransactionsSum,
+
+export const useWeeklyTransactions = () => {
+  return useQuery<WeeklyTransactions[]>({
+    queryKey: [ViewNames.WeeklyTransactions],
+    queryFn: async () => getWeeklyTransactions(),
   });
 };
-export const useGetLastMonthCategoriesTransactionsSum = () => {
-  return useQuery<TransactionsCategoryTypeDateSum[]>({
-    queryKey: [ViewNames.TransactionsCategoryTypeDateSum],
-    queryFn: getLastMonthCategoriesTransactionsSum,
-  });
-};
+
+// export const useGetTransactionsCategorySum = () => {
+//   return useQuery<TransactionsCategoryDateSum[]>({
+//     queryKey: [ViewNames.TransactionsCategoryDateSum],
+//     queryFn: getLastMonthCategoriesTransactionsSum,
+//   });
+// }
+
+// export const useGetLastWeekTransactionsSum = () => {
+//   return useQuery<TransactionsDaySum[]>({
+//     queryKey: [ViewNames.TransactionsDaySum + "lastweek"],
+//     queryFn: getLastWeekExpenses,
+//   });
+// };
+// export const useGetLastQuraterTransactionsSum = () => {
+//   return useQuery<TransactionsDaySum[]>({
+//     queryKey: [ViewNames.TransactionsDaySum + "lastQuarter"],
+//     queryFn: getLastQuraterTransactionsSum,
+//   });
+// };
+// export const useGetLastMonthCategoriesTransactionsSum = () => {
+//   return useQuery<TransactionsCategoryTypeDateSum[]>({
+//     queryKey: [ViewNames.TransactionsCategoryTypeDateSum],
+//     queryFn: getLastMonthCategoriesTransactionsSum,
+//   });
+// };
 
 export const useGetTransactionById = (id?: string) => {
   return useQuery<Transaction>({
@@ -134,7 +158,6 @@ export const useDeleteTransaction = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-
     },
   });
 };

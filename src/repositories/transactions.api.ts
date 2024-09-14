@@ -60,44 +60,57 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
   );
 };
 
-export const getLastWeekExpenses = async () => {
-  const { data, error } = await supabase
-    .from(ViewNames.TransactionsDaySum)
-    .select("*")
-    .gte("date", dayjs().subtract(7, "day").toISOString())
-    .lte("date", dayjs().toISOString())
-    .order("date");
-  if (error) throw new Error(error.message);
-  return data;
-};
-export const getLastQuraterTransactionsSum = async () => {
-  const start = dayjs().subtract(5, "month").startOf("month");
-  const end = dayjs().endOf("month");
-
-  const { data, error } = await supabase
-    .from(ViewNames.TransactionsDaySum)
-    .select("*")
-    .gte("date", start.toISOString())
-    .lte("date", end.toISOString())
-    .order("date");
+export const getWeeklyTransactions = async () => {
+  const { data, error } = await supabase.from(ViewNames.WeeklyTransactions).select();
 
   if (error) throw new Error(error.message);
   return data;
 };
-export const getLastMonthCategoriesTransactionsSum = async () => {
-  const startOfMonth = dayjs().startOf("month").toISOString();
-  const endOfMonth = dayjs().endOf("month").toISOString();
-
-  const { data, error } = await supabase
-    .from(ViewNames.TransactionsCategoryTypeDateSum)
-    .select("*")
-    .gte("date", startOfMonth)
-    .lt("date", endOfMonth)
-    .order("date");
+export const getMonthlyTransactions = async () => {
+  const { data, error } = await supabase.from(ViewNames.MonthlyTransactions).select();
 
   if (error) throw new Error(error.message);
   return data;
 };
+
+// export const getLastWeekExpenses = async () => {
+//   const { data, error } = await supabase
+//     .from(ViewNames.TransactionsDaySum)
+//     .select("*")
+//     .gte("date", dayjs().subtract(7, "day").toISOString())
+//     .lte("date", dayjs().toISOString())
+//     .order("date");
+//   if (error) throw new Error(error.message);
+//   return data;
+// };
+// export const getLastQuraterTransactionsSum = async () => {
+//   const start = dayjs().subtract(5, "month").startOf("month");
+//   const end = dayjs().endOf("month");
+
+//   const { data, error } = await supabase
+//     .from(ViewNames.TransactionsDaySum)
+//     .select("*")
+//     .gte("date", start.toISOString())
+//     .lte("date", end.toISOString())
+//     .order("date");
+
+//   if (error) throw new Error(error.message);
+//   return data;
+// };
+// export const getLastMonthCategoriesTransactionsSum = async () => {
+//   const startOfMonth = dayjs().startOf("month").toISOString();
+//   const endOfMonth = dayjs().endOf("month").toISOString();
+
+//   const { data, error } = await supabase
+//     .from(ViewNames.TransactionsCategoryTypeDateSum)
+//     .select("*")
+//     .gte("date", startOfMonth)
+//     .lt("date", endOfMonth)
+//     .order("date");
+
+//   if (error) throw new Error(error.message);
+//   return data;
+// };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
   const { data, error } = await supabase.from(TableNames.Transactions).insert(transaction).select().single();

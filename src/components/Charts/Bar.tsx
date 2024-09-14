@@ -2,22 +2,21 @@ import React, { useState } from "react";
 import { View, Dimensions, useWindowDimensions, Text, Platform } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 
-type BarType = {
-  x: any;
-  y: any;
+export type BarProps = {
+  data: BarType[];
+  label: string;
+  color?: any;
+  hideY?: boolean;
 };
 
-export default function Bar({
-  data,
-  color,
-  hideY,
-  label,
-}: {
-  data: BarType[];
-  color: any;
-  hideY: boolean;
-  label: string;
-}) {
+export type BarType = {
+  x: string;
+  y: Number;
+  color?: string;
+  item?: any;
+};
+
+export default function Bar({ data, label, color, hideY }: BarProps) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
@@ -28,18 +27,6 @@ export default function Bar({
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>{label}</Text>
 
       <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>
-        {/* {hideY && (
-          <VictoryAxis
-            dependentAxis
-            style={{
-              axis: { stroke: "transparent" }, // Hides the axis line
-              ticks: { stroke: "transparent" }, // Hides the tick marks
-              tickLabels: { fill: "transparent" }, // Hides the tick labels
-              grid: { stroke: "transparent" }, // Hides the grid lines
-            }}
-          />
-        )} */}
-
         {Platform.OS === "web" ? (
           <VictoryAxis style={{ grid: { stroke: "transparent" } }} />
         ) : (
@@ -52,7 +39,7 @@ export default function Bar({
         <VictoryBar
           style={{
             data: {
-              fill: `${color ?? ""}`,
+              fill: ({ datum }) => datum.color || color || "black",
               fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.8),
               stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
               strokeWidth: 2,
@@ -62,18 +49,11 @@ export default function Bar({
           alignment="middle"
           // barWidth={({ index }) => 30}
           scale={{ x: "linear" }}
-          labels={({ datum }) => datum.y}
-          // animate={{
-          //   duration: 500,
-          //   onLoad: { duration: 500 },
-          // }}
+          labels={({ datum }) => (datum.y > 0 ? datum.y.toFixed(0) : "")}
+          animate={{
+            onLoad: { duration: 500 },
+          }}
           data={data}
-          // data: {
-          //   fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.7),
-          //   stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
-          //   strokeWidth: 2,
-          // }
-
           events={[
             {
               target: "data",
@@ -85,7 +65,7 @@ export default function Bar({
                   setSelectedSlice(null);
                 },
                 onPress: (_, props) => {
-                  console.log(props.datum.item);
+                  setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
                 },
               },
             },

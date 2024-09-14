@@ -115,7 +115,7 @@
     "msw": "^2.4.1",
     "nock": "^13.5.5",
     "prettier": "^3.3.3",
-    "supabase": "^1.191.3",
+    "supabase": "^1.192.5",
     "typescript": "~5.3.3"
   },
   "private": true,
