@@ -6,16 +6,7 @@ import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import dayjs from "dayjs";
 
 export const getAllTransactions = async () => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .select("*, account:accounts(*), category:categories(*)")
-    // .select("*")
-    // .select("*, account:accounts!inner(*), category:categories!inner(*)")
-    // .eq("account.isdeleted", false)
-    // .eq("category.isdeleted", false)
-    .eq("isdeleted", false);
-  // .order("date", { ascending: false });
-
+  const { data, error } = await supabase.from(ViewNames.TransactionsView).select();
   if (error) throw new Error(error.message);
 
   return data;
