@@ -201,9 +201,9 @@ export default function Transactions() {
           <TransactionTypeIcon transaction={transaction} />
         </View>
         <View className="flex-1">
-          <Text>{transaction.description ?? transaction.category?.name ?? "Hello"}</Text>
+          <Text>{transaction.description ?? transaction.categoryname ?? "Hello"}</Text>
           <View className="flex-row justify-start items-center gap-2">
-            <Text>{transaction.category?.name}</Text>
+            <Text>{transaction.categoryname}</Text>
           </View>
         </View>
         <View className="flex items-end">
@@ -212,10 +212,10 @@ export default function Transactions() {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
-            {transaction.account?.currency}
+            {transaction.currency}
           </Text>
           <Text>
-            {transaction.account?.name} {transaction.account?.balance}
+            {transaction.accountname} {transaction.runningbalance}
           </Text>
         </View>
       </Pressable>
@@ -293,7 +293,7 @@ export default function Transactions() {
 
 const TransactionTypeIcon = ({ transaction }) => {
   const iconProp = getTransactionProp(transaction.type);
-  return <Icon name={transaction.category.icon ?? iconProp.iconName} size={iconProp.size} className={iconProp.color} />;
+  return <Icon name={transaction.icon ?? iconProp.iconName} size={iconProp.size} className={iconProp.color} />;
 };
 
 const getTransactionProp = (type: string | null) => {
