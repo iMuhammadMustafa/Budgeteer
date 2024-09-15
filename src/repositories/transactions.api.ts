@@ -52,14 +52,21 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
 };
 
 export const getWeeklyTransactions = async () => {
-  const { data, error } = await supabase.from(ViewNames.DailyTransactionsSummary).select();
+  const { data, error } = await supabase
+    .from(ViewNames.DailyTransactionsSummary)
+    .select()
+    .gte("date", dayjs().subtract(7, "day").toISOString())
+    .lte("date", dayjs().toISOString());
 
   if (error) throw new Error(error.message);
   return data;
 };
 export const getMonthlyTransactions = async () => {
-  const { data, error } = await supabase.from(ViewNames.MonthlyTransactions).select();
-
+  const { data, error } = await supabase
+    .from(ViewNames.MonthlyTransactions)
+    .select()
+    .gte("date", dayjs().subtract(1, "month").toISOString())
+    .lte("date", dayjs().toISOString());
   if (error) throw new Error(error.message);
   return data;
 };
