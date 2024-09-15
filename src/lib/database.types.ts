@@ -125,12 +125,13 @@ export type Database = {
           createdat: string
           createdby: string
           description: string | null
+          group: string
           icon: string | null
           id: string
           isdeleted: boolean
           name: string
           tenantid: string | null
-          type: string
+          type: Database["public"]["Enums"]["transactiontype"]
           updatedat: string | null
           updatedby: string | null
         }
@@ -138,12 +139,13 @@ export type Database = {
           createdat?: string
           createdby: string
           description?: string | null
+          group: string
           icon?: string | null
           id?: string
           isdeleted?: boolean
           name: string
           tenantid?: string | null
-          type: string
+          type?: Database["public"]["Enums"]["transactiontype"]
           updatedat?: string | null
           updatedby?: string | null
         }
@@ -151,12 +153,13 @@ export type Database = {
           createdat?: string
           createdby?: string
           description?: string | null
+          group?: string
           icon?: string | null
           id?: string
           isdeleted?: boolean
           name?: string
           tenantid?: string | null
-          type?: string
+          type?: Database["public"]["Enums"]["transactiontype"]
           updatedat?: string | null
           updatedby?: string | null
         }
@@ -342,7 +345,7 @@ export type Database = {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
-            referencedRelation: "threemonthscategorytransactions"
+            referencedRelation: "monthlycategorytransactions"
             referencedColumns: ["id"]
           },
           {
@@ -445,6 +448,14 @@ export type Database = {
       }
     }
     Views: {
+      dailytransactions: {
+        Row: {
+          date: string | null
+          sum: number | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+        }
+        Relationships: []
+      }
       hypopg_hidden_indexes: {
         Row: {
           am_name: unknown | null
@@ -466,10 +477,10 @@ export type Database = {
         }
         Relationships: []
       }
-      threemonthscategorytransactions: {
+      monthlycategorytransactions: {
         Row: {
           date: string | null
-          group: string | null
+          group: Database["public"]["Enums"]["transactiontype"] | null
           id: string | null
           name: string | null
           sum: number | null
@@ -514,7 +525,7 @@ export type Database = {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
-            referencedRelation: "threemonthscategorytransactions"
+            referencedRelation: "monthlycategorytransactions"
             referencedColumns: ["id"]
           },
           {
@@ -545,9 +556,11 @@ export type Database = {
           accountid: string | null
           accountname: string | null
           amount: number | null
+          balance: number | null
+          categorygroup: string | null
           categoryid: string | null
           categoryname: string | null
-          categorytype: string | null
+          categorytype: Database["public"]["Enums"]["transactiontype"] | null
           currency: string | null
           date: string | null
           description: string | null
@@ -576,14 +589,6 @@ export type Database = {
             referencedColumns: ["transactionid"]
           },
         ]
-      }
-      weekcategorytransactions: {
-        Row: {
-          date: string | null
-          sum: number | null
-          type: Database["public"]["Enums"]["transactiontype"] | null
-        }
-        Relationships: []
       }
     }
     Functions: {

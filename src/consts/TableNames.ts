@@ -11,6 +11,6 @@ export enum ViewNames {
   // TransactionsCategoryDateSum = "transactionscategorydatesum",
   TransactionsView = "transactionsview",
   TransactionDistinct = "transactiondistinct",
-  MonthlyTransactions = "threemonthscategorytransactions",
-  WeeklyTransactions = "weekcategorytransactions",
+  MonthlyTransactions = "monthlycategorytransactions",
+  DailyTransactionsSummary = "dailytransactions",
 }

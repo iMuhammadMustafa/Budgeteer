@@ -56,7 +56,7 @@ export const useMonthlyTransactions = () => {
 
 export const useWeeklyTransactions = () => {
   return useQuery<WeeklyTransactions[]>({
-    queryKey: [ViewNames.WeeklyTransactions],
+    queryKey: [ViewNames.DailyTransactionsSummary],
     queryFn: async () => getWeeklyTransactions(),
   });
 };

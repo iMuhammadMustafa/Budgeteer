@@ -52,7 +52,7 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
 };
 
 export const getWeeklyTransactions = async () => {
-  const { data, error } = await supabase.from(ViewNames.WeeklyTransactions).select();
+  const { data, error } = await supabase.from(ViewNames.DailyTransactionsSummary).select();
 
   if (error) throw new Error(error.message);
   return data;
