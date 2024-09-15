@@ -124,6 +124,7 @@ export default function useTransactions() {
     if (selectionMode) {
       // In selection mode, short press selects/deselects
       if (Platform.OS !== "web") Haptics.selectionAsync();
+
       const updatedSelections = selectedTransactions.find(i => i.transactionid === item.transactionid)
         ? selectedTransactions.filter(t => t.transactionid !== item.transactionid)
         : [...selectedTransactions, item];
@@ -144,7 +145,7 @@ export default function useTransactions() {
     } else {
       // Outside selection mode, navigate to transaction details
       // Use router for navigation
-      router.push(`../AddTransaction?transactionId=${item.transactionid}`);
+      router.push(`/AddTransaction?transactionId=${item.transactionid}`);
     }
   };
 
