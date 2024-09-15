@@ -186,40 +186,49 @@ const TransactionItem = ({
 
   return (
     <View className="flex-row items-center justify-between">
-      <Pressable
-        delayLongPress={300}
-        onLongPress={() => handleLongPress(transaction)}
-        onPress={() => handlePress(transaction)}
-        className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
+      <Link
+        href={`/AddTransaction?transactionId=${transaction.transactionid}`}
+        asChild
+        onPress={e => e.preventDefault()}
       >
-        <View
-          className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-muted`}
+        <Pressable
+          delayLongPress={300}
+          onLongPress={() => handleLongPress(transaction)}
+          onPress={e => {
+            console.log(e);
+            handlePress(transaction);
+          }}
+          className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
         >
-          <Icon name={transaction.icon ?? iconProp.iconName} size={iconProp.size} className="color-card-foreground" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-foreground">{transaction.description ?? transaction.categoryname ?? "Hello"}</Text>
-          <View className="flex-row justify-start items-center gap-2">
-            <Text className="text-foreground">{transaction.categoryname}</Text>
+          <View
+            className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-muted`}
+          >
+            <Icon name={transaction.icon ?? iconProp.iconName} size={iconProp.size} className="color-card-foreground" />
           </View>
-        </View>
-        <View className="flex items-end">
-          <Text className={`text-${getTransactionProp(transaction.type).textColor}`}>
-            {transaction.amount!.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-            {transaction.currency}
-          </Text>
-          <Text className="text-foreground">
-            {transaction.accountname} {" | "}
-            {transaction.running_balance?.toLocaleString("en", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Text>
-        </View>
-      </Pressable>
+          <View className="flex-1">
+            <Text className="text-foreground">{transaction.description ?? transaction.categoryname ?? "Hello"}</Text>
+            <View className="flex-row justify-start items-center gap-2">
+              <Text className="text-foreground">{transaction.categoryname}</Text>
+            </View>
+          </View>
+          <View className="flex items-end">
+            <Text className={`text-${getTransactionProp(transaction.type).textColor}`}>
+              {transaction.amount!.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+              {transaction.currency}
+            </Text>
+            <Text className="text-foreground">
+              {transaction.accountname} {" | "}
+              {transaction.running_balance?.toLocaleString("en", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
+          </View>
+        </Pressable>
+      </Link>
     </View>
   );
 };
