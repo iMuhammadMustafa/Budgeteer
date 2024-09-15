@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Inserts, MonthlyTransactions, Transaction, TransactionsView, WeeklyTransactions } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { TableNames, ViewNames } from "@/src/consts/TableNames";
+import { TableNames, transactionsKeys, ViewNames } from "@/src/consts/TableNames";
 import {
   getTransactionById,
   updateTransaction,
@@ -31,7 +31,7 @@ interface CategorizedTransactions {
 
 export const useGetTransactions = () => {
   return useQuery<TransactionsView[]>({
-    queryKey: [TableNames.Transactions],
+    queryKey: [ViewNames.TransactionsView],
     queryFn: getAllTransactions,
   });
 };
@@ -121,10 +121,12 @@ export const useUpsertTransaction = () => {
       return await handleUpdateTransaction(fullFormTransaction, originalData!, currentTimestamp, userId);
     },
     onSuccess: async ({ id, transferid }) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions, id] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions, transferid] });
+      await queryClient.invalidateQueries({ queryKey: transactionsKeys.all() });
+      if (transferid) {
+        await queryClient.invalidateQueries({
+          queryKey: transactionsKeys.detail(ViewNames.TransactionsView, transferid),
+        });
+      }
     },
   });
 };
