@@ -479,8 +479,9 @@ export type Database = {
       }
       monthlycategorytransactions: {
         Row: {
+          categorytype: Database["public"]["Enums"]["transactiontype"] | null
           date: string | null
-          group: Database["public"]["Enums"]["transactiontype"] | null
+          group: string | null
           id: string | null
           name: string | null
           sum: number | null

@@ -65,7 +65,7 @@ export const getMonthlyTransactions = async () => {
   const { data, error } = await supabase
     .from(ViewNames.MonthlyTransactions)
     .select()
-    .gte("date", dayjs().subtract(1, "month").toISOString())
+    .gte("date", dayjs().subtract(3, "month").toISOString())
     .lte("date", dayjs().toISOString());
   if (error) throw new Error(error.message);
   return data;

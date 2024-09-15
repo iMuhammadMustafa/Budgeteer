@@ -33,7 +33,7 @@ type ChartsObject = {
 };
 type GroupType = {
   [group: string]: {
-    [type: string]: number;
+    [group: string]: number;
   };
 };
 
