@@ -557,9 +557,25 @@ export type Database = {
           status: Database["public"]["Enums"]["transactionstatuses"] | null
           tags: string[] | null
           transactionid: string | null
+          transferid: string | null
           type: Database["public"]["Enums"]["transactiontype"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["transactionid"]
+          },
+        ]
       }
       weekcategorytransactions: {
         Row: {
