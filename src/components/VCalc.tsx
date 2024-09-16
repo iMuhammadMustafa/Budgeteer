@@ -44,21 +44,23 @@ const buttonRows = [
 
 export default function VCalc({ onSubmit, currentValue }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentExpression, setCurrentExpression] = useState("");
-  const [result, setResult] = useState("");
+  const [currentExpression, setCurrentExpression] = useState("0");
+  const [result, setResult] = useState("0");
   const [history, setHistory] = useState([]);
   const [lastOperation, setLastOperation] = useState("");
   const lastClickedButton = useRef(null);
 
   useEffect(() => {
     if (Platform.OS === "web") {
-      const handleKeyDown = event => {
+      document.getElementById("equals")?.focus();
+      const handleKeyDown = (event: KeyboardEvent) => {
         if (modalVisible) {
           const key = event.key;
+
           if (/^[0-9+\-*/().%]$/.test(key)) {
             handleButtonPress(key);
           } else if (key === "Enter") {
-            handleButtonPress("equals");
+            handleButtonPress("equals"); // Trigger the "equals" button
             return;
           } else if (key === "Backspace") {
             handleButtonPress("backspace");
@@ -83,8 +85,8 @@ export default function VCalc({ onSubmit, currentValue }) {
   }, [currentValue]);
 
   const handleClear = () => {
-    setCurrentExpression("");
-    setResult("");
+    setCurrentExpression("0");
+    setResult("0");
     setHistory([]);
     setLastOperation("");
   };
@@ -96,9 +98,13 @@ export default function VCalc({ onSubmit, currentValue }) {
         break;
       case "equals":
         try {
+          console.log("currentExpression", currentExpression);
           const preparedExpression = prepareExpression(currentExpression);
           const evalResult = eval(preparedExpression);
+          console.log("preparedExpression", preparedExpression);
+          console.log("evalResult", evalResult);
           setResult(evalResult.toString());
+          setCurrentExpression(evalResult.toString());
           setHistory([`${currentExpression} = ${evalResult}`, ...history]);
           setLastOperation("equals");
         } catch (error) {
@@ -130,7 +136,13 @@ export default function VCalc({ onSubmit, currentValue }) {
         });
         break;
       case "backspace":
-        setCurrentExpression(prev => prev.slice(0, -1));
+        setCurrentExpression(prev => {
+          if (prev.length === 1) {
+            return "0";
+          } else {
+            return prev.slice(0, -1);
+          }
+        });
         break;
       case "toggleSign":
         setCurrentExpression(prev => {
@@ -156,13 +168,23 @@ export default function VCalc({ onSubmit, currentValue }) {
       default:
         if (lastOperation === "equals" && !isNaN(buttonName)) {
           setCurrentExpression(buttonName);
-          setResult("");
+          setResult("0");
         } else {
-          setCurrentExpression(
-            prev => prev + (buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName),
-          );
+          setCurrentExpression(prev => {
+            const button = buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName;
+            {
+              if (prev === "0" && !isNaN(button)) {
+                return button;
+              } else {
+                return prev + button;
+              }
+            }
+          });
         }
         setLastOperation(buttonName);
+    }
+    if (Platform.OS === "web") {
+      document.getElementById("equals")?.focus();
     }
   };
 
@@ -178,68 +200,113 @@ export default function VCalc({ onSubmit, currentValue }) {
 
   return (
     <>
-      <TouchableOpacity className={`bg-grey-500 rounded-full p-4`} onPress={() => setModalVisible(true)}>
-        <Icon name="Calculator" />
-        {/* <Text className={`text-white font-bold text-center`}>Open Calculator</Text> */}
+      <TouchableOpacity
+        className="bg-white border border-muted rounded-lg mx-2 p-1.5 mt-4"
+        onPress={() => setModalVisible(true)}
+      >
+        <Icon name="Calculator" size={30} className="text-black" />
       </TouchableOpacity>
 
-      <Modal
-        isVisible={modalVisible}
-        onBackdropPress={() => {
+      {modalVisible && (
+        <Modal
+          isVisible={modalVisible}
+          onBackdropPress={() => {
+            handleButtonPress("clear");
+            setModalVisible(false);
+          }}
+        >
+          <View className="m-auto p-4 rounded-md bg-card border border-muted flex-1 max-w-xs overflow-x-hidden">
+            <History history={history} />
+            <Display currentExpression={currentExpression} result={result} />
+            <Buttons handleButtonPress={handleButtonPress} />
+            <FormActionButtons handleButtonPress={handleButtonPress} setModalVisible={setModalVisible} />
+          </View>
+        </Modal>
+      )}
+    </>
+  );
+}
+const History = ({ history }: any) => {
+  return (
+    <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
+      {history &&
+        history.map((item: any, index: number) => (
+          <Text key={index} className={`text-base mb-1`}>
+            {item}
+          </Text>
+        ))}
+    </ScrollView>
+  );
+};
+const Display = ({ currentExpression, result }: any) => {
+  return (
+    <View className="rounded-md bg-card border border-muted px-4">
+      <View className="items-end">
+        <Text className="text-xl">{currentExpression}</Text>
+      </View>
+      <View className="items-end">
+        <Text className="text-2xl font-bold">{result}</Text>
+      </View>
+    </View>
+  );
+};
+const Buttons = ({ handleButtonPress }: any) => {
+  return (
+    <View className="flex-col bg-card border border-muted p-2 my-1 m-auto">
+      {buttonRows.map((row, rowIndex) => (
+        <View key={rowIndex} className={`flex-row gap-2 mb-2`}>
+          {row.map(button => (
+            <Button key={button.name} button={button} handleButtonPress={handleButtonPress} />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+};
+const Button = ({
+  button,
+  handleButtonPress,
+}: {
+  button: { name: string; label: string };
+  handleButtonPress: (buttonName: string) => void;
+}) => {
+  return (
+    <TouchableOpacity
+      key={button.name}
+      id={button.name}
+      className={`w-14 h-14 justify-center items-center bg-gray-200 rounded-lg`}
+      onPress={() => handleButtonPress(button.name)}
+    >
+      <Text className={`text-xl`}>{button.label}</Text>
+    </TouchableOpacity>
+  );
+};
+const FormActionButtons = ({
+  handleButtonPress,
+  setModalVisible,
+}: {
+  handleButtonPress: (buttonName: string) => void;
+  setModalVisible: (visible: boolean) => void;
+}) => {
+  return (
+    <View className="flex-row justify-center items-center gap-5 mt-4">
+      <TouchableOpacity
+        className={`bg-error-300 rounded-md p-4 `}
+        onPress={() => {
           handleButtonPress("clear");
           setModalVisible(false);
         }}
       >
-        <View className={`flex-1 bg-white p-4`}>
-          <ScrollView className={`max-h-32 mb-2`}>
-            {history.map((item, index) => (
-              <Text key={index} className={`text-base mb-1`}>
-                {item}
-              </Text>
-            ))}
-          </ScrollView>
-          <View className={`items-end mb-2`}>
-            <Text className={`text-2xl`}>{currentExpression.length > 0 ? currentExpression : 0}</Text>
-          </View>
-          <View className={`items-end mb-4`}>
-            <Text className={`text-4xl font-bold`}>{result.length > 0 ? result : 0}</Text>
-          </View>
-          <View className={`flex-col m-auto`}>
-            {buttonRows.map((row, rowIndex) => (
-              <View key={rowIndex} className={`flex-row gap-2 mb-2`}>
-                {row.map(button => (
-                  <TouchableOpacity
-                    key={button.name}
-                    className={`w-14 h-14 justify-center items-center bg-gray-200 rounded-lg`}
-                    onPress={() => handleButtonPress(button.name)}
-                  >
-                    <Text className={`text-xl`}>{button.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </View>
-          <View className="flex-row justify-center items-center gap-5">
-            <TouchableOpacity
-              className={`bg-blue-500 rounded-full p-4 mt-4`}
-              onPress={() => {
-                handleButtonPress("clear");
-                setModalVisible(false);
-              }}
-            >
-              <Text className={`text-white font-bold text-center`}>Close</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`bg-blue-500 rounded-full p-4 mt-4`}
-              onPress={() => {
-                handleButtonPress("submit");
-              }}
-            >
-              <Text className={`text-white font-bold text-center`}>Submit</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </>
+        <Text className={`text-white font-bold text-center`}>Close</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        className={`bg-primary rounded-md p-4`}
+        onPress={() => {
+          handleButtonPress("submit");
+        }}
+      >
+        <Text className={`text-white font-bold text-center`}>Submit</Text>
+      </TouchableOpacity>
+    </View>
   );
-}
+};
