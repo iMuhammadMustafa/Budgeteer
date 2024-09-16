@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inserts, MonthlyTransactions, Transaction, TransactionsView, WeeklyTransactions } from "@/src/lib/supabase";
+import {
+  Inserts,
+  MonthlyTransactions,
+  Transaction,
+  TransactionsView,
+  Updates,
+  WeeklyTransactions,
+} from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, transactionsKeys, ViewNames } from "@/src/consts/TableNames";
 import {
@@ -14,7 +21,7 @@ import {
   getMonthlyTransactions,
   getWeeklyTransactions,
 } from "./transactions.api";
-import { updateAccountBalance } from "./account.api";
+import { updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
 
@@ -182,27 +189,36 @@ const handleNewTransaction = async (
   userId: string,
 ) => {
   const { destAccountId, ...formTransaction } = fullFormTransaction;
+  const amount = formTransaction.amount ?? 0;
+  const accountBalance = formTransaction.balance ?? 0;
   if (formTransaction.type === "Expense" || formTransaction.type === "Transfer")
-    formTransaction.amount = -Math.abs(formTransaction.amount);
-  if (formTransaction.type === "Income") formTransaction.amount = Math.abs(formTransaction.amount);
+    formTransaction.amount = -Math.abs(amount);
+  if (formTransaction.type === "Income") formTransaction.amount = Math.abs(amount);
 
-  const updatedSrcAcc = await updateAccountBalance(
-    formTransaction.accountid!,
-    formTransaction.amount,
-    currentTimestamp,
-    userId,
-  );
+  const ac = new AbortController();
+
+  const updatedSrcAcc = await updateAccount({
+    id: formTransaction.accountid!,
+    balance: accountBalance + amount,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  });
+
   if (!updatedSrcAcc) {
     throw new Error("Source Account wasn't updated");
   }
 
-  // const transferId = formTransaction.type === "Transfer" ? generateUuid() : null;
-  formTransaction.id = undefined;
-  // formTransaction.transferid = transferId;
+  formTransaction.id = null;
 
   const createdTransaction = await createTransaction(formTransaction as Inserts<TableNames.Transactions>);
 
   if (!createdTransaction) {
+    await updateAccount({
+      id: formTransaction.accountid!,
+      balance: accountBalance - amount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
     throw new Error("Transaction wasn't created");
   }
 
@@ -210,7 +226,7 @@ const handleNewTransaction = async (
     const transferTransaction = {
       ...formTransaction,
       id: undefined,
-      amount: Math.abs(formTransaction.amount),
+      amount: Math.abs(formTransaction.amount!),
       transferid: createdTransaction.id,
       accountid: destAccountId,
     };
@@ -228,10 +244,6 @@ const handleNewTransaction = async (
     if (!createdDestTransaction) {
       throw new Error("Transfer Transaction wasn't updated");
     }
-    // await updateTransaction({
-    //   ...createdTransaction,
-    //   transferid: createdDestTransaction.id,
-    // });
   }
 
   return createdTransaction;
@@ -244,23 +256,24 @@ const handleUpdateTransaction = async (
   userId: string,
 ) => {
   const { destAccountId, ...formTransaction } = fullFormTransaction;
+  const amount = formTransaction.amount ?? 0;
 
   if (formTransaction.type === "Expense" || (formTransaction.type === "Transfer" && !originalData.transferid)) {
-    formTransaction.amount = -Math.abs(formTransaction.amount);
+    formTransaction.amount = -Math.abs(amount);
   }
   if (formTransaction.type === "Income" || (formTransaction.type === "Transfer" && originalData.transferid)) {
-    formTransaction.amount = Math.abs(formTransaction.amount);
+    formTransaction.amount = Math.abs(amount);
   }
 
-  await updateAccountBalance(originalData.accountid!, -originalData.amount, currentTimestamp, userId);
-  const originalAcc = await updateAccountBalance(
-    originalData.accountid!,
-    formTransaction.amount,
-    currentTimestamp,
-    userId,
-  );
+  const newAccountBalance = formTransaction.balance! - originalData.amount! + formTransaction.amount!;
 
-  const updatedTransaction = await updateTransaction(formTransaction);
+  await updateAccount({
+    id: formTransaction.accountid!,
+    balance: newAccountBalance,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  });
+  const updatedTransaction = await updateTransaction(formTransaction as Updates<TableNames.Transactions>);
 
   if (originalData.type === "Transfer") {
     if (originalData.transferid) {
@@ -268,13 +281,13 @@ const handleUpdateTransaction = async (
       const originalTransferDest = await getTransactionById(originalData.transferid);
       await updateAccountBalance(
         originalTransferDest.accountid!,
-        -originalTransferDest.amount,
+        -originalTransferDest.amount!,
         currentTimestamp,
         userId,
       );
       const originalDestAcc = await updateAccountBalance(
         originalTransferDest.accountid!,
-        -Math.abs(formTransaction.amount),
+        -Math.abs(formTransaction.amount!),
         currentTimestamp,
         userId,
       );

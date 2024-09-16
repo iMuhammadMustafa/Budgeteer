@@ -18,7 +18,6 @@ import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../../repositories/categories.service";
 import { useGetAccounts } from "../../repositories/account.service";
-import { TableNames } from "../../consts/TableNames";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
@@ -30,9 +29,7 @@ import { getTransactionsByDescription } from "../../repositories/transactions.ap
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 
-export type TransactionFormType = TransactionsView;
-// | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
-// | (Updates<TableNames.Transactions> & { amount: number; destAccountId?: string })
+export type TransactionFormType = TransactionsView & { destAccountId?: string };
 
 export const initialTransactionState: TransactionFormType = {
   description: "",
@@ -67,14 +64,13 @@ export const initialTransactionState: TransactionFormType = {
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
-  const [formData, setFormData] = useState<TransactionFormType>(transaction);
-  const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
-  const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
+  const [formData, setFormData] = useState<TransactionFormType>({
+    ...transaction,
+    amount: Math.abs(transaction.amount ?? 0),
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showDate, setShowDate] = useState(false);
   const router = useRouter();
-  // const [searchTerm, setSearchTerm] = useState("");
-  // const { data: searchResults } = useSearchTransactionsByDescription(searchTerm);
 
   useEffect(() => {
     setFormData(transaction);
@@ -83,9 +79,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { mutate } = useUpsertTransaction();
   const { addNotification } = useNotifications();
 
+  //AlreadyHaveAccounts, use this to get balance instead of calling the api again
+  const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
+  const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
+
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
+
   const handleOnMoreSubmit = () => {
     const newItem = {
       ...initialTransactionState,
@@ -96,43 +97,41 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     };
     setFormData(newItem);
     setIsLoading(true);
-    console.log(formData);
-    // mutate(
-    //   {
-    //     fullFormTransaction: {
-    //       ...formData,
-    //       amount: Math.abs(formData.amount ?? 0),
-    //     },
-    //     originalData: transaction,
-    //   },
-    //   {
-    //     onSuccess: () => {
-    //       addNotification({ message: "Transaction Created Successfully", type: "success" });
-    //       setIsLoading(false);
-    //       setFormData(newItem);
-    //     },
-    //   },
-    // );
+    mutate(
+      {
+        fullFormTransaction: {
+          ...formData,
+          amount: Math.abs(formData.amount ?? 0),
+        },
+        originalData: transaction,
+      },
+      {
+        onSuccess: () => {
+          addNotification({ message: "Transaction Created Successfully", type: "success" });
+          setIsLoading(false);
+          setFormData(newItem);
+        },
+      },
+    );
   };
   const handleSubmit = () => {
-    console.log(formData);
-    // setIsLoading(true);
-    // mutate(
-    //   {
-    //     fullFormTransaction: {
-    //       ...formData,
-    //       amount: Math.abs(formData.amount ?? 0),
-    //     },
-    //     originalData: transaction,
-    //   },
-    //   {
-    //     onSuccess: () => {
-    //       addNotification({ message: "Transaction Created Successfully", type: "success" });
-    //       setIsLoading(false);
-    //       router.replace("/Transactions");
-    //     },
-    //   },
-    // );
+    setIsLoading(true);
+    mutate(
+      {
+        fullFormTransaction: {
+          ...formData,
+          amount: Math.abs(formData.amount ?? 0),
+        },
+        originalData: transaction,
+      },
+      {
+        onSuccess: () => {
+          addNotification({ message: "Transaction Created Successfully", type: "success" });
+          setIsLoading(false);
+          router.replace("/Transactions");
+        },
+      },
+    );
   };
 
   const onSelectItem = (item: SearchableDropdownItem) => {
@@ -147,9 +146,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     });
   };
 
-  // useEffect(() => {}, []);
-
-  if (isCategoriesLoading || isAccountLoading || isLoading) return <ActivityIndicator />;
+  if (isLoading) return <ActivityIndicator />;
 
   return (
     <SafeAreaView className="flex-1">

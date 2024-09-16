@@ -38,6 +38,17 @@ export const updateAccount = async (account: Updates<TableNames.Accounts>, sessi
   if (error) throw error;
   return data;
 };
+export const updateAccountById = async (account: Updates<TableNames.Accounts>, session?: Session | null) => {
+  const { data, error } = await supabase
+    .from(TableNames.Accounts)
+    .update({ ...account, updatedby: session?.user.id ?? account.createdby })
+    .eq("id", account.id!)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
 
 export const deleteAccount = async (id: string, session?: Session | null) => {
   const { data, error } = await supabase
