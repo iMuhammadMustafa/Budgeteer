@@ -90,7 +90,7 @@ export default function SearchableDropdown({
       <View className={`my-1 ${className ?? ""} `}>
         <Text className="text-foreground">{label}</Text>
         <TextInput
-          className="p-2 border border-gray-400 rounded-md  "
+          className="p-3 mb-4  border border-gray-400 rounded-md bg-white text-black"
           value={inputText ?? ""}
           placeholder={placeholder ?? "Type to search.."}
           onChangeText={handleChange}

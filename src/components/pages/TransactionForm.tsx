@@ -114,7 +114,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
 
   const onSelectItem = (item: SearchableDropdownItem) => {
-    console.log(item);
     setFormData({
       ...transaction,
       ...item.item,
@@ -133,6 +132,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   return (
     <SafeAreaView className="flex-1">
       <TouchableOpacity
+        className="self-end px-5 flex-row items-center"
         disabled={isLoading}
         onPress={() => {
           handleOnMoreSubmit();
@@ -205,33 +205,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </Modal>
           ))}
 
-        {/* {showDate && (
-          <Box className="m-auto">
-            <Box className="lg:max-w-sm">
-              {Platform.OS === "web" ? (
-                <DateTimePicker
-                  mode="single"
-                  date={dayjs(formData.date)}
-                  displayFullDays
-                  timePicker
-                  onChange={(params: any) =>
-                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
-                  }
-                />
-              ) : (
-                <>
-                  <MobileDateTimePicker
-                    value={dayjs(formData.date).toDate()}
-                    mode={"time"}
-                    is24Hour={true}
-                    onChange={e => console.log(e)}
-                  />
-                </>
-              )}
-            </Box>
-          </Box>
-        )} */}
-
         <Box className="flex-row justify-center items-center">
           <TextInputField
             label="Amount"
@@ -269,6 +242,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               { label: "Income", value: "Income" },
               { label: "Expense", value: "Expense" },
               { label: "Transfer", value: "Transfer" },
+              { label: "Adjustment", value: "Adjustment" },
+              { label: "Initial", value: "Initial" },
+              { label: "Refund", value: "Refund" },
             ]}
             selectedValue={formData.type}
             onSelect={(value: TransactionTypes) => handleTextChange("type", value)}
@@ -325,6 +301,34 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               onSelect={(value: any) => handleTextChange("destAccountId", value)}
             />
           ))}
+
+        {Platform.OS === "web" ? (
+          <VDropdown
+            label="Status"
+            options={[
+              { label: "None", value: "None" },
+              { label: "Cleared", value: "Cleared" },
+              { label: "Reconciled", value: "Reconciled" },
+              { label: "Void", value: "Void" },
+            ]}
+            selectedValue={formData.status}
+            onSelect={value => {
+              handleTextChange("status", value);
+            }}
+          />
+        ) : (
+          <DropdownModal
+            label="Status"
+            options={[
+              { label: "None", value: "None" },
+              { label: "Cleared", value: "Cleared" },
+              { label: "Reconciled", value: "Reconciled" },
+              { label: "Void", value: "Void" },
+            ]}
+            selectedValue={formData.type}
+            onSelect={(value: TransactionTypes) => handleTextChange("status", value)}
+          />
+        )}
 
         <TextInputField
           label="Tags"
