@@ -87,11 +87,11 @@ export const useWeeklyTransactions = () => {
 //   });
 // };
 
-export const useGetTransactionById = (id?: string) => {
-  return useQuery<Transaction>({
-    queryKey: [TableNames.Transactions, id],
-    queryFn: async () => getTransactionById(id!),
-    enabled: !!id,
+export const useGetTransactionById = (transactionid?: string | null) => {
+  return useQuery<TransactionsView>({
+    queryKey: [ViewNames.TransactionsView, transactionid],
+    queryFn: async () => getTransactionById(transactionid!),
+    enabled: !!transactionid,
   });
 };
 

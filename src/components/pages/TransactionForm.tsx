@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Inserts, TransactionTypes, Updates } from "../../lib/supabase";
+import { Inserts, TransactionsView, TransactionTypes, Updates } from "../../lib/supabase";
 import { useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
@@ -27,23 +27,43 @@ import VCalc from "../VCalc";
 import DropdownModal from "../Dropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
-import { default as MobileDateTimePicker } from "@react-native-community/datetimepicker";
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 
-export type TransactionFormType =
-  | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
-  | (Updates<TableNames.Transactions> & { amount: number; destAccountId?: string });
+export type TransactionFormType = TransactionsView;
+// | (Inserts<TableNames.Transactions> & { amount: number; destAccountId?: string })
+// | (Updates<TableNames.Transactions> & { amount: number; destAccountId?: string })
 
 export const initialTransactionState: TransactionFormType = {
   description: "",
   date: dayjs().toISOString(),
-  type: "Expense",
-  categoryid: "",
-  accountid: "",
   amount: 0,
+  type: "Expense",
+
+  accountid: "",
+  categoryid: "",
   notes: "",
   tags: null,
+  status: "None",
+
+  transferid: "",
+
+  createdat: null,
+
+  accountname: null,
+  balance: null,
+  categorygroup: null,
+  categoryname: null,
+  categorytype: null,
+  createdby: null,
+  currency: null,
+  icon: null,
+  id: null,
+  isdeleted: null,
+  running_balance: null,
+  tenantid: null,
+  updatedat: null,
+  updatedby: null,
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
@@ -76,41 +96,43 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     };
     setFormData(newItem);
     setIsLoading(true);
-    mutate(
-      {
-        fullFormTransaction: {
-          ...formData,
-          amount: Math.abs(formData.amount ?? 0),
-        },
-        originalData: transaction,
-      },
-      {
-        onSuccess: () => {
-          addNotification({ message: "Transaction Created Successfully", type: "success" });
-          setIsLoading(false);
-          setFormData(newItem);
-        },
-      },
-    );
+    console.log(formData);
+    // mutate(
+    //   {
+    //     fullFormTransaction: {
+    //       ...formData,
+    //       amount: Math.abs(formData.amount ?? 0),
+    //     },
+    //     originalData: transaction,
+    //   },
+    //   {
+    //     onSuccess: () => {
+    //       addNotification({ message: "Transaction Created Successfully", type: "success" });
+    //       setIsLoading(false);
+    //       setFormData(newItem);
+    //     },
+    //   },
+    // );
   };
   const handleSubmit = () => {
-    setIsLoading(true);
-    mutate(
-      {
-        fullFormTransaction: {
-          ...formData,
-          amount: Math.abs(formData.amount ?? 0),
-        },
-        originalData: transaction,
-      },
-      {
-        onSuccess: () => {
-          addNotification({ message: "Transaction Created Successfully", type: "success" });
-          setIsLoading(false);
-          router.replace("/Transactions");
-        },
-      },
-    );
+    console.log(formData);
+    // setIsLoading(true);
+    // mutate(
+    //   {
+    //     fullFormTransaction: {
+    //       ...formData,
+    //       amount: Math.abs(formData.amount ?? 0),
+    //     },
+    //     originalData: transaction,
+    //   },
+    //   {
+    //     onSuccess: () => {
+    //       addNotification({ message: "Transaction Created Successfully", type: "success" });
+    //       setIsLoading(false);
+    //       router.replace("/Transactions");
+    //     },
+    //   },
+    // );
   };
 
   const onSelectItem = (item: SearchableDropdownItem) => {

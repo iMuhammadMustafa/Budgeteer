@@ -11,12 +11,12 @@ export const getAllTransactions = async () => {
 
   return data;
 };
-export const getTransactionById = async (id: string) => {
+export const getTransactionById = async (transactionid: string) => {
   const { data, error } = await supabase
-    .from(TableNames.Transactions)
+    .from(ViewNames.TransactionsView)
     .select()
     .eq("isdeleted", false)
-    .eq("id", id)
+    .eq("transactionid", transactionid)
     .single();
   if (error) throw new Error(error.message);
   return data;

@@ -144,8 +144,7 @@ export default function useTransactions() {
       }
     } else {
       // Outside selection mode, navigate to transaction details
-      // Use router for navigation
-      router.push(`/AddTransaction?transactionId=${item.transactionid}`);
+      router.push({ pathname: `/AddTransaction`, params: item! }); // Remove the braces in params
     }
   };
 

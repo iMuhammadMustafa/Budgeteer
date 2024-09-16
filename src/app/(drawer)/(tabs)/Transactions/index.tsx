@@ -139,7 +139,7 @@ const DaysList = ({
             handlePress={handlePress}
           />
         )}
-        keyExtractor={transaction => transaction.transactionid!}
+        keyExtractor={transaction => transaction.id!}
       />
 
       <Divider className="my-0.5 h-[2px]" />
@@ -181,23 +181,17 @@ const TransactionItem = ({
   handleLongPress: (item: TransactionsView) => void;
   handlePress: (item: TransactionsView) => void;
 }) => {
-  const isSelected = selectedTransactions.find(t => t.transactionid === transaction.transactionid);
+  const isSelected = selectedTransactions.find(t => t.id === transaction.id);
   const iconProp = getTransactionProp(transaction.type);
 
   return (
     <View className="flex-row items-center justify-between">
-      <Link
-        href={`/AddTransaction?transactionId=${transaction.transactionid}`}
-        asChild
-        onPress={e => e.preventDefault()}
-      >
+      <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
         <Pressable
+          style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
           delayLongPress={300}
           onLongPress={() => handleLongPress(transaction)}
-          onPress={e => {
-            console.log(e);
-            handlePress(transaction);
-          }}
+          onPress={() => handlePress(transaction)}
           className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
         >
           <View

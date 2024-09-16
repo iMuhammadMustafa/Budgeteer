@@ -1,33 +1,17 @@
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/pages/TransactionForm";
 import { useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
-import dayjs from "dayjs";
 
 export default function AddTransaction() {
-  const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();
-  const [initialValues, setInitialValues] = useState<TransactionFormType>(initialTransactionState);
+  const params = useLocalSearchParams();
+  const transaction = params as unknown as TransactionFormType;
 
-  const { data: transaction, isLoading, error } = useGetTransactionById(transactionId);
-
-  useEffect(() => {
-    if (transactionId && transaction) {
-      setInitialValues({
-        ...transaction,
-      });
-    } else {
-      setInitialValues(initialTransactionState);
-    }
-  }, [transactionId, transaction]);
+  const id = transaction?.id && !transaction?.accountid && !transaction?.categoryid ? transaction.id : null;
+  const { data: transactionById, isLoading, error } = useGetTransactionById(id);
 
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
 
-  return (
-    <>
-      <TransactionForm transaction={initialValues} />
-      {/* <TransactionFormNew transaction={initialValues} /> */}
-    </>
-  );
+  return <TransactionForm transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />;
 }

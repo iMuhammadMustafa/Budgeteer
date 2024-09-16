@@ -12,11 +12,19 @@ export default function DashboardLayout() {
         }}
       />
       <Tabs.Screen
+        name="Dashboard/useDashboard"
+        //hide element
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="Transactions"
         options={{
           tabBarIcon: ({ color }) => <Icon name="ArrowLeftRight" color={color} size={24} />,
         }}
       />
+
       <Tabs.Screen
         name="AddTransaction"
         options={{
