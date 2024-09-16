@@ -328,13 +328,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_accountid_fkey"
-            columns: ["accountid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["accountid"]
-          },
-          {
             foreignKeyName: "transactions_categoryid_fkey"
             columns: ["categoryid"]
             isOneToOne: false
@@ -347,13 +340,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "monthlycategorytransactions"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["categoryid"]
           },
           {
             foreignKeyName: "transactions_createdby_fkey"
@@ -374,7 +360,7 @@ export type Database = {
             columns: ["transferid"]
             isOneToOne: false
             referencedRelation: "transactionsview"
-            referencedColumns: ["transactionid"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -422,13 +408,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "useraccounts_accountid_fkey"
-            columns: ["accountid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["accountid"]
           },
           {
             foreignKeyName: "useraccounts_createdby_fkey"
@@ -509,11 +488,70 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoryid_fkey"
+            columns: ["categoryid"]
+            isOneToOne: false
+            referencedRelation: "monthlycategorytransactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferid_fkey"
+            columns: ["transferid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactionsview: {
+        Row: {
+          accountid: string | null
+          accountname: string | null
+          amount: number | null
+          balance: number | null
+          categorygroup: string | null
+          categoryid: string | null
+          categoryname: string | null
+          categorytype: Database["public"]["Enums"]["transactiontype"] | null
+          createdat: string | null
+          createdby: string | null
+          currency: string | null
+          date: string | null
+          description: string | null
+          icon: string | null
+          id: string | null
+          isdeleted: boolean | null
+          notes: string | null
+          running_balance: number | null
+          status: Database["public"]["Enums"]["transactionstatuses"] | null
+          tags: string[] | null
+          tenantid: string | null
+          transferid: string | null
+          type: Database["public"]["Enums"]["transactiontype"] | null
+          updatedat: string | null
+          updatedby: string | null
+        }
+        Relationships: [
+          {
             foreignKeyName: "transactions_accountid_fkey"
             columns: ["accountid"]
             isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["accountid"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "transactions_categoryid_fkey"
@@ -530,11 +568,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_categoryid_fkey"
-            columns: ["categoryid"]
+            foreignKeyName: "transactions_createdby_fkey"
+            columns: ["createdby"]
             isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["categoryid"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "transactions_transferid_fkey"
@@ -548,46 +586,7 @@ export type Database = {
             columns: ["transferid"]
             isOneToOne: false
             referencedRelation: "transactionsview"
-            referencedColumns: ["transactionid"]
-          },
-        ]
-      }
-      transactionsview: {
-        Row: {
-          accountid: string | null
-          accountname: string | null
-          amount: number | null
-          balance: number | null
-          categorygroup: string | null
-          categoryid: string | null
-          categoryname: string | null
-          categorytype: Database["public"]["Enums"]["transactiontype"] | null
-          currency: string | null
-          date: string | null
-          description: string | null
-          icon: string | null
-          notes: string | null
-          running_balance: number | null
-          status: Database["public"]["Enums"]["transactionstatuses"] | null
-          tags: string[] | null
-          transactionid: string | null
-          transferid: string | null
-          type: Database["public"]["Enums"]["transactiontype"] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_transferid_fkey"
-            columns: ["transferid"]
-            isOneToOne: false
-            referencedRelation: "transactions"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_transferid_fkey"
-            columns: ["transferid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["transactionid"]
           },
         ]
       }
