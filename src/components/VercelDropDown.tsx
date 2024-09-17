@@ -2,8 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, FlatList, LayoutChangeEvent } from "react-native";
 import Icon from "../lib/IonIcons";
 
+interface OptionItem {
+  label: string;
+  value: any;
+  icon?: any;
+  disabled?: boolean;
+}
+
 interface DropdownProps {
-  options?: Array<{ label: string; value: any; icon?: any }>;
+  options?: Array<OptionItem>;
   onSelect: (item: { label: string; value: any }) => void;
   label?: string;
   buttonTextAfterSelection?: (selectedItem: { label: string; value: any }) => string;
@@ -98,13 +105,18 @@ const VDropdown: React.FC<DropdownProps> = ({
         >
           <FlatList
             data={options}
-            renderItem={({ item }: { item: { label: string; value: any; icon: any } }) => (
+            renderItem={({ item }: { item: OptionItem }) => (
               <TouchableOpacity
                 className={`p-2 border-b border-gray-300 ${rowStyle} relative z-10 flex-row gap-2`}
+                disabled={item.disabled}
                 onPress={() => onItemPress(item)}
               >
                 {item.icon && <Icon name={item.icon} className="text-base" />}
-                <Text className={`text-base ${rowTextStyle} relative z-10`}>{rowTextForSelection(item)}</Text>
+                <Text
+                  className={`text-base ${rowTextStyle} relative z-10 ${item.disabled ? "text-muted" : "text-dark"}`}
+                >
+                  {rowTextForSelection(item)}
+                </Text>
               </TouchableOpacity>
             )}
             keyExtractor={(item, index) => index.toString()}

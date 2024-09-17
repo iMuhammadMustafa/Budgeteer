@@ -245,9 +245,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               { label: "Income", value: "Income" },
               { label: "Expense", value: "Expense" },
               { label: "Transfer", value: "Transfer" },
-              { label: "Adjustment", value: "Adjustment" },
-              { label: "Initial", value: "Initial" },
-              { label: "Refund", value: "Refund" },
+              { label: "Adjustment", value: "Adjustment", disabled: true },
+              { label: "Initial", value: "Initial", disabled: true },
+              { label: "Refund", value: "Refund", disabled: true },
             ]}
             selectedValue={formData.type}
             onSelect={value => {
@@ -261,9 +261,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               { label: "Income", value: "Income" },
               { label: "Expense", value: "Expense" },
               { label: "Transfer", value: "Transfer" },
-              { label: "Adjustment", value: "Adjustment" },
-              { label: "Initial", value: "Initial" },
-              { label: "Refund", value: "Refund" },
+              { label: "Adjustment", value: "Adjustment", disabled: true },
+              { label: "Initial", value: "Initial", disabled: true },
+              { label: "Refund", value: "Refund", disabled: true },
             ]}
             selectedValue={formData.type}
             onSelect={(value: TransactionTypes) => handleTextChange("type", value)}

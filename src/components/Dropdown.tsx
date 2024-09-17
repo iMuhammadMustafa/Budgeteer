@@ -40,11 +40,12 @@ export default function DropdownModal({ options, selectedValue, onSelect, label 
                 <TouchableOpacity
                   key={item.value}
                   className="p-3 flex-row border-b border-b-gray-300  rounded-md"
+                  disabled={item.disabled}
                   onPress={() => handleSelect(item.value)}
                 >
                   <View className="w-full flex-row justify-start items-center gap-2">
                     {item.icon && <Icon name={item.icon} className="text-black" />}
-                    <Text className="text-black ">{item.label}</Text>
+                    <Text className={`${item.disabled ? "text-muted" : "text-dark"}`}>{item.label}</Text>
                   </View>
                 </TouchableOpacity>
               );
