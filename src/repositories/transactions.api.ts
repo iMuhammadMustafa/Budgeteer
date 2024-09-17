@@ -23,7 +23,7 @@ export const getTransactionById = async (transactionid: string) => {
 };
 export const getTransactionByTransferId = async (id: string) => {
   const { data, error } = await supabase
-    .from(TableNames.Transactions)
+    .from(ViewNames.TransactionsView)
     .select()
     .eq("isdeleted", false)
     .eq("transferid", id)
@@ -51,7 +51,7 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
   );
 };
 
-export const getWeeklyTransactions = async () => {
+export const getDailyTransactionsSummary = async () => {
   const { data, error } = await supabase
     .from(ViewNames.DailyTransactionsSummary)
     .select()

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useMonthlyTransactions, useWeeklyTransactions } from "@/src/repositories/transactions.service";
+import { useMonthlyTransactions, useDailyTransactionsSummary } from "@/src/repositories/transactions.service";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -39,7 +39,7 @@ type GroupType = {
 
 export default function useDashboard() {
   const { data: monthlyTransactions = [], isLoading: isMonthlyLoading } = useMonthlyTransactions();
-  const { data: weeklyTransactions = [], isLoading: isWeeklyLoading } = useWeeklyTransactions();
+  const { data: weeklyTransactions = [], isLoading: isWeeklyLoading } = useDailyTransactionsSummary();
   const isLoading = isMonthlyLoading || isWeeklyLoading;
 
   const chartsObj: ChartsObject = {};

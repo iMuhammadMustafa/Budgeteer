@@ -29,7 +29,7 @@ import { getTransactionsByDescription } from "../../repositories/transactions.ap
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 
-export type TransactionFormType = TransactionsView & { destAccountId?: string };
+export type TransactionFormType = TransactionsView & { amount: number };
 
 export const initialTransactionState: TransactionFormType = {
   description: "",
@@ -44,6 +44,7 @@ export const initialTransactionState: TransactionFormType = {
   status: "None",
 
   transferid: "",
+  transferaccountid: "",
 
   createdat: null,
 
@@ -70,6 +71,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showDate, setShowDate] = useState(false);
+  const [sourceAccount, setSourceAccount] = useState(null);
+  const [destinationAccount, setDestinationAccount] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -79,13 +82,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { mutate } = useUpsertTransaction();
   const { addNotification } = useNotifications();
 
-  //AlreadyHaveAccounts, use this to get balance instead of calling the api again
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
   const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
 
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
+  console.log(formData);
 
   const handleOnMoreSubmit = () => {
     const newItem = {
@@ -95,27 +98,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       categoryid: formData.categoryid,
       accountid: formData.accountid,
     };
-    setFormData(newItem);
     setIsLoading(true);
-    mutate(
-      {
-        fullFormTransaction: {
-          ...formData,
-          amount: Math.abs(formData.amount ?? 0),
-        },
-        originalData: transaction,
-      },
-      {
-        onSuccess: () => {
-          addNotification({ message: "Transaction Created Successfully", type: "success" });
-          setIsLoading(false);
-          setFormData(newItem);
-        },
-      },
-    );
+    handleMutate(true);
+    setFormData(newItem);
   };
   const handleSubmit = () => {
     setIsLoading(true);
+    handleMutate();
+  };
+
+  const handleMutate = (isOneMore = false) => {
     mutate(
       {
         fullFormTransaction: {
@@ -123,12 +115,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           amount: Math.abs(formData.amount ?? 0),
         },
         originalData: transaction,
+        sourceAccount,
+        destinationAccount,
       },
       {
         onSuccess: () => {
           addNotification({ message: "Transaction Created Successfully", type: "success" });
           setIsLoading(false);
-          router.replace("/Transactions");
+          if (!isOneMore) {
+            router.replace("/Transactions");
+          }
         },
       },
     );
@@ -138,15 +134,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setFormData({
       ...transaction,
       ...item.item,
-      // id: transaction.id,
-      // date: transaction.date,
-      // createdat: transaction.createdat,
-      // updatedat: transaction.updatedat,
-      // updatedby: transaction.updatedby,
     });
   };
 
-  if (isLoading) return <ActivityIndicator />;
+  if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
 
   return (
     <SafeAreaView className="flex-1">
@@ -292,15 +283,21 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <VDropdown
             label="Account"
             selectedValue={formData.accountid}
-            options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-            onSelect={(value: any) => handleTextChange("accountid", value)}
+            options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+            onSelect={(value: any) => {
+              handleTextChange("accountid", value);
+              setSourceAccount(value);
+            }}
           />
         ) : (
           <DropdownModal
             label="Account"
             selectedValue={formData.accountid}
-            options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-            onSelect={(value: any) => handleTextChange("accountid", value)}
+            options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+            onSelect={(value: any) => {
+              handleTextChange("accountid", value);
+              setSourceAccount(value);
+            }}
           />
         )}
 
@@ -308,16 +305,22 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           (Platform.OS === "web" ? (
             <VDropdown
               label="Destinaton Account"
-              selectedValue={formData.destAccountId}
-              options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-              onSelect={(value: any) => handleTextChange("destAccountId", value)}
+              selectedValue={formData.transferaccountid}
+              options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+              onSelect={(value: any) => {
+                handleTextChange("transferaccountid", value);
+                setDestinationAccount(value);
+              }}
             />
           ) : (
             <DropdownModal
               label="Destinaton Account"
-              selectedValue={formData.destAccountId}
-              options={accounts?.map(account => ({ label: account.name, value: account.id }))}
-              onSelect={(value: any) => handleTextChange("destAccountId", value)}
+              selectedValue={formData.transferaccountid}
+              options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+              onSelect={(value: any) => {
+                handleTextChange("transferaccountid", value);
+                setDestinationAccount(value);
+              }}
             />
           ))}
 

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Account,
+  DailyTransactionsSummary,
   Inserts,
   MonthlyTransactions,
   Transaction,
   TransactionsView,
   Updates,
-  WeeklyTransactions,
 } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { TableNames, transactionsKeys, ViewNames } from "@/src/consts/TableNames";
@@ -19,7 +20,7 @@ import {
   getTransactionByTransferId,
   getTransactionsByDescription,
   getMonthlyTransactions,
-  getWeeklyTransactions,
+  getDailyTransactionsSummary,
 } from "./transactions.api";
 import { updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
@@ -61,38 +62,12 @@ export const useMonthlyTransactions = () => {
   });
 };
 
-export const useWeeklyTransactions = () => {
-  return useQuery<WeeklyTransactions[]>({
+export const useDailyTransactionsSummary = () => {
+  return useQuery<DailyTransactionsSummary[]>({
     queryKey: [ViewNames.DailyTransactionsSummary],
-    queryFn: async () => getWeeklyTransactions(),
+    queryFn: async () => getDailyTransactionsSummary(),
   });
 };
-
-// export const useGetTransactionsCategorySum = () => {
-//   return useQuery<TransactionsCategoryDateSum[]>({
-//     queryKey: [ViewNames.TransactionsCategoryDateSum],
-//     queryFn: getLastMonthCategoriesTransactionsSum,
-//   });
-// }
-
-// export const useGetLastWeekTransactionsSum = () => {
-//   return useQuery<TransactionsDaySum[]>({
-//     queryKey: [ViewNames.TransactionsDaySum + "lastweek"],
-//     queryFn: getLastWeekExpenses,
-//   });
-// };
-// export const useGetLastQuraterTransactionsSum = () => {
-//   return useQuery<TransactionsDaySum[]>({
-//     queryKey: [ViewNames.TransactionsDaySum + "lastQuarter"],
-//     queryFn: getLastQuraterTransactionsSum,
-//   });
-// };
-// export const useGetLastMonthCategoriesTransactionsSum = () => {
-//   return useQuery<TransactionsCategoryTypeDateSum[]>({
-//     queryKey: [ViewNames.TransactionsCategoryTypeDateSum],
-//     queryFn: getLastMonthCategoriesTransactionsSum,
-//   });
-// };
 
 export const useGetTransactionById = (transactionid?: string | null) => {
   return useQuery<TransactionsView>({
@@ -114,26 +89,39 @@ export const useUpsertTransaction = () => {
     mutationFn: async ({
       fullFormTransaction,
       originalData,
+      sourceAccount,
+      destinationAccount,
     }: {
       fullFormTransaction: TransactionFormType;
       originalData?: TransactionFormType;
+      sourceAccount: Account | null;
+      destinationAccount: Account | null;
     }) => {
       const currentTimestamp = new Date().toISOString();
       const userId = session!.user.id;
 
       if (!fullFormTransaction.id) {
-        return await handleNewTransaction(fullFormTransaction, currentTimestamp, userId);
+        return await handleNewTransaction(
+          fullFormTransaction,
+          sourceAccount!,
+          destinationAccount,
+          currentTimestamp,
+          userId,
+        );
       }
 
-      return await handleUpdateTransaction(fullFormTransaction, originalData!, currentTimestamp, userId);
+      return await handleUpdateTransaction(
+        fullFormTransaction,
+        originalData!,
+        sourceAccount!,
+        destinationAccount,
+        currentTimestamp,
+        userId,
+      );
     },
-    onSuccess: async ({ id, transferid }) => {
+    onSuccess: async something => {
+      console.log("Success", something);
       await queryClient.invalidateQueries({ queryKey: transactionsKeys.all() });
-      if (transferid) {
-        await queryClient.invalidateQueries({
-          queryKey: transactionsKeys.detail(ViewNames.TransactionsView, transferid),
-        });
-      }
     },
   });
 };
@@ -185,63 +173,104 @@ export const useRestoreTransaction = (id: string) => {
 
 const handleNewTransaction = async (
   fullFormTransaction: TransactionFormType,
+  sourceAccount: Account,
+  destinationAccount: Account | null,
   currentTimestamp: string,
   userId: string,
 ) => {
-  const { destAccountId, ...formTransaction } = fullFormTransaction;
-  const amount = formTransaction.amount ?? 0;
-  const accountBalance = formTransaction.balance ?? 0;
-  if (formTransaction.type === "Expense" || formTransaction.type === "Transfer")
-    formTransaction.amount = -Math.abs(amount);
-  if (formTransaction.type === "Income") formTransaction.amount = Math.abs(amount);
+  let amount = fullFormTransaction.amount;
 
-  const ac = new AbortController();
+  if (fullFormTransaction.type === "Expense" || fullFormTransaction.type === "Transfer") amount = -amount;
 
   const updatedSrcAcc = await updateAccount({
-    id: formTransaction.accountid!,
-    balance: accountBalance + amount,
+    id: sourceAccount.id,
+    balance: sourceAccount.balance + amount,
     updatedat: currentTimestamp,
     updatedby: userId,
   });
-
   if (!updatedSrcAcc) {
     throw new Error("Source Account wasn't updated");
   }
 
-  formTransaction.id = null;
+  // fullFormTransaction as unknown as Inserts<TableNames.Transactions>,
+  const createdTransaction = await createTransaction({
+    id: undefined,
+    accountid: fullFormTransaction.accountid,
+    amount: fullFormTransaction.amount,
+    categoryid: fullFormTransaction.categoryid,
+    date: fullFormTransaction.date,
+    description: fullFormTransaction.description,
+    // notes: fullFormTransaction.notes,
+    status: fullFormTransaction.status,
+    tags: fullFormTransaction.tags,
+    // tenantid: fullFormTransaction.tenantid,
+    transferaccountid: fullFormTransaction.id,
 
-  const createdTransaction = await createTransaction(formTransaction as Inserts<TableNames.Transactions>);
+    // transferid: fullFormTransaction.transferid,
+    type: fullFormTransaction.type,
+    // updatedat: fullFormTransaction.updatedat,
+    // updatedby: fullFormTransaction.updatedby,
+    // createdby: userId,
+  });
 
   if (!createdTransaction) {
     await updateAccount({
-      id: formTransaction.accountid!,
-      balance: accountBalance - amount,
+      id: sourceAccount.id,
+      balance: sourceAccount.balance - amount,
       updatedat: currentTimestamp,
       updatedby: userId,
     });
     throw new Error("Transaction wasn't created");
   }
 
-  if (formTransaction.type === "Transfer" && destAccountId) {
+  if (fullFormTransaction.type === "Transfer" && destinationAccount) {
+    amount = Math.abs(amount);
+
     const transferTransaction = {
-      ...formTransaction,
+      ...fullFormTransaction,
       id: undefined,
-      amount: Math.abs(formTransaction.amount!),
+      amount: amount,
       transferid: createdTransaction.id,
-      accountid: destAccountId,
+      accountid: destinationAccount.id,
     };
-    const updatedDestAcc = await updateAccountBalance(
-      destAccountId,
-      transferTransaction.amount,
-      currentTimestamp,
-      userId,
-    );
+
+    const updatedDestAcc = await updateAccount({
+      id: destinationAccount.id,
+      balance: destinationAccount.balance + amount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+
     if (!updatedDestAcc) {
       throw new Error("Source Account wasn't updated");
     }
 
-    const createdDestTransaction = await createTransaction(transferTransaction as Inserts<TableNames.Transactions>);
+    const createdDestTransaction = await createTransaction({
+      id: undefined,
+      accountid: transferTransaction.accountid,
+      amount: transferTransaction.amount,
+      categoryid: transferTransaction.categoryid,
+      date: transferTransaction.date,
+      description: transferTransaction.description,
+      // notes: transferTransaction.notes,
+      status: transferTransaction.status,
+      tags: transferTransaction.tags,
+      // tenantid: transferTransaction.tenantid,
+      transferaccountid: transferTransaction.id,
+
+      // transferid: transferTransaction.transferid,
+      type: transferTransaction.type,
+      // updatedat: transferTransaction.updatedat,
+      // updatedby: transferTransaction.updatedby,
+      // createdby: userId,
+    });
     if (!createdDestTransaction) {
+      await updateAccount({
+        id: destinationAccount.id,
+        balance: destinationAccount.balance - amount,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
       throw new Error("Transfer Transaction wasn't updated");
     }
   }
@@ -251,11 +280,155 @@ const handleNewTransaction = async (
 
 const handleUpdateTransaction = async (
   fullFormTransaction: TransactionFormType,
+  originalTransaction: TransactionFormType,
+  sourceAccount: Account,
+  destinationAccount: Account | null,
+  currentTimestamp: string,
+  userId: string,
+) => {
+  const isUpdatedAmount = fullFormTransaction.amount !== originalTransaction.amount;
+  // If the transaction is an expense or a transfer and it's the main transaction, make the amount negative
+  if (
+    fullFormTransaction.type === "Expense" ||
+    (fullFormTransaction.type === "Transfer" && !originalTransaction.transferid)
+  ) {
+    fullFormTransaction.amount = -Math.abs(fullFormTransaction.amount);
+  }
+  // If the transaction is an income or a transfer and it's the sub transaction, make the amount positive
+  if (
+    fullFormTransaction.type === "Income" ||
+    (fullFormTransaction.type === "Transfer" && originalTransaction.transferid)
+  ) {
+    fullFormTransaction.amount = Math.abs(fullFormTransaction.amount);
+  }
+
+  const newAmount = fullFormTransaction.amount - originalTransaction.amount;
+
+  // If the account has changed, update the original account balance
+  if (fullFormTransaction.accountid !== originalTransaction.accountid) {
+    await updateAccount({
+      id: originalTransaction.accountid!,
+      balance: originalTransaction.balance! - originalTransaction.amount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+  }
+
+  // Update the source account balance
+  const updatedSrcAcc = await updateAccount({
+    id: sourceAccount.id,
+    balance: sourceAccount.balance + newAmount,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  });
+  // Update the transaction
+  const updatedTransaction = await updateTransaction({
+    id: fullFormTransaction.id!,
+    accountid: fullFormTransaction.accountid,
+    amount: fullFormTransaction.amount,
+    categoryid: fullFormTransaction.categoryid,
+    date: fullFormTransaction.date,
+    description: fullFormTransaction.description,
+    notes: fullFormTransaction.notes,
+    status: fullFormTransaction.status,
+    tags: fullFormTransaction.tags,
+    transferaccountid: fullFormTransaction.id,
+
+    tenantid: fullFormTransaction.tenantid,
+    transferid: fullFormTransaction.transferid,
+    type: fullFormTransaction.type,
+    updatedat: fullFormTransaction.updatedat,
+    updatedby: fullFormTransaction.updatedby,
+    createdby: userId,
+  });
+  // If Update Failed revert the source account balance
+  if (!updatedTransaction) {
+    await updateAccount({
+      id: sourceAccount.id,
+      balance: sourceAccount.balance - newAmount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+    throw new Error("Transaction wasn't updated");
+  }
+
+  if (fullFormTransaction.type === "Transfer") {
+    let destinationTransaction = undefined;
+
+    // If the original transaction type is not a transfer create a new transaction
+    if (originalTransaction.type !== "Transfer") {
+      destinationTransaction = await createTransaction({
+        // id: fullFormTransaction.id!,
+        // accountid: fullFormTransaction.accountid,
+        // amount: fullFormTransaction.amount,
+        categoryid: fullFormTransaction.categoryid,
+        date: fullFormTransaction.date,
+        description: fullFormTransaction.description,
+        notes: fullFormTransaction.notes,
+        status: fullFormTransaction.status,
+        tags: fullFormTransaction.tags,
+        // transferaccountid: fullFormTransaction.id,
+
+        tenantid: fullFormTransaction.tenantid,
+        // transferid: fullFormTransaction.transferid,
+        type: fullFormTransaction.type,
+        updatedat: fullFormTransaction.updatedat,
+        updatedby: fullFormTransaction.updatedby,
+        createdby: userId,
+
+        id: undefined,
+        amount: Math.abs(fullFormTransaction.amount),
+        transferid: updatedTransaction.id,
+        accountid: destinationAccount!.id,
+        transferaccountid: sourceAccount.id,
+      });
+
+      const updatedDestAcc = await updateAccount({
+        id: destinationAccount!.id,
+        balance: destinationAccount!.balance + destinationTransaction.amount!,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
+      return updatedTransaction;
+    }
+
+    let transferTransaction = undefined;
+    let transferAmount = 0;
+    // If transaction has transferId, it's a sub transaction get the main and update it
+    if (originalTransaction.transferid) {
+      // Main Transaction
+      transferTransaction = await getTransactionById(originalTransaction.transferid);
+      transferAmount = -Math.abs(fullFormTransaction.amount);
+      // If transaction has no transferId, it's a main transaction get the sub and update it
+    } else {
+      // Sub Transaction
+      transferTransaction = await getTransactionByTransferId(originalTransaction.id!);
+      transferAmount = Math.abs(fullFormTransaction.amount);
+    }
+    // Update the transfer transaction amount
+    await updateTransaction({
+      id: transferTransaction.id!,
+      amount: transferAmount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+    // Update the destination account balance
+    const updatedDestAcc = await updateAccount({
+      id: transferTransaction.accountid!,
+      balance: transferTransaction.balance! - transferTransaction.amount! + transferAmount,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+  }
+};
+
+const ssss = async (
+  fullFormTransaction: TransactionFormType,
   originalData: TransactionFormType,
   currentTimestamp: string,
   userId: string,
 ) => {
-  const { destAccountId, ...formTransaction } = fullFormTransaction;
+  const { transferaccountid: destAccountId, ...formTransaction } = fullFormTransaction;
   const amount = formTransaction.amount ?? 0;
 
   if (formTransaction.type === "Expense" || (formTransaction.type === "Transfer" && !originalData.transferid)) {
@@ -265,7 +438,19 @@ const handleUpdateTransaction = async (
     formTransaction.amount = Math.abs(amount);
   }
 
-  const newAccountBalance = formTransaction.balance! - originalData.amount! + formTransaction.amount!;
+  let newAccountBalance = formTransaction.balance! - originalData.amount!;
+
+  if (fullFormTransaction.accountid !== originalData.accountid) {
+    await updateAccount({
+      id: originalData.accountid!,
+      balance: newAccountBalance,
+      updatedat: currentTimestamp,
+      updatedby: userId,
+    });
+  }
+  if (fullFormTransaction.accountid === originalData.accountid) {
+    newAccountBalance = newAccountBalance + formTransaction.amount!;
+  }
 
   await updateAccount({
     id: formTransaction.accountid!,
@@ -319,6 +504,20 @@ const handleUpdateTransaction = async (
 
   return updatedTransaction;
 };
+
+function getDifferences(original: any, changed: any) {
+  const result: any = {};
+
+  // Iterate over the keys of the original object
+  for (const key of Object.keys(original)) {
+    // Check if the key exists in the changed object and has a different value
+    if (changed.hasOwnProperty(key) && original[key] !== changed[key]) {
+      result[key] = changed[key];
+    }
+  }
+
+  return result;
+}
 
 // const handleUpdateTransaction = async (
 //   formTransaction: TransactionFormType,

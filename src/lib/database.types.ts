@@ -276,6 +276,7 @@ export type Database = {
           status: Database["public"]["Enums"]["transactionstatuses"]
           tags: string[] | null
           tenantid: string | null
+          transferaccountid: string | null
           transferid: string | null
           type: Database["public"]["Enums"]["transactiontype"] | null
           updatedat: string | null
@@ -295,6 +296,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["transactionstatuses"]
           tags?: string[] | null
           tenantid?: string | null
+          transferaccountid?: string | null
           transferid?: string | null
           type?: Database["public"]["Enums"]["transactiontype"] | null
           updatedat?: string | null
@@ -314,6 +316,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["transactionstatuses"]
           tags?: string[] | null
           tenantid?: string | null
+          transferaccountid?: string | null
           transferid?: string | null
           type?: Database["public"]["Enums"]["transactiontype"] | null
           updatedat?: string | null
@@ -346,6 +349,13 @@ export type Database = {
             columns: ["createdby"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferaccountid_fkey"
+            columns: ["transferaccountid"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -540,6 +550,7 @@ export type Database = {
           status: Database["public"]["Enums"]["transactionstatuses"] | null
           tags: string[] | null
           tenantid: string | null
+          transferaccountid: string | null
           transferid: string | null
           type: Database["public"]["Enums"]["transactiontype"] | null
           updatedat: string | null
@@ -572,6 +583,13 @@ export type Database = {
             columns: ["createdby"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transferaccountid_fkey"
+            columns: ["transferaccountid"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
