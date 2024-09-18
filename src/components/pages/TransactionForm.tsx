@@ -75,20 +75,21 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const [destinationAccount, setDestinationAccount] = useState(null);
   const router = useRouter();
 
-  useEffect(() => {
-    setFormData(transaction);
-  }, [transaction]);
+  const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
+  const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
 
   const { mutate } = useUpsertTransaction();
   const { addNotification } = useNotifications();
 
-  const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
-  const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
+  useEffect(() => {
+    setFormData(transaction);
+    setSourceAccount(accounts?.find(account => account.id === transaction.accountid));
+    setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
+  }, [transaction, accounts]);
 
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
-  console.log(formData);
 
   const handleOnMoreSubmit = () => {
     const newItem = {
@@ -98,16 +99,28 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       categoryid: formData.categoryid,
       accountid: formData.accountid,
     };
-    setIsLoading(true);
     handleMutate(true);
     setFormData(newItem);
   };
   const handleSubmit = () => {
-    setIsLoading(true);
     handleMutate();
+    console.log(
+      "fullFormTransaction",
+      {
+        ...formData,
+        amount: Math.abs(formData.amount ?? 0),
+      },
+      {
+        originalData: transaction,
+        sourceAccount,
+        destinationAccount,
+      },
+    );
   };
 
   const handleMutate = (isOneMore = false) => {
+    setIsLoading(true);
+
     mutate(
       {
         fullFormTransaction: {
@@ -120,7 +133,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       },
       {
         onSuccess: () => {
-          addNotification({ message: "Transaction Created Successfully", type: "success" });
+          addNotification({
+            message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
+            type: "success",
+          });
           setIsLoading(false);
           if (!isOneMore) {
             router.replace("/Transactions");
@@ -233,16 +249,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <VDropdown
             label="Type"
             options={[
-              { label: "Income", value: "Income" },
-              { label: "Expense", value: "Expense" },
-              { label: "Transfer", value: "Transfer" },
-              { label: "Adjustment", value: "Adjustment", disabled: true },
-              { label: "Initial", value: "Initial", disabled: true },
-              { label: "Refund", value: "Refund", disabled: true },
+              { id: "Income", label: "Income", value: "Income" },
+              { id: "Expense", label: "Expense", value: "Expense" },
+              { id: "Transfer", label: "Transfer", value: "Transfer" },
+              { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
+              { id: "Initial", label: "Initial", value: "Initial", disabled: true },
+              { id: "Refund", label: "Refund", value: "Refund", disabled: true },
             ]}
             selectedValue={formData.type}
             onSelect={value => {
-              handleTextChange("type", value);
+              handleTextChange("type", value.value);
             }}
           />
         ) : (
@@ -266,9 +282,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             label="Category"
             selectedValue={formData.categoryid}
             options={
-              categories?.map(category => ({ label: category.name, value: category.id, icon: category.icon })) ?? []
+              categories?.map(category => ({
+                id: category.id,
+                label: category.name,
+                value: category,
+                icon: category.icon,
+              })) ?? []
             }
-            onSelect={(value: any) => handleTextChange("categoryid", value)}
+            onSelect={(value: any) => handleTextChange("categoryid", value.id)}
           />
         ) : (
           <DropdownModal
@@ -283,10 +304,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <VDropdown
             label="Account"
             selectedValue={formData.accountid}
-            options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+            options={accounts?.map(account => ({
+              id: account.id,
+              label: account.name,
+              value: account,
+              passedItem: account,
+            }))}
             onSelect={(value: any) => {
-              handleTextChange("accountid", value);
-              setSourceAccount(value);
+              handleTextChange("accountid", value.id);
+              setSourceAccount(value.value);
             }}
           />
         ) : (
@@ -306,10 +332,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             <VDropdown
               label="Destinaton Account"
               selectedValue={formData.transferaccountid}
-              options={accounts?.map(account => ({ label: account.name, value: account.id, passedItem: account }))}
+              options={accounts?.map(account => ({
+                id: account.id,
+                label: account.name,
+                value: account,
+                passedItem: account,
+              }))}
               onSelect={(value: any) => {
-                handleTextChange("transferaccountid", value);
-                setDestinationAccount(value);
+                handleTextChange("transferaccountid", value.id);
+                setDestinationAccount(value.value);
               }}
             />
           ) : (
@@ -328,14 +359,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <VDropdown
             label="Status"
             options={[
-              { label: "None", value: "None" },
-              { label: "Cleared", value: "Cleared" },
-              { label: "Reconciled", value: "Reconciled" },
-              { label: "Void", value: "Void" },
+              { id: "None", label: "None", value: "None" },
+              { id: "Cleared", label: "Cleared", value: "Cleared" },
+              { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
+              { id: "Void", label: "Void", value: "Void" },
             ]}
             selectedValue={formData.status}
             onSelect={value => {
-              handleTextChange("status", value);
+              console.log(value);
+              handleTextChange("status", value.value);
             }}
           />
         ) : (

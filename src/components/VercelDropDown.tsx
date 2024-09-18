@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, LayoutChangeEvent } from "react
 import Icon from "../lib/IonIcons";
 
 interface OptionItem {
+  id: string;
   label: string;
   value: any;
   icon?: any;
@@ -11,10 +12,10 @@ interface OptionItem {
 
 interface DropdownProps {
   options?: Array<OptionItem>;
-  onSelect: (item: { label: string; value: any }) => void;
+  onSelect: (item: OptionItem | null) => void;
   label?: string;
-  buttonTextAfterSelection?: (selectedItem: { label: string; value: any }) => string;
-  rowTextForSelection?: (item: { label: string; value: any }) => string;
+  buttonTextAfterSelection?: (selectedItem: OptionItem) => string;
+  rowTextForSelection?: (item: OptionItem) => string;
   buttonStyle?: string;
   buttonTextStyle?: string;
   rowStyle?: string;
@@ -35,17 +36,23 @@ const VDropdown: React.FC<DropdownProps> = ({
   selectedValue = null,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{ label: string; value: any } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<OptionItem | null>(null);
   const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0 });
   const containerRef = useRef<View>(null);
   const dropdownRef = useRef<View>(null);
 
   useEffect(() => {
     if (options) {
-      const item = options.find(i => i.value === selectedValue) ?? null;
+      const item = options.find(i => i.id === selectedValue) ?? null;
       setSelectedItem(item);
     }
   }, [selectedValue, options]);
+
+  useEffect(() => {
+    if (selectedItem) {
+      onSelect(selectedItem);
+    }
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (event: any) => {
@@ -72,9 +79,9 @@ const VDropdown: React.FC<DropdownProps> = ({
     setIsOpen(!isOpen);
   };
 
-  const onItemPress = (item: { label: string; value: any }): void => {
+  const onItemPress = (item: OptionItem): void => {
     setSelectedItem(item);
-    onSelect(item.value);
+    onSelect(item);
     setIsOpen(false);
   };
 
@@ -119,7 +126,7 @@ const VDropdown: React.FC<DropdownProps> = ({
                 </Text>
               </TouchableOpacity>
             )}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item, index) => index.toString() + item.id}
             contentContainerClassName="relative z-10"
             className="max-h-40 border border-gray-300 rounded-md relative z-10"
           />

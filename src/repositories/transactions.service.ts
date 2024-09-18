@@ -302,7 +302,10 @@ const handleUpdateTransaction = async (
     fullFormTransaction.amount = Math.abs(fullFormTransaction.amount);
   }
 
-  const newAmount = fullFormTransaction.amount - originalTransaction.amount;
+  const newAmount =
+    fullFormTransaction.status != "None"
+      ? fullFormTransaction.amount - originalTransaction.amount
+      : -fullFormTransaction.amount;
 
   // If the account has changed, update the original account balance
   if (fullFormTransaction.accountid !== originalTransaction.accountid) {
@@ -332,7 +335,7 @@ const handleUpdateTransaction = async (
     notes: fullFormTransaction.notes,
     status: fullFormTransaction.status,
     tags: fullFormTransaction.tags,
-    transferaccountid: fullFormTransaction.id,
+    transferaccountid: fullFormTransaction.transferaccountid ?? undefined,
 
     tenantid: fullFormTransaction.tenantid,
     transferid: fullFormTransaction.transferid,
