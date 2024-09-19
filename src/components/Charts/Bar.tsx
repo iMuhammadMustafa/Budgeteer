@@ -23,7 +23,7 @@ export default function Bar({ data, label, color, hideY }: BarProps) {
 
   const [selectedSlice, setSelectedSlice] = useState(null);
   return (
-    <View className="p-5 m-auto bg-card my-1 rounded-md border border-muted">
+    <View className="p-2  m-auto bg-card my-2 rounded-md border border-muted">
       <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
 
       <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>

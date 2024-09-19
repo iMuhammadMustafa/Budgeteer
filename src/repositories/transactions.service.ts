@@ -121,8 +121,8 @@ export const useUpsertTransaction = () => {
       );
     },
     onSuccess: async something => {
-      console.log("Success", something);
-      await queryClient.invalidateQueries({ queryKey: [...transactionsKeys.all()] });
+      queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView, TableNames.Accounts] });
+      await queryClient.invalidateQueries({ queryKey: transactionsKeys.all() });
     },
   });
 };

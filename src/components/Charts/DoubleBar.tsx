@@ -22,7 +22,7 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
   const chartHeight = chartWidth * 0.75;
 
   return (
-    <View className="bg-card p-5 m-auto my-1 rounded-md border border-muted">
+    <View className="bg-card p-2 m-auto my-1 rounded-md border border-muted">
       <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
       <VictoryChart
         width={chartWidth}

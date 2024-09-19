@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, Modal as ReactModal, ScrollView, Platform } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "../lib/IonIcons";
+import * as Haptics from "expo-haptics";
+import { FlatList } from "react-native";
 
 const buttonRows = [
   [
@@ -92,6 +94,10 @@ export default function VCalc({ onSubmit, currentValue }) {
   };
 
   const handleButtonPress = buttonName => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     switch (buttonName) {
       case "clear":
         handleClear();
@@ -215,7 +221,7 @@ export default function VCalc({ onSubmit, currentValue }) {
             setModalVisible(false);
           }}
         >
-          <View className="m-auto p-4 rounded-md bg-card border border-muted flex-1 max-w-xs overflow-x-hidden">
+          <View className="m-auto p-4 rounded-md bg-card border border-muted flex-grow-0 max-w-xs overflow-x-hidden">
             <History history={history} />
             <Display currentExpression={currentExpression} result={result} />
             <Buttons handleButtonPress={handleButtonPress} />
@@ -228,14 +234,23 @@ export default function VCalc({ onSubmit, currentValue }) {
 }
 const History = ({ history }: any) => {
   return (
-    <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
-      {history &&
-        history.map((item: any, index: number) => (
-          <Text key={index} className={`text-base mb-1`}>
-            {item}
-          </Text>
-        ))}
-    </ScrollView>
+    <View className="min-h-24 max-h-24 h-24 rounded-md overflow-hidden">
+      <FlatList
+        data={history}
+        renderItem={({ item }) => <Text className={`text-base mb-1`}>{item}</Text>}
+        keyExtractor={(item, index) => index.toString()}
+        className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar"
+      />
+    </View>
+
+    // <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
+    //   {history &&
+    //     history.map((item: any, index: number) => (
+    //       <Text key={index} className={`text-base mb-1`}>
+    //         {item}
+    //       </Text>
+    //     ))}
+    // </ScrollView>
   );
 };
 const Display = ({ currentExpression, result }: any) => {

@@ -3,7 +3,21 @@ import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "../lib/IonIcons";
 
-export default function DropdownModal({ options, selectedValue, onSelect, label }) {
+interface OptionItem {
+  id: string;
+  label: string;
+  value: any;
+  icon?: any;
+  disabled?: boolean;
+}
+interface DropDownModalProps {
+  options: Array<OptionItem>;
+  selectedValue?: string | null;
+  onSelect: (item: OptionItem | null) => void;
+  label: string;
+}
+
+export default function DropdownModal({ options, selectedValue, onSelect, label }: DropDownModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSelect = value => {
@@ -19,7 +33,7 @@ export default function DropdownModal({ options, selectedValue, onSelect, label 
         onPress={() => setIsOpen(!isOpen)}
       >
         <Text className="text-base">
-          {selectedValue ? options.find(option => option.value === selectedValue)?.label : "Select an option"}
+          {selectedValue ? options.find(option => option.id === selectedValue)?.label : "Select an option"}
         </Text>
       </TouchableOpacity>
       {isOpen && (
@@ -34,14 +48,14 @@ export default function DropdownModal({ options, selectedValue, onSelect, label 
             data={options}
             className="flex-grow-0 m-auto rounded-md"
             contentContainerClassName="items-start justify-center bg-white rounded-md p-1"
-            keyExtractor={option => option.value}
+            keyExtractor={option => option.id}
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity
-                  key={item.value}
+                  key={item.id}
                   className="p-3 flex-row border-b border-b-gray-300  rounded-md"
                   disabled={item.disabled}
-                  onPress={() => handleSelect(item.value)}
+                  onPress={() => handleSelect(item)}
                 >
                   <View className="w-full flex-row justify-start items-center gap-2">
                     {item.icon && <Icon name={item.icon} className="text-black" />}
