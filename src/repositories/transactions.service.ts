@@ -279,7 +279,7 @@ const handleNewTransaction = async (
   return createdTransaction;
 };
 
-export const handleUpdateTransaction = (
+export const handleUpdateTransaction = async (
   fullFormTransaction: TransactionFormType,
   originalTransaction: TransactionFormType,
   sourceAccount: Account,
@@ -291,154 +291,256 @@ export const handleUpdateTransaction = (
     id: originalTransaction.id ?? undefined,
     updatedat: currentTimestamp,
     updatedby: userId,
-    status: fullFormTransaction.status ?? undefined,
   };
-
   const updatedAccount: Updates<TableNames.Accounts> = {
     id: sourceAccount.id,
     updatedat: currentTimestamp,
     updatedby: userId,
   };
-
   const updatedTransferTransaction: Updates<TableNames.Transactions> = {
     id: originalTransaction.transferid ?? undefined,
     updatedat: currentTimestamp,
     updatedby: userId,
-    status: fullFormTransaction.status ?? undefined,
   };
-
   const updatedTransferAccount: Updates<TableNames.Accounts> = {
-    id: destinationAccount?.id ?? undefined,
+    id: destinationAccount?.id,
     updatedat: currentTimestamp,
     updatedby: userId,
   };
 
-  // Function to reverse the effect of the original transaction on the old account
-  const reverseOldTransactionEffect = (
-    oldTransaction: TransactionFormType,
-    oldAccountId: string,
-    newAccount: Account | null,
-  ) => {
-    const oldAccountBalance =
-      queryClient.getQueryData<Account[]>([TableNames.Accounts])?.find(account => account.id === oldAccountId)
-        ?.balance ?? 0;
+  // If nothing is changed return
+  if (JSON.stringify(fullFormTransaction) === JSON.stringify(originalTransaction)) {
+    return;
+  }
 
-    let newSourceBalance = oldAccountBalance;
-    let newDestinationBalance = newAccount?.balance ?? 0;
+  // Update Transaction's Values
+  if (fullFormTransaction.description != originalTransaction.description) {
+    updatedTransaction.description = fullFormTransaction.description;
+    updatedTransferTransaction.description = fullFormTransaction.description;
+  }
+  if (fullFormTransaction.notes != originalTransaction.notes) {
+    updatedTransaction.notes = fullFormTransaction.notes;
+    updatedTransferTransaction.notes = fullFormTransaction.notes;
+  }
+  if (fullFormTransaction.tags != originalTransaction.tags) {
+    updatedTransaction.tags = fullFormTransaction.tags;
+    updatedTransferTransaction.tags = fullFormTransaction.tags;
+  }
+  if (fullFormTransaction.date != originalTransaction.date) {
+    updatedTransaction.date = fullFormTransaction.date ?? undefined;
+    updatedTransferTransaction.date = fullFormTransaction.date ?? undefined;
+  }
+  if (fullFormTransaction.categoryid != originalTransaction.categoryid) {
+    updatedTransaction.categoryid = fullFormTransaction.categoryid;
+    updatedTransferTransaction.categoryid = fullFormTransaction.categoryid;
+  }
+  if (fullFormTransaction.amount != originalTransaction.amount) {
+    let amount = fullFormTransaction.amount;
 
-    // Reverse the original transaction effect if status was "None"
-    if (oldTransaction.status === "None") {
-      newSourceBalance -= oldTransaction.amount;
-      if (oldTransaction.type === "Transfer" && newAccount) {
-        newDestinationBalance += oldTransaction.amount;
-      }
-    } else if (oldTransaction.status !== fullFormTransaction.status) {
-      // Revert the old transaction effect when status changes
-      newSourceBalance -= oldTransaction.amount;
-      if (oldTransaction.type === "Transfer" && newAccount) {
-        newDestinationBalance += oldTransaction.amount;
-      }
+    updatedTransaction.amount = amount;
+    updatedTransferTransaction.amount = -amount;
+  }
+  // Account Actionable Changes
+  if (fullFormTransaction.status != originalTransaction.status) {
+    updatedTransaction.status = fullFormTransaction.status ?? undefined;
+    updatedTransferTransaction.status = fullFormTransaction.status ?? undefined;
+  }
+  if (fullFormTransaction.type != originalTransaction.type) {
+    updatedTransaction.type = fullFormTransaction.type;
+    updatedTransferTransaction.type = fullFormTransaction.type;
+
+    // If Type Transfer => Else
+    if (originalTransaction.type === "Transfer" && fullFormTransaction.type !== "Transfer") {
+      updatedTransaction.transferid = undefined;
+      updatedTransaction.transferaccountid = undefined;
+      updatedTransferTransaction.isdeleted = true;
     }
+    if (originalTransaction.type !== "Transfer" && fullFormTransaction.type === "Transfer") {
+      createTransaction({
+        description: fullFormTransaction.description,
+        amount: updatedTransferTransaction.amount ?? -fullFormTransaction.amount,
+        date: fullFormTransaction.date ?? currentTimestamp,
+        notes: fullFormTransaction.notes,
+        tags: fullFormTransaction.tags,
+        status: fullFormTransaction.status ?? "None",
+        categoryid: fullFormTransaction.categoryid,
+        type: "Transfer",
 
-    return { newSourceBalance, newDestinationBalance };
+        accountid: fullFormTransaction.transferaccountid!,
+        transferid: originalTransaction.id,
+        transferaccountid: fullFormTransaction.accountid,
+
+        createdat: currentTimestamp,
+        createdby: userId,
+      });
+    }
+  }
+
+  const getAccountNewBalance = (account: any, oldTransaction: any, newTransaction: any) => {
+    const newTransactiomAmount = newTransaction.amount ?? 0;
+    let newAccountBalance = account.balance - oldTransaction.amount + newTransactiomAmount;
+
+    // None => Void
+    // Remove the new amount and the old amount from the account
+    if (oldTransaction.status === "None" && fullFormTransaction.status !== "None") {
+      // newAccountBalance -= oldTransaction.amount - newTransactiomAmount;
+      newAccountBalance -= newTransactiomAmount;
+    }
+    // Void => None
+    // Add the new amount and the old amount to the account
+    if (oldTransaction.status !== "None" && fullFormTransaction.status === "None") {
+      // newAccountBalance += oldTransaction.amount - newTransactiomAmount;
+      newAccountBalance += oldTransaction.amount;
+    }
+    // Void => Void
+    // Remove the new amount from the account, the old amount already wasn't added
+    if (oldTransaction.status !== "None" && fullFormTransaction.status !== "None") {
+      newAccountBalance -= newTransactiomAmount + oldTransaction.amount;
+    }
+    return newAccountBalance;
   };
 
-  // Function to apply the effect of the new transaction
-  const applyNewTransactionEffect = (
-    newTransaction: TransactionFormType,
-    newAccount: Account | null,
-    sourceAccountBalance: number,
-  ) => {
-    let updatedSourceBalance = sourceAccountBalance;
-    let updatedDestinationBalance = newAccount?.balance ?? 0;
+  // Update Account's Values
+  if (fullFormTransaction.accountid == originalTransaction.accountid) {
+    updatedAccount.balance = getAccountNewBalance(sourceAccount, originalTransaction, fullFormTransaction);
+  } else {
+    // If the account has changed
+    updatedTransaction.accountid = fullFormTransaction.accountid ?? undefined;
+    updatedAccount.id = fullFormTransaction.accountid ?? undefined;
 
-    // Apply the new transaction effect if status is "None"
-    if (newTransaction.status === "None") {
-      updatedSourceBalance += newTransaction.amount;
-      if (newTransaction.type === "Transfer" && newAccount) {
-        updatedDestinationBalance -= newTransaction.amount;
-      }
+    // If Void => Void
+    // Do nothing
+    if (fullFormTransaction.status !== "None" && originalTransaction.status !== "None") {
+      updatedAccount.id = undefined;
+    }
+    // If Void => None
+    // Add the new amount to the new account, and do nothing to the old account
+    if (originalTransaction.status !== "None" && fullFormTransaction.status === "None") {
+      updatedAccount.balance = sourceAccount.balance + fullFormTransaction.amount;
+    }
+    // If None => Void
+    // Remove the old amount from the old account, and do nothing to the new account
+    if (originalTransaction.status === "None" && fullFormTransaction.status !== "None") {
+      updateAccount({
+        id: originalTransaction.accountid ?? undefined,
+        balance: (originalTransaction.balance ?? 0) - originalTransaction.amount,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
     }
 
-    return { updatedSourceBalance, updatedDestinationBalance };
-  };
+    // If None => None
+    // Remove the old amount from the old account, and add the new amount to the new account
+    if (originalTransaction.status === "None" && fullFormTransaction.status === "None") {
+      updatedAccount.balance = sourceAccount.balance + fullFormTransaction.amount;
 
-  const handleAllChanges = () => {
-    const oldAccountId = originalTransaction.accountid!;
-    const newAccountId = fullFormTransaction.accountid!;
+      updateAccount({
+        id: originalTransaction.accountid ?? undefined,
+        balance: (originalTransaction.balance ?? 0) - originalTransaction.amount,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
+    }
+  }
 
-    // Reverse the effect of the old transaction on the old account
-    if (oldAccountId !== newAccountId) {
-      const { newSourceBalance } = reverseOldTransactionEffect(originalTransaction, oldAccountId, destinationAccount);
+  // If it's a transfer
+  // If it's the same account
+  if (
+    (originalTransaction.type === "Transfer" || fullFormTransaction.type === "Transfer") &&
+    fullFormTransaction.transferaccountid == originalTransaction.transferaccountid
+  ) {
+    updatedTransferAccount.balance = getAccountNewBalance(
+      destinationAccount!,
+      { ...originalTransaction, amount: -originalTransaction.amount },
+      { ...fullFormTransaction, amount: -fullFormTransaction.amount },
+    );
+    //If it's not a transfer anymore
+  } else if (
+    (originalTransaction.type === "Transfer" && fullFormTransaction.type !== "Transfer") ||
+    (originalTransaction.transferaccountid && !fullFormTransaction.transferaccountid)
+  ) {
+    // If Original status wasn't Void
+    // Remove the amount from the account
+    updatedTransferAccount.id = undefined;
+    if (originalTransaction.status === "None") {
+      let destinationAccount = await getAccountById(originalTransaction.transferaccountid!);
+      updateAccount({
+        id: originalTransaction.transferaccountid!,
+        balance: destinationAccount.balance - -originalTransaction.amount,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
+    }
+    // If it's a transfer but wasn't a transfer
+  } else if (originalTransaction.type !== "Transfer" && fullFormTransaction.type === "Transfer" && destinationAccount) {
+    // If it's a transfer but wasn't a transfer
+    // If the new status isn't void
+    // Add the amount to the account
+    updatedTransferAccount.id = destinationAccount.id;
+    if (fullFormTransaction.status === "None") {
+      updateAccount({
+        id: destinationAccount.id,
+        balance: destinationAccount.balance + -fullFormTransaction.amount,
+        updatedat: currentTimestamp,
+        updatedby: userId,
+      });
+    }
+    // If it's a transfer and the account has changed
+    // If the account has changed
+  } else {
+    if (destinationAccount && fullFormTransaction.transferaccountid) {
+      updatedTransferTransaction.accountid = destinationAccount.id;
+      updatedTransferAccount.id = destinationAccount.id;
 
-      // Update the old account balance only if it changes
-      if (newSourceBalance !== sourceAccount.balance) {
+      // If Void => Void
+      // Do nothing
+      if (fullFormTransaction.status !== "None" && originalTransaction.status !== "None") {
+        updatedTransferAccount.id = undefined;
+      }
+      // If Void => None
+      // Add the new amount to the new account, and do nothing to the old account
+      if (originalTransaction.status !== "None" && fullFormTransaction.status === "None") {
+        updatedTransferAccount.balance = destinationAccount.balance + fullFormTransaction.amount;
+      }
+      // If None => Void
+      // Remove the old amount from the old account, and do nothing to the new account
+      if (originalTransaction.status === "None" && fullFormTransaction.status !== "None") {
+        console.log("Am I here?");
+        let originalDistnationAccount = await getAccountById(originalTransaction.transferaccountid!);
         updateAccount({
-          id: oldAccountId,
-          balance: newSourceBalance,
+          id: originalDistnationAccount.id,
+          balance: originalDistnationAccount.balance - -originalTransaction.amount,
+          updatedat: currentTimestamp,
+          updatedby: userId,
+        });
+      }
+
+      // If None => None
+      // Remove the old amount from the old account, and add the new amount to the new account
+      if (originalTransaction.status === "None" && fullFormTransaction.status === "None") {
+        updatedTransferAccount.balance = destinationAccount.balance + fullFormTransaction.amount;
+
+        let originalDistnationAccount = await getAccountById(originalTransaction.transferaccountid!);
+        updateAccount({
+          id: originalDistnationAccount.id,
+          balance: originalDistnationAccount.balance - -originalTransaction.amount,
+          updatedat: currentTimestamp,
+          updatedby: userId,
         });
       }
     }
+  }
 
-    // Apply the new transaction effect to the new account if needed
-    const { updatedSourceBalance, updatedDestinationBalance } = applyNewTransactionEffect(
-      fullFormTransaction,
-      destinationAccount,
-      sourceAccount.balance,
-    );
-
-    // Update the new account balance if it has changed
-    if (newAccountId !== oldAccountId && updatedSourceBalance !== sourceAccount.balance) {
-      updateAccount({
-        id: newAccountId,
-        balance: updatedSourceBalance,
-      });
-    }
-
-    if (destinationAccount && updatedDestinationBalance !== destinationAccount.balance) {
-      updateAccount({
-        id: destinationAccount.id,
-        balance: updatedDestinationBalance,
-      });
-    }
-  };
-
-  // Update fields based on the changes
-  const updateTransactionFields = () => {
-    if (fullFormTransaction.description !== originalTransaction.description) {
-      updatedTransaction.description = fullFormTransaction.description;
-    }
-    if (fullFormTransaction.notes !== originalTransaction.notes) {
-      updatedTransaction.notes = fullFormTransaction.notes;
-    }
-    if (fullFormTransaction.tags !== originalTransaction.tags) {
-      updatedTransaction.tags = fullFormTransaction.tags;
-    }
-    if (fullFormTransaction.date !== originalTransaction.date) {
-      updatedTransaction.date = fullFormTransaction.date ?? undefined;
-      updatedTransferTransaction.date = fullFormTransaction.date ?? undefined;
-    }
-    if (fullFormTransaction.categoryid !== originalTransaction.categoryid) {
-      updatedTransaction.categoryid = fullFormTransaction.categoryid;
-      updatedTransferTransaction.categoryid = fullFormTransaction.categoryid;
-    }
-    if (fullFormTransaction.amount !== originalTransaction.amount) {
-      updatedTransaction.amount = fullFormTransaction.amount;
-      updatedTransferTransaction.amount = -fullFormTransaction.amount;
-    }
-  };
-
-  // Execute changes
-  updateTransactionFields();
-  handleAllChanges();
-
-  // Finalize updates
+  console.log("updatedTransaction", updatedTransaction);
+  console.log("updatedAccount", updatedAccount);
   updateTransaction(updatedTransaction);
   updateAccount(updatedAccount);
   if (updatedTransferTransaction.id) {
+    console.log("updatedTransferTransaction", updatedTransferTransaction);
     updateTransaction(updatedTransferTransaction);
   }
   if (updatedTransferAccount.id) {
+    console.log("updatedTransferAccount", updatedTransferAccount);
     updateAccount(updatedTransferAccount);
   }
 };
