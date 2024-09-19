@@ -369,25 +369,27 @@ export const handleUpdateTransaction = (
 
   // Update Account's Values
   if (fullFormTransaction.accountid == originalTransaction.accountid) {
-    let newAccountBalance = sourceAccount.balance - originalTransaction.amount + fullFormTransaction.amount;
+    let newAccountBalance = sourceAccount.balance;
+
+    // If status is not "None", void the transaction effect on the balance
+    if (fullFormTransaction.status === "None") {
+      newAccountBalance -= originalTransaction.amount;
+      newAccountBalance += fullFormTransaction.amount;
+    }
 
     updatedAccount.balance = newAccountBalance;
-
-    if (fullFormTransaction.status !== "None") {
-      updatedAccount.balance = sourceAccount.balance - originalTransaction.amount;
-    }
   } else {
     updatedTransaction.accountid = fullFormTransaction.accountid ?? undefined;
     updatedAccount.id = fullFormTransaction.accountid ?? undefined;
 
-    if (fullFormTransaction.status !== "None") {
+    if (fullFormTransaction.status === "None") {
       updatedAccount.balance = sourceAccount.balance + fullFormTransaction.amount;
     }
 
-    const oldAmount = originalTransaction.status === "None" ? 0 : originalTransaction.amount;
+    const oldAmount = originalTransaction.status === "None" ? originalTransaction.amount : 0;
     updateAccount({
       id: originalTransaction.accountid ?? undefined,
-      balance: (originalTransaction.balance ?? 0) - oldAmount,
+      balance: sourceAccount.balance - oldAmount,
     });
   }
   if (fullFormTransaction.transferaccountid == originalTransaction.transferaccountid) {
@@ -427,6 +429,9 @@ export const handleUpdateTransaction = (
   if (fullFormTransaction.type != originalTransaction.type) {
     if (originalTransaction.type === "Transfer" && fullFormTransaction.type !== "Transfer") {
       if (originalTransaction.status !== "None") {
+        updatedTransferAccount.balance = (destinationAccount?.balance ?? 0) - originalTransaction.amount;
+      }
+      if (originalTransaction.status === "None") {
         updatedTransferAccount.balance = (destinationAccount?.balance ?? 0) - originalTransaction.amount;
       }
     }
