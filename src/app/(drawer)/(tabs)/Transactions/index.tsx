@@ -200,9 +200,13 @@ const TransactionItem = ({
             <Icon name={transaction.icon ?? iconProp.iconName} size={iconProp.size} className="color-card-foreground" />
           </View>
           <View className="flex-1">
-            <Text className="text-foreground">{transaction.description ?? transaction.categoryname ?? "Hello"}</Text>
+            <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
+              {transaction.description ?? transaction.categoryname ?? "Hello"}
+            </Text>
             <View className="flex-row justify-start items-center gap-2">
-              <Text className="text-foreground">{transaction.categoryname}</Text>
+              <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
+                {transaction.categoryname}
+              </Text>
             </View>
           </View>
           <View className="flex items-end">
@@ -213,7 +217,7 @@ const TransactionItem = ({
               })}
               {transaction.currency}
             </Text>
-            <Text className="text-foreground">
+            <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
               {transaction.accountname} {" | "}
               {transaction.running_balance?.toLocaleString("en", {
                 minimumFractionDigits: 2,
