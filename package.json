@@ -6,7 +6,7 @@
     "dev": "expo start --web",
     "android": "expo start --android",
     "ios": "DARK_MODE=media expo start --ios",
-    "test": "jest --forceExit",
+    "test": "jest --forceExit --runInBand --detectOpenHandles",
     "watch": "jest --watch",
     "lint": "expo lint",
     "postinstall": "patch-package"
