@@ -22,9 +22,10 @@ import {
   getMonthlyTransactions,
   getDailyTransactionsSummary,
 } from "./transactions.api";
-import { updateAccount, updateAccountBalance } from "./account.api";
+import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
+import { queryClient } from "../providers/QueryProvider";
 
 interface CategorizedTransactions {
   categories: {
@@ -121,7 +122,7 @@ export const useUpsertTransaction = () => {
     },
     onSuccess: async something => {
       console.log("Success", something);
-      await queryClient.invalidateQueries({ queryKey: transactionsKeys.all() });
+      await queryClient.invalidateQueries({ queryKey: [...transactionsKeys.all()] });
     },
   });
 };
@@ -278,7 +279,7 @@ const handleNewTransaction = async (
   return createdTransaction;
 };
 
-const handleUpdateTransaction = async (
+export const handleUpdateTransaction = (
   fullFormTransaction: TransactionFormType,
   originalTransaction: TransactionFormType,
   sourceAccount: Account,
@@ -286,241 +287,413 @@ const handleUpdateTransaction = async (
   currentTimestamp: string,
   userId: string,
 ) => {
-  const isUpdatedAmount = fullFormTransaction.amount !== originalTransaction.amount;
-  // If the transaction is an expense or a transfer and it's the main transaction, make the amount negative
-  if (
-    fullFormTransaction.type === "Expense" ||
-    (fullFormTransaction.type === "Transfer" && !originalTransaction.transferid)
-  ) {
-    fullFormTransaction.amount = -Math.abs(fullFormTransaction.amount);
-  }
-  // If the transaction is an income or a transfer and it's the sub transaction, make the amount positive
-  if (
-    fullFormTransaction.type === "Income" ||
-    (fullFormTransaction.type === "Transfer" && originalTransaction.transferid)
-  ) {
-    fullFormTransaction.amount = Math.abs(fullFormTransaction.amount);
-  }
-
-  const newAmount =
-    fullFormTransaction.status != "None"
-      ? fullFormTransaction.amount - originalTransaction.amount
-      : -fullFormTransaction.amount;
-
-  // If the account has changed, update the original account balance
-  if (fullFormTransaction.accountid !== originalTransaction.accountid) {
-    await updateAccount({
-      id: originalTransaction.accountid!,
-      balance: originalTransaction.balance! - originalTransaction.amount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
-  }
-
-  // Update the source account balance
-  const updatedSrcAcc = await updateAccount({
+  const updatedTransaction: Updates<TableNames.Transactions> = {
+    id: originalTransaction.id ?? undefined,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  };
+  const updatedAccount: Updates<TableNames.Accounts> = {
     id: sourceAccount.id,
-    balance: sourceAccount.balance + newAmount,
     updatedat: currentTimestamp,
     updatedby: userId,
-  });
-  // Update the transaction
-  const updatedTransaction = await updateTransaction({
-    id: fullFormTransaction.id!,
-    accountid: fullFormTransaction.accountid,
-    amount: fullFormTransaction.amount,
-    categoryid: fullFormTransaction.categoryid,
-    date: fullFormTransaction.date,
-    description: fullFormTransaction.description,
-    notes: fullFormTransaction.notes,
-    status: fullFormTransaction.status,
-    tags: fullFormTransaction.tags,
-    transferaccountid: fullFormTransaction.transferaccountid ?? undefined,
+  };
+  const updatedTransferTransaction: Updates<TableNames.Transactions> = {
+    id: originalTransaction.transferid ?? undefined,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  };
+  const updatedTransferAccount: Updates<TableNames.Accounts> = {
+    id: destinationAccount?.id,
+    updatedat: currentTimestamp,
+    updatedby: userId,
+  };
 
-    tenantid: fullFormTransaction.tenantid,
-    transferid: fullFormTransaction.transferid,
-    type: fullFormTransaction.type,
-    updatedat: fullFormTransaction.updatedat,
-    updatedby: fullFormTransaction.updatedby,
-    createdby: userId,
-  });
-  // If Update Failed revert the source account balance
-  if (!updatedTransaction) {
-    await updateAccount({
-      id: sourceAccount.id,
-      balance: sourceAccount.balance - newAmount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
-    throw new Error("Transaction wasn't updated");
+  // Update Transaction's Values
+  if (fullFormTransaction.description != originalTransaction.description) {
+    updatedTransaction.description = fullFormTransaction.description;
+  }
+  if (fullFormTransaction.notes != originalTransaction.notes) {
+    updatedTransaction.notes = fullFormTransaction.notes;
+  }
+  if (fullFormTransaction.tags != originalTransaction.tags) {
+    updatedTransaction.tags = fullFormTransaction.tags;
+  }
+  if (fullFormTransaction.date != originalTransaction.date) {
+    updatedTransaction.date = fullFormTransaction.date ?? undefined;
+    updatedTransferTransaction.date = fullFormTransaction.date ?? undefined;
+  }
+  if (fullFormTransaction.categoryid != originalTransaction.categoryid) {
+    updatedTransaction.categoryid = fullFormTransaction.categoryid;
+    updatedTransferTransaction.categoryid = fullFormTransaction.categoryid;
+  }
+  if (fullFormTransaction.amount != originalTransaction.amount) {
+    let amount = fullFormTransaction.amount;
+
+    updatedTransaction.amount = amount;
+    updatedTransferTransaction.amount = -amount;
+  }
+  // Account Actionable Changes
+  if (fullFormTransaction.status != originalTransaction.status) {
+    updatedTransaction.status = fullFormTransaction.status ?? undefined;
+  }
+  if (fullFormTransaction.type != originalTransaction.type) {
+    updatedTransaction.type = fullFormTransaction.type;
+
+    if (originalTransaction.type === "Transfer" && fullFormTransaction.type !== "Transfer") {
+      updatedTransferTransaction.isdeleted = true;
+    }
+    if (originalTransaction.type !== "Transfer" && fullFormTransaction.type === "Transfer") {
+      if (originalTransaction.transferid) {
+        updatedTransferTransaction.isdeleted = true;
+      } else {
+        updatedTransaction.transferaccountid = fullFormTransaction.transferaccountid;
+        createTransaction({
+          description: fullFormTransaction.description,
+          amount: updatedTransferTransaction.amount ?? -fullFormTransaction.amount,
+          date: fullFormTransaction.date ?? currentTimestamp,
+          notes: fullFormTransaction.notes,
+          tags: fullFormTransaction.tags,
+          status: fullFormTransaction.status ?? "None",
+          categoryid: fullFormTransaction.categoryid,
+          type: "Transfer",
+
+          accountid: fullFormTransaction.transferaccountid!,
+          transferid: originalTransaction.id,
+
+          createdat: currentTimestamp,
+          createdby: userId,
+        });
+      }
+    }
   }
 
-  if (fullFormTransaction.type === "Transfer") {
-    let destinationTransaction = undefined;
+  // Update Account's Values
+  if (fullFormTransaction.accountid == originalTransaction.accountid) {
+    let newAccountBalance = sourceAccount.balance - originalTransaction.amount + fullFormTransaction.amount;
 
-    // If the original transaction type is not a transfer create a new transaction
-    if (originalTransaction.type !== "Transfer") {
-      destinationTransaction = await createTransaction({
-        // id: fullFormTransaction.id!,
-        // accountid: fullFormTransaction.accountid,
-        // amount: fullFormTransaction.amount,
-        categoryid: fullFormTransaction.categoryid,
-        date: fullFormTransaction.date,
-        description: fullFormTransaction.description,
-        notes: fullFormTransaction.notes,
-        status: fullFormTransaction.status,
-        tags: fullFormTransaction.tags,
-        // transferaccountid: fullFormTransaction.id,
+    updatedAccount.balance = newAccountBalance;
 
-        tenantid: fullFormTransaction.tenantid,
-        // transferid: fullFormTransaction.transferid,
-        type: fullFormTransaction.type,
-        updatedat: fullFormTransaction.updatedat,
-        updatedby: fullFormTransaction.updatedby,
-        createdby: userId,
+    if (fullFormTransaction.status !== "None") {
+      updatedAccount.balance = sourceAccount.balance - originalTransaction.amount;
+    }
+  } else {
+    updatedTransaction.accountid = fullFormTransaction.accountid ?? undefined;
+    updatedAccount.id = fullFormTransaction.accountid ?? undefined;
 
-        id: undefined,
-        amount: Math.abs(fullFormTransaction.amount),
-        transferid: updatedTransaction.id,
-        accountid: destinationAccount!.id,
-        transferaccountid: sourceAccount.id,
-      });
-
-      const updatedDestAcc = await updateAccount({
-        id: destinationAccount!.id,
-        balance: destinationAccount!.balance + destinationTransaction.amount!,
-        updatedat: currentTimestamp,
-        updatedby: userId,
-      });
-      return updatedTransaction;
+    if (fullFormTransaction.status !== "None") {
+      updatedAccount.balance = sourceAccount.balance + fullFormTransaction.amount;
     }
 
-    let transferTransaction = undefined;
-    let transferAmount = 0;
-    // If transaction has transferId, it's a sub transaction get the main and update it
-    if (originalTransaction.transferid) {
-      // Main Transaction
-      transferTransaction = await getTransactionById(originalTransaction.transferid);
-      transferAmount = -Math.abs(fullFormTransaction.amount);
-      // If transaction has no transferId, it's a main transaction get the sub and update it
-    } else {
-      // Sub Transaction
-      transferTransaction = await getTransactionByTransferId(originalTransaction.id!);
-      transferAmount = Math.abs(fullFormTransaction.amount);
+    const oldAmount = originalTransaction.status === "None" ? 0 : originalTransaction.amount;
+    updateAccount({
+      id: originalTransaction.accountid ?? undefined,
+      balance: (originalTransaction.balance ?? 0) - oldAmount,
+    });
+  }
+  if (fullFormTransaction.transferaccountid == originalTransaction.transferaccountid) {
+    let transferAmount = -fullFormTransaction.amount;
+    let originalTransferAmount = -originalTransaction.amount;
+
+    let newTransferAccountBalance = (destinationAccount?.balance ?? 0) - originalTransferAmount - transferAmount;
+
+    updatedTransferAccount.balance = newTransferAccountBalance;
+    if (fullFormTransaction.status !== "None") {
+      updatedTransferAccount.balance = (destinationAccount?.balance ?? 0) - originalTransferAmount;
     }
-    // Update the transfer transaction amount
-    await updateTransaction({
-      id: transferTransaction.id!,
-      amount: transferAmount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
+  } else {
+    updatedTransaction.transferaccountid = fullFormTransaction.transferaccountid;
+    updatedTransferAccount.id = fullFormTransaction.transferaccountid ?? undefined;
+
+    let transferAmount = -fullFormTransaction.amount;
+    let originalTransferAmount = -originalTransaction.amount;
+
+    if (fullFormTransaction.status !== "None") {
+      updatedTransferAccount.balance = (destinationAccount?.balance ?? 0) + transferAmount;
+    }
+
+    const oldTransferAmount = originalTransaction.status === "None" ? 0 : originalTransferAmount;
+
+    const accountBalance =
+      queryClient
+        .getQueryData<Account[]>([TableNames.Accounts])
+        ?.find(account => account.id === originalTransaction.transferaccountid)?.balance ?? 0;
+
+    updateAccount({
+      id: originalTransaction.transferaccountid!,
+      balance: accountBalance - oldTransferAmount,
     });
-    // Update the destination account balance
-    const updatedDestAcc = await updateAccount({
-      id: transferTransaction.accountid!,
-      balance: transferTransaction.balance! - transferTransaction.amount! + transferAmount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
+  }
+
+  if (fullFormTransaction.type != originalTransaction.type) {
+    if (originalTransaction.type === "Transfer" && fullFormTransaction.type !== "Transfer") {
+      if (originalTransaction.status !== "None") {
+        updatedTransferAccount.balance = (destinationAccount?.balance ?? 0) - originalTransaction.amount;
+      }
+    }
+    if (originalTransaction.type !== "Transfer" && fullFormTransaction.type === "Transfer") {
+      const accountBalance =
+        queryClient
+          .getQueryData<Account[]>([TableNames.Accounts])
+          ?.find(account => account.id === fullFormTransaction.transferaccountid)?.balance ?? 0;
+
+      updatedTransferAccount.id = fullFormTransaction.transferaccountid ?? undefined;
+      updatedTransferAccount.balance = accountBalance + (updatedTransferTransaction.amount ?? 0);
+    }
+  }
+
+  updateTransaction(updatedTransaction);
+  updateAccount(updatedAccount);
+  if (updatedTransferTransaction.id) {
+    updateTransaction(updatedTransferTransaction);
+  }
+  if (updatedTransferAccount.id) {
+    updateAccount(updatedTransferAccount);
   }
 };
 
-const ssss = async (
-  fullFormTransaction: TransactionFormType,
-  originalData: TransactionFormType,
-  currentTimestamp: string,
-  userId: string,
-) => {
-  const { transferaccountid: destAccountId, ...formTransaction } = fullFormTransaction;
-  const amount = formTransaction.amount ?? 0;
+// const sss = async (
+//   fullFormTransaction: TransactionFormType,
+//   originalTransaction: TransactionFormType,
+//   sourceAccount: Account,
+//   destinationAccount: Account | null,
+//   currentTimestamp: string,
+//   userId: string,
+// ) => {
+//   const isUpdatedAmount = fullFormTransaction.amount !== originalTransaction.amount;
+//   // If the transaction is an expense or a transfer and it's the main transaction, make the amount negative
+//   if (
+//     fullFormTransaction.type === "Expense" ||
+//     (fullFormTransaction.type === "Transfer" && !originalTransaction.transferid)
+//   ) {
+//     fullFormTransaction.amount = -Math.abs(fullFormTransaction.amount);
+//   }
+//   // If the transaction is an income or a transfer and it's the sub transaction, make the amount positive
+//   if (
+//     fullFormTransaction.type === "Income" ||
+//     (fullFormTransaction.type === "Transfer" && originalTransaction.transferid)
+//   ) {
+//     fullFormTransaction.amount = Math.abs(fullFormTransaction.amount);
+//   }
 
-  if (formTransaction.type === "Expense" || (formTransaction.type === "Transfer" && !originalData.transferid)) {
-    formTransaction.amount = -Math.abs(amount);
-  }
-  if (formTransaction.type === "Income" || (formTransaction.type === "Transfer" && originalData.transferid)) {
-    formTransaction.amount = Math.abs(amount);
-  }
+//   const newAmount =
+//     fullFormTransaction.status != "None"
+//       ? fullFormTransaction.amount - originalTransaction.amount
+//       : -fullFormTransaction.amount;
 
-  let newAccountBalance = formTransaction.balance! - originalData.amount!;
+//   // If the account has changed, update the original account balance
+//   if (fullFormTransaction.accountid !== originalTransaction.accountid) {
+//     await updateAccount({
+//       id: originalTransaction.accountid!,
+//       balance: originalTransaction.balance! - originalTransaction.amount,
+//       updatedat: currentTimestamp,
+//       updatedby: userId,
+//     });
+//   }
 
-  if (fullFormTransaction.accountid !== originalData.accountid) {
-    await updateAccount({
-      id: originalData.accountid!,
-      balance: newAccountBalance,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
-  }
-  if (fullFormTransaction.accountid === originalData.accountid) {
-    newAccountBalance = newAccountBalance + formTransaction.amount!;
-  }
+//   // Update the source account balance
+//   const updatedSrcAcc = await updateAccount({
+//     id: sourceAccount.id,
+//     balance: sourceAccount.balance + newAmount,
+//     updatedat: currentTimestamp,
+//     updatedby: userId,
+//   });
+//   // Update the transaction
+//   const updatedTransaction = await updateTransaction({
+//     id: fullFormTransaction.id!,
+//     accountid: fullFormTransaction.accountid,
+//     amount: fullFormTransaction.amount,
+//     categoryid: fullFormTransaction.categoryid,
+//     date: fullFormTransaction.date,
+//     description: fullFormTransaction.description,
+//     notes: fullFormTransaction.notes,
+//     status: fullFormTransaction.status,
+//     tags: fullFormTransaction.tags,
+//     transferaccountid: fullFormTransaction.transferaccountid ?? undefined,
 
-  await updateAccount({
-    id: formTransaction.accountid!,
-    balance: newAccountBalance,
-    updatedat: currentTimestamp,
-    updatedby: userId,
-  });
-  const updatedTransaction = await updateTransaction(formTransaction as Updates<TableNames.Transactions>);
+//     tenantid: fullFormTransaction.tenantid,
+//     transferid: fullFormTransaction.transferid,
+//     type: fullFormTransaction.type,
+//     updatedat: fullFormTransaction.updatedat,
+//     updatedby: fullFormTransaction.updatedby,
+//     createdby: userId,
+//   });
+//   // If Update Failed revert the source account balance
+//   if (!updatedTransaction) {
+//     await updateAccount({
+//       id: sourceAccount.id,
+//       balance: sourceAccount.balance - newAmount,
+//       updatedat: currentTimestamp,
+//       updatedby: userId,
+//     });
+//     throw new Error("Transaction wasn't updated");
+//   }
 
-  if (originalData.type === "Transfer") {
-    if (originalData.transferid) {
-      //Editing Master
-      const originalTransferDest = await getTransactionById(originalData.transferid);
-      await updateAccountBalance(
-        originalTransferDest.accountid!,
-        -originalTransferDest.amount!,
-        currentTimestamp,
-        userId,
-      );
-      const originalDestAcc = await updateAccountBalance(
-        originalTransferDest.accountid!,
-        -Math.abs(formTransaction.amount!),
-        currentTimestamp,
-        userId,
-      );
-      const updatedTransaction = await updateTransaction({
-        ...originalTransferDest,
-        amount: -Math.abs(formTransaction.amount),
-      });
-    } else {
-      //Editing Sub
-      const originalTransferDest = await getTransactionById(originalData.id!);
-      await updateAccountBalance(
-        originalTransferDest.accountid!,
-        -originalTransferDest.amount,
-        currentTimestamp,
-        userId,
-      );
-      const originalDestAcc = await updateAccountBalance(
-        originalTransferDest.accountid!,
-        Math.abs(formTransaction.amount),
-        currentTimestamp,
-        userId,
-      );
-      const updatedTransaction = await updateTransaction({
-        ...originalTransferDest,
-        amount: Math.abs(formTransaction.amount),
-      });
-    }
-  }
+//   if (fullFormTransaction.type === "Transfer") {
+//     let destinationTransaction = undefined;
 
-  return updatedTransaction;
-};
+//     // If the original transaction type is not a transfer create a new transaction
+//     if (originalTransaction.type !== "Transfer") {
+//       destinationTransaction = await createTransaction({
+//         // id: fullFormTransaction.id!,
+//         // accountid: fullFormTransaction.accountid,
+//         // amount: fullFormTransaction.amount,
+//         categoryid: fullFormTransaction.categoryid,
+//         date: fullFormTransaction.date,
+//         description: fullFormTransaction.description,
+//         notes: fullFormTransaction.notes,
+//         status: fullFormTransaction.status,
+//         tags: fullFormTransaction.tags,
+//         // transferaccountid: fullFormTransaction.id,
 
-function getDifferences(original: any, changed: any) {
-  const result: any = {};
+//         tenantid: fullFormTransaction.tenantid,
+//         // transferid: fullFormTransaction.transferid,
+//         type: fullFormTransaction.type,
+//         updatedat: fullFormTransaction.updatedat,
+//         updatedby: fullFormTransaction.updatedby,
+//         createdby: userId,
 
-  // Iterate over the keys of the original object
-  for (const key of Object.keys(original)) {
-    // Check if the key exists in the changed object and has a different value
-    if (changed.hasOwnProperty(key) && original[key] !== changed[key]) {
-      result[key] = changed[key];
-    }
-  }
+//         id: undefined,
+//         amount: Math.abs(fullFormTransaction.amount),
+//         transferid: updatedTransaction.id,
+//         accountid: destinationAccount!.id,
+//         transferaccountid: sourceAccount.id,
+//       });
 
-  return result;
-}
+//       const updatedDestAcc = await updateAccount({
+//         id: destinationAccount!.id,
+//         balance: destinationAccount!.balance + destinationTransaction.amount!,
+//         updatedat: currentTimestamp,
+//         updatedby: userId,
+//       });
+//       return updatedTransaction;
+//     }
+
+//     let transferTransaction = undefined;
+//     let transferAmount = 0;
+//     // If transaction has transferid, it's a sub transaction get the main and update it
+//     if (originalTransaction.transferid) {
+//       // Main Transaction
+//       transferTransaction = await getTransactionById(originalTransaction.transferid);
+//       transferAmount = -Math.abs(fullFormTransaction.amount);
+//       // If transaction has no transferid, it's a main transaction get the sub and update it
+//     } else {
+//       // Sub Transaction
+//       transferTransaction = await getTransactionByTransferId(originalTransaction.id!);
+//       transferAmount = Math.abs(fullFormTransaction.amount);
+//     }
+//     // Update the transfer transaction amount
+//     await updateTransaction({
+//       id: transferTransaction.id!,
+//       amount: transferAmount,
+//       updatedat: currentTimestamp,
+//       updatedby: userId,
+//     });
+//     // Update the destination account balance
+//     const updatedDestAcc = await updateAccount({
+//       id: transferTransaction.accountid!,
+//       balance: transferTransaction.balance! - transferTransaction.amount! + transferAmount,
+//       updatedat: currentTimestamp,
+//       updatedby: userId,
+//     });
+//   }
+// };
+
+// const ssss = async (
+//   fullFormTransaction: TransactionFormType,
+//   originalData: TransactionFormType,
+//   currentTimestamp: string,
+//   userId: string,
+// ) => {
+//   const { transferaccountid: destAccountId, ...formTransaction } = fullFormTransaction;
+//   const amount = formTransaction.amount ?? 0;
+
+//   if (formTransaction.type === "Expense" || (formTransaction.type === "Transfer" && !originalData.transferid)) {
+//     formTransaction.amount = -Math.abs(amount);
+//   }
+//   if (formTransaction.type === "Income" || (formTransaction.type === "Transfer" && originalData.transferid)) {
+//     formTransaction.amount = Math.abs(amount);
+//   }
+
+//   let newAccountBalance = formTransaction.balance! - originalData.amount!;
+
+//   if (fullFormTransaction.accountid !== originalData.accountid) {
+//     await updateAccount({
+//       id: originalData.accountid!,
+//       balance: newAccountBalance,
+//       updatedat: currentTimestamp,
+//       updatedby: userId,
+//     });
+//   }
+//   if (fullFormTransaction.accountid === originalData.accountid) {
+//     newAccountBalance = newAccountBalance + formTransaction.amount!;
+//   }
+
+//   await updateAccount({
+//     id: formTransaction.accountid!,
+//     balance: newAccountBalance,
+//     updatedat: currentTimestamp,
+//     updatedby: userId,
+//   });
+//   const updatedTransaction = await updateTransaction(formTransaction as Updates<TableNames.Transactions>);
+
+//   if (originalData.type === "Transfer") {
+//     if (originalData.transferid) {
+//       //Editing Master
+//       const originalTransferDest = await getTransactionById(originalData.transferid);
+//       await updateAccountBalance(
+//         originalTransferDest.accountid!,
+//         -originalTransferDest.amount!,
+//         currentTimestamp,
+//         userId,
+//       );
+//       const originalDestAcc = await updateAccountBalance(
+//         originalTransferDest.accountid!,
+//         -Math.abs(formTransaction.amount!),
+//         currentTimestamp,
+//         userId,
+//       );
+//       const updatedTransaction = await updateTransaction({
+//         ...originalTransferDest,
+//         amount: -Math.abs(formTransaction.amount),
+//       });
+//     } else {
+//       //Editing Sub
+//       const originalTransferDest = await getTransactionById(originalData.id!);
+//       await updateAccountBalance(
+//         originalTransferDest.accountid!,
+//         -originalTransferDest.amount,
+//         currentTimestamp,
+//         userId,
+//       );
+//       const originalDestAcc = await updateAccountBalance(
+//         originalTransferDest.accountid!,
+//         Math.abs(formTransaction.amount),
+//         currentTimestamp,
+//         userId,
+//       );
+//       const updatedTransaction = await updateTransaction({
+//         ...originalTransferDest,
+//         amount: Math.abs(formTransaction.amount),
+//       });
+//     }
+//   }
+
+//   return updatedTransaction;
+// };
+
+// function getDifferences(original: any, changed: any) {
+//   const result: any = {};
+
+//   // Iterate over the keys of the original object
+//   for (const key of Object.keys(original)) {
+//     // Check if the key exists in the changed object and has a different value
+//     if (changed.hasOwnProperty(key) && original[key] !== changed[key]) {
+//       result[key] = changed[key];
+//     }
+//   }
+
+//   return result;
+// }
 
 // const handleUpdateTransaction = async (
 //   formTransaction: TransactionFormType,
