@@ -23,6 +23,7 @@ type TransactionListHeaderProps = {
   deleteSelection: () => void;
   copyTransactions: () => void;
   clearSelection: () => void;
+  refreshTransactions: () => void;
 };
 
 export default function Transactions() {
@@ -109,7 +110,7 @@ const TransactionsPageHeader = ({
           </Pressable>
         </View>
       )}
-      <Pressable onPress={refreshTransactions}>
+      <Pressable onPress={async () => await refreshTransactions}>
         <Icon name="RefreshCw" className="text-foreground" size={20} />
       </Pressable>
       <Link href="/AddTransaction" className="items-center justify-center">
