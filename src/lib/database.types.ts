@@ -681,6 +681,13 @@ export type Database = {
           errors: string[]
         }[]
       }
+      updateaccountbalance: {
+        Args: {
+          amount: number
+          accountid: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       accountcategorytype: "Asset" | "Liability"

@@ -28,6 +28,7 @@ import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdow
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
+import * as Haptics from "expo-haptics";
 
 export type TransactionFormType = TransactionsView & { amount: number };
 
@@ -74,6 +75,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const [sourceAccount, setSourceAccount] = useState(null);
   const [destinationAccount, setDestinationAccount] = useState(null);
   const router = useRouter();
+  const [mode, setMode] = useState<"plus" | "minus">("plus");
 
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
   const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
@@ -85,10 +87,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setFormData(transaction);
     setSourceAccount(accounts?.find(account => account.id === transaction.accountid));
     setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
+
+    if (!transaction.amount || transaction.amount == 0) {
+      setMode("minus");
+    } else {
+      setMode(transaction.amount && transaction.amount < 0 ? "minus" : "plus");
+    }
   }, [transaction, accounts]);
 
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
+
+    if ((name === "type" && text === "Expense") || (name === "type" && text === "Transfer")) {
+      setMode("minus");
+    }
+    if (name === "type" && text === "Income") {
+      setMode("plus");
+    }
   };
 
   const handleOnMoreSubmit = () => {
@@ -104,28 +119,18 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
   const handleSubmit = () => {
     handleMutate();
-    console.log(
-      "fullFormTransaction",
-      {
-        ...formData,
-        amount: Math.abs(formData.amount ?? 0),
-      },
-      {
-        originalData: transaction,
-        sourceAccount,
-        destinationAccount,
-      },
-    );
   };
 
   const handleMutate = (isOneMore = false) => {
     setIsLoading(true);
 
+    let amount = mode === "minus" ? -Math.abs(formData.amount) : Math.abs(formData.amount);
+
     mutate(
       {
         fullFormTransaction: {
           ...formData,
-          amount: Math.abs(formData.amount ?? 0),
+          amount: amount,
         },
         originalData: transaction,
         sourceAccount,
@@ -232,15 +237,41 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           ))}
 
         <Box className="flex-row justify-center items-center">
+          <Pressable
+            className={`${mode === "plus" ? "bg-success-400" : "bg-error-400"} border border-muted rounded-lg me-2 p-1.5 mt-4`}
+            onPress={() => {
+              if (Platform.OS !== "web") {
+                Haptics.selectionAsync();
+              }
+              if (mode === "plus") {
+                setMode("minus");
+              } else {
+                setMode("plus");
+              }
+            }}
+          >
+            {mode === "minus" ? (
+              <Icon name="Minus" size={24} className="text-gray-100" />
+            ) : (
+              <Icon name="Plus" size={24} className="text-gray-100" />
+            )}
+          </Pressable>
           <TextInputField
             label="Amount"
-            value={Math.abs(formData.amount ?? 0).toString()}
+            value={(formData.amount ?? 0).toString()}
             keyboardType="numeric"
-            onChange={text => handleTextChange("amount", text)}
+            onChange={text => {
+              //handle number starting with a minus sign
+              let numericAmount = parseFloat(text.replace(/[^0-9.-]/g, ""));
+
+              // setMode(numericAmount < 0 ? "minus" : "plus");
+
+              handleTextChange("amount", Math.abs(numericAmount).toString());
+            }}
             className="flex-1"
           />
           <VCalc
-            onSubmit={(result: string) => handleTextChange("amount", result.toString())}
+            onSubmit={(result: string) => handleTextChange("amount", Math.abs(parseFloat(result)).toString())}
             currentValue={formData.amount?.toString()}
           />
         </Box>

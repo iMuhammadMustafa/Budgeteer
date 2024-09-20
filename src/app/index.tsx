@@ -22,17 +22,6 @@ export default function Index() {
         <Image source={cards} className="max-w-[250px] max-h-[250px]" resizeMode="contain" />
 
         <View>
-          <Calendar
-            markedDates={{
-              "2024-09-16": { selected: true, marked: true, selectedColor: "blue" },
-              "2024-09-17": { marked: true },
-              "2024-09-18": { marked: true, dotColor: "red", activeOpacity: 0 },
-              "2024-09-19": { disabled: true, disableTouchEvent: true },
-            }}
-          />
-        </View>
-
-        <View>
           <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
           <Pressable className="py-2 my-1 bg-primary items-center" onPress={toggleTheme}>
             <Icon name={isDarkMode ? "Moon" : "Sun"} className=" text-primary-foreground" />

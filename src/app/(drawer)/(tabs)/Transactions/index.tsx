@@ -41,6 +41,7 @@ export default function Transactions() {
     handlePress,
     deleteSelection,
     copyTransactions,
+    refreshTransactions,
   } = useTransactions();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function Transactions() {
         deleteSelection={deleteSelection}
         copyTransactions={copyTransactions}
         clearSelection={clearSelection}
+        refreshTransactions={refreshTransactions}
       />
 
       <FlatList
@@ -84,6 +86,7 @@ const TransactionsPageHeader = ({
   deleteSelection,
   copyTransactions,
   clearSelection,
+  refreshTransactions,
 }: TransactionListHeaderProps) => {
   return (
     <View className="px-10 self-end my-2 flex-row justify-between items-center gap-2">
@@ -106,6 +109,9 @@ const TransactionsPageHeader = ({
           </Pressable>
         </View>
       )}
+      <Pressable onPress={refreshTransactions}>
+        <Icon name="RefreshCw" className="text-foreground" size={20} />
+      </Pressable>
       <Link href="/AddTransaction" className="items-center justify-center">
         <Icon name="Plus" className="text-foreground" size={20} />
       </Link>

@@ -29,7 +29,7 @@ export function TextInputFieldMemo({
     <View className={`my-1 ${className ?? ""} `}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
-        className="text-foreground border rounded-md p-3 border-gray-300 bg-white"
+        className="text-black border rounded-md p-3 border-gray-300 bg-white"
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}

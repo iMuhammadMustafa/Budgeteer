@@ -14,6 +14,9 @@ export enum ViewNames {
   MonthlyTransactions = "monthlycategorytransactions",
   DailyTransactionsSummary = "dailytransactions",
 }
+export enum FunctionNames {
+  UpdateAccountBalance = "updateaccountbalance",
+}
 
 export const transactionsKeys = {
   all: () => [

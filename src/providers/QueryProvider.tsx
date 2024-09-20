@@ -21,7 +21,7 @@ export const queryClient = new QueryClient({
   },
   mutationCache: new MutationCache({
     onSuccess: data => {
-      console.log(data);
+      // console.log(data);
     },
     onError: error => {
       console.log(error.message);

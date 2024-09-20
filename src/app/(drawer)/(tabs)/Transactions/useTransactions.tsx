@@ -3,13 +3,16 @@ import { Platform } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import dayjs from "dayjs";
-import { TransactionsView } from "@/src/lib/supabase";
+import { Account, TransactionsView } from "@/src/lib/supabase";
 import { useNotifications } from "@/src/providers/NotificationsProvider";
 import {
   useDeleteTransaction,
   useGetTransactions,
   useUpsertTransaction,
 } from "@/src/repositories/transactions.service";
+import { useQueryClient } from "@tanstack/react-query";
+import { TableNames, ViewNames } from "@/src/consts/TableNames";
+import { getAccountById } from "@/src/repositories/account.api";
 
 export type GroupedData = {
   [date: string]: {
@@ -40,6 +43,8 @@ export default function useTransactions() {
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
+  const queryClient = useQueryClient();
+
   const backAction = () => {
     if (selectionMode) {
       clearSelection();
@@ -59,20 +64,32 @@ export default function useTransactions() {
       for (let item of selectedTransactions) {
         const { accountid, categoryid, ...newTransaction } = { ...item };
 
+        const sourceAccount =
+          (await queryClient
+            .getQueryData<Account[]>([TableNames.Accounts])
+            ?.find((a: any) => a.accountid === item.accountid)) ?? (await getAccountById(item.accountid!));
+        let destinationAccount = null;
+
+        if (item.transferaccountid) {
+          destinationAccount =
+            (await queryClient
+              .getQueryData<Account[]>([TableNames.Accounts])
+              ?.find((a: any) => a.accountid === item.transferaccountid)) ??
+            (await getAccountById(item.transferaccountid));
+        }
+
         await addMutation.mutateAsync(
           {
             fullFormTransaction: {
-              description: item.description,
+              ...item,
+              id: null,
               date: new Date().toISOString(),
+              createdat: new Date().toISOString(),
               amount: item.amount ?? 0,
-              type: item.type,
-              accountid: item.accountid!,
-              categoryid: item.categoryid!,
-              tags: item.tags,
-              notes: item.notes,
-              status: item.status!,
-              transferid: item.transferid,
             },
+            originalData: undefined,
+            sourceAccount: sourceAccount!,
+            destinationAccount: destinationAccount,
           },
           {
             onSuccess: () => addNotification({ message: "Transaction Created Successfully", type: "success" }),
@@ -90,33 +107,13 @@ export default function useTransactions() {
   const deleteSelection = async () => {
     setIsActionLoading(true);
     for (let item of selectedTransactions) {
-      await deleteMutation.mutateAsync(
-        {
-          ...item,
-          id: item.transactionid!,
-          amount: item.amount!,
-          accountid: item.accountid!,
-          transferid: item.transactionid,
-          date: item.date!,
-
-          status: item.status!,
-
-          // These are required fields for the mutation
-          createdat: "",
-          createdby: "",
-          updatedat: null,
-          updatedby: null,
-          isdeleted: false,
-          tenantid: null,
+      await deleteMutation.mutateAsync(item, {
+        onSuccess: () => {
+          addNotification({ message: "Transaction Deleted Successfully", type: "success" });
         },
-        {
-          onSuccess: () => {
-            addNotification({ message: "Transaction Deleted Successfully", type: "success" });
-            setIsActionLoading(false);
-          },
-        },
-      );
+      });
     }
+    setIsActionLoading(false);
     clearSelection();
   };
 
@@ -125,8 +122,8 @@ export default function useTransactions() {
       // In selection mode, short press selects/deselects
       if (Platform.OS !== "web") Haptics.selectionAsync();
 
-      const updatedSelections = selectedTransactions.find(i => i.transactionid === item.transactionid)
-        ? selectedTransactions.filter(t => t.transactionid !== item.transactionid)
+      const updatedSelections = selectedTransactions.find(i => i.id === item.id)
+        ? selectedTransactions.filter(t => t.id !== item.id)
         : [...selectedTransactions, item];
 
       setSelectedTransactions(updatedSelections);
@@ -144,7 +141,14 @@ export default function useTransactions() {
       }
     } else {
       // Outside selection mode, navigate to transaction details
-      router.push({ pathname: `/AddTransaction`, params: item! }); // Remove the braces in params
+
+      if (item.transferid) {
+        item = transactions?.find(t => t.id === item.transferid) ?? item;
+      }
+
+      console.log(item);
+
+      // router.push({ pathname: `/AddTransaction`, params: item! }); // Remove the braces in params
     }
   };
 
@@ -156,6 +160,10 @@ export default function useTransactions() {
     setSelectedSum(prev => prev + item.amount);
   };
 
+  const refreshTransactions = async () => {
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+    await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+  };
   return {
     transactions,
     error,
@@ -172,6 +180,7 @@ export default function useTransactions() {
     clearSelection,
     deleteSelection,
     copyTransactions,
+    refreshTransactions,
   };
 }
 

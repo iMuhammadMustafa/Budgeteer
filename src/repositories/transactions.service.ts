@@ -4,12 +4,13 @@ import {
   DailyTransactionsSummary,
   Inserts,
   MonthlyTransactions,
+  supabase,
   Transaction,
   TransactionsView,
   Updates,
 } from "@/src/lib/supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { TableNames, transactionsKeys, ViewNames } from "@/src/consts/TableNames";
+import { FunctionNames, TableNames, transactionsKeys, ViewNames } from "@/src/consts/TableNames";
 import {
   getTransactionById,
   updateTransaction,
@@ -21,6 +22,7 @@ import {
   getTransactionsByDescription,
   getMonthlyTransactions,
   getDailyTransactionsSummary,
+  getThisMonthsTransactionsSummary,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
@@ -69,6 +71,12 @@ export const useDailyTransactionsSummary = () => {
     queryFn: async () => getDailyTransactionsSummary(),
   });
 };
+export const useDailyTransactionsSummaryThisMonth = () => {
+  return useQuery<DailyTransactionsSummary[]>({
+    queryKey: [ViewNames.DailyTransactionsSummary, "month"],
+    queryFn: async () => getThisMonthsTransactionsSummary(),
+  });
+};
 
 export const useGetTransactionById = (transactionid?: string | null) => {
   return useQuery<TransactionsView>({
@@ -94,14 +102,14 @@ export const useUpsertTransaction = () => {
       destinationAccount,
     }: {
       fullFormTransaction: TransactionFormType;
-      originalData?: TransactionFormType;
+      originalData?: TransactionFormType | null;
       sourceAccount: Account | null;
       destinationAccount: Account | null;
     }) => {
       const currentTimestamp = new Date().toISOString();
       const userId = session!.user.id;
 
-      if (!fullFormTransaction.id) {
+      if (!fullFormTransaction.id || !originalData) {
         return await handleNewTransaction(
           fullFormTransaction,
           sourceAccount!,
@@ -121,7 +129,8 @@ export const useUpsertTransaction = () => {
       );
     },
     onSuccess: async something => {
-      queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView, TableNames.Accounts] });
+      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       await queryClient.invalidateQueries({ queryKey: transactionsKeys.all() });
     },
   });
@@ -134,43 +143,96 @@ export const useDeleteTransaction = () => {
     throw new Error("No Session or user");
   }
   return useMutation({
-    mutationFn: async (formTransaction: Transaction) => {
+    mutationFn: async (formTransaction: TransactionsView) => {
       const currentTimestamp = new Date().toISOString();
-      await updateAccountBalance(formTransaction.accountid, -formTransaction.amount, currentTimestamp, session.user.id);
+      const user = session?.user;
 
-      if (formTransaction.type === "Transfer") {
-        const relatedTransaction = formTransaction.transferid
-          ? await getTransactionById(formTransaction.transferid)
-          : await getTransactionByTransferId(formTransaction.id);
+      console.log(formTransaction);
 
-        await updateAccountBalance(
-          relatedTransaction.accountid,
-          -relatedTransaction.amount,
-          currentTimestamp,
-          session.user.id,
-        );
-        await deleteTransaction(relatedTransaction.id, session);
+      const updatedTransaction = await updateTransaction({
+        id: formTransaction.id!,
+        isdeleted: true,
+        updatedat: currentTimestamp,
+        updatedby: user?.id,
+      });
+
+      if (!updatedTransaction) {
+        throw new Error("Transaction wasn't updated");
       }
 
-      return await deleteTransaction(formTransaction.id, session);
+      if (formTransaction.status === "None") {
+        // console.log("formTransaction", formTransaction);
+        // await updateAccount({
+        //   id: formTransaction.accountid!,
+        //   balance: formTransaction.balance! - formTransaction.amount!,
+        //   updatedat: currentTimestamp,
+        //   updatedby: user?.id,
+        // });
+        await supabase.rpc(FunctionNames.UpdateAccountBalance, {
+          accountid: formTransaction.accountid!,
+          amount: -formTransaction.amount!,
+        });
+      }
+
+      if (formTransaction.type === "Transfer") {
+        if (formTransaction.status === "None") {
+          // const transferAccount =
+          //   queryClient.getQueryData<Account>([TableNames.Accounts, formTransaction.transferaccountid!]) ??
+          //   (await getAccountById(formTransaction.transferaccountid!));
+
+          // await updateAccount({
+          //   id: transferAccount.id,
+          //   balance: transferAccount.balance + formTransaction.amount!,
+          //   updatedat: currentTimestamp,
+          //   updatedby: user?.id,
+          // });
+          await supabase.rpc(FunctionNames.UpdateAccountBalance, {
+            accountid: formTransaction.transferaccountid!,
+            amount: formTransaction.amount!,
+          });
+        }
+
+        if (formTransaction.transferid) {
+          await updateTransaction({
+            id: formTransaction.transferid!,
+            isdeleted: true,
+            updatedat: currentTimestamp,
+            updatedby: user?.id,
+          });
+        } else {
+          const transferTransaction = await getTransactionByTransferId(formTransaction.id!);
+          if (transferTransaction) {
+            await updateTransaction({
+              id: transferTransaction.id!,
+              isdeleted: true,
+              updatedat: currentTimestamp,
+              updatedby: user?.id,
+            });
+          }
+        }
+      }
+
+      return;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
     },
   });
 };
-export const useRestoreTransaction = (id: string) => {
-  const queryClient = useQueryClient();
-  const { session } = useAuth();
-  return useMutation({
-    mutationFn: async () => {
-      return await restoreTransaction(id, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    },
-  });
-};
+// export const useRestoreTransaction = (id: string) => {
+//   const queryClient = useQueryClient();
+//   const { session } = useAuth();
+//   return useMutation({
+//     mutationFn: async () => {
+//       return await restoreTransaction(id, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+//     },
+//   });
+// };
 
 const handleNewTransaction = async (
   fullFormTransaction: TransactionFormType,
@@ -230,7 +292,7 @@ const handleNewTransaction = async (
     const transferTransaction = {
       ...fullFormTransaction,
       id: undefined,
-      amount: amount,
+      amount: -amount,
       transferid: createdTransaction.id,
       accountid: destinationAccount.id,
     };
@@ -259,7 +321,7 @@ const handleNewTransaction = async (
       // tenantid: transferTransaction.tenantid,
       transferaccountid: transferTransaction.id,
 
-      // transferid: transferTransaction.transferid,
+      transferid: transferTransaction.transferid,
       type: transferTransaction.type,
       // updatedat: transferTransaction.updatedat,
       // updatedby: transferTransaction.updatedby,
@@ -531,8 +593,6 @@ export const handleUpdateTransaction = async (
     }
   }
 
-  console.log("updatedTransaction", updatedTransaction);
-  console.log("updatedAccount", updatedAccount);
   updateTransaction(updatedTransaction);
   updateAccount(updatedAccount);
   if (updatedTransferTransaction.id) {
