@@ -26,7 +26,7 @@ export default function MyDropDown({
   onSelect,
   selectedValue,
   label,
-  isModal = false,
+  isModal = Platform.OS !== "web",
   groupBy,
 }: DropDownProps) {
   const [isOpen, setIsOpen] = useState(false);
