@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Inserts, TransactionsView, TransactionTypes, Updates } from "../../lib/supabase";
+import { TransactionsView } from "../../lib/supabase";
 import { useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
@@ -21,14 +21,13 @@ import { useGetAccounts } from "../../repositories/account.service";
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
-import VDropdown from "../VercelDropDown";
 import VCalc from "../VCalc";
-import DropdownModal from "../Dropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 import * as Haptics from "expo-haptics";
+import MyDropDown from "../MyDropdown";
 
 export type TransactionFormType = TransactionsView & { amount: number };
 
@@ -156,6 +155,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       ...transaction,
       ...item.item,
     });
+    setMode(item.item.amount < 0 ? "minus" : "plus");
+    setSourceAccount(accounts?.find(account => account.id === item.item.accountid));
+    setDestinationAccount(accounts?.find(account => account.id === item.item.transferaccountid));
   };
 
   if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
@@ -276,164 +278,94 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </Box>
 
-        {Platform.OS === "web" ? (
-          <VDropdown
-            label="Type"
-            options={[
-              { id: "Income", label: "Income", value: "Income" },
-              { id: "Expense", label: "Expense", value: "Expense" },
-              { id: "Transfer", label: "Transfer", value: "Transfer" },
-              { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
-              { id: "Initial", label: "Initial", value: "Initial", disabled: true },
-              { id: "Refund", label: "Refund", value: "Refund", disabled: true },
-            ]}
-            selectedValue={formData.type}
-            onSelect={value => {
-              handleTextChange("type", value.value);
-            }}
-          />
-        ) : (
-          <DropdownModal
-            label="Type"
-            options={[
-              { id: "Income", label: "Income", value: "Income" },
-              { id: "Expense", label: "Expense", value: "Expense" },
-              { id: "Transfer", label: "Transfer", value: "Transfer" },
-              { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
-              { id: "Initial", label: "Initial", value: "Initial", disabled: true },
-              { id: "Refund", label: "Refund", value: "Refund", disabled: true },
-            ]}
-            selectedValue={formData.type}
-            onSelect={value => handleTextChange("type", value.value)}
-          />
-        )}
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Type"
+          options={[
+            { id: "Income", label: "Income", value: "Income" },
+            { id: "Expense", label: "Expense", value: "Expense" },
+            { id: "Transfer", label: "Transfer", value: "Transfer" },
+            { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
+            { id: "Initial", label: "Initial", value: "Initial", disabled: true },
+            { id: "Refund", label: "Refund", value: "Refund", disabled: true },
+          ]}
+          selectedValue={formData.type}
+          onSelect={value => {
+            handleTextChange("type", value.value);
+          }}
+        />
 
-        {Platform.OS === "web" ? (
-          <VDropdown
-            label="Category"
-            selectedValue={formData.categoryid}
-            options={
-              categories?.map(category => ({
-                id: category.id,
-                label: category.name,
-                value: category,
-                icon: category.icon,
-              })) ?? []
-            }
-            onSelect={(value: any) => handleTextChange("categoryid", value.id)}
-          />
-        ) : (
-          <DropdownModal
-            label="Category"
-            selectedValue={formData.categoryid}
-            options={
-              categories?.map(category => ({
-                id: category.id,
-                label: category.name,
-                value: category,
-                icon: category.icon,
-              })) ?? []
-            }
-            onSelect={(value: any) => handleTextChange("categoryid", value.id)}
-          />
-        )}
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Category"
+          selectedValue={formData.categoryid}
+          options={
+            categories?.map(category => ({
+              id: category.id,
+              label: category.name,
+              value: category,
+              icon: category.icon,
+              iconColorClass: category.type === "Income" ? "text-success-500" : "text-error-500",
+              group: category.group,
+            })) ?? []
+          }
+          groupBy="group"
+          onSelect={(value: any) => handleTextChange("categoryid", value.id)}
+        />
 
-        {Platform.OS === "web" ? (
-          <VDropdown
-            label="Account"
-            selectedValue={formData.accountid}
-            options={accounts?.map(account => ({
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Account"
+          selectedValue={formData.accountid}
+          options={
+            accounts?.map(account => ({
               id: account.id,
               label: account.name,
               value: account,
               passedItem: account,
-            }))}
-            onSelect={(value: any) => {
-              handleTextChange("accountid", value.id);
-              setSourceAccount(value.value);
-            }}
-          />
-        ) : (
-          <DropdownModal
-            label="Account"
-            selectedValue={formData.accountid}
-            options={accounts?.map(account => ({
-              id: account.id,
-              label: account.name,
-              value: account,
-              passedItem: account,
-            }))}
-            onSelect={(value: any) => {
-              handleTextChange("accountid", value.id);
-              setSourceAccount(value.value);
-            }}
-          />
-        )}
+            })) ?? []
+          }
+          onSelect={(value: any) => {
+            handleTextChange("accountid", value.id);
+            setSourceAccount(value.value);
+          }}
+        />
 
-        {formData.type === "Transfer" &&
-          (Platform.OS === "web" ? (
-            <VDropdown
-              label="Destinaton Account"
-              selectedValue={formData.transferaccountid}
-              options={accounts?.map(account => ({
+        {formData.type === "Transfer" && (
+          <MyDropDown
+            isModal={Platform.OS !== "web"}
+            label="Destinaton Account"
+            selectedValue={formData.transferaccountid}
+            options={
+              accounts?.map(account => ({
                 id: account.id,
                 label: account.name,
                 value: account,
                 passedItem: account,
-              }))}
-              onSelect={(value: any) => {
-                handleTextChange("transferaccountid", value.id);
-                setDestinationAccount(value.value);
-              }}
-            />
-          ) : (
-            <DropdownModal
-              label="Destinaton Account"
-              selectedValue={formData.transferaccountid}
-              options={accounts?.map(account => ({
-                id: account.id,
-                label: account.name,
-                value: account,
-                passedItem: account,
-              }))}
-              onSelect={(value: any) => {
-                handleTextChange("transferaccountid", value.id);
-                setDestinationAccount(value.value);
-              }}
-            />
-          ))}
-
-        {Platform.OS === "web" ? (
-          <VDropdown
-            label="Status"
-            options={[
-              { id: "None", label: "None", value: "None" },
-              { id: "Cleared", label: "Cleared", value: "Cleared" },
-              { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
-              { id: "Void", label: "Void", value: "Void" },
-            ]}
-            selectedValue={formData.status}
-            onSelect={value => {
-              console.log(value);
-              handleTextChange("status", value.value);
-            }}
-          />
-        ) : (
-          <DropdownModal
-            label="Status"
-            options={[
-              { id: "None", label: "None", value: "None" },
-              { id: "Cleared", label: "Cleared", value: "Cleared" },
-              { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
-              { id: "Void", label: "Void", value: "Void" },
-            ]}
-            selectedValue={formData.status}
-            onSelect={value => {
-              console.log(value);
-              handleTextChange("status", value.value);
+              })) ?? []
+            }
+            onSelect={(value: any) => {
+              handleTextChange("transferaccountid", value.id);
+              setDestinationAccount(value.value);
             }}
           />
         )}
+
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Status"
+          options={[
+            { id: "None", label: "None", value: "None" },
+            { id: "Cleared", label: "Cleared", value: "Cleared" },
+            { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
+            { id: "Void", label: "Void", value: "Void" },
+          ]}
+          selectedValue={formData.status}
+          onSelect={value => {
+            console.log(value);
+            handleTextChange("status", value.value);
+          }}
+        />
 
         <TextInputField
           label="Tags"

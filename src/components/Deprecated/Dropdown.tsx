@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
-import Icon from "../lib/IonIcons";
+import Icon from "../../lib/IonIcons";
 
 interface OptionItem {
   id: string;
