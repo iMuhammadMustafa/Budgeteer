@@ -7,9 +7,6 @@ import { useTheme } from "../providers/ThemeProvider";
 import Icon from "../lib/IonIcons";
 LogBox.ignoreLogs(["Require cycle: node_modules/"]);
 
-import { Calendar, CalendarList, Agenda } from "react-native-calendars";
-import React from "react";
-
 export default function Index() {
   const { isDarkMode, toggleTheme } = useTheme();
   const { session, isSessionLoading } = useAuth();
