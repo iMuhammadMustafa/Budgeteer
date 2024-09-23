@@ -109,6 +109,7 @@ const upsertUpdateAccount = async (
     await createTransaction({
       amount: formAccount.balance - originalData.balance,
       accountid: originalData.id,
+      categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
       type: "Adjustment",
       description: "Balance Adjustment",
       createdby: originalData.createdby,

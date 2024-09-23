@@ -109,12 +109,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const handleOnMoreSubmit = () => {
     const newItem = {
       ...initialTransactionState,
-      date: dayjs(formData.date).toString(),
+      date: dayjs(formData.date).toISOString(),
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
     };
     handleMutate(true);
+
     setFormData(newItem);
   };
   const handleSubmit = () => {
@@ -122,7 +123,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
 
   const handleMutate = (isOneMore = false) => {
-    setIsLoading(true);
+    if (!isOneMore) {
+      setIsLoading(true);
+    }
 
     let amount = mode === "minus" ? -Math.abs(formData.amount) : Math.abs(formData.amount);
 
@@ -155,6 +158,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setFormData({
       ...transaction,
       ...item.item,
+      amount: Math.abs(item.item.amount),
     });
     setMode(item.item.amount < 0 ? "minus" : "plus");
     setSourceAccount(accounts?.find(account => account.id === item.item.accountid));
@@ -215,7 +219,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             keyboardType="numeric"
             onChange={text => {
               //handle number starting with a minus sign
-              let numericAmount = parseFloat(text.replace(/[^0-9.-]/g, ""));
+
+              let numericAmount = text.replace(/[^0-9.]/g, "").replace(/(\..*)\..*/g, "$1");
+              if (numericAmount.endsWith(".")) {
+                numericAmount += "0";
+              }
+              numericAmount = parseFloat(numericAmount);
+
               if (text.length <= 0) {
                 numericAmount = 0;
               }

@@ -46,7 +46,7 @@ export const getTransactionsByDescription = async (text: string): Promise<Search
   return (
     data.map(transaction => ({
       label: transaction.description!,
-      item: { ...transaction, amount: Math.abs(transaction.amount ?? 0) },
+      item: { ...transaction, amount: transaction.amount },
     })) ?? []
   );
 };
