@@ -5,69 +5,11 @@ import TextInputField from "@/src/components/TextInputField";
 import generateUuid from "@/src/lib/uuidHelper";
 import { useGetAccounts } from "@/src/repositories/account.service";
 import { useGetCategories } from "@/src/repositories/categories.service";
-import { FlatList, Pressable, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 import { ScrollView, Text } from "react-native";
 import { MultiTransactionGroup, MultiTransactionItem } from "@/src/consts/Types";
 import { useCreateTransactions } from "@/src/repositories/transactions.service";
 import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
-
-// const handleAmountChange = (value: string) => {
-//   let numericValue: number | string = returnNumericValue(value);
-
-//   // Allow "-" as a valid intermediate state without performing any calculations
-//   if (numericValue === "-") {
-//     setGroup({
-//       ...group,
-//       transactions: {
-//         ...group.transactions,
-//         [id]: { ...group.transactions[id], amount: numericValue }, // Keep "-" as is for now
-//       },
-//     });
-//     return;
-//   }
-
-//   // Try to parse the value to a number
-//   numericValue = parseFloat(numericValue as string);
-
-//   // If numericValue is still NaN (invalid), return without any state changes
-//   if (isNaN(numericValue)) {
-//     return;
-//   }
-
-//   setGroup(prev => {
-//     let prevAmount = isNaN(prev.transactions[id].amount) ? 0 : prev.transactions[id].amount;
-//     let difference = numericValue - prevAmount;
-
-//     // Cap the difference to not exceed the max available amount
-//     if (difference > parseFloat(maxAmount) - currentAmount) {
-//       difference = parseFloat(maxAmount) - currentAmount;
-//       numericValue = prevAmount + difference;
-//     }
-
-//     // Update currentAmount only if there's an actual change
-//     if (difference !== 0) {
-//       setCurrentAmount((prev: number) => prev + difference);
-//     }
-
-//     // Return the updated group object with the new transaction amount
-//     return {
-//       ...prev,
-//       transactions: {
-//         ...prev.transactions,
-//         [id]: { ...prev.transactions[id], amount: numericValue },
-//       },
-//     };
-//   });
-// };
-const returnNumericValue = (value: string) => {
-  if (value === "0-") return "-";
-  if (!/^-?\d*\.?\d*$/.test(value)) return "";
-  if (value.charAt(0) == "0") return value.charAt(0) == "0" ? value.substring(1) : value;
-  if (value === ".") return "0.";
-  if (value === "00" || value === "") return "0";
-  if (value === "0" || value === "-") return value;
-  return value;
-};
 
 const groupId = generateUuid();
 const initalState: MultiTransactionGroup = {
@@ -97,12 +39,12 @@ export default function MultipleTransactions() {
   const { data: accounts, isLoading: isAccountsLoading } = useGetAccounts();
   const submitAllMutation = useCreateTransactions();
 
-  if (isCategoriesLoading || isAccountsLoading) return <Text>Loading...</Text>;
+  if (isCategoriesLoading || isAccountsLoading) return <ActivityIndicator size="large" color="#0000ff" />;
 
   const handleSubmit = async () => {
     await submitAllMutation.mutateAsync({
       transactionsGroup: group,
-      totalAmount: currentAmount,
+      totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
     });
   };
 
@@ -121,6 +63,9 @@ export default function MultipleTransactions() {
           mode={mode}
           setMode={setMode}
           value={(maxAmount ?? 0).toString()}
+          onModeChange={() => {
+            // setMaxAmount(prev => (mode === "minus" ? Math.abs(prev) : Math.abs(prev) * -1));
+          }}
           onChange={value => {
             if (value.includes("-")) {
               setMode("minus");
@@ -203,6 +148,7 @@ const TransactionsCreationList = ({
         currentAmount={currentAmount}
         setCurrentAmount={setCurrentAmount}
         maxAmount={maxAmount}
+        mode={mode}
       />
       <FlatList
         data={Object.keys(group.transactions)}
@@ -234,7 +180,7 @@ const TransactionCard = ({
   currentAmount,
   setCurrentAmount,
   maxAmount,
-  mode,
+  mode, // global mode
 }: {
   id: string;
   transaction: MultiTransactionItem;
@@ -244,29 +190,40 @@ const TransactionCard = ({
   maxAmount: number;
   group: MultiTransactionGroup;
   setGroup: (group: MultiTransactionGroup | ((prev: MultiTransactionGroup) => MultiTransactionGroup)) => void;
-  mode: "plus" | "minus";
+  mode: "plus" | "minus"; // global mode
 }) => {
-  // const [currentMode, setCurrentMode] = useState<"plus" | "minus">(
-  //   transaction.amount == 0 ? mode : transaction.amount < 0 ? "minus" : "plus",
-  // );
-  const [currentMode, setCurrentMode] = useState<"plus" | "minus">(mode);
+  const [currentMode, setCurrentMode] = useState<"plus" | "minus">(
+    transaction.amount === 0 ? mode : transaction.amount < 0 ? "minus" : "plus",
+  );
+
+  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
+  const currentMultiplier = currentMode === "minus" ? -1 : 1; // Current mode multiplier (positive or negative)
+
   const handleAmountChange = (value: string) => {
-    let numericValue = 0;
-
-    if (value.includes("-")) {
-      setCurrentMode("minus");
-      return;
-    }
-    if (value === "") numericValue = 0;
+    console.log(value);
     if (!/^-?\d*\.?\d*$/.test(value)) {
-      return;
+      return; // Reject invalid numeric input
     }
 
-    numericValue = parseFloat(value);
+    let numericValue = parseFloat(value);
 
+    // Update amount based on currentMode
+    numericValue = Math.abs(numericValue) * currentMultiplier;
+
+    // Respect the global mode and ensure the maxAmount respects the global mode
+    const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount;
+
+    // Adjust the numeric value based on remaining amount
+    if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
+      numericValue = currentMultiplier * remainingAmount;
+    }
+
+    // Update group and current amount
     setGroup(prev => {
-      let prevAmount = isNaN(prev.transactions[id].amount) ? 0 : prev.transactions[id].amount;
-      let difference = numericValue - prevAmount;
+      const prevAmount = prev.transactions[id].amount || 0;
+      const difference = numericValue - prevAmount;
+
+      setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
 
       return {
         ...prev,
@@ -278,15 +235,37 @@ const TransactionCard = ({
     });
   };
 
+  // Handle mode toggle (switch between plus/minus)
+  const handleModeToggle = () => {
+    setCurrentMode(prevMode => {
+      const newMode = prevMode === "plus" ? "minus" : "plus"; // Toggle between plus and minus
+
+      // Update the amount based on the new mode
+      const newAmount = transaction.amount * -1;
+
+      setGroup(prev => ({
+        ...prev,
+        transactions: {
+          ...prev.transactions,
+          [id]: { ...prev.transactions[id], amount: newAmount },
+        },
+      }));
+
+      setCurrentAmount(prev => prev - transaction.amount + newAmount); // Update current amount with new signed value
+
+      return newMode;
+    });
+  };
+
   return (
     <View className="flex-row gap-2 bg-card border border-muted items-center justify-between p-3 my-2">
       <TextInputFieldWithIcon
         className="flex-1"
         label="Amount"
-        value={transaction.amount.toString()}
+        value={Math.abs(transaction.amount).toString()} // Always display absolute value
         onChange={value => handleAmountChange(value)}
         mode={currentMode}
-        setMode={setCurrentMode}
+        setMode={handleModeToggle} // Pass the mode toggle handler
       />
 
       <MyCategoriesDropdown
@@ -323,15 +302,14 @@ const TransactionCard = ({
       <Pressable
         className="bg-error-400 text-white rounded-md p-1.5 mt-4"
         onPress={() => {
-          setCurrentAmount((prev: number) => prev - transaction.amount);
           setGroup((prev: MultiTransactionGroup): MultiTransactionGroup => {
             const { [id]: _, ...rest } = prev.transactions;
-            setCurrentAmount((prev: number) => prev - transaction.amount);
+            setCurrentAmount((prevAmount: number) => prevAmount - _.amount);
             return { ...prev, transactions: rest };
           });
         }}
       >
-        <Text className="text-center text-foreground" selectable={false}>
+        <Text className="text-center text-white" selectable={false}>
           Remove
         </Text>
       </Pressable>
@@ -350,14 +328,16 @@ const TransactionsFooter = ({
   mode: "plus" | "minus";
   onSubmit: () => void;
 }) => {
-  const isDisabled = currentAmount !== maxAmount;
-  const isMinus = mode === "minus";
+  const isDisabled = currentAmount !== maxAmount * (mode === "minus" ? -1 : 1);
+  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
   return (
     <View className="flex-row items-center justify-between">
       <View className="flex">
-        <Text className="text-center text-foreground">Max Amount: ${maxAmount ?? 0.0}</Text>
-        <Text className="text-center text-foreground">Total: ${currentAmount ?? 0.0}</Text>
-        <Text className="text-center text-foreground">Remaining: ${maxAmount - currentAmount ?? 0.0}</Text>
+        <Text className="text-center text-foreground">Total: ${globalMultiplier * maxAmount ?? 0.0}</Text>
+        <Text className="text-center text-foreground">Current Total: ${currentAmount ?? 0.0}</Text>
+        <Text className="text-center text-foreground">
+          Remaining: ${globalMultiplier * maxAmount - currentAmount ?? 0.0}
+        </Text>
       </View>
       <Pressable
         className={`p-2 rounded-md ${isDisabled ? "bg-secondary" : "bg-primary"} `}
@@ -378,6 +358,7 @@ const AddNewTransaction = ({
   currentAmount,
   setCurrentAmount,
   maxAmount,
+  mode,
 }: {
   group: MultiTransactionGroup;
   setGroup: (group: MultiTransactionGroup | ((prev: MultiTransactionGroup) => MultiTransactionGroup)) => void;
@@ -385,12 +366,14 @@ const AddNewTransaction = ({
   currentAmount: number;
   setCurrentAmount: (amount: number | ((prev: number) => number)) => void;
   maxAmount: number;
+  mode: "plus" | "minus";
 }) => {
+  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
   return (
     <Pressable
       className="p-2 bg-primary text-white rounded-md"
       onPress={() => {
-        const newAmount = maxAmount - currentAmount;
+        const newAmount = globalMultiplier * maxAmount - currentAmount;
         setCurrentAmount((amount: number) => amount + newAmount);
 
         setGroup({

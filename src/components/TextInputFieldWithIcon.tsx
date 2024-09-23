@@ -11,6 +11,7 @@ type TextInputFieldProps = {
   className?: string;
   mode: "plus" | "minus";
   setMode: (mode: "plus" | "minus") => void;
+  onModeChange?: (mode: "plus" | "minus") => void;
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
@@ -30,6 +31,7 @@ export function TextInputFieldMemo({
   className,
   mode,
   setMode,
+  onModeChange,
 }: TextInputFieldProps) {
   const [layout, setLayout] = useState({ width: 0, height: 0, x: 0, y: 0 });
 
@@ -45,6 +47,9 @@ export function TextInputFieldMemo({
         <Pressable
           className={`p-2 h-[${layout.height}px] absolute top-0 ${mode === "minus" ? "bg-error-400" : "bg-success-400"} rounded-md justify-center`}
           onPress={() => {
+            if (onModeChange) {
+              onModeChange(mode === "plus" ? "minus" : "plus");
+            }
             if (Platform.OS !== "web") {
               Haptics.selectionAsync();
             }
