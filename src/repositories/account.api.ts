@@ -1,4 +1,4 @@
-import { TableNames } from "../consts/TableNames";
+import { FunctionNames, TableNames } from "../consts/TableNames";
 import { Inserts, supabase, Updates } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
@@ -89,5 +89,12 @@ export const updateAccountBalance = async (
     balance: accData.balance + amount,
     updatedat: currentTimestamp,
     updatedby: userId,
+  });
+};
+
+export const updateAccountBalanceFunction = async (accountid: string, amount: number) => {
+  return await supabase.rpc(FunctionNames.UpdateAccountBalance, {
+    accountid: accountid!,
+    amount: amount,
   });
 };

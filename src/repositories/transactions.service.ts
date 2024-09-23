@@ -23,11 +23,13 @@ import {
   getMonthlyTransactions,
   getDailyTransactionsSummary,
   getThisMonthsTransactionsSummary,
+  createTransactions,
 } from "./transactions.api";
-import { getAccountById, updateAccount, updateAccountBalance } from "./account.api";
+import { getAccountById, updateAccount, updateAccountBalance, updateAccountBalanceFunction } from "./account.api";
 import { TransactionFormType } from "../components/pages/TransactionForm";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
 import { queryClient } from "../providers/QueryProvider";
+import { MultiTransactionGroup } from "../consts/Types";
 
 interface CategorizedTransactions {
   categories: {
@@ -603,4 +605,57 @@ export const handleUpdateTransaction = async (
     console.log("updatedTransferAccount", updatedTransferAccount);
     updateAccount(updatedTransferAccount);
   }
+};
+
+export const useCreateTransactions = () => {
+  const queryClient = useQueryClient();
+  const { session, isSessionLoading } = useAuth();
+
+  if (!isSessionLoading && (!session || !session.user)) {
+    throw new Error("User is not logged in");
+  }
+
+  return useMutation({
+    mutationFn: async ({
+      transactionsGroup,
+      totalAmount,
+    }: {
+      transactionsGroup: MultiTransactionGroup;
+      totalAmount: number;
+    }) => {
+      const currentTimestamp = new Date().toISOString();
+      const userId = session!.user.id;
+
+      const transactions: Inserts<TableNames.Transactions>[] = Object.keys(transactionsGroup.transactions).map(key => {
+        if (!key) return;
+        console.log(transactionsGroup.transactions[key]);
+        const transaction: Inserts<TableNames.Transactions> = {
+          date: transactionsGroup.date,
+          description: transactionsGroup.description,
+          type: transactionsGroup.type as any,
+          status: transactionsGroup.status,
+          accountid: transactionsGroup.accountid,
+          createdby: userId,
+          createdat: currentTimestamp,
+          amount: transactionsGroup.transactions[key].amount,
+          categoryid: transactionsGroup.transactions[key].categoryid,
+          notes: transactionsGroup.transactions[key].notes,
+          tags: transactionsGroup.transactions[key].tags,
+          groupid: transactionsGroup.groupid,
+        };
+
+        return transaction;
+      });
+
+      const createdTransactions = await createTransactions(transactions);
+
+      await updateAccountBalanceFunction(transactionsGroup.accountid, totalAmount);
+
+      if (!createdTransactions) {
+        throw new Error("Transaction wasn't created");
+      }
+
+      return createdTransactions;
+    },
+  });
 };
