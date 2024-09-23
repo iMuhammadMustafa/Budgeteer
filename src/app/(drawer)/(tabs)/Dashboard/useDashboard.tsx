@@ -149,8 +149,6 @@ export default function useDashboard() {
     {} as { [day: string]: CalendarDayProp },
   );
 
-  console.log(thisMonthsTransactionsCalendarObject);
-
   return {
     isLoading,
     lastWeekExpense,
