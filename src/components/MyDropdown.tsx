@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { FlatList, LayoutChangeEvent, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import Modal from "react-native-modal";
+import { useEffect, useState } from "react";
+import { FlatList, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import Icon from "../lib/IonIcons";
+import Modal from "react-native-modal";
 
 interface OptionItem {
   id: string;
@@ -31,7 +31,7 @@ export default function MyDropDown({
 }: DropDownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<OptionItem | null>(null);
-  const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0 });
+  const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0, y: 0, x: 0 });
 
   const groupedOptions = groupBy ? [...new Set(options.map(option => option.group))] : options;
 
@@ -76,21 +76,19 @@ export default function MyDropDown({
     setIsOpen(false);
   };
 
-  const onButtonLayout = (event: LayoutChangeEvent) => {
-    const { height, width, y } = event.nativeEvent.layout;
-    setButtonLayout({ height, width, top: y });
+  const onButtonLayout = (event: any) => {
+    const { height, width, y, top, x } = event.nativeEvent.layout;
+    setButtonLayout({ height, width, top, y, x });
   };
 
   return (
     <>
-      <Text className="text-foreground  mb-2">{label}</Text>
-      <Pressable
-        className="p-3 rounded border border-gray-300 bg-white items-center"
-        onPress={toggleDropdown}
-        onLayout={onButtonLayout}
-      >
-        <Text className="-z-10">{selectedItem ? selectedItem.label : label}</Text>
-      </Pressable>
+      <View onLayout={onButtonLayout} className="my-1 flex-1">
+        <Text className="text-foreground ">{label}</Text>
+        <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
+          <Text className="-z-10">{selectedItem ? selectedItem.label : label}</Text>
+        </Pressable>
+      </View>
 
       {options && isOpen && (
         <ListContainer isModal={isModal} buttonLayout={buttonLayout} isOpen={isOpen} setIsOpen={setIsOpen}>
@@ -101,47 +99,10 @@ export default function MyDropDown({
   );
 }
 
-type RenderListProps = {
-  groupedOptions: any[];
-  options: OptionItem[];
-  isModal: boolean;
-  onItemPress: (item: OptionItem) => void;
-};
-
-const RenderList = ({ groupedOptions, isModal, options, onItemPress }: RenderListProps) => {
-  return (
-    <FlatList
-      data={groupedOptions}
-      keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
-      renderItem={({ item }: { item: OptionItem | string | undefined }) => (
-        <>
-          {typeof item === "string" ? (
-            <>
-              <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
-              {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
-              <View className="flex-row flex-wrap  justify-center items-center border-b border-gray-300 w-full my-1">
-                {options
-                  .filter(option => option.group === item)
-                  .map(option => (
-                    <RenderOption isModal={isModal} option={option} onItemPress={onItemPress} isGrouped />
-                  ))}
-              </View>
-            </>
-          ) : (
-            item && <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} />
-          )}
-        </>
-      )}
-      className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
-      contentContainerClassName={`${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
-    />
-  );
-};
-
 type ListContainerProps = {
   isModal: boolean;
   children: any;
-  buttonLayout: { height: number; width: number; top: number };
+  buttonLayout: { height: number; width: number; top: number; y: number; x: number };
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -154,20 +115,62 @@ const ListContainer = ({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
           isVisible={isOpen}
           onDismiss={() => setIsOpen(false)}
           onBackButtonPress={() => setIsOpen(false)}
+          // onRequestClose={() => setIsOpen(false)}
           onBackdropPress={() => setIsOpen(false)}
-          className="rounded-md"
+          className="rounded-md z-50 bg-white"
+          // transparent
+          // presentationClassName="bg-transparent"
         >
           {children}
         </Modal>
       ) : (
         <View
-          style={{ width: buttonLayout.width, top: buttonLayout.top + buttonLayout.height }}
+          style={{ width: buttonLayout.width, top: buttonLayout.y + buttonLayout.height, left: buttonLayout.x }}
           className="bg-white shadow-md rounded-md z-10 absolute"
         >
           {children}
         </View>
       )}
     </>
+  );
+};
+
+type RenderListProps = {
+  groupedOptions: any[];
+  options: OptionItem[];
+  isModal: boolean;
+  onItemPress: (item: OptionItem) => void;
+};
+
+const RenderList = ({ groupedOptions, isModal, options, onItemPress }: RenderListProps) => {
+  return (
+    <ScrollView className={`${isModal ? "bg-white m-auto custom-scrollbar rounded-md" : ""} `}>
+      <FlatList
+        data={groupedOptions}
+        keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
+        renderItem={({ item }: { item: OptionItem | string | undefined }) => (
+          <>
+            {typeof item === "string" ? (
+              <>
+                <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
+                {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
+                <View className="flex-row flex-wrap  justify-center items-center border-b border-gray-300 w-full my-1">
+                  {options
+                    .filter(option => option.group === item)
+                    .map(option => (
+                      <RenderOption isModal={isModal} option={option} onItemPress={onItemPress} isGrouped />
+                    ))}
+                </View>
+              </>
+            ) : (
+              item && <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} />
+            )}
+          </>
+        )}
+        className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
+        contentContainerClassName={`bg-white ${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
+      />
+    </ScrollView>
   );
 };
 
@@ -194,3 +197,35 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
     <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>{option.label}</Text>
   </Pressable>
 );
+
+export const MyCategoriesDropdown = ({
+  selectedValue,
+  categories,
+  onSelect,
+  isModal,
+}: {
+  selectedValue: any;
+  categories: any;
+  onSelect: (value: any) => any;
+  isModal: boolean;
+}) => {
+  return (
+    <MyDropDown
+      isModal={isModal}
+      label="Category"
+      selectedValue={selectedValue}
+      options={
+        categories?.map((category: any) => ({
+          id: category.id,
+          label: category.name,
+          value: category,
+          icon: category.icon,
+          iconColorClass: category.type === "Income" ? "text-success-500" : "text-error-500",
+          group: category.group,
+        })) ?? []
+      }
+      groupBy="group"
+      onSelect={(value: any) => onSelect(value)}
+    />
+  );
+};

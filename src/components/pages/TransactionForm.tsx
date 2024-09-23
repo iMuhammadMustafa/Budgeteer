@@ -27,7 +27,8 @@ import { getTransactionsByDescription } from "../../repositories/transactions.ap
 import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 import * as Haptics from "expo-haptics";
-import MyDropDown from "../MyDropdown";
+import MyDropDown, { MyCategoriesDropdown } from "../MyDropdown";
+import MyDateTimePicker from "../MyDateTimePicker";
 
 export type TransactionFormType = TransactionsView & { amount: number };
 
@@ -182,61 +183,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           onChange={val => handleTextChange("description", val)}
         />
 
-        <Text className="text-foreground">Date</Text>
-        <Pressable
-          onPress={() => {
-            Keyboard.dismiss;
-            setShowDate(prev => !prev);
-          }}
-          style={{
-            marginBottom: 16,
-            padding: 12,
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: "#ddd",
-            backgroundColor: "#fff",
-            alignItems: "center",
-          }}
-        >
-          <Text>{dayjs(formData.date).format("DD-MM-YYYY hh:mm:ss")}</Text>
-        </Pressable>
-
-        {showDate &&
-          (Platform.OS === "web" ? (
-            <Box className="m-auto">
-              <Box className="lg:max-w-sm">
-                <DateTimePicker
-                  mode="single"
-                  date={dayjs(formData.date)}
-                  displayFullDays
-                  timePicker
-                  onChange={(params: any) =>
-                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
-                  }
-                />
-              </Box>
-            </Box>
-          ) : (
-            <Modal
-              isVisible={showDate}
-              onDismiss={() => setShowDate(false)}
-              onBackButtonPress={() => setShowDate(false)}
-              onBackdropPress={() => setShowDate(false)}
-              // className="bg-white m-auto"
-            >
-              <View className="m-auto items-center justify-center bg-white rounded-md p-1">
-                <DateTimePicker
-                  mode="single"
-                  date={dayjs(formData.date)}
-                  displayFullDays
-                  timePicker
-                  onChange={(params: any) =>
-                    setFormData(prevFormData => ({ ...prevFormData, date: dayjs(params.date).toString() }))
-                  }
-                />
-              </View>
-            </Modal>
-          ))}
+        <MyDateTimePicker
+          label="Date"
+          date={formData.date}
+          onChange={params => handleTextChange("date", params.date)}
+        />
 
         <Box className="flex-row justify-center items-center">
           <Pressable
@@ -265,6 +216,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             onChange={text => {
               //handle number starting with a minus sign
               let numericAmount = parseFloat(text.replace(/[^0-9.-]/g, ""));
+              if (text.length <= 0) {
+                numericAmount = 0;
+              }
 
               // setMode(numericAmount < 0 ? "minus" : "plus");
 
@@ -295,22 +249,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           }}
         />
 
-        <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Category"
+        <MyCategoriesDropdown
           selectedValue={formData.categoryid}
-          options={
-            categories?.map(category => ({
-              id: category.id,
-              label: category.name,
-              value: category,
-              icon: category.icon,
-              iconColorClass: category.type === "Income" ? "text-success-500" : "text-error-500",
-              group: category.group,
-            })) ?? []
-          }
-          groupBy="group"
-          onSelect={(value: any) => handleTextChange("categoryid", value.id)}
+          categories={categories}
+          onSelect={value => handleTextChange("categoryid", value.id)}
+          isModal={Platform.OS !== "web"}
         />
 
         <MyDropDown
@@ -361,10 +304,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             { id: "Void", label: "Void", value: "Void" },
           ]}
           selectedValue={formData.status}
-          onSelect={value => {
-            console.log(value);
-            handleTextChange("status", value.value);
-          }}
+          onSelect={value => handleTextChange("status", value.value)}
         />
 
         <TextInputField
