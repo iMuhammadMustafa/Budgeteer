@@ -1,6 +1,6 @@
 import MultipleTransactions from "@/src/components/pages/MultipleTransactions";
-import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/pages/TransactionForm";
-import { useGetTransactionById } from "@/src/repositories/transactions.service";
+import TransactionForm, { initialTransactionState } from "@/src/components/pages/TransactionForm";
+import { TransactionFormType, useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from "react-native";
@@ -33,7 +33,7 @@ export default function AddTransaction() {
         first: () => (
           <TransactionForm transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />
         ),
-        second: () => <MultipleTransactions />,
+        second: () => <MultipleTransactions transaction={transaction ?? null} />,
       })}
       onIndexChange={setIndex}
       initialLayout={{ width: layout.width / 2 }}
@@ -56,12 +56,3 @@ export default function AddTransaction() {
     />
   );
 }
-// {props.navigationState.routes[props.navigationState.index].title === "Single Transaction" ? (
-//   <Pressable onPress={() => setIndex(1)}>
-//     <Text className="text-blue-500">Multiple Transactions</Text>
-//   </Pressable>
-// ) : (
-//   <Pressable onPress={() => setIndex(0)}>
-//     <Text className="text-blue-500">Single Transaction</Text>
-//   </Pressable>
-// )}

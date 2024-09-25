@@ -26,7 +26,6 @@ import {
   createTransactions,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance, updateAccountBalanceFunction } from "./account.api";
-import { TransactionFormType } from "../components/pages/TransactionForm";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
 import { queryClient } from "../providers/QueryProvider";
 import { MultiTransactionGroup } from "../consts/Types";
@@ -41,6 +40,7 @@ interface CategorizedTransactions {
     income: Record<string, MonthlyTransactions[]>;
   };
 }
+export type TransactionFormType = TransactionsView & { amount: number };
 
 export const useGetTransactions = () => {
   return useQuery<TransactionsView[]>({

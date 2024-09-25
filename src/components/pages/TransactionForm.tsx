@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TransactionsView } from "../../lib/supabase";
-import { useUpsertTransaction } from "../../repositories/transactions.service";
+import { TransactionFormType, useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import {
@@ -29,8 +29,6 @@ import Icon from "@/src/lib/IonIcons";
 import * as Haptics from "expo-haptics";
 import MyDropDown, { MyCategoriesDropdown } from "../MyDropdown";
 import MyDateTimePicker from "../MyDateTimePicker";
-
-export type TransactionFormType = TransactionsView & { amount: number };
 
 export const initialTransactionState: TransactionFormType = {
   description: "",

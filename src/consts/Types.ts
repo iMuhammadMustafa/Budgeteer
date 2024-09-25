@@ -1,4 +1,5 @@
 export type MultiTransactionGroup = {
+  originalTransactionId: string | null;
   date: string;
   description: string;
   type: string;

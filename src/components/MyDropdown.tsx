@@ -154,7 +154,9 @@ const RenderList = ({ groupedOptions, isModal, options, onItemPress }: RenderLis
               <>
                 <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
                 {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
-                <View className="flex-row flex-wrap  justify-center items-center border-b border-gray-300 w-full my-1">
+                <View
+                  className={`flex-row flex-wrap  border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
+                >
                   {options
                     .filter(option => option.group === item)
                     .map(option => (

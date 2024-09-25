@@ -41,11 +41,11 @@ export function TextInputFieldMemo({
   };
 
   return (
-    <View className={`my-1 ${className ?? ""} `}>
+    <View className={`my-1 ${className ?? ""} flex-1`}>
       <Text className="text-foreground">{label}</Text>
-      <View className="justify-center">
+      <View className={`${Platform.OS === "web" ? "justify-center" : "justify-center flex-row"}`}>
         <Pressable
-          className={`p-2 h-[${layout.height}px] absolute top-0 ${mode === "minus" ? "bg-error-400" : "bg-success-400"} rounded-md justify-center`}
+          className={`p-2 h-[${layout.height}px] ${mode === "minus" ? "bg-error-400" : "bg-success-400"} rounded-md justify-center ${Platform.OS === "web" ? "absolute top-0" : ""}`}
           onPress={() => {
             if (onModeChange) {
               onModeChange(mode === "plus" ? "minus" : "plus");
@@ -66,9 +66,10 @@ export function TextInputFieldMemo({
             <Icon name="Plus" className="text-gray-100" />
           )}
         </Pressable>
+
         <TextInput
           onLayout={handleLayout}
-          className="text-black border rounded-md p-3 border-gray-300 bg-white text-end "
+          className="text-black border rounded-md p-3 border-gray-300 bg-white text-end text-right flex-1"
           value={value ?? ""}
           onChangeText={onChange}
           keyboardType={keyboardType}

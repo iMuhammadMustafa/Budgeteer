@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import MyDropDown, { MyCategoriesDropdown } from "@/src/components/MyDropdown";
 import TextInputField from "@/src/components/TextInputField";
 import generateUuid from "@/src/lib/uuidHelper";
 import { useGetAccounts } from "@/src/repositories/account.service";
 import { useGetCategories } from "@/src/repositories/categories.service";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, Pressable, View } from "react-native";
 import { ScrollView, Text } from "react-native";
 import { MultiTransactionGroup, MultiTransactionItem } from "@/src/consts/Types";
-import { useCreateTransactions } from "@/src/repositories/transactions.service";
+import { TransactionFormType, useCreateTransactions } from "@/src/repositories/transactions.service";
 import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
+import Icon from "@/src/lib/IonIcons";
 
 const groupId = generateUuid();
 const initalState: MultiTransactionGroup = {
+  originalTransactionId: null,
   date: new Date().toISOString(),
   description: "",
   type: "Expense",
@@ -29,7 +31,7 @@ const initalState: MultiTransactionGroup = {
     },
   },
 };
-export default function MultipleTransactions() {
+export default function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
   const [group, setGroup] = useState<MultiTransactionGroup>(initalState);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [currentAmount, setCurrentAmount] = useState(0);
@@ -41,15 +43,47 @@ export default function MultipleTransactions() {
 
   if (isCategoriesLoading || isAccountsLoading) return <ActivityIndicator size="large" color="#0000ff" />;
 
+  useEffect(() => {
+    if (transaction.id) {
+      console.log(transaction);
+      setMode(parseFloat(transaction.amount) < 0 ? "minus" : "plus");
+      setMaxAmount(Math.abs(parseFloat(transaction.amount)));
+      setCurrentAmount(parseFloat(transaction.amount));
+
+      setGroup({
+        originalTransactionId: transaction.id,
+        date: transaction.date,
+        description: transaction.description,
+        type: transaction.type,
+        accountid: transaction.accountid,
+        status: transaction.status,
+        groupid: groupId,
+        transactions: {
+          [generateUuid()]: {
+            amount: transaction.amount,
+            categoryid: transaction.categoryid,
+            notes: transaction.notes,
+            tags: transaction.tags,
+            groupid: groupId,
+          },
+        },
+      });
+    }
+  }, [transaction]);
+
   const handleSubmit = async () => {
-    await submitAllMutation.mutateAsync({
+    console.log({
       transactionsGroup: group,
       totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
     });
+    // await submitAllMutation.mutateAsync({
+    //   transactionsGroup: group,
+    //   totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
+    // });
   };
 
   return (
-    <View className="m-auto mt-2">
+    <View className={`m-auto mt-2 ${Platform.OS !== "web" ? "mx-2" : ""}`}>
       <View className="flex-row gap-2 justify-center w-full">
         <TextInputField
           className="flex-1"
@@ -78,6 +112,7 @@ export default function MultipleTransactions() {
 
             setMaxAmount(parseFloat(value));
           }}
+          keyboardType="numeric"
         />
         <MyDateTimePicker
           label="Date"
@@ -140,7 +175,7 @@ const TransactionsCreationList = ({
   mode: "plus" | "minus";
 }) => {
   return (
-    <ScrollView className="max-h-[300px] h-[300px] custom-scrollbar my-3 w-full -z-10">
+    <View>
       <AddNewTransaction
         group={group}
         setGroup={setGroup}
@@ -150,24 +185,27 @@ const TransactionsCreationList = ({
         maxAmount={maxAmount}
         mode={mode}
       />
-      <FlatList
-        data={Object.keys(group.transactions)}
-        keyExtractor={(item, index) => index + item}
-        renderItem={({ item, index }) => (
-          <TransactionCard
-            id={item}
-            transaction={group.transactions[item]}
-            categories={categories}
-            group={group}
-            setGroup={setGroup}
-            currentAmount={currentAmount}
-            setCurrentAmount={setCurrentAmount}
-            maxAmount={maxAmount}
-            mode={mode}
-          />
-        )}
-      />
-    </ScrollView>
+
+      <ScrollView className="max-h-[380px] h-[380px] custom-scrollbar my-3 w-full -z-10">
+        <FlatList
+          data={Object.keys(group.transactions)}
+          keyExtractor={(item, index) => index + item}
+          renderItem={({ item, index }) => (
+            <TransactionCard
+              id={item}
+              transaction={group.transactions[item]}
+              categories={categories}
+              group={group}
+              setGroup={setGroup}
+              currentAmount={currentAmount}
+              setCurrentAmount={setCurrentAmount}
+              maxAmount={maxAmount}
+              mode={mode}
+            />
+          )}
+        />
+      </ScrollView>
+    </View>
   );
 };
 
@@ -200,7 +238,6 @@ const TransactionCard = ({
   const currentMultiplier = currentMode === "minus" ? -1 : 1; // Current mode multiplier (positive or negative)
 
   const handleAmountChange = (value: string) => {
-    console.log(value);
     if (!/^-?\d*\.?\d*$/.test(value)) {
       return; // Reject invalid numeric input
     }
@@ -211,7 +248,7 @@ const TransactionCard = ({
     numericValue = Math.abs(numericValue) * currentMultiplier;
 
     // Respect the global mode and ensure the maxAmount respects the global mode
-    const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount;
+    const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount + numericValue;
 
     // Adjust the numeric value based on remaining amount
     if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
@@ -258,7 +295,9 @@ const TransactionCard = ({
   };
 
   return (
-    <View className="flex-row gap-2 bg-card border border-muted items-center justify-between p-3 my-2">
+    <View
+      className={`bg-card border border-muted  p-3 my-2 w-full ${Platform.OS === "web" ? "flex-row gap-2 items-center justify-between" : "flex-col"}`}
+    >
       <TextInputFieldWithIcon
         className="flex-1"
         label="Amount"
@@ -266,6 +305,7 @@ const TransactionCard = ({
         onChange={value => handleAmountChange(value)}
         mode={currentMode}
         setMode={handleModeToggle} // Pass the mode toggle handler
+        keyboardType="numeric"
       />
 
       <MyCategoriesDropdown
@@ -310,7 +350,7 @@ const TransactionCard = ({
         }}
       >
         <Text className="text-center text-white" selectable={false}>
-          Remove
+          <Icon name="Trash" className="text-white" />
         </Text>
       </Pressable>
     </View>
@@ -373,7 +413,7 @@ const AddNewTransaction = ({
     <Pressable
       className="p-2 bg-primary text-white rounded-md"
       onPress={() => {
-        const newAmount = globalMultiplier * maxAmount - currentAmount;
+        const newAmount = Number((globalMultiplier * maxAmount - currentAmount).toFixed(2));
         setCurrentAmount((amount: number) => amount + newAmount);
 
         setGroup({
