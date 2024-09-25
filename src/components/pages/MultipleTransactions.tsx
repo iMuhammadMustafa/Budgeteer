@@ -186,7 +186,9 @@ const TransactionsCreationList = ({
         mode={mode}
       />
 
-      <ScrollView className="max-h-[380px] h-[380px] custom-scrollbar my-3 w-full -z-10">
+      <ScrollView
+        className={`custom-scrollbar my-3 w-full -z-10 ${Platform.OS === "web" ? "max-h-[320px] h-[320px]" : "max-h-[380px] h-[380px]"}`}
+      >
         <FlatList
           data={Object.keys(group.transactions)}
           keyExtractor={(item, index) => index + item}
