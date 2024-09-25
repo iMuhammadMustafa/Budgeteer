@@ -245,59 +245,42 @@ const handleNewTransaction = async (
 ) => {
   let amount = fullFormTransaction.amount;
 
-  if (fullFormTransaction.type === "Expense" || fullFormTransaction.type === "Transfer") amount = -amount;
-
-  const updatedSrcAcc = await updateAccount({
-    id: sourceAccount.id,
-    balance: sourceAccount.balance + amount,
-    updatedat: currentTimestamp,
-    updatedby: userId,
-  });
-  if (!updatedSrcAcc) {
-    throw new Error("Source Account wasn't updated");
-  }
-
-  // fullFormTransaction as unknown as Inserts<TableNames.Transactions>,
-  const createdTransaction = await createTransaction({
-    id: undefined,
+  const formTransaction = {
+    description: fullFormTransaction.description,
+    date: fullFormTransaction.date,
+    type: fullFormTransaction.type,
+    status: fullFormTransaction.status,
     accountid: fullFormTransaction.accountid,
     amount: fullFormTransaction.amount,
     categoryid: fullFormTransaction.categoryid,
-    date: fullFormTransaction.date,
-    description: fullFormTransaction.description,
-    // notes: fullFormTransaction.notes,
-    status: fullFormTransaction.status,
+    notes: fullFormTransaction.notes,
     tags: fullFormTransaction.tags,
-    // tenantid: fullFormTransaction.tenantid,
-    transferaccountid: fullFormTransaction.id,
+    transferaccountid: fullFormTransaction.transferaccountid ?? undefined,
+    tenantid: fullFormTransaction.tenantid,
+  };
 
-    // transferid: fullFormTransaction.transferid,
-    type: fullFormTransaction.type,
-    // updatedat: fullFormTransaction.updatedat,
-    // updatedby: fullFormTransaction.updatedby,
-    // createdby: userId,
-  });
+  const createdTransaction = await createTransaction(formTransaction);
+
+  if (createdTransaction && amount && amount !== 0 && fullFormTransaction.status === "None") {
+    const updatedSrcAcc = await updateAccountBalanceFunction(sourceAccount.id, amount);
+    if (!updatedSrcAcc) {
+      throw new Error("Source Account wasn't updated");
+    }
+  }
 
   if (!createdTransaction) {
-    await updateAccount({
-      id: sourceAccount.id,
-      balance: sourceAccount.balance - amount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
     throw new Error("Transaction wasn't created");
   }
 
-  if (fullFormTransaction.type === "Transfer" && destinationAccount) {
-    amount = Math.abs(amount);
-
+  if (fullFormTransaction.type === "Transfer") {
     const transferTransaction = {
-      ...fullFormTransaction,
-      id: undefined,
+      ...formTransaction,
       amount: -amount,
       transferid: createdTransaction.id,
-      accountid: destinationAccount.id,
+      accountid: fullFormTransaction.transferaccountid,
     };
+
+    const createdDestTransaction = await createTransaction(transferTransaction);
 
     const updatedDestAcc = await updateAccount({
       id: destinationAccount.id,
@@ -306,36 +289,14 @@ const handleNewTransaction = async (
       updatedby: userId,
     });
 
-    if (!updatedDestAcc) {
-      throw new Error("Source Account wasn't updated");
+    if (createdDestTransaction && amount && amount !== 0 && fullFormTransaction.status === "None") {
+      const updatedDestAcc = await updateAccountBalanceFunction(fullFormTransaction.transferaccountid, amount);
+      if (!updatedDestAcc) {
+        throw new Error("Destination Account wasn't updated");
+      }
     }
 
-    const createdDestTransaction = await createTransaction({
-      id: undefined,
-      accountid: transferTransaction.accountid,
-      amount: transferTransaction.amount,
-      categoryid: transferTransaction.categoryid,
-      date: transferTransaction.date,
-      description: transferTransaction.description,
-      // notes: transferTransaction.notes,
-      status: transferTransaction.status,
-      tags: transferTransaction.tags,
-      // tenantid: transferTransaction.tenantid,
-      transferaccountid: transferTransaction.id,
-
-      transferid: transferTransaction.transferid,
-      type: transferTransaction.type,
-      // updatedat: transferTransaction.updatedat,
-      // updatedby: transferTransaction.updatedby,
-      // createdby: userId,
-    });
     if (!createdDestTransaction) {
-      await updateAccount({
-        id: destinationAccount.id,
-        balance: destinationAccount.balance - amount,
-        updatedat: currentTimestamp,
-        updatedby: userId,
-      });
       throw new Error("Transfer Transaction wasn't updated");
     }
   }

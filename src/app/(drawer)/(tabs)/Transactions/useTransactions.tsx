@@ -158,6 +158,7 @@ export default function useTransactions() {
   };
 
   const refreshTransactions = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
     await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
     await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
   };

@@ -1,30 +1,17 @@
 import { useEffect, useState } from "react";
-import { TransactionsView } from "../../lib/supabase";
 import { TransactionFormType, useUpsertTransaction } from "../../repositories/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
-import {
-  ActivityIndicator,
-  Keyboard,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetCategories } from "../../repositories/categories.service";
 import { useGetAccounts } from "../../repositories/account.service";
-import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
 import VCalc from "../VCalc";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
 import { getTransactionsByDescription } from "../../repositories/transactions.api";
-import Modal from "react-native-modal";
 import Icon from "@/src/lib/IonIcons";
 import * as Haptics from "expo-haptics";
 import MyDropDown, { MyCategoriesDropdown } from "../MyDropdown";
@@ -82,15 +69,18 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { addNotification } = useNotifications();
 
   useEffect(() => {
-    setFormData(transaction);
-    setSourceAccount(accounts?.find(account => account.id === transaction.accountid));
-    setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
-
     if (!transaction.amount || transaction.amount == 0) {
       setMode("minus");
     } else {
       setMode(transaction.amount && transaction.amount < 0 ? "minus" : "plus");
     }
+
+    setFormData({
+      ...transaction,
+      amount: Math.abs(transaction.amount ?? 0),
+    });
+    setSourceAccount(accounts?.find(account => account.id === transaction.accountid));
+    setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
   }, [transaction, accounts]);
 
   const handleTextChange = (name: keyof TransactionFormType, text: any) => {

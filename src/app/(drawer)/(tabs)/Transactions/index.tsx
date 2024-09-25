@@ -110,7 +110,7 @@ const TransactionsPageHeader = ({
           </Pressable>
         </View>
       )}
-      <Pressable onPress={async () => await refreshTransactions}>
+      <Pressable onPress={refreshTransactions}>
         <Icon name="RefreshCw" className="text-foreground" size={20} />
       </Pressable>
       <Link href="/AddTransaction" className="items-center justify-center">
