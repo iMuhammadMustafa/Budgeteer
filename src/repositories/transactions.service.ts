@@ -29,6 +29,8 @@ import { getAccountById, updateAccount, updateAccountBalance, updateAccountBalan
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
 import { queryClient } from "../providers/QueryProvider";
 import { MultiTransactionGroup } from "../consts/Types";
+import dayjs from "dayjs";
+import day from "react-native-calendars/src/calendar/day";
 
 interface CategorizedTransactions {
   categories: {
@@ -584,33 +586,39 @@ export const useCreateTransactions = () => {
       transactionsGroup: MultiTransactionGroup;
       totalAmount: number;
     }) => {
-      const currentTimestamp = new Date().toISOString();
       const userId = session!.user.id;
+      const createdat = new Date().toISOString();
 
-      const transactions: Inserts<TableNames.Transactions>[] = Object.keys(transactionsGroup.transactions).map(key => {
-        if (!key) return;
-        console.log(transactionsGroup.transactions[key]);
-        const transaction: Inserts<TableNames.Transactions> = {
-          date: transactionsGroup.date,
-          description: transactionsGroup.description,
-          type: transactionsGroup.type as any,
-          status: transactionsGroup.status,
-          accountid: transactionsGroup.accountid,
-          createdby: userId,
-          createdat: currentTimestamp,
-          amount: transactionsGroup.transactions[key].amount,
-          categoryid: transactionsGroup.transactions[key].categoryid,
-          notes: transactionsGroup.transactions[key].notes,
-          tags: transactionsGroup.transactions[key].tags,
-          groupid: transactionsGroup.groupid,
-        };
+      const transactions: Inserts<TableNames.Transactions>[] = Object.keys(transactionsGroup.transactions).map(
+        (key, index) => {
+          if (!key) return;
+          const transaction: Inserts<TableNames.Transactions> = {
+            // id:key,
+            date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
+            description: transactionsGroup.description,
+            type: transactionsGroup.type as any,
+            status: transactionsGroup.status,
+            accountid: transactionsGroup.accountid,
+            createdby: userId,
+            createdat: dayjs(createdat).add(index, "millisecond").toISOString(),
+            amount: transactionsGroup.transactions[key].amount,
+            categoryid: transactionsGroup.transactions[key].categoryid,
+            notes: transactionsGroup.transactions[key].notes,
+            tags: transactionsGroup.transactions[key].tags,
+            groupid: transactionsGroup.groupid,
+          };
 
-        return transaction;
-      });
+          return transaction;
+        },
+      );
 
       const createdTransactions = await createTransactions(transactions);
 
-      await updateAccountBalanceFunction(transactionsGroup.accountid, totalAmount);
+      if (transactionsGroup.originalTransactionId) {
+        await deleteTransaction(transactionsGroup.originalTransactionId);
+      }
+
+      // await updateAccountBalanceFunction(transactionsGroup.accountid, totalAmount);
 
       if (!createdTransactions) {
         throw new Error("Transaction wasn't created");

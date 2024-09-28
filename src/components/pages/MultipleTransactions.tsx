@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import MyDropDown, { MyCategoriesDropdown } from "@/src/components/MyDropdown";
 import TextInputField from "@/src/components/TextInputField";
@@ -31,7 +31,7 @@ const initalState: MultiTransactionGroup = {
     },
   },
 };
-export default function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
+function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
   const [group, setGroup] = useState<MultiTransactionGroup>(initalState);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [currentAmount, setCurrentAmount] = useState(0);
@@ -72,14 +72,10 @@ export default function MultipleTransactions({ transaction }: { transaction: Tra
   }, [transaction]);
 
   const handleSubmit = async () => {
-    console.log({
+    await submitAllMutation.mutateAsync({
       transactionsGroup: group,
       totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
     });
-    // await submitAllMutation.mutateAsync({
-    //   transactionsGroup: group,
-    //   totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
-    // });
   };
 
   return (
@@ -439,3 +435,5 @@ const AddNewTransaction = ({
     </Pressable>
   );
 };
+
+export default memo(MultipleTransactions);

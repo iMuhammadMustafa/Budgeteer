@@ -3,7 +3,7 @@ import TransactionForm, { initialTransactionState } from "@/src/components/pages
 import { TransactionFormType, useGetTransactionById } from "@/src/repositories/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { TabView, SceneMap } from "react-native-tab-view";
 
 export default function AddTransaction() {
@@ -13,7 +13,7 @@ export default function AddTransaction() {
   const id = transaction?.id && !transaction?.accountid && !transaction?.categoryid ? transaction.id : null;
   const { data: transactionById, isLoading, error } = useGetTransactionById(id);
 
-  const layout = useWindowDimensions();
+  // const layout = useWindowDimensions();
 
   const [index, setIndex] = useState(0);
   const [routes] = useState([
@@ -28,7 +28,7 @@ export default function AddTransaction() {
     <TabView
       navigationState={{ index, routes }}
       tabBarPosition="bottom"
-      lazy
+      lazy={true}
       renderScene={SceneMap({
         first: () => (
           <TransactionForm transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />
@@ -36,7 +36,7 @@ export default function AddTransaction() {
         second: () => <MultipleTransactions transaction={transaction ?? null} />,
       })}
       onIndexChange={setIndex}
-      initialLayout={{ width: layout.width / 2 }}
+      // initialLayout={{ width: layout.width / 2 }}
       className="bg-white"
       renderTabBar={props => {
         return (
