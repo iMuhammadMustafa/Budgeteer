@@ -143,6 +143,17 @@ export const updateTransaction = async (transaction: Updates<TableNames.Transact
   if (error) throw error;
   return data;
 };
+export const updateTransferTransaction = async (transaction: Updates<TableNames.Transactions>) => {
+  const { data, error } = await supabase
+    .from(TableNames.Transactions)
+    .update(transaction)
+    .eq("transferid", transaction.transferid!)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
 
 export const deleteTransaction = async (id: string, session?: Session | null) => {
   const { data, error } = await supabase

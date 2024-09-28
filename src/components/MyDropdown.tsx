@@ -222,7 +222,12 @@ export const MyCategoriesDropdown = ({
           label: category.name,
           value: category,
           icon: category.icon,
-          iconColorClass: category.type === "Income" ? "text-success-500" : "text-error-500",
+          iconColorClass:
+            category.type === "Income"
+              ? "text-success-500"
+              : category.type === "Expense"
+                ? "text-error-500"
+                : "text-info-500",
           group: category.group,
         })) ?? []
       }

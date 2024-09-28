@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, LayoutChangeEvent, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  LayoutChangeEvent,
+  Pressable,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export type SearchableDropdownItem = {
   id?: string | null;
@@ -85,18 +95,27 @@ export default function SearchableDropdown({
     setTextLayout({ height, width, top: y });
   };
 
+  const handleOutsidePress = () => {
+    // Clear suggestions and dismiss keyboard
+
+    setSuggestions([]);
+    // Keyboard.dismiss();
+  };
+
   return (
     <>
-      <View className={`my-1 ${className ?? ""} `}>
-        <Text className="text-foreground">{label}</Text>
-        <TextInput
-          className="p-3 mb-4  border border-gray-400 rounded-md bg-white text-black"
-          value={inputText ?? ""}
-          placeholder={placeholder ?? "Type to search.."}
-          onChangeText={handleChange}
-          onLayout={onLayoutChange}
-        />
-      </View>
+      <Pressable onPress={handleOutsidePress} style={{ flex: 1 }}>
+        <View className={`my-1 ${className ?? ""} `}>
+          <Text className="text-foreground">{label}</Text>
+          <TextInput
+            className="p-3 mb-4  border border-gray-400 rounded-md bg-white text-black"
+            value={inputText ?? ""}
+            placeholder={placeholder ?? "Type to search.."}
+            onChangeText={handleChange}
+            onLayout={onLayoutChange}
+          />
+        </View>
+      </Pressable>
 
       {isLoading ? (
         <ActivityIndicator

@@ -30,7 +30,7 @@ export const initialTransactionState: TransactionFormType = {
   status: "None",
 
   transferid: "",
-  transferaccountid: "",
+  transferaccountid: null,
 
   createdat: null,
 
@@ -56,7 +56,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     amount: Math.abs(transaction.amount ?? 0),
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [showDate, setShowDate] = useState(false);
   const [sourceAccount, setSourceAccount] = useState(null);
   const [destinationAccount, setDestinationAccount] = useState(null);
   const router = useRouter();
@@ -83,8 +82,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
   }, [transaction, accounts]);
 
-  const handleTextChange = (name: keyof TransactionFormType, text: any) => {
-    setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
+  const handleTextChange = (name: keyof TransactionFormType, text: string) => {
+    if (name === "amount" && text.startsWith("-")) {
+      setMode("minus");
+      text = text.replace("-", "");
+    }
+
+    setFormData((prevFormData: any) => ({ ...prevFormData, [name]: text }));
 
     if ((name === "type" && text === "Expense") || (name === "type" && text === "Transfer")) {
       setMode("minus");
@@ -95,25 +99,21 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
 
   const handleOnMoreSubmit = () => {
-    const newItem = {
+    const newItem: TransactionFormType = {
       ...initialTransactionState,
       date: dayjs(formData.date).toISOString(),
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
     };
-    handleMutate(true);
-
-    setFormData(newItem);
+    handleMutate(newItem);
   };
   const handleSubmit = () => {
     handleMutate();
   };
 
-  const handleMutate = (isOneMore = false) => {
-    if (!isOneMore) {
-      setIsLoading(true);
-    }
+  const handleMutate = (newItem: TransactionFormType | null = null) => {
+    setIsLoading(true);
 
     let amount = mode === "minus" ? -Math.abs(formData.amount) : Math.abs(formData.amount);
 
@@ -134,7 +134,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             type: "success",
           });
           setIsLoading(false);
-          if (!isOneMore) {
+          if (newItem) {
+            setFormData({ ...newItem });
+          } else {
             router.replace("/Transactions");
           }
         },
@@ -206,21 +208,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             value={(formData.amount ?? 0).toString()}
             keyboardType="numeric"
             onChange={text => {
-              //handle number starting with a minus sign
+              let numericAmount = text
+                .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+                .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+                .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+                .replace(/^0+(?=\d)/, ""); // Remove leading zeros
 
-              let numericAmount = text.replace(/[^0-9.]/g, "").replace(/(\..*)\..*/g, "$1");
-              if (numericAmount.endsWith(".")) {
-                numericAmount += "0";
-              }
-              numericAmount = parseFloat(numericAmount);
-
-              if (text.length <= 0) {
-                numericAmount = 0;
-              }
-
-              // setMode(numericAmount < 0 ? "minus" : "plus");
-
-              handleTextChange("amount", Math.abs(numericAmount).toString());
+              handleTextChange("amount", numericAmount);
             }}
             className="flex-1"
           />
@@ -243,7 +237,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           ]}
           selectedValue={formData.type}
           onSelect={value => {
-            handleTextChange("type", value.value);
+            handleTextChange("type", value?.value);
           }}
         />
 
@@ -302,7 +296,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             { id: "Void", label: "Void", value: "Void" },
           ]}
           selectedValue={formData.status}
-          onSelect={value => handleTextChange("status", value.value)}
+          onSelect={value => handleTextChange("status", value?.value)}
         />
 
         <TextInputField

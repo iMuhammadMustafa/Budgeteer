@@ -24,6 +24,7 @@ import {
   getDailyTransactionsSummary,
   getThisMonthsTransactionsSummary,
   createTransactions,
+  updateTransferTransaction,
 } from "./transactions.api";
 import { getAccountById, updateAccount, updateAccountBalance, updateAccountBalanceFunction } from "./account.api";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
@@ -325,9 +326,9 @@ export const handleUpdateTransaction = async (
     updatedby: userId,
   };
   const updatedTransferTransaction: Updates<TableNames.Transactions> = {
-    id: originalTransaction.transferid ?? undefined,
     updatedat: currentTimestamp,
     updatedby: userId,
+    transferid: originalTransaction.id,
   };
   const updatedTransferAccount: Updates<TableNames.Accounts> = {
     id: destinationAccount?.id,
@@ -560,9 +561,12 @@ export const handleUpdateTransaction = async (
 
   updateTransaction(updatedTransaction);
   updateAccount(updatedAccount);
-  if (updatedTransferTransaction.id) {
+  if (
+    updatedTransferTransaction &&
+    (originalTransaction.type === "Transfer" || fullFormTransaction.type === "Transfer" || updatedTransferAccount.id)
+  ) {
     console.log("updatedTransferTransaction", updatedTransferTransaction);
-    updateTransaction(updatedTransferTransaction);
+    updateTransferTransaction(updatedTransferTransaction);
   }
   if (updatedTransferAccount.id) {
     console.log("updatedTransferAccount", updatedTransferAccount);
