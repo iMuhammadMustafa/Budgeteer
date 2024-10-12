@@ -92,6 +92,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           label="Amount"
           mode={mode}
           setMode={setMode}
+          type={transaction.type}
           value={(maxAmount ?? 0).toString()}
           onModeChange={() => {
             // setMaxAmount(prev => (mode === "minus" ? Math.abs(prev) : Math.abs(prev) * -1));
@@ -117,7 +118,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           isModal
         />
       </View>
-      <View className="flex-row gap-2 justify-center w-full ">
+      <View className="flex-row gap-2 justify-center w-full relative">
         <MyDropDown
           options={[
             { id: "Income", label: "Income", value: "Income" },
@@ -133,6 +134,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           label="Account"
           selectedValue={group.accountid}
           onSelect={value => setGroup({ ...group, accountid: value?.id || "" })}
+          isModal
         />
       </View>
 
@@ -171,7 +173,7 @@ const TransactionsCreationList = ({
   mode: "plus" | "minus";
 }) => {
   return (
-    <View>
+    <View className=" -z-10">
       <AddNewTransaction
         group={group}
         setGroup={setGroup}

@@ -185,7 +185,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
         <Box className="flex-row justify-center items-center">
           <Pressable
-            className={`${mode === "plus" ? "bg-success-400" : "bg-error-400"} border border-muted rounded-lg me-2 p-1.5 mt-4`}
+            className={`${formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-error-400"} border border-muted rounded-lg me-2 p-1.5 mt-4`}
             onPress={() => {
               if (Platform.OS !== "web") {
                 Haptics.selectionAsync();
@@ -197,7 +197,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               }
             }}
           >
-            {mode === "minus" ? (
+            {formData.type === "Transfer" ? (
+              <Icon name="Hash" size={24} className="text-gray-100" />
+            ) : mode === "minus" ? (
               <Icon name="Minus" size={24} className="text-gray-100" />
             ) : (
               <Icon name="Plus" size={24} className="text-gray-100" />

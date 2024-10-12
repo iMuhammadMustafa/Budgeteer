@@ -86,7 +86,9 @@ export default function MyDropDown({
       <View onLayout={onButtonLayout} className="my-1 flex-1">
         <Text className="text-foreground ">{label}</Text>
         <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
-          <Text className="-z-10">{selectedItem ? selectedItem.label : label}</Text>
+          <Text selectable={false} className="-z-10">
+            {selectedItem ? selectedItem.label : label}
+          </Text>
         </Pressable>
       </View>
 
@@ -144,7 +146,7 @@ type RenderListProps = {
 
 const RenderList = ({ groupedOptions, isModal, options, onItemPress }: RenderListProps) => {
   return (
-    <ScrollView className={`${isModal ? "bg-white m-auto custom-scrollbar rounded-md" : ""} `}>
+    <ScrollView className={`${isModal ? "bg-white m-auto custom-scrollbar rounded-md flex-grow-0" : ""} `}>
       <FlatList
         data={groupedOptions}
         keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}

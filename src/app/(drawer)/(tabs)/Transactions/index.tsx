@@ -237,7 +237,7 @@ const TransactionItem = ({
     </View>
   );
 };
-const getTransactionProp = (type: string | null) => {
+export const getTransactionProp = (type: string | null) => {
   const transactionProp = { iconName: "CircleHelp", color: "color-red-100", textColor: "foreground", size: 20 };
   if (type === "Income") {
     transactionProp.iconName = "Plus";
@@ -251,7 +251,7 @@ const getTransactionProp = (type: string | null) => {
     transactionProp.iconName = "ArrowLeftRight";
     transactionProp.color = "info-100";
     transactionProp.textColor = "info-500";
-  } else if (type === "Adjustment") {
+  } else if (type === "Adjustment" || type === "Refund") {
     transactionProp.iconName = "Wrench";
     transactionProp.color = "warning-100";
     transactionProp.textColor = "warning-500";

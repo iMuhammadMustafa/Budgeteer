@@ -12,6 +12,7 @@ type TextInputFieldProps = {
   mode: "plus" | "minus";
   setMode: (mode: "plus" | "minus") => void;
   onModeChange?: (mode: "plus" | "minus") => void;
+  type: string;
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
@@ -32,6 +33,7 @@ export function TextInputFieldMemo({
   mode,
   setMode,
   onModeChange,
+  type,
 }: TextInputFieldProps) {
   const [layout, setLayout] = useState({ width: 0, height: 0, x: 0, y: 0 });
 
@@ -45,7 +47,7 @@ export function TextInputFieldMemo({
       <Text className="text-foreground">{label}</Text>
       <View className={`${Platform.OS === "web" ? "justify-center" : "justify-center flex-row"}`}>
         <Pressable
-          className={`p-2 h-[${layout.height}px] ${mode === "minus" ? "bg-error-400" : "bg-success-400"} rounded-md justify-center ${Platform.OS === "web" ? "absolute top-0" : ""}`}
+          className={`p-2  h-[44px] ${mode === "minus" ? "bg-error-400" : "bg-success-400"} rounded-md  justify-center ${Platform.OS === "web" ? "absolute top-0" : ""}`}
           onPress={() => {
             if (onModeChange) {
               onModeChange(mode === "plus" ? "minus" : "plus");

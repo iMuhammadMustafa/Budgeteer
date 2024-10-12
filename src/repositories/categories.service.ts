@@ -9,7 +9,11 @@ export const useGetCategories = () => {
   return useQuery<Category[]>({
     queryKey: [TableNames.Categories],
     queryFn: async () => {
-      const { data, error } = await supabase.from(TableNames.Categories).select("*").eq("isdeleted", false);
+      const { data, error } = await supabase
+        .from(TableNames.Categories)
+        .select("*")
+        .eq("isdeleted", false)
+        .order("type");
       if (error) {
         throw new Error(error.message);
       }

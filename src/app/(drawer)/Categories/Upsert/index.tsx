@@ -1,5 +1,6 @@
 import CategoryForm, { CategoryFormType } from "@/src/components/pages/CategoryForm";
-import { Inserts, TableNames, Updates } from "@/src/lib/supabase";
+import { TableNames } from "@/src/consts/TableNames";
+import { Inserts, Updates } from "@/src/lib/supabase";
 import { useGetCategoryById } from "@/src/repositories/categories.service";
 import { useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
@@ -7,9 +8,11 @@ import { ActivityIndicator, Text } from "react-native";
 
 const initialState: Inserts<TableNames.Categories> | Updates<TableNames.Categories> = {
   name: "",
+  group: "",
   type: "",
   description: "",
   icon: "CircleHelp",
+  groupicon: "CircleHelp",
 };
 
 export default function Upsert() {

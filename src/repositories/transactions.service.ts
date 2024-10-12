@@ -285,15 +285,11 @@ const handleNewTransaction = async (
 
     const createdDestTransaction = await createTransaction(transferTransaction);
 
-    const updatedDestAcc = await updateAccount({
-      id: destinationAccount.id,
-      balance: destinationAccount.balance + amount,
-      updatedat: currentTimestamp,
-      updatedby: userId,
-    });
-
     if (createdDestTransaction && amount && amount !== 0 && fullFormTransaction.status === "None") {
-      const updatedDestAcc = await updateAccountBalanceFunction(fullFormTransaction.transferaccountid, amount);
+      const updatedDestAcc = await updateAccountBalanceFunction(
+        fullFormTransaction.transferaccountid,
+        transferTransaction.amount,
+      );
       if (!updatedDestAcc) {
         throw new Error("Destination Account wasn't updated");
       }

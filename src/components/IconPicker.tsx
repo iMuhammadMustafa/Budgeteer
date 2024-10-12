@@ -7,7 +7,7 @@ import Modal from "react-native-modal";
 
 const iconNames = Object.keys(icons);
 
-export function IconPickerMemo({ initialIcon, onSelect }: any) {
+export function IconPickerMemo({ label, initialIcon, onSelect }: any) {
   const [icon, setIcon] = useState("CircleHelp");
   const [searchText, setSearchText] = useState(initialIcon);
   const [isVisible, setIsVisible] = useState(false);
@@ -54,7 +54,7 @@ export function IconPickerMemo({ initialIcon, onSelect }: any) {
 
   return (
     <>
-      <Text className="text-base mb-2">Icon</Text>
+      <Text className="text-base mb-2">{label}</Text>
       <TouchableOpacity
         className="p-3 mb-2 rounded border border-gray-300 bg-white items-center"
         onPress={() => {
@@ -72,7 +72,7 @@ export function IconPickerMemo({ initialIcon, onSelect }: any) {
           onBackdropPress={() => setIsVisible(false)}
         >
           <TextInputField
-            label="Icon"
+            label={label ?? "Icon"}
             value={icon ?? "CircleHelp"}
             onChange={handleTextChange}
             keyboardType="default"

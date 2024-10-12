@@ -26,6 +26,9 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
   const handleIconSelect = useCallback((icon: string) => {
     setFormData(prevFormData => ({ ...prevFormData, icon }));
   }, []);
+  const handleGroupIconSelect = useCallback((icon: string) => {
+    setFormData(prevFormData => ({ ...prevFormData, groupicon: icon }));
+  }, []);
 
   const handleTextChange = (name: keyof CategoryFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
@@ -36,13 +39,15 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
       <ScrollView>
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
         <TextInputField label="Type" value={formData.type} onChange={text => handleTextChange("type", text)} />
+        <TextInputField label="Group" value={formData.type} onChange={text => handleTextChange("group", text)} />
 
         <TextInputField
           label="Description"
           value={formData.description}
           onChange={text => handleTextChange("description", text)}
         />
-        <IconPicker onSelect={handleIconSelect} initialIcon={formData.icon} />
+        <IconPicker onSelect={handleIconSelect} label="Icon" initialIcon={formData.icon} />
+        <IconPicker onSelect={handleGroupIconSelect} label="Group Icon" initialIcon={formData.icon} />
 
         <Button
           className="p-3 flex justify-center items-center"

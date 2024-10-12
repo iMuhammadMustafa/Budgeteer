@@ -7,9 +7,9 @@ export default function CategoriesStack() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
-        name="Upsert/[categoryId]"
+        name="Upsert/index"
         options={{
-          title: "Upsert",
+          title: "Add/Edit Category",
         }}
       />
     </Stack>
