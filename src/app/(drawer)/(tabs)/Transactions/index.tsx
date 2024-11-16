@@ -238,7 +238,7 @@ const TransactionItem = ({
   );
 };
 export const getTransactionProp = (type: string | null) => {
-  const transactionProp = { iconName: "CircleHelp", color: "color-red-100", textColor: "foreground", size: 20 };
+  const transactionProp = { iconName: "CircleHelp", color: "error-100", textColor: "foreground", size: 20 };
   if (type === "Income") {
     transactionProp.iconName = "Plus";
     transactionProp.color = "success-100";

@@ -46,12 +46,13 @@ export function Tab(
           {items?.map((item: any) => {
             return (
               <ListItem 
-                key={item.id}  
+                id={item.id}  
+                id= {item.id}
                 onLongPress={() => selectable ? handleLongPress(item.id) : null }
                 onPress={() => handlePress(item.id)}
                 name = {item.name} 
                 icon= {item.icon}
-                iconColor= {getTransactionProp(item.type).color}
+                iconColor={item.iconColor ? item.iconColor :  getTransactionProp(item.type).color}
                 isSelected = {selectedIds.includes(item.id)}
               />
             )
@@ -70,14 +71,21 @@ export function Tab(
 }
 
 
-export function PageHeader({title, upsertLink}: {title: string, upsertLink: Href}){
+export function PageHeader({title, upsertLink}: {title: string, upsertLink: Array<Href>}){
     return (            
     <View className="flex-row justify-between items-center p-4 bg-background">
         <Text className="text-xl font-bold text-foreground">{title}</Text>
         <View className="flex-row gap-2">
-        <Link href={upsertLink}>
-            <Icon name="Plus" size={24} className="text-foreground" />
-        </Link>
+          {
+            upsertLink && upsertLink.map(link => {
+              return (
+                <Link href={link} key={link.toString()}>
+                  <Icon name="Plus" size={24} className="text-foreground" />
+                </Link>
+              )
+            } )}
+          
+
         </View>
     </View>
     )
@@ -94,12 +102,12 @@ export function TabHeader({title, isSelected, onPress}: {title: string, isSelect
     </TouchableOpacity>
     )
 }  
-function ListItem({key, onPress, name, icon, iconColor, isSelected, onLongPress}
-    : {key: string, onLongPress: () => void, onPress: () => void, name: string, icon: string, iconColor: string, isSelected: boolean}
+function ListItem({id, onPress, name, icon, iconColor, isSelected, onLongPress}
+    : {id: string, onLongPress: () => void, onPress: () => void, name: string, icon: string, iconColor: string, isSelected: boolean}
   ){
     return(
       <TouchableOpacity
-        key={key}
+        key={id}
         className={`flex-row items-center px-5 py-3 border-b border-gray-200 text-foreground ${isSelected ? "bg-info-100" : "bg-background"}`}
         onLongPress={onLongPress}
         onPress={onPress}

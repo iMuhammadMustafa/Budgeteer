@@ -3,7 +3,12 @@ import { AccountsCategory, supabase } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
 export const getAllAccountCategories = async () => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).select("*").eq("isdeleted", false);
+  const { data, error } = await supabase
+                                .from(TableNames.AccountCategories)
+                                .select("*")
+                                .eq("isdeleted", false)
+                                .order("type")
+                                .order("name");
   if (error) {
     throw new Error(error.message);
   }

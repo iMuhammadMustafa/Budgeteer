@@ -6,7 +6,9 @@ export const getAllAccounts = async () => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
     .select("*, category:accountscategories!accounts_categoryid_fkey(*)")
-    .eq("isdeleted", false);
+    .eq("isdeleted", false)
+    .order("categoryid")
+    .order("name");
   if (error) throw new Error(error.message);
   return data;
 };

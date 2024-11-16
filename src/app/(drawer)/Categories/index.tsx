@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Platform } from "react-native";
 import { useGetCategories, useDeleteCategory } from "@/src/repositories/categories.service";
 import { TabView, SceneMap } from "react-native-tab-view";
@@ -30,7 +30,7 @@ export default function CategoriesGroups() {
       renderTabBar={props => {
         return (
           <View className={`bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-            <PageHeader title="Categories & Groups" upsertLink="/Categories/Upsert"/>
+            <PageHeader title="Categories & Groups" upsertLink={["/Categories/Upsert"]}/>
             <View className="flex-row border-b border-gray-200 bg-background">
               <TabHeader title="Categories" isSelected = {props.navigationState.index === 0} onPress={() => setIndex(0)} />
               <TabHeader title="Groups" isSelected = {props.navigationState.index === 1} onPress={() => setIndex(1)} />
@@ -54,5 +54,5 @@ const uniqueValues = (data: any) => {
     uniqueSet.add(entry);
   });
 
-  return Array.from(uniqueSet).map(item => JSON.parse(item));
+  return Array.from(uniqueSet).map((item: any) => JSON.parse(item));
 };
