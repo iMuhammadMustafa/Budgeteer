@@ -1,4 +1,5 @@
-import { TableNames } from "../consts/TableNames";
+import { SearchableDropdownItem } from "../components/SearchableDropdown";
+import { TableNames, ViewNames } from "../consts/TableNames";
 import { supabase, Inserts, Updates } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
@@ -45,4 +46,14 @@ export const restoreCategory = async (id: string, session: Session | null) => {
     .single();
   if (error) throw error;
   return data;
+};
+
+export const getCategoryGroups = async () => {
+  const { data, error } = await supabase
+    .from(ViewNames.CategoryGroups)
+    .select("group");
+
+  if (error) throw error;
+
+  return data
 };

@@ -25,6 +25,7 @@ type SearchableDropdownType = {
   searchAction: (searchText: string) => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
   onChange: (item: any) => void;
   onSelectItem: (item: any) => void;
+  onPress?:()=> Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
 };
 
 export default function SearchableDropdown({
@@ -35,6 +36,7 @@ export default function SearchableDropdown({
   searchAction,
   onChange,
   onSelectItem,
+  onPress
 }: SearchableDropdownType) {
   const [inputText, setInputText] = useState<string | null>(initalValue);
   const [depouncedText, setDepouncedText] = useState<string>("");
@@ -96,10 +98,17 @@ export default function SearchableDropdown({
   };
 
   const handleOutsidePress = () => {
-    // Clear suggestions and dismiss keyboard
+    if(suggestions.length === 0 && onPress){
+      let values = onPress() as SearchableDropdownItem[];
+      setSuggestions(values)
+    }else{
+      
+      // Clear suggestions and dismiss keyboard
+      setSuggestions([]);
+      // Keyboard.dismiss();
+    }
 
-    setSuggestions([]);
-    // Keyboard.dismiss();
+
   };
 
   return (

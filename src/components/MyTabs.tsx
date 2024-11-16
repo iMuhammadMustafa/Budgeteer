@@ -73,8 +73,8 @@ export function Tab(
 
 export function PageHeader({title, upsertLink}: {title: string, upsertLink: Array<Href>}){
     return (            
-    <View className="flex-row justify-between items-center p-4 bg-background">
-        <Text className="text-xl font-bold text-foreground">{title}</Text>
+    <View className="flex-row justify-between items-center p-2 px-4 bg-background">
+        <Text className="font-bold text-foreground">{title}</Text>
         <View className="flex-row gap-2">
           {
             upsertLink && upsertLink.map(link => {
@@ -93,7 +93,7 @@ export function PageHeader({title, upsertLink}: {title: string, upsertLink: Arra
 export function TabHeader({title, isSelected, onPress}: {title: string, isSelected: boolean, onPress: any}){
     return(
         <TouchableOpacity
-        className={`flex-1 py-3 items-center ${isSelected ? "border-b-2 border-green-500" : ""}`}
+        className={`flex-1 py-1 items-center ${isSelected ? "border-b-2 border-green-500" : ""}`}
         onPress={onPress}
     >
         <Text className={`${isSelected ? "text-primary" : "text-foreground"}`}>

@@ -1,9 +1,10 @@
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Category, Inserts, supabase, Updates } from "../lib/supabase";
+import { Category, CategoryGroup, Inserts, supabase, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
-import { updateCategory, createCategory, deleteCategory, restoreCategory } from "./categories.api";
-import { TableNames } from "../consts/TableNames";
+import { updateCategory, createCategory, deleteCategory, restoreCategory, getCategoryGroups } from "./categories.api";
+import { TableNames, ViewNames } from "../consts/TableNames";
 import { updateCategoryTransactionsDelete } from "./transactions.api";
+import { SearchableDropdownItem } from "../components/SearchableDropdown";
 
 export const useGetCategories = () => {
   return useQuery<Category[]>({
@@ -38,6 +39,13 @@ export const useGetCategoryById = (id?: string) => {
     enabled: !!id,
   });
 };
+export const useGetCategoryGroups = () => {
+  return useQuery<CategoryGroup[]>({
+    queryKey: [ViewNames.CategoryGroups],
+    queryFn: async () => getCategoryGroups()
+  });
+};
+
 export const useUpsertCategory = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth().session || {};

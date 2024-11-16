@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inserts, Updates } from "../../lib/supabase";
-import { useUpsertCategory } from "../../repositories/categories.service";
+import { useGetCategoryGroups, useUpsertCategory } from "../../repositories/categories.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
-import { SafeAreaView, ScrollView } from "react-native";
+import { Platform, SafeAreaView, ScrollView, Text } from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import IconPicker from "../IconPicker";
 import { TableNames } from "../../consts/TableNames";
+import MyDropDown, { MyTransactionTypesDropdown } from "../MyDropdown";
+import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
 
 export type CategoryFormType = Inserts<TableNames.Categories> | Updates<TableNames.Categories>;
 
@@ -23,6 +25,8 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
   const { mutate } = useUpsertCategory();
   const { addNotification } = useNotifications();
 
+  const { data: categoryGroups, isLoading: iscategoryGroupLoading } = useGetCategoryGroups();
+
   const handleIconSelect = useCallback((icon: string) => {
     setFormData(prevFormData => ({ ...prevFormData, icon }));
   }, []);
@@ -34,12 +38,35 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
+  if(iscategoryGroupLoading) return <Text>Loading...</Text>
+
+  const groups: SearchableDropdownItem[] = categoryGroups 
+                                ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item.group }))
+                                : [];
+
+  const filterGroups = (val: string)=>{
+    const res =  groups.filter(i => i.label.toLowerCase().includes(val.toLowerCase()))
+    return res;
+  }
+
   return (
-    <SafeAreaView className="p-5">
-      <ScrollView>
+    <SafeAreaView className="p-5 flex-1">
+      <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
+        <SearchableDropdown
+          label="Group"
+          searchAction={val => filterGroups(val)}
+          initalValue={category.group}
+          onSelectItem={val => handleTextChange("group", val)}
+          onChange={val => handleTextChange("group", val)}
+          onPress={() => groups}
+        />
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
-        <TextInputField label="Type" value={formData.type} onChange={text => handleTextChange("type", text)} />
-        <TextInputField label="Group" value={formData.type} onChange={text => handleTextChange("group", text)} />
+
+        <MyTransactionTypesDropdown 
+        selectedValue={formData.type}
+        onSelect={value => handleTextChange("type", value?.value)} 
+        isModal={Platform.OS !== "web" }/>
+
 
         <TextInputField
           label="Description"

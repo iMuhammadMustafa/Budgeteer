@@ -26,6 +26,7 @@ export type MonthlyTransactions = Views<"monthlycategorytransactions">;
 export type DailyTransactionsSummary = Views<"dailytransactions">;
 export type TransactionDistinct = Views<"transactiondistinct">;
 export type TransactionsView = Views<"transactionsview">;
+export type CategoryGroup = Views<"categorygroups">;
 
 class SupabaseStorage {
   async getItem(key: string) {

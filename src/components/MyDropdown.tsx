@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { FlatList, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import Icon from "../lib/IonIcons";
 import Modal from "react-native-modal";
@@ -19,15 +19,28 @@ interface DropDownProps {
   label: string;
   isModal?: boolean;
   groupBy?: string;
+  isWritable?: boolean;
 }
 
-export default function MyDropDown({
+
+//TODO: Fix compare
+const areEqual = (prevProps: DropDownProps, nextProps: DropDownProps) => {
+  return (
+    prevProps.options === nextProps.options &&
+    prevProps.selectedValue === nextProps.selectedValue
+  );
+};
+const MyDropDown =  memo(UnMemoizedMyDropDown, areEqual)
+export default MyDropDown;
+
+function UnMemoizedMyDropDown({
   options,
   onSelect,
   selectedValue,
   label,
   isModal = Platform.OS !== "web",
   groupBy,
+  isWritable = false
 }: DropDownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<OptionItem | null>(null);
@@ -81,15 +94,23 @@ export default function MyDropDown({
     setButtonLayout({ height, width, top, y, x });
   };
 
+  console.log("rernder")
   return (
     <>
       <View onLayout={onButtonLayout} className="my-1 flex-1">
         <Text className="text-foreground ">{label}</Text>
-        <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
+        {
+          isWritable 
+          ?
+          <Text>Not Yet implemented</Text> 
+          :
+        (<Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
           <Text selectable={false} className="-z-10">
             {selectedItem ? selectedItem.label : label}
           </Text>
-        </Pressable>
+        </Pressable>)
+        }
+
       </View>
 
       {options && isOpen && (
@@ -238,3 +259,43 @@ export const MyCategoriesDropdown = ({
     />
   );
 };
+
+export function MyTransactionTypesDropdown({
+  selectedValue,
+  onSelect,
+  isModal,
+  isAdjustmentDisabled = true,
+  isInitialDisabled = true,
+  isRefundDisabled = true,
+  isAdjustmentHidden = true,
+  isInitialHidden = true,
+  isRefundHidden = true,  
+}: {
+  selectedValue: any;
+  onSelect: (value: any) => any;
+  isModal: boolean;
+  isAdjustmentDisabled?: boolean
+  isInitialDisabled?: boolean
+  isRefundDisabled?: boolean
+  isAdjustmentHidden?: boolean
+  isInitialHidden?: boolean
+  isRefundHidden?: boolean  
+}){
+
+  return(
+    <MyDropDown
+    isModal={isModal}
+    label="Type"
+    options={[
+      { id: "Income", label: "Income", value: "Income" },
+      { id: "Expense", label: "Expense", value: "Expense" },
+      { id: "Transfer", label: "Transfer", value: "Transfer" },
+      { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: isAdjustmentDisabled },
+      { id: "Initial", label: "Initial", value: "Initial", disabled: isInitialDisabled },
+      { id: "Refund", label: "Refund", value: "Refund", disabled: isRefundDisabled },
+    ]}
+    selectedValue={selectedValue}
+    onSelect={onSelect}
+  />
+  )
+}

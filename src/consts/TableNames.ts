@@ -13,6 +13,7 @@ export enum ViewNames {
   TransactionDistinct = "transactiondistinct",
   MonthlyTransactions = "monthlycategorytransactions",
   DailyTransactionsSummary = "dailytransactions",
+  CategoryGroups = "categorygroups"
 }
 export enum FunctionNames {
   UpdateAccountBalance = "updateaccountbalance",
