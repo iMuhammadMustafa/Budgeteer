@@ -13,7 +13,8 @@ export const useGetCategories = () => {
         .from(TableNames.Categories)
         .select("*")
         .eq("isdeleted", false)
-        .order("type");
+        .order("type")
+        .order("name");
       if (error) {
         throw new Error(error.message);
       }
