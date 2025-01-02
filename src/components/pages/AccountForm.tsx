@@ -62,7 +62,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           selectedValue={formData.categoryid}
           groupBy="type"
           onSelect={value => {
-            handleTextChange("categoryid", value?.id);
+            handleFieldChange("categoryid", value?.value);
           }}
         />
 
@@ -74,7 +74,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         <TextInputField
           label="Balance"
           value={formData.balance?.toString()}
-          onChange={balance => handleFieldChange("balance", parseFloat(balance))}
+          onChange={balance => handleFieldChange("balance", balance)}
           keyboardType="numeric"
         />
 
