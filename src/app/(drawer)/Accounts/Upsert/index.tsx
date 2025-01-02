@@ -1,8 +1,9 @@
 import AccountForm, { AccountFormType } from "@/src/components/pages/AccountForm";
-import { Account, Inserts, TableNames, Updates } from "@/src/lib/supabase";
+import { TableNames } from "@/src/consts/TableNames";
+import { Inserts, Updates } from "@/src/lib/supabase";
 import { useGetAccountById } from "@/src/repositories/account.service";
-import { useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";
 
 const initialAccountState: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts> = {
@@ -18,6 +19,14 @@ export default function Upsert() {
   const [initialValues, setInitialValues] = useState<AccountFormType>(initialAccountState);
 
   const { data, isLoading, error } = useGetAccountById(accountId);
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: accountId ? "Edit Account" : "Add Account",
+    });
+  }, []);
 
   useEffect(() => {
     if (accountId && data) {

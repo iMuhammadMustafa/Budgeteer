@@ -2,8 +2,8 @@ import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/p
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
 import { useGetAccountCategoryById } from "@/src/repositories/accountcategories.service";
-import { useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";
 
 const initialAccountState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
@@ -15,7 +15,15 @@ export default function Upsert() {
   const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
   const [initialValues, setInitialValues] = useState<AccountCategoryFormType>(initialAccountState);
 
+  const navigation = useNavigation();
+
   const { data, isLoading, error } = useGetAccountCategoryById(categoryId);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: categoryId ? "Edit Category" : "Add Category",
+    });
+  }, []);
 
   useEffect(() => {
     if (categoryId && data) {

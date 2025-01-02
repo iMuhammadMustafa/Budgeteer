@@ -1,14 +1,15 @@
-import { SafeAreaView, ScrollView } from "react-native";
+import { Platform, SafeAreaView, ScrollView } from "react-native";
 import { Account, Inserts, Updates } from "../../lib/supabase";
 import TextInputField from "../TextInputField";
 import { useEffect, useState } from "react";
 import { useUpsertAccount } from "../../repositories/account.service";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetAccountCategories } from "../../repositories/accountcategories.service";
-import DropdownField from "../DropdownField";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import { TableNames } from "../../consts/TableNames";
+import MyDropDown from "../MyDropdown";
+import IconPicker from "../IconPicker";
 
 export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
 
@@ -46,11 +47,23 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
       <ScrollView>
         <TextInputField label="Name" value={formData.name} onChange={name => handleFieldChange("name", name)} />
 
-        <DropdownField
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
           label="Category"
-          initalValue={accountCategories?.find(item => item.id === formData.categoryid)?.name}
-          list={accountCategories?.map(item => ({ name: item.name + "-" + item.type, id: item.id }))}
-          onSelect={(category: any) => setFormData({ ...formData, categoryid: category.id })}
+          options={
+            accountCategories?.map(item => ({
+              id: item.id,
+              label: item.name,
+              group: item.type,
+              value: item.id,
+              icon: item.icon,
+            })) ?? []
+          }
+          selectedValue={formData.categoryid}
+          groupBy="type"
+          onSelect={value => {
+            handleTextChange("categoryid", value?.id);
+          }}
         />
 
         <TextInputField
@@ -66,6 +79,13 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         />
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
+
+        <IconPicker
+          onSelect={icon => setFormData(prevFormData => ({ ...prevFormData, icon }))}
+          label="Icon"
+          initialIcon={formData.icon ?? "CircleHelp"}
+        />
+
         <Button className="p-3 flex justify-center items-center" disabled={isLoading} onPress={handleSubmit}>
           {isLoading ? <ButtonSpinner /> : <ButtonText className="font-medium text-sm ml-2">Save</ButtonText>}
         </Button>

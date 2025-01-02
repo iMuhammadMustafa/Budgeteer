@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { AccountCategoryTypes, Inserts, Updates } from "../../lib/supabase";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
-import { SafeAreaView, ScrollView } from "react-native";
+import { Platform, SafeAreaView, ScrollView } from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { TableNames } from "../../consts/TableNames";
 import DropdownField from "../DropdownField";
 import { useUpsertAccountCategory } from "../../repositories/accountcategories.service";
+import MyDropDown from "../MyDropdown";
+import IconPicker from "../IconPicker";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 
@@ -32,14 +34,21 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
       <ScrollView>
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
 
-        <DropdownField
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
           label="Type"
-          initalValue={category.type}
-          onSelect={({ name }: { name: AccountCategoryTypes }) => handleTextChange("type", name)}
-          list={[
-            { id: "Asset", name: "Asset" },
-            { id: "Liability", name: "Liability" },
+          options={[
+            { id: "Asset", label: "Asset", value: "Asset" },
+            { id: "Liability", label: "Liability", value: "Liability" },
           ]}
+          selectedValue={formData.type}
+          onSelect={value => handleTextChange("type", value.value)}
+        />
+
+        <IconPicker
+          onSelect={icon => setFormData(prevFormData => ({ ...prevFormData, icon }))}
+          label="Icon"
+          initialIcon={formData.icon ?? "CircleHelp"}
         />
 
         <Button
@@ -49,7 +58,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
             mutate(formData, {
               onSuccess: () => {
                 addNotification({ message: "Category Created Successfully", type: "success" });
-                router.replace("/Accounts/Categories");
+                router.replace("/Accounts");
               },
             });
           }}
