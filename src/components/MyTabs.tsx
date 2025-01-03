@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform, Pressable } from "react-native";
 import Icon from "@/src/lib/IonIcons";
 import { Href, Link, router } from "expo-router";
 import { getTransactionProp } from "../app/(drawer)/(tabs)/Transactions";
@@ -12,6 +12,7 @@ export function Tab({
   deleteItem,
   upsertUrl,
   selectable = false,
+  refreshQueries
 }: {
   title: string;
   items: any;
@@ -20,6 +21,7 @@ export function Tab({
   deleteItem: any;
   upsertUrl: Href;
   selectable?: boolean;
+  refreshQueries: () => void
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -49,7 +51,7 @@ export function Tab({
 
   return (
     <View className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-      <PageHeader title={title} upsertLink={[upsertUrl]} />
+      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries = {refreshQueries} />
       <ScrollView className="flex-1">
         {items?.map((item: any) => {
           return (
@@ -58,6 +60,7 @@ export function Tab({
               onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
               onPress={() => handlePress(item.id)}
               name={item.name}
+              details={item.details}
               icon={item.icon}
               iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type).color}
               isSelected={selectedIds.includes(item.id)}
@@ -77,11 +80,17 @@ export function Tab({
   );
 }
 
-export function PageHeader({ title, upsertLink }: { title: string; upsertLink: Array<Href> }) {
+export function PageHeader({ title, upsertLink, refreshQueries }: { title: string; upsertLink: Array<Href>, refreshQueries: () => void }) {
   return (
     <View className="flex-row justify-between items-center p-2 px-4 bg-background">
       <Text className="font-bold text-foreground">{title}</Text>
-      <View className="flex-row gap-2">
+      <View className="flex-row gap-2 items-center">
+        {
+          refreshQueries && (
+            <Pressable onPress={refreshQueries}>
+              <Icon name="RefreshCw" className="text-foreground" size={20} />
+            </Pressable>)
+        }
         {upsertLink &&
           upsertLink.map(link => {
             return (
@@ -108,6 +117,7 @@ function ListItem({
   id,
   onPress,
   name,
+  details,
   icon,
   iconColor,
   isSelected,
@@ -117,6 +127,7 @@ function ListItem({
   onLongPress: () => void;
   onPress: () => void;
   name: string;
+  details: string;
   icon: string;
   iconColor: string;
   isSelected: boolean;
@@ -133,6 +144,7 @@ function ListItem({
       </View>
       <View className="flex-1">
         <Text className="text-md text-foreground">{name}</Text>
+        <Text className="text-md text-foreground">{details}</Text>
       </View>
     </TouchableOpacity>
   );

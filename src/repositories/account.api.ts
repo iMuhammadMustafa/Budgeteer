@@ -7,8 +7,9 @@ export const getAllAccounts = async () => {
     .from(TableNames.Accounts)
     .select("*, category:accountscategories!accounts_categoryid_fkey(*)")
     .eq("isdeleted", false)
-    .order("categoryid")
-    .order("name");
+    .order("category(displayorder)", { ascending: true })
+    .order("name")
+    .order("owner");
   if (error) throw new Error(error.message);
   return data;
 };
@@ -100,3 +101,16 @@ export const updateAccountBalanceFunction = async (accountid: string, amount: nu
     amount: amount,
   });
 };
+
+export const getAccountOpenBalance = async (accountid?: string) => {
+  const { data, error } = await supabase
+      .from(TableNames.Transactions)
+      .select("id, amount")
+      .eq("accountid", accountid)
+      .eq("type", "Initial")
+      .eq("isdeleted", false)
+      .single();
+
+  if (error) throw new Error(error.message);
+  return data; 
+}

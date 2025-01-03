@@ -5,8 +5,11 @@ import { useDeleteAccountCategory, useGetAccountCategories } from "@/src/reposit
 import { SceneMap, TabView } from "react-native-tab-view";
 import { Tab, TabHeader } from "@/src/components/MyTabs";
 import { Platform, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
+import { TableNames } from "@/src/consts/TableNames";
 
 export default function Accounts() {
+  const queryClient = useQueryClient();
   const { data: accounts, isLoading, error } = useGetAccounts();
   const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useGetAccountCategories();
 
@@ -17,6 +20,16 @@ export default function Accounts() {
   ]);
   const { mutate: deleteAccount } = useDeleteAccount();
   const { mutate: deleteCategory } = useDeleteAccountCategory();
+
+  const refershAccounts = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+
+  }
+  const refreshCategories = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+
+  }
+
   return (
     <TabView
       navigationState={{ index, routes }}
@@ -26,12 +39,16 @@ export default function Accounts() {
         first: () => (
           <Tab
             title="Accounts"
-            items={accounts}
+            items={accounts?.map(account => ({...account, details: `${account.owner} - Balance: ${account.balance.toLocaleString('en-US', { 
+              style: 'currency', 
+              currency: 'USD' 
+          })}`}))}
             isLoading={isLoading}
             error={error}
             deleteItem={deleteAccount}
             upsertUrl={"/Accounts/Upsert?accountId="}
             selectable
+            refreshQueries={refershAccounts}
           />
         ),
         second: () => (
@@ -42,6 +59,7 @@ export default function Accounts() {
             error={error}
             deleteItem={deleteCategory}
             upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
+            refreshQueries={refreshCategories}
           />
         ),
       })}

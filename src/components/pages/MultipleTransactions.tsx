@@ -98,6 +98,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
             // setMaxAmount(prev => (mode === "minus" ? Math.abs(prev) : Math.abs(prev) * -1));
           }}
           onChange={value => {
+            let numericAmount = value
+            .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+            .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+            .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+            .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+
             if (value.includes("-")) {
               setMode("minus");
               return;
@@ -107,7 +113,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
               return;
             }
 
-            setMaxAmount(parseFloat(value));
+            setMaxAmount(numericAmount);
           }}
           keyboardType="numeric"
         />
@@ -130,7 +136,16 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         />
 
         <MyDropDown
-          options={accounts?.map(account => ({ id: account.id, label: account.name, value: account })) ?? []}
+          options={
+            accounts?.map(account => ({
+              id: account.id,
+              label: account.name,
+              details: `${account.owner} - $ ${account.balance}`,
+              value: account,
+              passedItem: account,
+              icon: account.icon
+            })) ?? []
+          }
           label="Account"
           selectedValue={group.accountid}
           onSelect={value => setGroup({ ...group, accountid: value?.id || "" })}
@@ -144,11 +159,11 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         setGroup={setGroup}
         currentAmount={currentAmount}
         setCurrentAmount={setCurrentAmount}
-        maxAmount={maxAmount}
+        maxAmount={parseFloat(maxAmount)}
         categories={categories!}
         mode={mode}
       />
-      <TransactionsFooter currentAmount={currentAmount} maxAmount={maxAmount} mode={mode} onSubmit={handleSubmit} />
+      <TransactionsFooter currentAmount={currentAmount} maxAmount={parseFloat(maxAmount)} mode={mode} onSubmit={handleSubmit} />
     </View>
   );
 }
@@ -242,34 +257,46 @@ const TransactionCard = ({
       return; // Reject invalid numeric input
     }
 
-    let numericValue = parseFloat(value);
+    if(!value.endsWith(".")){
+      let numericValue = parseFloat(value);
+      // Update amount based on currentMode
+      numericValue = Math.abs(numericValue) * currentMultiplier;
+  
+      // Respect the global mode and ensure the maxAmount respects the global mode
+      const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount + numericValue;
+  
+      // Adjust the numeric value based on remaining amount
+      if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
+        numericValue = currentMultiplier * remainingAmount;
+      }
 
-    // Update amount based on currentMode
-    numericValue = Math.abs(numericValue) * currentMultiplier;
-
-    // Respect the global mode and ensure the maxAmount respects the global mode
-    const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount + numericValue;
-
-    // Adjust the numeric value based on remaining amount
-    if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
-      numericValue = currentMultiplier * remainingAmount;
+      // Update group and current amount
+      setGroup(prev => {
+        const prevAmount = prev.transactions[id].amount || 0;
+        const difference = numericValue - prevAmount;
+  
+        setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
+  
+        return {
+          ...prev,
+          transactions: {
+            ...prev.transactions,
+            [id]: { ...prev.transactions[id], amount: numericValue },
+          },
+        };
+      });
+    }else{
+      console.log("I'm here", value)
+      setGroup(prev => {  
+        return {
+          ...prev,
+          transactions: {
+            ...prev.transactions,
+            [id]: { ...prev.transactions[id], amount: value },
+          },
+        };
+      });
     }
-
-    // Update group and current amount
-    setGroup(prev => {
-      const prevAmount = prev.transactions[id].amount || 0;
-      const difference = numericValue - prevAmount;
-
-      setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
-
-      return {
-        ...prev,
-        transactions: {
-          ...prev.transactions,
-          [id]: { ...prev.transactions[id], amount: numericValue },
-        },
-      };
-    });
   };
 
   // Handle mode toggle (switch between plus/minus)
@@ -302,7 +329,15 @@ const TransactionCard = ({
         className="flex-1"
         label="Amount"
         value={Math.abs(transaction.amount).toString()} // Always display absolute value
-        onChange={value => handleAmountChange(value)}
+        onChange={value => {
+          let numericAmount = value
+          .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+          .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+          .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+          .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+
+          handleAmountChange(numericAmount);
+        }}
         mode={currentMode}
         setMode={handleModeToggle} // Pass the mode toggle handler
         keyboardType="numeric"
@@ -374,9 +409,9 @@ const TransactionsFooter = ({
     <View className="flex-row items-center justify-between">
       <View className="flex">
         <Text className="text-center text-foreground">Total: ${globalMultiplier * maxAmount ?? 0.0}</Text>
-        <Text className="text-center text-foreground">Current Total: ${currentAmount ?? 0.0}</Text>
+        <Text className="text-center text-foreground">Current Total: ${currentAmount.toFixed(0) ?? 0.0}</Text>
         <Text className="text-center text-foreground">
-          Remaining: ${globalMultiplier * maxAmount - currentAmount ?? 0.0}
+          Remaining: ${(globalMultiplier * maxAmount - currentAmount).toFixed(2) ?? 0.0}
         </Text>
       </View>
       <Pressable

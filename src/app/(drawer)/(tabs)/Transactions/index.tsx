@@ -221,12 +221,13 @@ const TransactionItem = ({
               {transaction.amount!.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })}
-              {transaction.currency}
+              })} {transaction.currency}
             </Text>
             <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
               {transaction.accountname} {" | "}
               {transaction.running_balance?.toLocaleString("en", {
+                style: 'currency', 
+                currency: transaction.currency,
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

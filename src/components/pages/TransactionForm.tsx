@@ -105,6 +105,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
+      createdat: dayjs().toISOString()
     };
     handleMutate(newItem);
   };
@@ -258,8 +259,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             accounts?.map(account => ({
               id: account.id,
               label: account.name,
+              details: `${account.owner} - $ ${account.balance.toLocaleString('en-US', { 
+                style: 'currency', 
+                currency: 'USD' 
+            })}`,
               value: account,
               passedItem: account,
+              icon: account.icon
             })) ?? []
           }
           onSelect={(value: any) => {

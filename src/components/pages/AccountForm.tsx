@@ -2,7 +2,7 @@ import { Platform, SafeAreaView, ScrollView } from "react-native";
 import { Account, Inserts, Updates } from "../../lib/supabase";
 import TextInputField from "../TextInputField";
 import { useEffect, useState } from "react";
-import { useUpsertAccount } from "../../repositories/account.service";
+import { useGetAccountOpenBalance, useUpsertAccount } from "../../repositories/account.service";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { useGetAccountCategories } from "../../repositories/accountcategories.service";
 import { useRouter } from "expo-router";
@@ -17,7 +17,9 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const [formData, setFormData] = useState<AccountFormType>(account);
   const [isLoading, setIsLoading] = useState(false);
   const { data: accountCategories } = useGetAccountCategories();
+  // const { data: openBalance} = useGetAccountOpenBalance(account.id);
   const router = useRouter();
+
 
   useEffect(() => {
     setFormData(account);
@@ -32,7 +34,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const handleSubmit = () => {
     setIsLoading(true);
     mutate(
-      { formAccount: formData, originalData: account as Account },
+      { formAccount: {...formData, balance: parseFloat(formData.balance) }, originalData: account as Account },
       {
         onSuccess: () => {
           addNotification({ message: "Account Created Successfully", type: "success" });
@@ -44,8 +46,9 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
   return (
     <SafeAreaView className="p-5">
-      <ScrollView>
+      <ScrollView className="px-5">
         <TextInputField label="Name" value={formData.name} onChange={name => handleFieldChange("name", name)} />
+        <TextInputField label="Owner" value={formData.owner} onChange={owner => handleFieldChange("owner", owner)} />
 
         <MyDropDown
           isModal={Platform.OS !== "web"}
@@ -77,6 +80,12 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           onChange={balance => handleFieldChange("balance", balance)}
           keyboardType="numeric"
         />
+        {/* <TextInputField
+          label="Open Balance"
+          value={openBalance.amount?.toString()}
+          onChange={balance => handleFieldChange("openBalance", balance)}
+          keyboardType="numeric"
+        /> */}
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
 

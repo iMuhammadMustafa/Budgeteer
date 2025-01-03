@@ -8,6 +8,7 @@ import {
   restoreAccount,
   getAccountById,
   getAllAccounts,
+  getAccountOpenBalance,
 } from "./account.api";
 import { TableNames } from "../consts/TableNames";
 import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
@@ -130,6 +131,7 @@ const upsertCreateAccount = async (
   await createTransaction({
     amount: formAccount.balance ?? 0,
     accountid: newAcc.id,
+    categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9", 
     type: "Initial",
     description: "Account Opened",
     createdby: formAccount.createdby!,
@@ -137,4 +139,12 @@ const upsertCreateAccount = async (
   });
 
   return newAcc;
+};
+
+export const useGetAccountOpenBalance = (id?: string) => {
+  return useQuery<any>({
+    queryKey: [TableNames.Accounts, id],
+    queryFn: async () => getAccountOpenBalance(id),
+    enabled: !!id,
+  });
 };

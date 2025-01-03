@@ -11,6 +11,7 @@ interface OptionItem {
   iconColorClass?: string;
   disabled?: boolean;
   group?: string;
+  details?: string; 
 }
 interface DropDownProps {
   options: Array<OptionItem>;
@@ -209,7 +210,7 @@ type RenderOptionProps = {
 const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionProps) => (
   <Pressable
     key={option.id}
-    className={`p-2 relative z-10 gap-2 items-center ${isModal ? "" : "flex-row"} ${isGrouped ? "" : "border-b border-gray-300"}`}
+    className={`p-2 relative z-10 gap-2 items-center ${isModal ? "" : "flex-row items-center justify-center"} ${isGrouped ? "" : "border-b border-gray-300"}`}
     disabled={option.disabled}
     onPress={() => onItemPress(option)}
   >
@@ -219,7 +220,13 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
         className={`text-base ${option.iconColorClass ? option.iconColorClass : "text-black"}`}
       />
     )}
-    <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>{option.label}</Text>
+    <Text className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>{option.label}</Text>
+    {!isModal && option.details && (
+      <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}> - </Text>
+    )}
+    {option.details && (
+      <Text className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>{option.details}</Text>
+    )}
   </Pressable>
 );
 
