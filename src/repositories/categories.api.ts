@@ -51,7 +51,7 @@ export const restoreCategory = async (id: string, session: Session | null) => {
 export const getCategoryGroups = async () => {
   const { data, error } = await supabase
     .from(ViewNames.CategoryGroups)
-    .select("group");
+    .select("group, groupicon");
 
   if (error) throw error;
 

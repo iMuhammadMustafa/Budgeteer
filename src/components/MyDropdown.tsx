@@ -95,7 +95,6 @@ function UnMemoizedMyDropDown({
     setButtonLayout({ height, width, top, y, x });
   };
 
-  console.log("rernder")
   return (
     <>
       <View onLayout={onButtonLayout} className="my-1 flex-1">

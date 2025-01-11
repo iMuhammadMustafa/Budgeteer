@@ -41,7 +41,7 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
   if(iscategoryGroupLoading) return <Text>Loading...</Text>
 
   const groups: SearchableDropdownItem[] = categoryGroups 
-                                ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item.group }))
+                                ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item }))
                                 : [];
 
   const filterGroups = (val: string)=>{
@@ -56,8 +56,13 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
           label="Group"
           searchAction={val => filterGroups(val)}
           initalValue={category.group}
-          onSelectItem={val => handleTextChange("group", val)}
-          onChange={val => handleTextChange("group", val)}
+          onSelectItem={val => {
+            handleTextChange("group", val.id)
+            handleTextChange("groupicon", val.item.groupicon)
+          }}
+          onChange={val => {
+            handleTextChange("group", val)
+          }}
           onPress={() => groups}
         />
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
