@@ -281,6 +281,7 @@ const handleNewTransaction = async (
       amount: -amount,
       transferid: createdTransaction.id,
       accountid: fullFormTransaction.transferaccountid,
+      transferaccountid: fullFormTransaction.accountid,
     };
 
     const createdDestTransaction = await createTransaction(transferTransaction);
