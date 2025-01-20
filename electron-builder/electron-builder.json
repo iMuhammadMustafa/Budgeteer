@@ -1,0 +1,17 @@
+{
+  "appId": "com.muhammadmustafa.budgeteer",
+  "productName": "Budgeteer",
+  "files": ["./**/*"],
+  "directories": {
+    "buildResources": "build"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage"
+  }
+}

@@ -6,7 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const filePath = path.join(".", "node_modules", "nativewind", "dist", "metro", "transformer.js");
+let filePath = path.join(".", "node_modules", "nativewind", "dist", "metro", "transformer.js");
 
 fs.readFile(filePath, "utf8", (err, content) => {
   if (err) {
@@ -33,3 +33,37 @@ fs.readFile(filePath, "utf8", (err, content) => {
     console.log("🎉 NativeWind fix applied successfully!");
   });
 });
+
+
+
+////////////////////////////////////////
+//file:///D:/Workfolio/Projects/Budgeteer/node_modules/@gluestack-ui/nativewind-utils/tailwind-plugin/index.js:1:16
+const glufilePath = path.join(".", "node_modules", "@gluestack-ui", "nativewind-utils", "tailwind-plugin", "index.js");
+
+fs.readFile(glufilePath, "utf8", (err, content) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  const cjsIssue = "const plugin = require('tailwindcss/plugin');";
+
+  
+  if (!content.includes(cjsIssue)) {
+      console.log(content)
+    return console.log("🎉 Gluestack fix already applied!");
+  }
+
+  const fix = "import plugin from 'tailwindcss/plugin';";
+
+  let updatedContent = content.replace(cjsIssue, fix);
+
+  fs.writeFile(glufilePath, updatedContent, "utf8", err => {
+    if (err) {
+      return console.error(err);
+    }
+    console.log("🎉 Gluestack fix applied successfully!");
+  });
+});
+
+
