@@ -45,7 +45,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   useEffect(() => {
     if (transaction.id) {
-      console.log(transaction);
+      // console.log(transaction);
       setMode(parseFloat(transaction.amount) < 0 ? "minus" : "plus");
       setMaxAmount(Math.abs(parseFloat(transaction.amount)));
       setCurrentAmount(parseFloat(transaction.amount));
@@ -264,22 +264,33 @@ const TransactionCard = ({
 
     if (!value.endsWith(".")) {
       let numericValue = parseFloat(value);
+      if (isNaN(numericValue)) {
+        numericValue = 0;
+      }
       // Update amount based on currentMode
       numericValue = Math.abs(numericValue) * currentMultiplier;
 
       // Respect the global mode and ensure the maxAmount respects the global mode
-      const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount + numericValue;
+
+      const remainingAmount =
+        maxAmount * globalMultiplier - currentAmount + Number.parseFloat(transaction.amount.toString()) + numericValue;
 
       // Adjust the numeric value based on remaining amount
       if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
         numericValue = currentMultiplier * remainingAmount;
+        numericValue = parseFloat(numericValue.toFixed(2));
       }
 
       // Update group and current amount
       setGroup(prev => {
-        const prevAmount = prev.transactions[id].amount || 0;
+        const prevAmount = Number.parseFloat(prev.transactions[id].amount.toString()) || 0;
         const difference = numericValue - prevAmount;
+        // console.log("prev.transactions[id].amount", prev.transactions[id].amount);
+        // console.log("numericValue", numericValue);
+        // console.log("prevAmount", prevAmount);
+        // console.log("difference", difference);
 
+        // console.log("currentAmount Should be ", currentAmount + difference);
         setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
 
         return {
@@ -291,13 +302,13 @@ const TransactionCard = ({
         };
       });
     } else {
-      console.log("I'm here", value);
+      const sign = currentMultiplier === -1 ? "-" : "";
       setGroup(prev => {
         return {
           ...prev,
           transactions: {
             ...prev.transactions,
-            [id]: { ...prev.transactions[id], amount: value },
+            [id]: { ...prev.transactions[id], amount: sign + value },
           },
         };
       });
@@ -333,7 +344,13 @@ const TransactionCard = ({
       <TextInputFieldWithIcon
         className="flex-1"
         label="Amount"
-        value={Math.abs(transaction.amount).toString()} // Always display absolute value
+        value={
+          transaction.amount.toString().endsWith(".")
+            ? transaction.amount
+            : isNaN(transaction.amount)
+              ? "0"
+              : Math.abs(transaction.amount).toString()
+        } // Always display absolute value
         onChange={value => {
           let numericAmount = value
             .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
@@ -414,7 +431,7 @@ const TransactionsFooter = ({
     <View className="flex-row items-center justify-between">
       <View className="flex">
         <Text className="text-center text-foreground">Total: ${globalMultiplier * maxAmount ?? 0.0}</Text>
-        <Text className="text-center text-foreground">Current Total: ${currentAmount.toFixed(0) ?? 0.0}</Text>
+        <Text className="text-center text-foreground">Current Total: ${currentAmount.toFixed(2) ?? 0.0}</Text>
         <Text className="text-center text-foreground">
           Remaining: ${(globalMultiplier * maxAmount - currentAmount).toFixed(2) ?? 0.0}
         </Text>
