@@ -67,7 +67,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const { mutate } = useUpsertTransaction();
   const { addNotification } = useNotifications();
 
-  const isEdit = !!transaction.id
+  const isEdit = !!transaction.id;
 
   useEffect(() => {
     if (!transaction.amount || transaction.amount == 0) {
@@ -102,9 +102,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
   const handleOnMoreSubmit = () => {
     const updatedDate = dayjs(formData.date)
-    .add(1, 'second') // Add 1 second
-    .toISOString(); // Convert to ISO string
- 
+      .add(1, "second") // Add 1 second
+      .toISOString(); // Convert to ISO string
+
     const newItem: TransactionFormType = {
       ...initialTransactionState,
       id: undefined,
@@ -112,7 +112,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
-      createdat: dayjs().toISOString()
+      createdat: dayjs().toISOString(),
     };
     handleMutate(newItem);
   };
@@ -234,11 +234,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </Box>
 
-
         <MyDropDown
           isModal={Platform.OS !== "web"}
           label="Type"
-          
           options={[
             { id: "Income", label: "Income", value: "Income", disabled: isEdit },
             { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
@@ -268,15 +266,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             accounts?.map(account => ({
               id: account.id,
               label: account.name,
-              details: `${account.owner} | ${account.balance.toLocaleString('en-US', { 
-                style: 'currency', 
-                currency: 'USD' 
-            })}`,
+              details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}`,
               value: account,
               passedItem: account,
               icon: account.icon,
-              iconColorClass: `text-${account.iconColor.replace("100", "500")}`,
-              group: account.category.name
+              iconColorClass: `text-${account.iconColor?.replace("100", "500") ?? "gray-500"}`,
+              group: account.category.name,
             })) ?? []
           }
           groupBy="group"
@@ -295,15 +293,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               accounts?.map(account => ({
                 id: account.id,
                 label: account.name,
-                details: `${account.owner} | ${account.balance.toLocaleString('en-US', { 
-                  style: 'currency', 
-                  currency: 'USD' 
-              })}`,                
+                details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}`,
                 value: account,
                 passedItem: account,
-                icon: account.icon,  
+                icon: account.icon,
                 iconColorClass: `text-${account.iconColor.replace("100", "500")}`,
-                group: account.category.name
+                group: account.category.name,
               })) ?? []
             }
             groupBy="group"
@@ -343,17 +341,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         />
 
         <Box className="flex-row text-center justify-center items-center gap-5 mt-2">
-          <Button className="bg-error-400" onPress={() => {
-            setFormData(initialTransactionState)
-            router.replace("/AddTransaction");
-            }}>
+          <Button
+            className="bg-error-400"
+            onPress={() => {
+              setFormData(initialTransactionState);
+              router.replace("/AddTransaction");
+            }}
+          >
             <ButtonText className="text-foreground font-medium text-md">Reset</ButtonText>
           </Button>
-          <Button className="bg-primary" disabled={isLoading} onPress={(handleSubmit)}>
-            {isLoading ? <ButtonSpinner /> : <ButtonText className="text-foreground font-medium text-md">Save</ButtonText>}
+          <Button className="bg-primary" disabled={isLoading} onPress={handleSubmit}>
+            {isLoading ? (
+              <ButtonSpinner />
+            ) : (
+              <ButtonText className="text-foreground font-medium text-md">Save</ButtonText>
+            )}
           </Button>
         </Box>
-
       </ScrollView>
     </SafeAreaView>
   );
