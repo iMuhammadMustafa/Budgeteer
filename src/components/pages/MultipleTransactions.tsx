@@ -99,10 +99,10 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           }}
           onChange={value => {
             let numericAmount = value
-            .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
-            .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-            .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
-            .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+              .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+              .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+              .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+              .replace(/^0+(?=\d)/, ""); // Remove leading zeros
 
             if (value.includes("-")) {
               setMode("minus");
@@ -143,7 +143,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
               details: `${account.owner} - $ ${account.balance}`,
               value: account,
               passedItem: account,
-              icon: account.icon
+              icon: account.icon,
             })) ?? []
           }
           label="Account"
@@ -163,7 +163,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         categories={categories!}
         mode={mode}
       />
-      <TransactionsFooter currentAmount={currentAmount} maxAmount={parseFloat(maxAmount)} mode={mode} onSubmit={handleSubmit} />
+      <TransactionsFooter
+        currentAmount={currentAmount}
+        maxAmount={parseFloat(maxAmount)}
+        mode={mode}
+        onSubmit={handleSubmit}
+      />
     </View>
   );
 }
@@ -257,14 +262,14 @@ const TransactionCard = ({
       return; // Reject invalid numeric input
     }
 
-    if(!value.endsWith(".")){
+    if (!value.endsWith(".")) {
       let numericValue = parseFloat(value);
       // Update amount based on currentMode
       numericValue = Math.abs(numericValue) * currentMultiplier;
-  
+
       // Respect the global mode and ensure the maxAmount respects the global mode
       const remainingAmount = maxAmount * globalMultiplier - currentAmount + transaction.amount + numericValue;
-  
+
       // Adjust the numeric value based on remaining amount
       if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
         numericValue = currentMultiplier * remainingAmount;
@@ -274,9 +279,9 @@ const TransactionCard = ({
       setGroup(prev => {
         const prevAmount = prev.transactions[id].amount || 0;
         const difference = numericValue - prevAmount;
-  
+
         setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
-  
+
         return {
           ...prev,
           transactions: {
@@ -285,9 +290,9 @@ const TransactionCard = ({
           },
         };
       });
-    }else{
-      console.log("I'm here", value)
-      setGroup(prev => {  
+    } else {
+      console.log("I'm here", value);
+      setGroup(prev => {
         return {
           ...prev,
           transactions: {
@@ -331,10 +336,10 @@ const TransactionCard = ({
         value={Math.abs(transaction.amount).toString()} // Always display absolute value
         onChange={value => {
           let numericAmount = value
-          .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
-          .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-          .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
-          .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+            .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+            .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+            .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+            .replace(/^0+(?=\d)/, ""); // Remove leading zeros
 
           handleAmountChange(numericAmount);
         }}
