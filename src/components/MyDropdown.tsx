@@ -9,6 +9,7 @@ interface OptionItem {
   value: any;
   icon?: any;
   iconColorClass?: string;
+  textColorClass?: string;
   disabled?: boolean;
   group?: string;
   details?: string; 
@@ -219,7 +220,7 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
         className={`text-base ${option.iconColorClass ? option.iconColorClass : "text-black"}`}
       />
     )}
-    <Text className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>{option.label}</Text>
+    <Text className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"} ${option.textColorClass ? `text-${option.textColorClass}` : "text-black"}`}>{option.label}</Text>
     {!isModal && option.details && (
       <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}> - </Text>
     )}

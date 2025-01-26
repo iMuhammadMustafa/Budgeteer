@@ -10,6 +10,7 @@ import { useNotifications } from "../../providers/NotificationsProvider";
 import { TableNames } from "../../consts/TableNames";
 import MyDropDown from "../MyDropdown";
 import IconPicker from "../IconPicker";
+import { Box } from "@/components/ui/box";
 
 export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
 
@@ -50,23 +51,46 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         <TextInputField label="Name" value={formData.name} onChange={name => handleFieldChange("name", name)} />
         <TextInputField label="Owner" value={formData.owner} onChange={owner => handleFieldChange("owner", owner)} />
 
-        <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Category"
-          options={
-            accountCategories?.map(item => ({
-              id: item.id,
-              label: item.name,
-              group: item.type,
-              value: item.id,
-              icon: item.icon,
-            })) ?? []
-          }
-          selectedValue={formData.categoryid}
-          groupBy="type"
-          onSelect={value => {
-            handleFieldChange("categoryid", value?.value);
-          }}
+        <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+          <MyDropDown
+                    isModal={Platform.OS !== "web"}
+                    label="Category"
+                    options={
+                      accountCategories?.map(item => ({
+                        id: item.id,
+                        label: item.name,
+                        group: item.type,
+                        value: item.id,
+                        icon: item.icon,
+                      })) ?? []
+                    }
+                    selectedValue={formData.categoryid}
+                    groupBy="type"
+                    onSelect={value => {
+                      handleFieldChange("categoryid", value?.value);
+                    }}
+                  />
+          <MyDropDown
+            isModal={Platform.OS !== "web"}
+            label="Color"
+            options={
+              [
+                {id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100"},
+                {id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100"},
+                {id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100"},
+                {id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100"},
+              ]
+            }
+            selectedValue={formData.iconColor}
+            onSelect={value => {
+              handleFieldChange("iconColor", value?.value);
+            }}
+          />
+        </Box>
+        <IconPicker
+          onSelect={icon => setFormData(prevFormData => ({ ...prevFormData, icon }))}
+          label="Icon"
+          initialIcon={formData.icon ?? "CircleHelp"}
         />
 
         <TextInputField
@@ -88,12 +112,6 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         /> */}
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
-
-        <IconPicker
-          onSelect={icon => setFormData(prevFormData => ({ ...prevFormData, icon }))}
-          label="Icon"
-          initialIcon={formData.icon ?? "CircleHelp"}
-        />
 
         <Button className="p-3 flex justify-center items-center" disabled={isLoading} onPress={handleSubmit}>
           {isLoading ? <ButtonSpinner /> : <ButtonText className="font-medium text-sm ml-2">Save</ButtonText>}

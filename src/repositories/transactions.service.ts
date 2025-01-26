@@ -32,6 +32,7 @@ import { queryClient } from "../providers/QueryProvider";
 import { MultiTransactionGroup } from "../consts/Types";
 import dayjs from "dayjs";
 import day from "react-native-calendars/src/calendar/day";
+import generateUuid from "../lib/uuidHelper";
 
 interface CategorizedTransactions {
   categories: {
@@ -562,11 +563,9 @@ export const handleUpdateTransaction = async (
     updatedTransferTransaction &&
     (originalTransaction.type === "Transfer" || fullFormTransaction.type === "Transfer" || updatedTransferAccount.id)
   ) {
-    console.log("updatedTransferTransaction", updatedTransferTransaction);
     updateTransferTransaction(updatedTransferTransaction);
   }
   if (updatedTransferAccount.id) {
-    console.log("updatedTransferAccount", updatedTransferAccount);
     updateAccount(updatedTransferAccount);
   }
 };
@@ -595,6 +594,7 @@ export const useCreateTransactions = () => {
           if (!key) return;
           const transaction: Inserts<TableNames.Transactions> = {
             // id:key,
+            id: generateUuid(),
             date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
             description: transactionsGroup.description,
             type: transactionsGroup.type as any,

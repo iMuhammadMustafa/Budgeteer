@@ -188,7 +188,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         <MyDateTimePicker
           label="Date"
           date={formData.date}
-          onChange={params => handleTextChange("date", params.date)}
+          onChange={params => {
+            const formatedDate = dayjs(params.date).toISOString();
+            handleTextChange("date", formatedDate)
+          }}
         />
 
         <Box className="flex-row justify-center items-center">
@@ -234,61 +237,49 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </Box>
 
-        <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Type"
-          options={[
-            { id: "Income", label: "Income", value: "Income", disabled: isEdit },
-            { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
-            { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
-            { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
-            { id: "Initial", label: "Initial", value: "Initial", disabled: true },
-            { id: "Refund", label: "Refund", value: "Refund", disabled: true },
-          ]}
-          selectedValue={formData.type}
-          onSelect={value => {
-            handleTextChange("type", value?.value);
-          }}
-        />
-
-        <MyCategoriesDropdown
-          selectedValue={formData.categoryid}
-          categories={categories}
-          onSelect={value => handleTextChange("categoryid", value.id)}
-          isModal={Platform.OS !== "web"}
-        />
-
-        <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Account"
-          selectedValue={formData.accountid}
-          options={
-            accounts?.map(account => ({
-              id: account.id,
-              label: account.name,
-              details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}`,
-              value: account,
-              passedItem: account,
-              icon: account.icon,
-              iconColorClass: `text-${account.iconColor?.replace("100", "500") ?? "gray-500"}`,
-              group: account.category.name,
-            })) ?? []
-          }
-          groupBy="group"
-          onSelect={(value: any) => {
-            handleTextChange("accountid", value.id);
-            setSourceAccount(value.value);
-          }}
-        />
-
-        {formData.type === "Transfer" && (
+        <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
           <MyDropDown
             isModal={Platform.OS !== "web"}
-            label="Destinaton Account"
-            selectedValue={formData.transferaccountid}
+            label="Type"
+            options={[
+              { id: "Income", label: "Income", value: "Income", disabled: isEdit },
+              { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
+              { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
+              { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
+              { id: "Initial", label: "Initial", value: "Initial", disabled: true },
+              { id: "Refund", label: "Refund", value: "Refund", disabled: true },
+            ]}
+            selectedValue={formData.type}
+            onSelect={value => {
+              handleTextChange("type", value?.value);
+            }}
+          />
+          <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Status"
+          options={[
+            { id: "None", label: "None", value: "None" },
+            { id: "Cleared", label: "Cleared", value: "Cleared" },
+            { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
+            { id: "Void", label: "Void", value: "Void" },
+          ]}
+          selectedValue={formData.status}
+          onSelect={value => handleTextChange("status", value?.value)}
+          />
+        </Box>
+
+        <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+          <MyCategoriesDropdown
+            selectedValue={formData.categoryid}
+            categories={categories}
+            onSelect={value => handleTextChange("categoryid", value.id)}
+            isModal={Platform.OS !== "web"}
+          />
+
+          <MyDropDown
+            isModal={Platform.OS !== "web"}
+            label="Account"
+            selectedValue={formData.accountid}
             options={
               accounts?.map(account => ({
                 id: account.id,
@@ -300,30 +291,48 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 value: account,
                 passedItem: account,
                 icon: account.icon,
-                iconColorClass: `text-${account.iconColor.replace("100", "500")}`,
+                iconColorClass: `text-${account.iconColor?.replace("100", "500") ?? "gray-500"}`,
                 group: account.category.name,
               })) ?? []
             }
             groupBy="group"
             onSelect={(value: any) => {
-              handleTextChange("transferaccountid", value.id);
-              setDestinationAccount(value.value);
+              console.log(value);
+              handleTextChange("accountid", value.id);
+              setSourceAccount(value.value);
             }}
           />
-        )}
+          {formData.type === "Transfer" && (
+            <MyDropDown
+              isModal={Platform.OS !== "web"}
+              label="Destinaton Account"
+              selectedValue={formData.transferaccountid}
+              options={
+                accounts?.map(account => ({
+                  id: account.id,
+                  label: account.name,
+                  details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  })}`,
+                  value: account,
+                  passedItem: account,
+                  icon: account.icon,
+                  iconColorClass: `text-${account.iconColor.replace("100", "500")}`,
+                  group: account.category.name,
+                })) ?? []
+              }
+              groupBy="group"
+              onSelect={(value: any) => {
+                handleTextChange("transferaccountid", value.id);
+                setDestinationAccount(value.value);
+              }}
+            />
+          )}
+        </Box>
 
-        <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Status"
-          options={[
-            { id: "None", label: "None", value: "None" },
-            { id: "Cleared", label: "Cleared", value: "Cleared" },
-            { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
-            { id: "Void", label: "Void", value: "Void" },
-          ]}
-          selectedValue={formData.status}
-          onSelect={value => handleTextChange("status", value?.value)}
-        />
+
+
 
         <TextInputField
           label="Tags"

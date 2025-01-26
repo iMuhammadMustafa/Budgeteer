@@ -11,6 +11,8 @@ import { MultiTransactionGroup, MultiTransactionItem } from "@/src/consts/Types"
 import { TransactionFormType, useCreateTransactions } from "@/src/repositories/transactions.service";
 import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
 import Icon from "@/src/lib/IonIcons";
+import { useNotifications } from "@/src/providers/NotificationsProvider";
+import { useRouter } from "expo-router";
 
 const groupId = generateUuid();
 const initalState: MultiTransactionGroup = {
@@ -40,6 +42,9 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
   const { data: accounts, isLoading: isAccountsLoading } = useGetAccounts();
   const submitAllMutation = useCreateTransactions();
+  const { addNotification } = useNotifications();
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   if (isCategoriesLoading || isAccountsLoading) return <ActivityIndicator size="large" color="#0000ff" />;
 
@@ -72,10 +77,22 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   }, [transaction]);
 
   const handleSubmit = async () => {
+    setIsLoading(true);
     await submitAllMutation.mutateAsync({
       transactionsGroup: group,
       totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
-    });
+    }, 
+    {
+      onSuccess: () => {
+        addNotification({
+          message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
+          type: "success",
+        });
+        setIsLoading(false);
+        router.replace("/Transactions");
+      },
+    },);
+    
   };
 
   return (
@@ -134,23 +151,33 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           label="Type"
           onSelect={value => setGroup({ ...group, type: value?.value ?? "Expense" })}
         />
-
         <MyDropDown
+          isModal
+          label="Account"
+          selectedValue={group.accountid}
+          onSelect={value => setGroup({ ...group, accountid: value?.id || "" })}
           options={
             accounts?.map(account => ({
               id: account.id,
               label: account.name,
-              details: `${account.owner} - $ ${account.balance}`,
+              details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}`,
               value: account,
               passedItem: account,
               icon: account.icon,
+              iconColorClass: `text-${account.iconColor?.replace("100", "500") ?? "gray-500"}`,
+              group: account.category.name,
             })) ?? []
           }
-          label="Account"
-          selectedValue={group.accountid}
-          onSelect={value => setGroup({ ...group, accountid: value?.id || "" })}
-          isModal
+          groupBy="group"
+          // onSelect={(value: any) => {
+          //   handleTextChange("accountid", value.id);
+          //   setSourceAccount(value.value);
+          // }}
         />
+
       </View>
 
       <TransactionsCreationList
@@ -284,14 +311,14 @@ const TransactionCard = ({
       // Update group and current amount
       setGroup(prev => {
         const prevAmount = Number.parseFloat(prev.transactions[id].amount.toString()) || 0;
-        const difference = numericValue - prevAmount;
+        const difference = (numericValue - prevAmount).toFixed(2);
         // console.log("prev.transactions[id].amount", prev.transactions[id].amount);
         // console.log("numericValue", numericValue);
         // console.log("prevAmount", prevAmount);
         // console.log("difference", difference);
 
         // console.log("currentAmount Should be ", currentAmount + difference);
-        setCurrentAmount(prev => prev + difference); // Update current amount based on the difference
+        setCurrentAmount(prev => prev + parseFloat(difference)); // Update current amount based on the difference
 
         return {
           ...prev,
