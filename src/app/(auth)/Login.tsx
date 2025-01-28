@@ -16,6 +16,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({
       email: user?.email,
       password: user?.password,
+      tenantid: "12345678"
     });
 
     if (error) Alert.alert(error.message);

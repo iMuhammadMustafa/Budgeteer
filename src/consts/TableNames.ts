@@ -5,6 +5,7 @@ export enum TableNames {
   UserAccounts = "useraccounts",
   Profiles = "profiles",
   AccountCategories = "accountscategories",
+  CategoryGroups = "categorygroups"
 }
 
 export enum ViewNames {
@@ -13,7 +14,6 @@ export enum ViewNames {
   TransactionDistinct = "transactiondistinct",
   MonthlyTransactions = "monthlycategorytransactions",
   DailyTransactionsSummary = "dailytransactions",
-  CategoryGroups = "categorygroups"
 }
 export enum FunctionNames {
   UpdateAccountBalance = "updateaccountbalance",
@@ -27,6 +27,7 @@ export const transactionsKeys = {
     TableNames.UserAccounts,
     TableNames.Profiles,
     TableNames.AccountCategories,
+    TableNames.CategoryGroups,
     ViewNames.TransactionsView,
     ViewNames.TransactionDistinct,
     ViewNames.MonthlyTransactions,

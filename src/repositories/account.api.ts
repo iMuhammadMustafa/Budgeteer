@@ -9,7 +9,7 @@ export const getAllAccounts = async () => {
     .eq("isdeleted", false)
     .order("category(displayorder)", { ascending: true })
     .order("name")
-    .order("owner");
+    .order("owner");  
   if (error) throw new Error(error.message);
   return data;
 };
