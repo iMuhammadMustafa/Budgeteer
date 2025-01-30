@@ -2,13 +2,17 @@ import { useState } from "react";
 import { View, Platform } from "react-native";
 import { useGetCategories, useDeleteCategory } from "@/src/repositories/categories.service";
 import { TabView, SceneMap } from "react-native-tab-view";
-import { PageHeader, Tab, TabHeader } from "@/src/components/MyTabs";
-
-
+import { Tab, TabHeader } from "@/src/components/MyTabs";
+import { useQueryClient } from "@tanstack/react-query";
+import { TableNames } from "@/src/consts/TableNames";
+import { useDeleteCategoryGroup, useGetCategoryGroups } from "@/src/repositories/categorygroups.service";
 
 export default function CategoriesGroups() {
-  const { data: categories, isLoading, error } = useGetCategories();
+  const queryClient = useQueryClient();
+  const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useGetCategories();
+  const { data: groups, isLoading: isGroupsLoading, error: groupsError } = useGetCategoryGroups();
   const { mutate: deleteCategory } = useDeleteCategory();
+  const { mutate: deleteCategoryGroup } = useDeleteCategoryGroup();
 
   const [index, setIndex] = useState(0);
   const [routes] = useState([
@@ -16,24 +20,56 @@ export default function CategoriesGroups() {
     { key: "second", title: "Groups" },
   ]);
 
+  const refreshGroups = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.CategoryGroups] });
+  };
+  const refreshCategories = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.Categories] });
+  };
+
   return (
     <TabView
       navigationState={{ index, routes }}
       tabBarPosition="top"
       lazy={true}
       renderScene={SceneMap({
-        first: () => <Tab items={categories} isLoading={isLoading} error={error} deleteItem={deleteCategory} upsertUrl={"/Categories/Upsert?categoryId="} selectable />,
-        second: () => <Tab items={uniqueValues(categories)} isLoading={isLoading} error={error} deleteItem={deleteCategory} upsertUrl={"/Categories/Upsert?categoryId="} />,
+        first: () => (
+          <Tab
+            title="Categories"
+            items={categories}
+            isLoading={isCategoriesLoading}
+            error={categoriesError}
+            deleteItem={deleteCategory}
+            upsertUrl={"/Categories/Upsert?categoryId="}
+            selectable
+            refreshQueries={refreshCategories}
+          />
+        ),
+        second: () => (
+          <Tab
+            title="Groups"
+            items={groups}
+            isLoading={isGroupsLoading}
+            error={groupsError}
+            deleteItem={deleteCategoryGroup}
+            upsertUrl={"/Categories/Groups/Upsert?categoryId="}
+            selectable
+            refreshQueries={refreshGroups}
+          />
+        ),
       })}
       onIndexChange={setIndex}
       className="bg-background"
       renderTabBar={props => {
         return (
           <View className={`bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-            <PageHeader title="Categories & Groups" upsertLink={["/Categories/Upsert"]}/>
-            <View className="flex-row border-b border-gray-200 bg-background">
-              <TabHeader title="Categories" isSelected = {props.navigationState.index === 0} onPress={() => setIndex(0)} />
-              <TabHeader title="Groups" isSelected = {props.navigationState.index === 1} onPress={() => setIndex(1)} />
+            <View className="flex-row border-b mt-3 border-gray-200 bg-background">
+              <TabHeader
+                title="Categories"
+                isSelected={props.navigationState.index === 0}
+                onPress={() => setIndex(0)}
+              />
+              <TabHeader title="Groups" isSelected={props.navigationState.index === 1} onPress={() => setIndex(1)} />
             </View>
           </View>
         );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inserts, Updates } from "../../lib/supabase";
-import { useGetCategoryGroups, useUpsertCategory } from "../../repositories/categories.service";
+import { useUpsertCategory } from "../../repositories/categories.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import { Platform, SafeAreaView, ScrollView, Text } from "react-native";
@@ -10,6 +10,7 @@ import IconPicker from "../IconPicker";
 import { TableNames } from "../../consts/TableNames";
 import MyDropDown, { MyTransactionTypesDropdown } from "../MyDropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
+import { useGetCategoryGroups } from "@/src/repositories/categorygroups.service";
 
 export type CategoryFormType = Inserts<TableNames.Categories> | Updates<TableNames.Categories>;
 
@@ -38,21 +39,21 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
-  if(iscategoryGroupLoading) return <Text>Loading...</Text>
+  if (iscategoryGroupLoading) return <Text>Loading...</Text>;
 
-  const groups: SearchableDropdownItem[] = categoryGroups 
-                                ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item }))
-                                : [];
+  // const groups: SearchableDropdownItem[] = categoryGroups
+  //                               ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item }))
+  //                               : [];
 
-  const filterGroups = (val: string)=>{
-    const res =  groups.filter(i => i.label.toLowerCase().includes(val.toLowerCase()))
-    return res;
-  }
+  // const filterGroups = (val: string)=>{
+  //   const res =  groups.filter(i => i.label.toLowerCase().includes(val.toLowerCase()))
+  //   return res;
+  // }
 
   return (
     <SafeAreaView className="p-5 flex-1">
       <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
-        <SearchableDropdown
+        {/* <SearchableDropdown
           label="Group"
           searchAction={val => filterGroups(val)}
           initalValue={category.group}
@@ -64,14 +65,34 @@ export default function CategoryForm({ category }: { category: CategoryFormType 
             handleTextChange("group", val)
           }}
           onPress={() => groups}
+        /> */}
+
+        <MyDropDown
+          isModal={Platform.OS !== "web"}
+          label="Category"
+          options={
+            categoryGroups?.map(item => ({
+              id: item.id,
+              label: item.name,
+              group: item.type,
+              value: item.id,
+              icon: item.icon,
+            })) ?? []
+          }
+          selectedValue={formData.groupid}
+          groupBy="type"
+          onSelect={value => {
+            handleTextChange("groupid", value?.value);
+          }}
         />
+
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
 
-        <MyTransactionTypesDropdown 
-        selectedValue={formData.type}
-        onSelect={value => handleTextChange("type", value?.value)} 
-        isModal={Platform.OS !== "web" }/>
-
+        <MyTransactionTypesDropdown
+          selectedValue={formData.type}
+          onSelect={value => handleTextChange("type", value?.value)}
+          isModal={Platform.OS !== "web"}
+        />
 
         <TextInputField
           label="Description"

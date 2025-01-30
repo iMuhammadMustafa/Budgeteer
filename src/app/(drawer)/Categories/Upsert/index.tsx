@@ -2,7 +2,7 @@ import CategoryForm, { CategoryFormType } from "@/src/components/pages/CategoryF
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
 import { useGetCategoryById } from "@/src/repositories/categories.service";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useState, useEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";
 
@@ -17,6 +17,9 @@ const initialState: Inserts<TableNames.Categories> | Updates<TableNames.Categori
 
 export default function Upsert() {
   const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
+
+  useNavigation().setOptions({ title: `${categoryId ? "Update" : "Add"} Category` });
+
   const [initialValues, setInitialValues] = useState<CategoryFormType>(initialState);
 
   const { data: category, isLoading, error } = useGetCategoryById(categoryId);

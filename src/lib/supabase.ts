@@ -19,6 +19,7 @@ export type AccountsCategory = Tables<"accountscategories">;
 export type TransactionTypes = Enums<"transactiontype">;
 export type AccountCategoryTypes = Enums<"accountcategorytype">;
 export type Configurations = Tables<"configurations">;
+export type CategoryGroup = Tables<"categorygroups">;
 // export type TransactionsCategoryTypeDateSum = Views<"transactionscategoryandtypedatesum">;
 // export type TransactionsDaySum = Views<"transactionsdaysum">;
 // export type TransactionsCategoryDateSum = Views<"transactionscategorydatesum">;
@@ -26,7 +27,7 @@ export type MonthlyTransactions = Views<"monthlycategorytransactions">;
 export type DailyTransactionsSummary = Views<"dailytransactions">;
 export type TransactionDistinct = Views<"transactiondistinct">;
 export type TransactionsView = Views<"transactionsview">;
-export type CategoryGroup = Views<"categorygroups">;
+// export type CategoryGroup = Views<"categorygroups">;
 
 class SupabaseStorage {
   async getItem(key: string) {

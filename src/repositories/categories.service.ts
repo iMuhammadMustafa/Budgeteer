@@ -44,12 +44,12 @@ export const useGetCategoryById = (id?: string) => {
     enabled: !!id,
   });
 };
-export const useGetCategoryGroups = () => {
-  return useQuery<CategoryGroup[]>({
-    queryKey: [ViewNames.CategoryGroups],
-    queryFn: async () => getCategoryAndGroups(),
-  });
-};
+// export const useGetCategoryGroups = () => {
+//   return useQuery<CategoryGroup[]>({
+//     queryKey: [TableNames.categor],
+//     queryFn: async () => getCategoryAndGroups(),
+//   });
+// };
 
 export const useUpsertCategory = () => {
   const queryClient = useQueryClient();
