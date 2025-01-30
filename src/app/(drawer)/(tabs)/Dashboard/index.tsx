@@ -1,4 +1,4 @@
-import { View, ScrollView, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, ScrollView, SafeAreaView, ActivityIndicator, LogBox } from "react-native";
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
 import useDashboard from "./useDashboard";

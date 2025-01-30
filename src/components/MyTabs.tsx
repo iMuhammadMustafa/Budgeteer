@@ -12,7 +12,7 @@ export function Tab({
   deleteItem,
   upsertUrl,
   selectable = false,
-  refreshQueries
+  refreshQueries,
 }: {
   title: string;
   items: any;
@@ -21,7 +21,7 @@ export function Tab({
   deleteItem: any;
   upsertUrl: Href;
   selectable?: boolean;
-  refreshQueries: () => void
+  refreshQueries: () => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -51,7 +51,7 @@ export function Tab({
 
   return (
     <View className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries = {refreshQueries} />
+      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={refreshQueries} />
       <ScrollView className="flex-1">
         {items?.map((item: any) => {
           return (
@@ -80,17 +80,24 @@ export function Tab({
   );
 }
 
-export function PageHeader({ title, upsertLink, refreshQueries }: { title: string; upsertLink: Array<Href>, refreshQueries: () => void }) {
+export function PageHeader({
+  title,
+  upsertLink,
+  refreshQueries,
+}: {
+  title: string;
+  upsertLink: Array<Href>;
+  refreshQueries: () => void;
+}) {
   return (
     <View className="flex-row justify-between items-center p-2 px-4 bg-background">
       <Text className="font-bold text-foreground">{title}</Text>
       <View className="flex-row gap-2 items-center">
-        {
-          refreshQueries && (
-            <Pressable onPress={refreshQueries}>
-              <Icon name="RefreshCw" className="text-foreground" size={20} />
-            </Pressable>)
-        }
+        {refreshQueries && (
+          <Pressable onPress={refreshQueries}>
+            <Icon name="RefreshCw" className="text-foreground" size={20} />
+          </Pressable>
+        )}
         {upsertLink &&
           upsertLink.map(link => {
             return (

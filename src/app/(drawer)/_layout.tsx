@@ -1,10 +1,13 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Drawer } from "expo-router/drawer";
 import Icon from "@/src/lib/IonIcons";
-import { ActivityIndicator, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
+import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
+import { View } from "lucide-react-native";
+import { supabase } from "@/src/lib/supabase";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -22,7 +25,6 @@ export default function DrawerLayout() {
         screenOptions={{
           drawerType: "slide",
           headerTintColor: isDarkMode ? "white" : "black",
-
           headerRight: () => {
             return (
               <TouchableOpacity
@@ -40,6 +42,33 @@ export default function DrawerLayout() {
             );
           },
         }}
+        drawerContent={props => (
+          <DrawerContentScrollView {...props} className="flex-1">
+            <DrawerItemList {...props} />
+            <DrawerItem
+              //style as button
+              style={[
+                {
+                  alignSelf: "center",
+                },
+              ]}
+              label="Logout"
+              onPress={() => {
+                supabase.auth.signOut();
+                router.navigate("/(auth)/Login");
+              }}
+            />
+            <DrawerItem
+              style={[
+                {
+                  alignSelf: "center",
+                },
+              ]}
+              label="Version 0.5.0"
+              onPress={() => {}}
+            />
+          </DrawerContentScrollView>
+        )}
       >
         <Drawer.Screen
           name="(tabs)" // This is the name of the page and must match the url from root
@@ -57,22 +86,6 @@ export default function DrawerLayout() {
             drawerIcon: ({ color }) => <Icon name="Landmark" color={color} size={24} />,
           }}
         />
-
-        {/* <Drawer.Screen
-          name="Accounts/Categories"
-          options={{
-            drawerLabel: "Account Types",
-            title: "Account Types",
-            drawerIcon: ({ color }) => <Icon name="Landmark" color={color} size={24} />,
-          }}
-        /> */}
-        {/* <Drawer.Screen
-          name="Accounts/Upsert/[accountId]"
-          options={{
-            title: "Account",
-            drawerItemStyle: { display: "none" },
-          }}
-        /> */}
         <Drawer.Screen
           name="Categories"
           options={{

@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/providers/AuthProvider";
-import { Redirect, Slot, Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator } from "react-native";
 
 export default function AuthLayout() {
