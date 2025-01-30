@@ -1,4 +1,4 @@
-import { TableNames, ViewNames } from "../consts/TableNames";
+import { TableNames } from "../consts/TableNames";
 import { supabase, Inserts, Updates } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 

@@ -1,7 +1,12 @@
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { CategoryGroup, Inserts, supabase, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
-import { updateCategoryGroup, createCategoryGroup, deleteCategoryGroup, restoreCategoryGroup } from "./categorygroups.api";
+import {
+  updateCategoryGroup,
+  createCategoryGroup,
+  deleteCategoryGroup,
+  restoreCategoryGroup,
+} from "./categorygroups.api";
 import { TableNames, ViewNames } from "../consts/TableNames";
 
 export const useGetCategoryGroups = () => {
@@ -37,12 +42,6 @@ export const useGetCategoryGroupById = (id?: string) => {
     enabled: !!id,
   });
 };
-export const useGetCategoryGroups = () => {
-  return useQuery<CategoryGroup[]>({
-    queryKey: [ViewNames.CategoryGroups],
-    queryFn: async () => getCategoryGroups()
-  });
-};
 
 export const useUpsertCategoryGroup = () => {
   const queryClient = useQueryClient();
@@ -57,6 +56,7 @@ export const useUpsertCategoryGroup = () => {
 
       formCategoryGroup.createdby = user?.id;
       formCategoryGroup.createdat = new Date().toISOString();
+      formCategoryGroup.tenantid = user?.user_metadata.tenantid;
       return await createCategoryGroup(formCategoryGroup as Inserts<TableNames.CategoryGroups>);
     },
     onSuccess: async () => {
@@ -69,7 +69,7 @@ export const useDeleteCategoryGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await updateCategoryGroupTransactionsDelete(id, session);
+      // await updateCategoryGroupTransactionsDelete(id, session);
 
       return await deleteCategoryGroup(id, session);
     },

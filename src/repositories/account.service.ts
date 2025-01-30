@@ -12,6 +12,7 @@ import {
 } from "./account.api";
 import { TableNames } from "../consts/TableNames";
 import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
+import { Session, User } from "@supabase/supabase-js";
 
 export const useGetAccounts = () => {
   return useQuery<Account[]>({
@@ -45,9 +46,9 @@ export const useUpsertAccount = () => {
       originalData?: Account;
     }) => {
       if (formAccount.id) {
-        return await upsertUpdateAccount(formAccount, session.user.id, originalData);
+        return await upsertUpdateAccount(formAccount, session, originalData);
       }
-      return await upsertCreateAccount(formAccount, session.user.id);
+      return await upsertCreateAccount(formAccount, session);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -100,10 +101,10 @@ export const useRestoreAccount = () => {
 
 const upsertUpdateAccount = async (
   formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
-  userId: string,
+  session: Session,
   originalData?: Account,
 ) => {
-  formAccount.updatedby = userId;
+  formAccount.updatedby = session.user.id;
   formAccount.updatedat = new Date().toISOString();
 
   if (originalData && formAccount.balance && formAccount.balance !== originalData.balance) {
@@ -113,7 +114,8 @@ const upsertUpdateAccount = async (
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
       type: "Adjustment",
       description: "Balance Adjustment",
-      createdby: originalData.createdby,
+      createdby: session.user.id,
+      tenantid: session.user.user_metadata.tenantid,
       date: new Date().toISOString(),
     });
   }
@@ -122,19 +124,24 @@ const upsertUpdateAccount = async (
 };
 const upsertCreateAccount = async (
   formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
-  userId: string,
+  session: Session,
 ) => {
-  formAccount.createdby = userId;
-  formAccount.createdat = new Date().toISOString();
+  let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
 
-  const newAcc = await createAccount(formAccount as Inserts<TableNames.Accounts>);
+  formAccount.createdat = new Date().toISOString();
+  formAccount.createdby = userId;
+  formAccount.tenantid = tenantid;
+
+  const newAcc = await createAccount(formAccount as Inserts<TableNames.Accounts>, session);
   await createTransaction({
     amount: formAccount.balance ?? 0,
     accountid: newAcc.id,
-    categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9", 
+    categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     type: "Initial",
     description: "Account Opened",
-    createdby: formAccount.createdby!,
+    createdby: userId,
+    tenantid: tenantid,
     date: formAccount.createdat,
   });
 
@@ -144,7 +151,7 @@ const upsertCreateAccount = async (
 export const useGetAccountOpenBalance = (id?: string) => {
   return useQuery<any>({
     queryKey: [TableNames.Accounts, id],
-    queryFn: async () => getAccountOpenBalance(id),
+    queryFn: async () => getAccountOpenBalance(id!),
     enabled: !!id,
   });
 };

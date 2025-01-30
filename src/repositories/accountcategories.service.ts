@@ -26,8 +26,13 @@ export const useGetAccountCategoryById = (id?: string) => {
 };
 
 export const useUpsertAccountCategory = () => {
+  const { session } = useAuth();
   return useMutation({
     mutationFn: async (formAccountCategory: AccountsCategory) => {
+      formAccountCategory.updatedby = session?.user.id as string;
+      formAccountCategory.updatedat = new Date().toISOString();
+      formAccountCategory.tenantid = session?.user.user_metadata.tenantid;
+
       if (formAccountCategory.id) {
         return await updateAccountCategory(formAccountCategory);
       }

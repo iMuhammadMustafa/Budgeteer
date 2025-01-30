@@ -5,7 +5,6 @@ import {
   Inserts,
   MonthlyTransactions,
   supabase,
-  Transaction,
   TransactionsView,
   Updates,
 } from "@/src/lib/supabase";
@@ -16,7 +15,6 @@ import {
   updateTransaction,
   createTransaction,
   deleteTransaction,
-  restoreTransaction,
   getAllTransactions,
   getTransactionByTransferId,
   getTransactionsByDescription,
@@ -26,12 +24,10 @@ import {
   createTransactions,
   updateTransferTransaction,
 } from "./transactions.api";
-import { getAccountById, updateAccount, updateAccountBalance, updateAccountBalanceFunction } from "./account.api";
+import { getAccountById, updateAccount, updateAccountBalanceFunction } from "./account.api";
 import { SearchableDropdownItem } from "../components/SearchableDropdown";
-import { queryClient } from "../providers/QueryProvider";
 import { MultiTransactionGroup } from "../consts/Types";
 import dayjs from "dayjs";
-import day from "react-native-calendars/src/calendar/day";
 import generateUuid from "../lib/uuidHelper";
 
 interface CategorizedTransactions {
@@ -116,13 +112,10 @@ export const useUpsertTransaction = () => {
       const userId = session!.user.id;
 
       if (!fullFormTransaction.id || !originalData) {
-        return await handleNewTransaction(
-          fullFormTransaction,
-          sourceAccount!,
-          destinationAccount,
-          currentTimestamp,
-          userId,
-        );
+        fullFormTransaction.createdby = userId;
+        fullFormTransaction.createdat = currentTimestamp;
+        fullFormTransaction.tenantid = session!.user.user_metadata.tenantid;
+        return await handleNewTransaction(fullFormTransaction, sourceAccount!);
       }
 
       return await handleUpdateTransaction(
@@ -240,13 +233,7 @@ export const useDeleteTransaction = () => {
 //   });
 // };
 
-const handleNewTransaction = async (
-  fullFormTransaction: TransactionFormType,
-  sourceAccount: Account,
-  destinationAccount: Account | null,
-  currentTimestamp: string,
-  userId: string,
-) => {
+const handleNewTransaction = async (fullFormTransaction: TransactionFormType, sourceAccount: Account) => {
   let amount = fullFormTransaction.amount;
 
   const formTransaction = {
@@ -261,9 +248,11 @@ const handleNewTransaction = async (
     tags: fullFormTransaction.tags,
     transferaccountid: fullFormTransaction.transferaccountid ?? undefined,
     tenantid: fullFormTransaction.tenantid,
+    createdby: fullFormTransaction.createdby,
+    createdat: fullFormTransaction.createdat,
   };
 
-  const createdTransaction = await createTransaction(formTransaction);
+  const createdTransaction = await createTransaction(formTransaction as Inserts<TableNames.Transactions>);
 
   if (createdTransaction && amount && amount !== 0 && fullFormTransaction.status === "None") {
     const updatedSrcAcc = await updateAccountBalanceFunction(sourceAccount.id, amount);
@@ -285,9 +274,15 @@ const handleNewTransaction = async (
       transferaccountid: fullFormTransaction.accountid,
     };
 
-    const createdDestTransaction = await createTransaction(transferTransaction);
+    const createdDestTransaction = await createTransaction(transferTransaction as Inserts<TableNames.Transactions>);
 
-    if (createdDestTransaction && amount && amount !== 0 && fullFormTransaction.status === "None") {
+    if (
+      createdDestTransaction &&
+      amount &&
+      amount !== 0 &&
+      fullFormTransaction.status === "None" &&
+      fullFormTransaction.transferaccountid
+    ) {
       const updatedDestAcc = await updateAccountBalanceFunction(
         fullFormTransaction.transferaccountid,
         transferTransaction.amount,
@@ -589,31 +584,29 @@ export const useCreateTransactions = () => {
       const userId = session!.user.id;
       const createdat = new Date().toISOString();
 
-      const transactions: Inserts<TableNames.Transactions>[] = Object.keys(transactionsGroup.transactions).map(
-        (key, index) => {
-          if (!key) return;
-          const transaction: Inserts<TableNames.Transactions> = {
-            // id:key,
-            id: generateUuid(),
-            date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
-            description: transactionsGroup.description,
-            type: transactionsGroup.type as any,
-            status: transactionsGroup.status,
-            accountid: transactionsGroup.accountid,
-            createdby: userId,
-            createdat: dayjs(createdat).add(index, "millisecond").toISOString(),
-            amount: transactionsGroup.transactions[key].amount,
-            categoryid: transactionsGroup.transactions[key].categoryid,
-            notes: transactionsGroup.transactions[key].notes,
-            tags: transactionsGroup.transactions[key].tags,
-            groupid: transactionsGroup.groupid,
-          };
+      const transactions = Object.keys(transactionsGroup.transactions).map((key, index) => {
+        if (!key) return;
+        const transaction: Inserts<TableNames.Transactions> = {
+          // id:key,
+          id: generateUuid(),
+          date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
+          description: transactionsGroup.description,
+          type: transactionsGroup.type as any,
+          status: transactionsGroup.status,
+          accountid: transactionsGroup.accountid,
+          createdby: userId,
+          createdat: dayjs(createdat).add(index, "millisecond").toISOString(),
+          amount: transactionsGroup.transactions[key].amount,
+          categoryid: transactionsGroup.transactions[key].categoryid,
+          notes: transactionsGroup.transactions[key].notes,
+          tags: transactionsGroup.transactions[key].tags,
+          groupid: transactionsGroup.groupid,
+        };
 
-          return transaction;
-        },
-      );
+        return transaction;
+      });
 
-      const createdTransactions = await createTransactions(transactions);
+      const createdTransactions = await createTransactions(transactions as Inserts<TableNames.Transactions>[]);
 
       if (transactionsGroup.originalTransactionId) {
         await deleteTransaction(transactionsGroup.originalTransactionId);

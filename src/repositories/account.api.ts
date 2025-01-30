@@ -9,7 +9,7 @@ export const getAllAccounts = async () => {
     .eq("isdeleted", false)
     .order("category(displayorder)", { ascending: true })
     .order("name")
-    .order("owner");  
+    .order("owner");
   if (error) throw new Error(error.message);
   return data;
 };
@@ -23,7 +23,7 @@ export const getAccountById = async (id?: string) => {
   if (error) throw new Error(error.message);
   return data;
 };
-export const createAccount = async (account: Inserts<TableNames.Accounts>) => {
+export const createAccount = async (account: Inserts<TableNames.Accounts>, session?: Session | null) => {
   const { data, error } = await supabase.from(TableNames.Accounts).insert(account).select().single();
 
   if (error) throw error;
@@ -102,15 +102,15 @@ export const updateAccountBalanceFunction = async (accountid: string, amount: nu
   });
 };
 
-export const getAccountOpenBalance = async (accountid?: string) => {
+export const getAccountOpenBalance = async (accountid: string) => {
   const { data, error } = await supabase
-      .from(TableNames.Transactions)
-      .select("id, amount")
-      .eq("accountid", accountid)
-      .eq("type", "Initial")
-      .eq("isdeleted", false)
-      .single();
+    .from(TableNames.Transactions)
+    .select("id, amount")
+    .eq("accountid", accountid)
+    .eq("type", "Initial")
+    .eq("isdeleted", false)
+    .single();
 
   if (error) throw new Error(error.message);
-  return data; 
-}
+  return data;
+};

@@ -1,10 +1,15 @@
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Category, CategoryGroup, Inserts, supabase, Updates } from "../lib/supabase";
 import { useAuth } from "../providers/AuthProvider";
-import { updateCategory, createCategory, deleteCategory, restoreCategory, getCategoryGroups } from "./categories.api";
+import {
+  updateCategory,
+  createCategory,
+  deleteCategory,
+  restoreCategory,
+  getCategoryAndGroups,
+} from "./categories.api";
 import { TableNames, ViewNames } from "../consts/TableNames";
 import { updateCategoryTransactionsDelete } from "./transactions.api";
-import { SearchableDropdownItem } from "../components/SearchableDropdown";
 
 export const useGetCategories = () => {
   return useQuery<Category[]>({
@@ -42,7 +47,7 @@ export const useGetCategoryById = (id?: string) => {
 export const useGetCategoryGroups = () => {
   return useQuery<CategoryGroup[]>({
     queryKey: [ViewNames.CategoryGroups],
-    queryFn: async () => getCategoryGroups()
+    queryFn: async () => getCategoryAndGroups(),
   });
 };
 
@@ -59,6 +64,7 @@ export const useUpsertCategory = () => {
 
       formCategory.createdby = user?.id;
       formCategory.createdat = new Date().toISOString();
+      formCategory.tenantid = user?.user_metadata.tenantid;
       return await createCategory(formCategory as Inserts<TableNames.Categories>);
     },
     onSuccess: async () => {
