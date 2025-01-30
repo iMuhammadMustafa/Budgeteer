@@ -23,12 +23,12 @@ import {
   getThisMonthsTransactionsSummary,
   createTransactions,
   updateTransferTransaction,
-} from "./transactions.api";
-import { getAccountById, updateAccount, updateAccountBalanceFunction } from "./account.api";
-import { SearchableDropdownItem } from "../components/SearchableDropdown";
-import { MultiTransactionGroup } from "../consts/Types";
+} from "../apis/transactions.api";
+import { getAccountById, updateAccount, updateAccountBalanceFunction } from "../apis/account.api";
+import { SearchableDropdownItem } from "../../components/SearchableDropdown";
+import { MultiTransactionGroup } from "../../consts/Types";
 import dayjs from "dayjs";
-import generateUuid from "../lib/uuidHelper";
+import generateUuid from "../../lib/uuidHelper";
 
 interface CategorizedTransactions {
   categories: {

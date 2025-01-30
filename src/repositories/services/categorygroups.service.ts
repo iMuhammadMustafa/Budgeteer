@@ -1,13 +1,13 @@
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { CategoryGroup, Inserts, supabase, Updates } from "../lib/supabase";
-import { useAuth } from "../providers/AuthProvider";
+import { CategoryGroup, Inserts, supabase, Updates } from "../../lib/supabase";
+import { useAuth } from "../../providers/AuthProvider";
 import {
   updateCategoryGroup,
   createCategoryGroup,
   deleteCategoryGroup,
   restoreCategoryGroup,
-} from "./categorygroups.api";
-import { TableNames, ViewNames } from "../consts/TableNames";
+} from "../apis/categorygroups.api";
+import { TableNames, ViewNames } from "../../consts/TableNames";
 
 export const useGetCategoryGroups = () => {
   return useQuery<CategoryGroup[]>({

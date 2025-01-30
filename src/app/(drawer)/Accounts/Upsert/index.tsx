@@ -1,7 +1,7 @@
 import AccountForm, { AccountFormType } from "@/src/components/pages/AccountForm";
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
-import { useGetAccountById } from "@/src/repositories/account.service";
+import { useGetAccountById } from "@/src/repositories/services/account.service";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useState, useEffect, useLayoutEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Account, Inserts, Updates } from "../lib/supabase";
-import { useAuth } from "../providers/AuthProvider";
+import { Account, Inserts, Updates } from "../../lib/supabase";
+import { useAuth } from "../../providers/AuthProvider";
 import {
   updateAccount,
   createAccount,
@@ -9,9 +9,9 @@ import {
   getAccountById,
   getAllAccounts,
   getAccountOpenBalance,
-} from "./account.api";
-import { TableNames } from "../consts/TableNames";
-import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "./transactions.api";
+} from "../apis/account.api";
+import { TableNames } from "../../consts/TableNames";
+import { createTransaction, deleteAccountTransactions, restoreAccountTransactions } from "../apis/transactions.api";
 import { Session, User } from "@supabase/supabase-js";
 
 export const useGetAccounts = () => {

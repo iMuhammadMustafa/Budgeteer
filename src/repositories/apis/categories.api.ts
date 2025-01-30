@@ -1,6 +1,6 @@
-import { SearchableDropdownItem } from "../components/SearchableDropdown";
-import { TableNames, ViewNames } from "../consts/TableNames";
-import { supabase, Inserts, Updates } from "../lib/supabase";
+import { SearchableDropdownItem } from "../../components/SearchableDropdown";
+import { TableNames, ViewNames } from "../../consts/TableNames";
+import { supabase, Inserts, Updates } from "../../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
 export const createCategory = async (category: Inserts<TableNames.Categories>) => {

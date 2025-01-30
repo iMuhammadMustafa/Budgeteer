@@ -3,12 +3,12 @@ import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import MyDropDown, { MyCategoriesDropdown } from "@/src/components/MyDropdown";
 import TextInputField from "@/src/components/TextInputField";
 import generateUuid from "@/src/lib/uuidHelper";
-import { useGetAccounts } from "@/src/repositories/account.service";
-import { useGetCategories } from "@/src/repositories/categories.service";
+import { useGetAccounts } from "@/src/repositories/services/account.service";
+import { useGetCategories } from "@/src/repositories/services/categories.service";
 import { ActivityIndicator, FlatList, Platform, Pressable, View } from "react-native";
 import { ScrollView, Text } from "react-native";
 import { MultiTransactionGroup, MultiTransactionItem } from "@/src/consts/Types";
-import { TransactionFormType, useCreateTransactions } from "@/src/repositories/transactions.service";
+import { TransactionFormType, useCreateTransactions } from "@/src/repositories/services/transactions.service";
 import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
 import Icon from "@/src/lib/IonIcons";
 import { useNotifications } from "@/src/providers/NotificationsProvider";
@@ -78,21 +78,22 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    await submitAllMutation.mutateAsync({
-      transactionsGroup: group,
-      totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
-    }, 
-    {
-      onSuccess: () => {
-        addNotification({
-          message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
-          type: "success",
-        });
-        setIsLoading(false);
-        router.replace("/Transactions");
+    await submitAllMutation.mutateAsync(
+      {
+        transactionsGroup: group,
+        totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
       },
-    },);
-    
+      {
+        onSuccess: () => {
+          addNotification({
+            message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
+            type: "success",
+          });
+          setIsLoading(false);
+          router.replace("/Transactions");
+        },
+      },
+    );
   };
 
   return (
@@ -177,7 +178,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           //   setSourceAccount(value.value);
           // }}
         />
-
       </View>
 
       <TransactionsCreationList

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { View, Platform } from "react-native";
-import { useGetCategories, useDeleteCategory } from "@/src/repositories/categories.service";
+import { useGetCategories, useDeleteCategory } from "@/src/repositories/services/categories.service";
 import { TabView, SceneMap } from "react-native-tab-view";
 import { Tab, TabHeader } from "@/src/components/MyTabs";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableNames } from "@/src/consts/TableNames";
-import { useDeleteCategoryGroup, useGetCategoryGroups } from "@/src/repositories/categorygroups.service";
+import { useDeleteCategoryGroup, useGetCategoryGroups } from "@/src/repositories/services/categorygroups.service";
 
 export default function CategoriesGroups() {
   const queryClient = useQueryClient();

@@ -1,7 +1,10 @@
 import { useState } from "react";
 
-import { useDeleteAccount, useGetAccounts } from "@/src/repositories/account.service";
-import { useDeleteAccountCategory, useGetAccountCategories } from "@/src/repositories/accountcategories.service";
+import { useDeleteAccount, useGetAccounts } from "@/src/repositories/services/account.service";
+import {
+  useDeleteAccountCategory,
+  useGetAccountCategories,
+} from "@/src/repositories/services/accountcategories.service";
 import { SceneMap, TabView } from "react-native-tab-view";
 import { Tab, TabHeader } from "@/src/components/MyTabs";
 import { Platform, View } from "react-native";
@@ -23,12 +26,10 @@ export default function Accounts() {
 
   const refershAccounts = async () => {
     await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-
-  }
+  };
   const refreshCategories = async () => {
     await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-
-  }
+  };
 
   return (
     <TabView
@@ -39,10 +40,13 @@ export default function Accounts() {
         first: () => (
           <Tab
             title="Accounts"
-            items={accounts?.map(account => ({...account, details: `${account.owner} - Balance: ${account.balance.toLocaleString('en-US', { 
-              style: 'currency', 
-              currency: 'USD' 
-          })}`}))}
+            items={accounts?.map(account => ({
+              ...account,
+              details: `${account.owner} - Balance: ${account.balance.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}`,
+            }))}
             isLoading={isLoading}
             error={error}
             deleteItem={deleteAccount}

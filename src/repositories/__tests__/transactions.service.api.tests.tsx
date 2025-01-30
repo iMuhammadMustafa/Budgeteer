@@ -1,5 +1,5 @@
 import { supabase } from "@/src/lib/supabase";
-import { getAllTransactions } from "../transactions.api";
+import { getAllTransactions } from "../apis/transactions.api";
 
 const mockData = [
   {

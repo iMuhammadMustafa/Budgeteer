@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inserts, Updates } from "../../lib/supabase";
-import { useUpsertCategory } from "../../repositories/categories.service";
+import { useUpsertCategory } from "../../repositories/services/categories.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import { Platform, SafeAreaView, ScrollView, Text } from "react-native";
@@ -10,7 +10,7 @@ import IconPicker from "../IconPicker";
 import { TableNames } from "../../consts/TableNames";
 import MyDropDown, { MyTransactionTypesDropdown } from "../MyDropdown";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
-import { useGetCategoryGroups } from "@/src/repositories/categorygroups.service";
+import { useGetCategoryGroups } from "@/src/repositories/services/categorygroups.service";
 
 export type CategoryFormType = Inserts<TableNames.Categories> | Updates<TableNames.Categories>;
 

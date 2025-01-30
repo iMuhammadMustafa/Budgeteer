@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
-import { useGetTransactions, useUpsertTransaction } from "@/src/repositories/transactions.service";
-import * as transactionsApiService from "@/src/repositories/transactions.api";
-import * as accountApiService from "@/src/repositories/account.api";
+import { useGetTransactions, useUpsertTransaction } from "@/src/repositories/services/transactions.service";
+import * as transactionsApiService from "@/src/repositories/apis/transactions.api";
+import * as accountApiService from "@/src/repositories/apis/account.api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Transaction } from "@/src/lib/supabase";
 import AuthProvider from "@/src/providers/AuthProvider";

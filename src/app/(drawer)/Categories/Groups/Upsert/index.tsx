@@ -2,7 +2,7 @@ import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/p
 import CategoryGroupForm, { CategoryGroupFormType } from "@/src/components/pages/CategoryGroupForm";
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
-import { useGetCategoryGroupById } from "@/src/repositories/categorygroups.service";
+import { useGetCategoryGroupById } from "@/src/repositories/services/categorygroups.service";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useState, useEffect, useLayoutEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";

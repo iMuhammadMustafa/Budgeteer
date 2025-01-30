@@ -1,7 +1,7 @@
 import CategoryForm, { CategoryFormType } from "@/src/components/pages/CategoryForm";
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
-import { useGetCategoryById } from "@/src/repositories/categories.service";
+import { useGetCategoryById } from "@/src/repositories/services/categories.service";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useState, useEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";

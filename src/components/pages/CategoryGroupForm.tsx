@@ -8,7 +8,7 @@ import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { TableNames } from "../../consts/TableNames";
 import MyDropDown from "../MyDropdown";
 import IconPicker from "../IconPicker";
-import { useUpsertCategoryGroup } from "@/src/repositories/categorygroups.service";
+import { useUpsertCategoryGroup } from "@/src/repositories/services/categorygroups.service";
 
 export type CategoryGroupFormType = Inserts<TableNames.CategoryGroups> | Updates<TableNames.CategoryGroups>;
 

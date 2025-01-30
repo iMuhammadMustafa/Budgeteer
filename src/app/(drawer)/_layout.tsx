@@ -6,7 +6,6 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
-import { View } from "lucide-react-native";
 import { supabase } from "@/src/lib/supabase";
 
 export default function DrawerLayout() {
@@ -64,7 +63,7 @@ export default function DrawerLayout() {
                   alignSelf: "center",
                 },
               ]}
-              label="Version 0.5.0"
+              label="Version 0.12.0"
               onPress={() => {}}
             />
           </DrawerContentScrollView>

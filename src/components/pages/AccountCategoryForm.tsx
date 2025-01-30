@@ -7,7 +7,7 @@ import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { TableNames } from "../../consts/TableNames";
 import DropdownField from "../DropdownField";
-import { useUpsertAccountCategory } from "../../repositories/accountcategories.service";
+import { useUpsertAccountCategory } from "../../repositories/services/accountcategories.service";
 import MyDropDown from "../MyDropdown";
 import IconPicker from "../IconPicker";
 

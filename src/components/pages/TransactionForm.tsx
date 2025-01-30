@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { TransactionFormType, useUpsertTransaction } from "../../repositories/transactions.service";
+import { TransactionFormType, useUpsertTransaction } from "../../repositories/services/transactions.service";
 import { useRouter } from "expo-router";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
 import TextInputField from "../TextInputField";
 import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import { useGetCategories } from "../../repositories/categories.service";
-import { useGetAccounts } from "../../repositories/account.service";
+import { useGetCategories } from "../../repositories/services/categories.service";
+import { useGetAccounts } from "../../repositories/services/account.service";
 import dayjs from "dayjs";
 import { Box } from "@/components/ui/box";
 import VCalc from "../VCalc";
 import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
-import { getTransactionsByDescription } from "../../repositories/transactions.api";
+import { getTransactionsByDescription } from "../../repositories/apis/transactions.api";
 import Icon from "@/src/lib/IonIcons";
 import * as Haptics from "expo-haptics";
 import MyDropDown, { MyCategoriesDropdown } from "../MyDropdown";
@@ -190,7 +190,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           date={formData.date}
           onChange={params => {
             const formatedDate = dayjs(params.date).toISOString();
-            handleTextChange("date", formatedDate)
+            handleTextChange("date", formatedDate);
           }}
         />
 
@@ -255,16 +255,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             }}
           />
           <MyDropDown
-          isModal={Platform.OS !== "web"}
-          label="Status"
-          options={[
-            { id: "None", label: "None", value: "None" },
-            { id: "Cleared", label: "Cleared", value: "Cleared" },
-            { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
-            { id: "Void", label: "Void", value: "Void" },
-          ]}
-          selectedValue={formData.status}
-          onSelect={value => handleTextChange("status", value?.value)}
+            isModal={Platform.OS !== "web"}
+            label="Status"
+            options={[
+              { id: "None", label: "None", value: "None" },
+              { id: "Cleared", label: "Cleared", value: "Cleared" },
+              { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
+              { id: "Void", label: "Void", value: "Void" },
+            ]}
+            selectedValue={formData.status}
+            onSelect={value => handleTextChange("status", value?.value)}
           />
         </Box>
 
@@ -330,9 +330,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             />
           )}
         </Box>
-
-
-
 
         <TextInputField
           label="Tags"

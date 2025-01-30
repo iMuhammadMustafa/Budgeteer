@@ -1,5 +1,5 @@
-import { FunctionNames, TableNames } from "../consts/TableNames";
-import { Inserts, supabase, Updates } from "../lib/supabase";
+import { FunctionNames, TableNames } from "../../consts/TableNames";
+import { Inserts, supabase, Updates } from "../../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
 export const getAllAccounts = async () => {

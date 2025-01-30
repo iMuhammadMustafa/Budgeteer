@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AccountsCategory } from "../lib/supabase";
-import { useAuth } from "../providers/AuthProvider";
-import { TableNames } from "../consts/TableNames";
+import { AccountsCategory } from "../../lib/supabase";
+import { useAuth } from "../../providers/AuthProvider";
+import { TableNames } from "../../consts/TableNames";
 import {
   updateAccountCategory,
   createAccountCategory,
@@ -9,7 +9,7 @@ import {
   restoreAccountCategory,
   getAllAccountCategories,
   getAccountCategoryById,
-} from "./accountcategories.api";
+} from "../apis/accountcategories.api";
 
 export const useGetAccountCategories = () => {
   return useQuery<AccountsCategory[]>({

@@ -9,10 +9,10 @@ import {
   useDeleteTransaction,
   useGetTransactions,
   useUpsertTransaction,
-} from "@/src/repositories/transactions.service";
+} from "@/src/repositories/services/transactions.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
-import { getAccountById } from "@/src/repositories/account.api";
+import { getAccountById } from "@/src/repositories/apis/account.api";
 
 export type GroupedData = {
   [date: string]: {

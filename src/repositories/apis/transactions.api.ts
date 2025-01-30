@@ -1,7 +1,7 @@
 import { Inserts, Updates, supabase } from "@/src/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
-import { SearchableDropdownItem } from "../components/SearchableDropdown";
+import { SearchableDropdownItem } from "../../components/SearchableDropdown";
 import dayjs from "dayjs";
 
 export const getAllTransactions = async () => {

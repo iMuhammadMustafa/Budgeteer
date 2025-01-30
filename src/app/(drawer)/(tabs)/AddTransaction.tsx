@@ -1,6 +1,6 @@
 import MultipleTransactions from "@/src/components/pages/MultipleTransactions";
 import TransactionForm, { initialTransactionState } from "@/src/components/pages/TransactionForm";
-import { TransactionFormType, useGetTransactionById } from "@/src/repositories/transactions.service";
+import { TransactionFormType, useGetTransactionById } from "@/src/repositories/services/transactions.service";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";

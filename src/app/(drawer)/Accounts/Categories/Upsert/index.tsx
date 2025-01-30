@@ -1,7 +1,7 @@
 import AccountCategoryForm, { AccountCategoryFormType } from "@/src/components/pages/AccountCategoryForm";
 import { TableNames } from "@/src/consts/TableNames";
 import { Inserts, Updates } from "@/src/lib/supabase";
-import { useGetAccountCategoryById } from "@/src/repositories/accountcategories.service";
+import { useGetAccountCategoryById } from "@/src/repositories/services/accountcategories.service";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useState, useEffect, useLayoutEffect } from "react";
 import { ActivityIndicator, Text } from "react-native";
