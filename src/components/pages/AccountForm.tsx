@@ -21,7 +21,6 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   // const { data: openBalance} = useGetAccountOpenBalance(account.id);
   const router = useRouter();
 
-
   useEffect(() => {
     setFormData(account);
   }, [account]);
@@ -35,7 +34,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const handleSubmit = () => {
     setIsLoading(true);
     mutate(
-      { formAccount: {...formData, balance: parseFloat(formData.balance) }, originalData: account as Account },
+      { formAccount: { ...formData, balance: parseFloat(formData.balance) }, originalData: account as Account },
       {
         onSuccess: () => {
           addNotification({ message: "Account Created Successfully", type: "success" });
@@ -53,34 +52,32 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
         <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
           <MyDropDown
-                    isModal={Platform.OS !== "web"}
-                    label="Category"
-                    options={
-                      accountCategories?.map(item => ({
-                        id: item.id,
-                        label: item.name,
-                        group: item.type,
-                        value: item.id,
-                        icon: item.icon,
-                      })) ?? []
-                    }
-                    selectedValue={formData.categoryid}
-                    groupBy="type"
-                    onSelect={value => {
-                      handleFieldChange("categoryid", value?.value);
-                    }}
-                  />
+            isModal={Platform.OS !== "web"}
+            label="Category"
+            options={
+              accountCategories?.map(item => ({
+                id: item.id,
+                label: item.name,
+                group: item.type,
+                value: item.id,
+                icon: item.icon,
+              })) ?? []
+            }
+            selectedValue={formData.categoryid}
+            groupBy="type"
+            onSelect={value => {
+              handleFieldChange("categoryid", value?.value);
+            }}
+          />
           <MyDropDown
             isModal={Platform.OS !== "web"}
             label="Color"
-            options={
-              [
-                {id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100"},
-                {id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100"},
-                {id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100"},
-                {id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100"},
-              ]
-            }
+            options={[
+              { id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100" },
+              { id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100" },
+              { id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100" },
+              { id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100" },
+            ]}
             selectedValue={formData.iconColor}
             onSelect={value => {
               handleFieldChange("iconColor", value?.value);
