@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { BackHandler, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import dayjs from "dayjs";
 import { Account, TransactionsView } from "@/src/lib/supabase";
 import { useNotifications } from "@/src/providers/NotificationsProvider";
 import {
+  groupTransactions,
   useDeleteTransaction,
   useGetTransactions,
   useUpsertTransaction,
@@ -13,28 +14,39 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import { getAccountById } from "@/src/repositories/apis/account.api";
+import { TransactionsSearchParams } from "@/src/types/transactions.types";
 
-export type GroupedData = {
-  [date: string]: {
-    amount: number;
-    transactions: TransactionsView[];
-  };
-};
 export type TransactionListHeaderProps = {
   selectedTransactions: TransactionsView[];
   selectedSum: number;
   deleteSelection: () => void;
   copyTransactions: () => void;
   clearSelection: () => void;
+  refreshTransactions: () => void;
+  showSearch: boolean;
+  setShowSearch: (value: boolean) => void;
+};
+
+const searchFilters: TransactionsSearchParams = {
+  startIndex: 0,
+  endIndex: 20,
 };
 
 export default function useTransactions() {
   const router = useRouter();
-  const { data: transactions, error, isLoading } = useGetTransactions();
+  const queryClient = useQueryClient();
   const { addNotification } = useNotifications();
+
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
   const [selectedSum, setSelectedSum] = useState(0);
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [filter, setFilter] = useState<TransactionsSearchParams>(searchFilters);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactions(filter);
+
+  const transactions = data?.pages.flatMap(page => page);
 
   const [isActionLoading, setIsActionLoading] = useState(false);
   const addMutation = useUpsertTransaction();
@@ -43,7 +55,23 @@ export default function useTransactions() {
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
-  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      if (selectionMode) {
+        window.addEventListener("keydown", e => {
+          if (e.key === "Escape") {
+            clearSelection();
+            return;
+          }
+        });
+      }
+    }
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => {
+      backHandler.remove();
+      window.removeEventListener("keydown", () => {});
+    };
+  }, [selectionMode]);
 
   const backAction = () => {
     if (selectionMode) {
@@ -162,6 +190,16 @@ export default function useTransactions() {
     await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
     await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
   };
+
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const accounts = [];
+  const categories = [];
+
   return {
     transactions,
     error,
@@ -179,43 +217,16 @@ export default function useTransactions() {
     deleteSelection,
     copyTransactions,
     refreshTransactions,
+    filter,
+    setFilter,
+    showCalendar,
+    setShowCalendar,
+    loadMore,
+    isFetchingNextPage,
+    status,
+    showSearch,
+    setShowSearch,
+    accounts,
+    categories,
   };
 }
-
-const groupTransactions = (transactions: TransactionsView[]) => {
-  return transactions
-    .sort((b, a) => dayjs(a.date).diff(dayjs(b.date)))
-    .reduce((acc: GroupedData, curr) => {
-      const date = dayjs(curr.date).format("ddd, DD MMM YYYY");
-      if (!acc[date]) {
-        acc[date] = {
-          amount: 0,
-          transactions: [],
-        };
-      }
-      acc[date].amount += curr.amount ?? 0;
-      acc[date].transactions.push(curr);
-      return acc;
-    }, {});
-};
-
-const getTransactionProp = (type: string | null) => {
-  const transactionProp = { iconName: "CircleHelp", color: "color-red-100", size: 20 };
-  if (type === "Income") {
-    transactionProp.iconName = "Plus";
-    transactionProp.color = "success-100";
-  } else if (type === "Expense") {
-    transactionProp.iconName = "Minus";
-    transactionProp.color = "error-100";
-  } else if (type === "Transfer") {
-    transactionProp.iconName = "ArrowLeftRight";
-    transactionProp.color = "info-100";
-  } else if (type === "Adjustment") {
-    transactionProp.iconName = "Wrench";
-    transactionProp.color = "warning-100";
-  } else if (type === "Initial") {
-    transactionProp.iconName = "Wallet";
-    transactionProp.color = "info-100";
-  }
-  return transactionProp;
-};

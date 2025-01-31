@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Account,
   DailyTransactionsSummary,
@@ -29,23 +29,75 @@ import { SearchableDropdownItem } from "../../components/SearchableDropdown";
 import { MultiTransactionGroup } from "../../consts/Types";
 import dayjs from "dayjs";
 import generateUuid from "../../lib/uuidHelper";
+import { GroupedData, TransactionFormType, TransactionsSearchParams } from "@/src/types/transactions.types";
 
-interface CategorizedTransactions {
-  categories: {
-    expenses: MonthlyTransactions[];
-    income: MonthlyTransactions[];
-  };
-  groups: {
-    expenses: Record<string, MonthlyTransactions[]>;
-    income: Record<string, MonthlyTransactions[]>;
-  };
-}
-export type TransactionFormType = TransactionsView & { amount: number };
+export const groupTransactions = (transactions: TransactionsView[]) => {
+  return transactions
+    .sort((b, a) => dayjs(a.date).diff(dayjs(b.date)))
+    .reduce((acc: GroupedData, curr) => {
+      const date = dayjs(curr.date).format("ddd, DD MMM YYYY");
+      if (!acc[date]) {
+        acc[date] = {
+          amount: 0,
+          transactions: [],
+        };
+      }
+      acc[date].amount += curr.amount ?? 0;
+      acc[date].transactions.push(curr);
+      return acc;
+    }, {});
+};
 
-export const useGetTransactions = () => {
-  return useQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView],
-    queryFn: getAllTransactions,
+export const getTransactionProp = (type: string | null) => {
+  const transactionProp = { iconName: "CircleHelp", color: "error-100", textColor: "foreground", size: 20 };
+  if (type === "Income") {
+    transactionProp.iconName = "Plus";
+    transactionProp.color = "success-100";
+    transactionProp.textColor = "success-500";
+  } else if (type === "Expense") {
+    transactionProp.iconName = "Minus";
+    transactionProp.color = "error-100";
+    transactionProp.textColor = "error-500";
+  } else if (type === "Transfer") {
+    transactionProp.iconName = "ArrowLeftRight";
+    transactionProp.color = "info-100";
+    transactionProp.textColor = "info-500";
+  } else if (type === "Adjustment" || type === "Refund") {
+    transactionProp.iconName = "Wrench";
+    transactionProp.color = "warning-100";
+    transactionProp.textColor = "warning-500";
+  } else if (type === "Initial") {
+    transactionProp.iconName = "Wallet";
+    transactionProp.color = "info-100";
+    transactionProp.textColor = "info-500";
+  }
+  return transactionProp;
+};
+
+export const useGetTransactions = (searchParams: TransactionsSearchParams) => {
+  return useInfiniteQuery<TransactionsView[]>({
+    queryKey: [ViewNames.TransactionsView, searchParams], // Include searchParams in the query key
+    initialPageParam: 0, // Start with page 0
+    queryFn: async ({ pageParam = 0 }) => {
+      // Calculate the range for the current page
+      const pageSize = 10; // Number of items per page
+      const startIndex = pageParam * pageSize;
+      const endIndex = startIndex + pageSize - 1;
+
+      // Fetch transactions for the current page
+      return getAllTransactions({
+        ...searchParams,
+        startIndex,
+        endIndex,
+      });
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page is empty, there are no more pages
+      if (lastPage.length === 0) return undefined;
+
+      // Return the next page number
+      return allPages.length;
+    },
   });
 };
 

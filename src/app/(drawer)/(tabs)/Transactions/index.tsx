@@ -1,5 +1,5 @@
 import Icon from "@/src/lib/IonIcons";
-import { TransactionsView } from "@/src/lib/supabase";
+import { Account, Category, TransactionsView } from "@/src/lib/supabase";
 import { Link } from "expo-router"; // Use `useRouter` for navigation
 import React, { useEffect } from "react";
 import dayjs from "dayjs";
@@ -7,24 +7,13 @@ import { Divider } from "@/components/ui/divider";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { View, Text, FlatList, SafeAreaView, ActivityIndicator, Pressable, BackHandler, Platform } from "react-native";
 
-import useTransactions from "./useTransactions";
+import useTransactions, { TransactionListHeaderProps } from "./useTransactions";
+import { GroupedData, TransactionsSearchParams } from "@/src/types/transactions.types";
+import { getTransactionProp } from "@/src/repositories/services/transactions.service";
+import Modal from "react-native-modal";
+import TransactionSearchForm from "@/src/components/pages/TransactionSearchForm";
 
 dayjs.extend(relativeTime);
-
-type GroupedData = {
-  [date: string]: {
-    amount: number;
-    transactions: TransactionsView[];
-  };
-};
-type TransactionListHeaderProps = {
-  selectedTransactions: TransactionsView[];
-  selectedSum: number;
-  deleteSelection: () => void;
-  copyTransactions: () => void;
-  clearSelection: () => void;
-  refreshTransactions: () => void;
-};
 
 export default function Transactions() {
   const {
@@ -43,16 +32,27 @@ export default function Transactions() {
     deleteSelection,
     copyTransactions,
     refreshTransactions,
+    loadMore,
+    isFetchingNextPage,
+    status,
+    showSearch,
+    setShowSearch,
+    filter,
+    setFilter,
+    accounts,
+    categories,
   } = useTransactions();
-
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
-    return () => backHandler.remove();
-  }, [selectionMode]);
 
   if (isLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
+
+  if (status === "pending") {
+    return (
+      <View>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="w-full h-full">
@@ -63,11 +63,29 @@ export default function Transactions() {
         copyTransactions={copyTransactions}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}
+        showSearch={showSearch}
+        setShowSearch={setShowSearch}
       />
+
+      <SearchModal isOpen={showSearch} setIsOpen={setShowSearch}>
+        <SearchForm
+          setSearchParams={setFilter}
+          searchParams={filter}
+          accounts={accounts}
+          categories={categories}
+          onSubmit={() => {
+            setShowSearch(false);
+            console.log("Search form submitted");
+            console.log(filter);
+          }}
+        />
+      </SearchModal>
 
       <FlatList
         data={days}
         keyExtractor={item => item}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         renderItem={({ item }) => (
           <DaysList
             day={item}
@@ -77,6 +95,7 @@ export default function Transactions() {
             handlePress={handlePress}
           />
         )}
+        ListFooterComponent={isFetchingNextPage ? <Text>Loading more...</Text> : null}
       />
     </SafeAreaView>
   );
@@ -88,9 +107,11 @@ const TransactionsPageHeader = ({
   copyTransactions,
   clearSelection,
   refreshTransactions,
+  showSearch,
+  setShowSearch,
 }: TransactionListHeaderProps) => {
   return (
-    <View className="px-10 self-end my-2 flex-row justify-between items-center gap-2">
+    <View className="px-10 self-end my-2 flex-row justify-between items-center gap-3">
       {selectedTransactions.length > 0 && (
         <View className="flex-row items-center gap-2">
           <View className="flex-row">
@@ -110,7 +131,10 @@ const TransactionsPageHeader = ({
           </Pressable>
         </View>
       )}
-      <Pressable onPress={refreshTransactions}>
+      <Pressable onPress={() => setShowSearch(true)} className="items-center justify-center">
+        <Icon name="Search" className="text-foreground" size={20} />
+      </Pressable>
+      <Pressable onPress={refreshTransactions} className="items-center justify-center">
         <Icon name="RefreshCw" className="text-foreground" size={20} />
       </Pressable>
       <Link href="/AddTransaction" className="items-center justify-center">
@@ -221,13 +245,14 @@ const TransactionItem = ({
               {transaction.amount!.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })} {transaction.currency}
+              })}{" "}
+              {transaction.currency}
             </Text>
             <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
               {transaction.accountname} {" | "}
               {transaction.running_balance?.toLocaleString("en", {
-                style: 'currency', 
-                currency: transaction.currency,
+                style: "currency",
+                currency: transaction.currency!,
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -238,28 +263,90 @@ const TransactionItem = ({
     </View>
   );
 };
-export const getTransactionProp = (type: string | null) => {
-  const transactionProp = { iconName: "CircleHelp", color: "error-100", textColor: "foreground", size: 20 };
-  if (type === "Income") {
-    transactionProp.iconName = "Plus";
-    transactionProp.color = "success-100";
-    transactionProp.textColor = "success-500";
-  } else if (type === "Expense") {
-    transactionProp.iconName = "Minus";
-    transactionProp.color = "error-100";
-    transactionProp.textColor = "error-500";
-  } else if (type === "Transfer") {
-    transactionProp.iconName = "ArrowLeftRight";
-    transactionProp.color = "info-100";
-    transactionProp.textColor = "info-500";
-  } else if (type === "Adjustment" || type === "Refund") {
-    transactionProp.iconName = "Wrench";
-    transactionProp.color = "warning-100";
-    transactionProp.textColor = "warning-500";
-  } else if (type === "Initial") {
-    transactionProp.iconName = "Wallet";
-    transactionProp.color = "info-100";
-    transactionProp.textColor = "info-500";
+
+const SearchModal = ({
+  isOpen,
+  setIsOpen,
+  children,
+}: {
+  isOpen: boolean;
+  setIsOpen: (value: boolean) => void;
+  children: React.ReactNode;
+}) => {
+  useEffect(() => {
+    const myFunction = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    if (Platform.OS === "web") {
+      window.addEventListener("keydown", myFunction);
+    }
+
+    if (Platform.OS === "android") {
+      BackHandler.addEventListener("hardwareBackPress", () => {
+        setIsOpen(false);
+        return true;
+      });
+    }
+    return () => {
+      if (Platform.OS === "android") {
+        BackHandler.removeEventListener("hardwareBackPress", () => {
+          setIsOpen(false);
+          return true;
+        });
+      }
+      if (Platform.OS === "web") {
+        window.removeEventListener("keydown", myFunction);
+      }
+    };
+  }, [isOpen]);
+  {
+    return isOpen ? (
+      <Modal
+        isVisible={isOpen}
+        onDismiss={() => setIsOpen(false)}
+        onBackButtonPress={() => setIsOpen(false)}
+        // onRequestClose={() => setIsOpen(false)}
+        onBackdropPress={() => setIsOpen(false)}
+        className="rounded-md z-50 bg-white"
+        // transparent
+        // presentationClassName="bg-transparent"
+      >
+        {children}
+      </Modal>
+    ) : (
+      <></>
+    );
   }
-  return transactionProp;
+};
+
+const SearchForm = ({
+  searchParams,
+  setSearchParams,
+  accounts,
+  categories,
+  onSubmit,
+}: {
+  searchParams: TransactionsSearchParams;
+  setSearchParams: (searchParams: TransactionsSearchParams) => void;
+  accounts: Account[];
+  categories: Category[];
+  onSubmit: () => void;
+}) => {
+  return (
+    <View className="p-3 bg-white rounded-md">
+      <TransactionSearchForm
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
+        accounts={accounts}
+        categories={categories}
+        onSubmit={() => {
+          console.log("Submitting");
+          onSubmit();
+        }}
+      />
+    </View>
+  );
 };

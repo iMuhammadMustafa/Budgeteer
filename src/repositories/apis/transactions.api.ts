@@ -3,13 +3,66 @@ import { Session } from "@supabase/supabase-js";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import { SearchableDropdownItem } from "../../components/SearchableDropdown";
 import dayjs from "dayjs";
+import { TransactionsSearchParams } from "@/src/types/transactions.types";
 
-export const getAllTransactions = async () => {
-  const { data, error } = await supabase.from(ViewNames.TransactionsView).select();
+export const getAllTransactions = async (searchParams: TransactionsSearchParams) => {
+  let query = buildQuery(searchParams);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   return data;
 };
+
+export const getAllTransactionsCount = async (searchParams: TransactionsSearchParams) => {
+  let query = buildQuery(searchParams, true);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return data;
+};
+
+const buildQuery = (searchParams: TransactionsSearchParams, isCount = false) => {
+  let query = supabase.from(ViewNames.TransactionsView).select();
+
+  if (isCount) {
+    query = supabase.from(ViewNames.TransactionsView).select("*", { count: "exact", head: true });
+  }
+
+  if (searchParams.description) {
+    query = query.ilike("description", searchParams.description);
+  }
+  if (searchParams.categoryid) {
+    query = query.eq("categoryid", searchParams.categoryid);
+  }
+  if (searchParams.accountid) {
+    query = query.eq("accountid", searchParams.accountid);
+  }
+  if (searchParams.amount) {
+    query = query.eq("amount", searchParams.amount);
+  }
+  if (searchParams.status) {
+    query = query.eq("status", searchParams.status);
+  }
+  if (searchParams.type) {
+    query = query.eq("type", searchParams.type);
+  }
+  if (searchParams.categoryName) {
+    query = query.ilike("categoryName", searchParams.categoryName);
+  }
+  if (searchParams.startDate) {
+    query = query.gte("date", searchParams.startDate);
+  }
+  if (searchParams.endDate) {
+    query = query.lte("date", searchParams.endDate);
+  }
+
+  query = query.order("date", { ascending: false }).range(searchParams.startIndex, searchParams.endIndex);
+
+  return query;
+};
+
 export const getTransactionById = async (transactionid: string) => {
   const { data, error } = await supabase
     .from(ViewNames.TransactionsView)

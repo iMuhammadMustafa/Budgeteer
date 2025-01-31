@@ -63,7 +63,7 @@ export default function DrawerLayout() {
                   alignSelf: "center",
                 },
               ]}
-              label="Version 0.12.0"
+              label="Version 0.13.0"
               onPress={() => {}}
             />
           </DrawerContentScrollView>
