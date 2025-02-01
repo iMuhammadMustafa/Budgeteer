@@ -1,6 +1,6 @@
 import Icon from "@/src/lib/IonIcons";
 import { Account, Category, TransactionsView } from "@/src/lib/supabase";
-import { Link } from "expo-router"; // Use `useRouter` for navigation
+import { Link, useLocalSearchParams, useRouter } from "expo-router"; // Use `useRouter` for navigation
 import React, { useEffect } from "react";
 import dayjs from "dayjs";
 import { Divider } from "@/components/ui/divider";
@@ -32,16 +32,19 @@ export default function Transactions() {
     deleteSelection,
     copyTransactions,
     refreshTransactions,
-    loadMore,
-    isFetchingNextPage,
+    // loadMore,
+    // isFetchingNextPage,
     status,
     showSearch,
     setShowSearch,
-    filter,
-    setFilter,
+    filters,
+    setFilters,
     accounts,
     categories,
+    params,
   } = useTransactions();
+
+  const router = useRouter();
 
   if (isLoading || !transactions) return <ActivityIndicator />;
   if (error) return <Text>Error: {error.message}</Text>;
@@ -69,14 +72,19 @@ export default function Transactions() {
 
       <SearchModal isOpen={showSearch} setIsOpen={setShowSearch}>
         <SearchForm
-          setSearchParams={setFilter}
-          searchParams={filter}
+          searchParams={params}
           accounts={accounts}
           categories={categories}
-          onSubmit={() => {
+          onSubmit={formValues => {
             setShowSearch(false);
-            console.log("Search form submitted");
-            console.log(filter);
+            if (formValues) {
+              router.setParams(formValues);
+            } else {
+              router.replace({ pathname: "/Transactions" });
+            }
+          }}
+          onClear={() => {
+            setFilters({});
           }}
         />
       </SearchModal>
@@ -84,8 +92,8 @@ export default function Transactions() {
       <FlatList
         data={days}
         keyExtractor={item => item}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        // onEndReached={loadMore}
+        // onEndReachedThreshold={0.5}
         renderItem={({ item }) => (
           <DaysList
             day={item}
@@ -95,7 +103,7 @@ export default function Transactions() {
             handlePress={handlePress}
           />
         )}
-        ListFooterComponent={isFetchingNextPage ? <Text>Loading more...</Text> : null}
+        // ListFooterComponent={isFetchingNextPage ? <Text>Loading more...</Text> : null}
       />
     </SafeAreaView>
   );
@@ -324,28 +332,27 @@ const SearchModal = ({
 
 const SearchForm = ({
   searchParams,
-  setSearchParams,
   accounts,
   categories,
   onSubmit,
+  onClear,
 }: {
-  searchParams: TransactionsSearchParams;
-  setSearchParams: (searchParams: TransactionsSearchParams) => void;
+  searchParams: TransactionsSearchParams | null;
   accounts: Account[];
   categories: Category[];
-  onSubmit: () => void;
+  onSubmit: (filters: TransactionsSearchParams | null) => void;
+  onClear: () => void;
 }) => {
   return (
     <View className="p-3 bg-white rounded-md">
       <TransactionSearchForm
-        searchParams={searchParams}
-        setSearchParams={setSearchParams}
+        filters={searchParams}
         accounts={accounts}
         categories={categories}
-        onSubmit={() => {
-          console.log("Submitting");
-          onSubmit();
+        onSubmit={filters => {
+          onSubmit(filters);
         }}
+        onClear={onClear}
       />
     </View>
   );

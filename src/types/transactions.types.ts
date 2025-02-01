@@ -24,8 +24,8 @@ export type TransactionsSearchParams = {
   description?: string;
   tags?: string;
   amount?: string;
-  startIndex: number;
-  endIndex: number;
+  startIndex?: number;
+  endIndex?: number;
 };
 export const initalTransactionSearchParams: TransactionsSearchParams = {
   startIndex: 0,

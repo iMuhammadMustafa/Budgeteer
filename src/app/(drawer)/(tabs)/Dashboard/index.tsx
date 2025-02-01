@@ -5,6 +5,8 @@ import useDashboard from "./useDashboard";
 import MyPie from "@/src/components/Charts/MyPie";
 import React from "react";
 import MyCalendar from "@/src/components/Charts/MyCalendar";
+import dayjs from "dayjs";
+import { useRouter } from "expo-router";
 
 export default function Dashboard() {
   const {
@@ -15,6 +17,13 @@ export default function Dashboard() {
     categoriesExpensesThisMonth,
     thisMonthsTransactionsCalendarObject,
   } = useDashboard();
+
+  const router = useRouter();
+
+  const handleDayClick = (day: any) => {
+    const date = dayjs(day.dateString);
+    router.push(`/Transactions?startDate=${date.startOf("day").toISOString()}&endDate=${date.endOf("day")}`);
+  };
 
   if (isLoading) {
     return <ActivityIndicator />;
@@ -30,7 +39,7 @@ export default function Dashboard() {
           <MyPie data={categoriesExpensesThisMonth} label="Categories" />
           <MyPie data={groupsExpensesThisMonth} label="Groups" />
 
-          <MyCalendar label="Calendar" data={thisMonthsTransactionsCalendarObject} />
+          <MyCalendar label="Calendar" data={thisMonthsTransactionsCalendarObject} onDayPress={handleDayClick} />
         </View>
       </ScrollView>
     </SafeAreaView>

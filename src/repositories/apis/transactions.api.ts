@@ -30,35 +30,39 @@ const buildQuery = (searchParams: TransactionsSearchParams, isCount = false) => 
     query = supabase.from(ViewNames.TransactionsView).select("*", { count: "exact", head: true });
   }
 
-  if (searchParams.description) {
+  if (searchParams.description && searchParams.description != "undefined") {
     query = query.ilike("description", searchParams.description);
   }
-  if (searchParams.categoryid) {
+  if (searchParams.categoryid && searchParams.categoryid != "undefined") {
     query = query.eq("categoryid", searchParams.categoryid);
   }
-  if (searchParams.accountid) {
+  if (searchParams.accountid && searchParams.accountid != "undefined") {
     query = query.eq("accountid", searchParams.accountid);
   }
-  if (searchParams.amount) {
+  if (searchParams.amount && searchParams.amount != "undefined") {
     query = query.eq("amount", searchParams.amount);
   }
-  if (searchParams.status) {
+  if (searchParams.status && searchParams.status != "undefined") {
     query = query.eq("status", searchParams.status);
   }
-  if (searchParams.type) {
+  if (searchParams.type && searchParams.type != "undefined") {
     query = query.eq("type", searchParams.type);
   }
-  if (searchParams.categoryName) {
+  if (searchParams.categoryName && searchParams.categoryName != "undefined") {
     query = query.ilike("categoryName", searchParams.categoryName);
   }
-  if (searchParams.startDate) {
+  if (searchParams.startDate && searchParams.startDate != "undefined") {
     query = query.gte("date", searchParams.startDate);
   }
-  if (searchParams.endDate) {
+  if (searchParams.endDate && searchParams.endDate != "undefined") {
     query = query.lte("date", searchParams.endDate);
   }
 
-  query = query.order("date", { ascending: false }).range(searchParams.startIndex, searchParams.endIndex);
+  query = query.order("date", { ascending: false });
+
+  if (searchParams.startIndex && searchParams.endIndex) {
+    query = query.range(searchParams.startIndex, searchParams.endIndex);
+  }
 
   return query;
 };

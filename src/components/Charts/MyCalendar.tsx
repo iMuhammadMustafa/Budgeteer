@@ -19,9 +19,10 @@ export type MyCalendarProps = {
     [day: string]: CalendarDayProp;
   };
   label: string;
+  onDayPress?: (day: any) => void;
 };
 
-export default function MyCalendar({ data, label }: MyCalendarProps) {
+export default function MyCalendar({ data, label, onDayPress }: MyCalendarProps) {
   return (
     <View className="p-4 m-auto bg-card my-2 rounded-md border border-muted">
       <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
@@ -32,6 +33,7 @@ export default function MyCalendar({ data, label }: MyCalendarProps) {
         markingType={"multi-dot"}
         hideExtraDays={true}
         firstDay={1}
+        onDayPress={onDayPress}
         theme={{
           textSectionTitleColor: "var(--foreground)",
           textSectionTitleDisabledColor: "var(--muted)",

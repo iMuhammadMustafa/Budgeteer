@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
-import { useGetTransactions, useUpsertTransaction } from "@/src/repositories/services/transactions.service";
+import { useGetTransactionsInfinite, useUpsertTransaction } from "@/src/repositories/services/transactions.service";
 import * as transactionsApiService from "@/src/repositories/apis/transactions.api";
 import * as accountApiService from "@/src/repositories/apis/account.api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -126,7 +126,7 @@ describe("useGetTransactions", () => {
   it("should fetch transactions successfully", async () => {
     jest.spyOn(transactionsApiService, "getAllTransactions").mockResolvedValue(mockData as any);
 
-    const { result } = renderHook(() => useGetTransactions(), { wrapper });
+    const { result } = renderHook(() => useGetTransactionsInfinite(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -138,7 +138,7 @@ describe("useGetTransactions", () => {
   it("should return error when fetching transactions", async () => {
     jest.spyOn(transactionsApiService, "getAllTransactions").mockRejectedValue(new Error("error"));
 
-    const { result } = renderHook(() => useGetTransactions(), { wrapper });
+    const { result } = renderHook(() => useGetTransactionsInfinite(), { wrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 

@@ -6,6 +6,7 @@ import AuthProvider from "../providers/AuthProvider";
 import NotificationsProvider from "../providers/NotificationsProvider";
 import QueryProvider from "../providers/QueryProvider";
 import ThemeProvider from "../providers/ThemeProvider";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -59,7 +60,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
               </Stack>
             </NotificationsProvider>
-            {/* <DevToolsBubble /> */}
+            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           </QueryProvider>
         </AuthProvider>
       </ThemeProvider>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BackHandler, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import dayjs from "dayjs";
 import { Account, TransactionsView } from "@/src/lib/supabase";
@@ -9,12 +9,15 @@ import {
   groupTransactions,
   useDeleteTransaction,
   useGetTransactions,
+  useGetTransactionsInfinite,
   useUpsertTransaction,
 } from "@/src/repositories/services/transactions.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableNames, ViewNames } from "@/src/consts/TableNames";
 import { getAccountById } from "@/src/repositories/apis/account.api";
 import { TransactionsSearchParams } from "@/src/types/transactions.types";
+import { useGetAccounts } from "@/src/repositories/services/account.service";
+import { useGetCategories } from "@/src/repositories/services/categories.service";
 
 export type TransactionListHeaderProps = {
   selectedTransactions: TransactionsView[];
@@ -29,7 +32,7 @@ export type TransactionListHeaderProps = {
 
 const searchFilters: TransactionsSearchParams = {
   startIndex: 0,
-  endIndex: 20,
+  endIndex: 10,
 };
 
 export default function useTransactions() {
@@ -43,15 +46,28 @@ export default function useTransactions() {
 
   const [showSearch, setShowSearch] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [filter, setFilter] = useState<TransactionsSearchParams>(searchFilters);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactions(filter);
 
-  const transactions = data?.pages.flatMap(page => page);
+  const params = useLocalSearchParams() as TransactionsSearchParams;
+  const [filters, setFilters] = useState<TransactionsSearchParams>(params);
+
+  // useEffect(() => {
+  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+  // }, [filters]);
+
+  const { data: accounts } = useGetAccounts() as any;
+  const { data: categories } = useGetCategories() as any;
+  // const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactionsInfinite(
+  //   params ?? searchFilters,
+  // );
+  // const transactions = data?.pages.flatMap(page => page);
+
+  const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? searchFilters);
 
   const [isActionLoading, setIsActionLoading] = useState(false);
   const addMutation = useUpsertTransaction();
   const deleteMutation = useDeleteTransaction();
 
+  console.log(transactions);
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
@@ -72,6 +88,17 @@ export default function useTransactions() {
       window.removeEventListener("keydown", () => {});
     };
   }, [selectionMode]);
+
+  // useEffect(() => {
+  //   return () => {
+  //     // Reset the query cache when the component unmounts
+  //     queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView, filter] });
+  //   };
+  // }, [queryClient, filter]);
+
+  // useEffect(() => {
+  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+  // }, [params]);
 
   const backAction = () => {
     if (selectionMode) {
@@ -191,14 +218,18 @@ export default function useTransactions() {
     await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
   };
 
-  const loadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
+  // const loadMore = () => {
+  //   if (hasNextPage && !isFetchingNextPage) {
+  //     fetchNextPage();
+  //   }
+  // };
 
-  const accounts = [];
-  const categories = [];
+  /*
+  queryClient.setQueryData([ViewNames.TransactionsView], (data) => ({
+  pages: data.pages.slice(1),
+  pageParams: data.pageParams.slice(1),
+}))
+  */
 
   return {
     transactions,
@@ -217,16 +248,17 @@ export default function useTransactions() {
     deleteSelection,
     copyTransactions,
     refreshTransactions,
-    filter,
-    setFilter,
+    filters,
+    setFilters,
     showCalendar,
     setShowCalendar,
-    loadMore,
-    isFetchingNextPage,
+    // loadMore,
+    // isFetchingNextPage,
     status,
     showSearch,
     setShowSearch,
     accounts,
     categories,
+    params,
   };
 }

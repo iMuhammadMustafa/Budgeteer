@@ -148,6 +148,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             router.replace("/Transactions");
           }
         },
+        onError: error => {
+          addNotification({
+            message: error.message,
+            type: "error",
+          });
+          setIsLoading(false);
+        },
       },
     );
   };
@@ -297,7 +304,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             }
             groupBy="group"
             onSelect={(value: any) => {
-              console.log(value);
               handleTextChange("accountid", value.id);
               setSourceAccount(value.value);
             }}

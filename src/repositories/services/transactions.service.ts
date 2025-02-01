@@ -74,9 +74,24 @@ export const getTransactionProp = (type: string | null) => {
   return transactionProp;
 };
 
-export const useGetTransactions = (searchParams: TransactionsSearchParams) => {
+export const useGetTransactions = (searchParams?: TransactionsSearchParams | null) => {
+  return useQuery<TransactionsView[]>({
+    queryKey: [ViewNames.TransactionsView], // Include searchParams in the query key
+    queryFn: async () => {
+      if (!searchParams) {
+        searchParams = {
+          startIndex: 0,
+          endIndex: 10,
+        };
+      }
+      return getAllTransactions(searchParams);
+    },
+  });
+};
+
+export const useGetTransactionsInfinite = (searchParams?: TransactionsSearchParams | null) => {
   return useInfiniteQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView, searchParams], // Include searchParams in the query key
+    queryKey: [ViewNames.TransactionsView], // Include searchParams in the query key
     initialPageParam: 0, // Start with page 0
     queryFn: async ({ pageParam = 0 }) => {
       // Calculate the range for the current page
@@ -84,20 +99,27 @@ export const useGetTransactions = (searchParams: TransactionsSearchParams) => {
       const startIndex = pageParam * pageSize;
       const endIndex = startIndex + pageSize - 1;
 
+      if (!searchParams) {
+        searchParams = {
+          startIndex: 0,
+          endIndex: 10,
+        };
+      }
+
+      searchParams.startIndex = startIndex;
+      searchParams.endIndex = endIndex;
+
       // Fetch transactions for the current page
-      return getAllTransactions({
-        ...searchParams,
-        startIndex,
-        endIndex,
-      });
+      return getAllTransactions(searchParams);
     },
     getNextPageParam: (lastPage, allPages) => {
-      // If the last page is empty, there are no more pages
-      if (lastPage.length === 0) return undefined;
-
-      // Return the next page number
-      return allPages.length;
+      if (lastPage.length === 0) return undefined; // If the last page is empty, there are no more pages
+      return allPages.length; // Fetch the next page
     },
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    maxPages: 1,
   });
 };
 
@@ -653,6 +675,7 @@ export const useCreateTransactions = () => {
           notes: transactionsGroup.transactions[key].notes,
           tags: transactionsGroup.transactions[key].tags,
           groupid: transactionsGroup.groupid,
+          tenantid: session!.user.user_metadata.tenantid,
         };
 
         return transaction;
