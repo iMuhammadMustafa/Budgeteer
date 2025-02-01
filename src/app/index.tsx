@@ -2,14 +2,8 @@ import { Text, View } from "react-native";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
+    <View className="flex flex-col items-center justify-center h-full">
+      <Text className="text-4xl text-center">Welcome to Expo Router</Text>
     </View>
   );
 }
