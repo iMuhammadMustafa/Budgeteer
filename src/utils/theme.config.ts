@@ -65,19 +65,19 @@ export const lightVars = {
   "--color-tertiary-900": "108 61 19",
   "--color-tertiary-950": "84 49 18",
 
-  /* Error */
-  "--color-error-0": "254 233 233",
-  "--color-error-50": "254 226 226",
-  "--color-error-100": "254 202 202",
-  "--color-error-200": "252 165 165",
-  "--color-error-300": "248 113 113",
-  "--color-error-400": "239 68 68",
-  "--color-error-500": "230 53 53",
-  "--color-error-600": "220 38 38",
-  "--color-error-700": "185 28 28",
-  "--color-error-800": "153 27 27",
-  "--color-error-900": "127 29 29",
-  "--color-error-950": "83 19 19",
+  /* Danger */
+  "--color-danger-0": "254 233 233",
+  "--color-danger-50": "254 226 226",
+  "--color-danger-100": "254 202 202",
+  "--color-danger-200": "252 165 165",
+  "--color-danger-300": "248 113 113",
+  "--color-danger-400": "239 68 68",
+  "--color-danger-500": "230 53 53",
+  "--color-danger-600": "220 38 38",
+  "--color-danger-700": "185 28 28",
+  "--color-danger-800": "153 27 27",
+  "--color-danger-900": "127 29 29",
+  "--color-danger-950": "83 19 19",
 
   /* Success */
   "--color-success-0": "228 255 244",
@@ -164,7 +164,7 @@ export const lightVars = {
   "--color-background-950": "24 23 24",
 
   /* Background Special */
-  "--color-background-error": "254 241 241",
+  "--color-background-danger": "254 241 241",
   "--color-background-warning": "255 244 235",
   "--color-background-success": "237 252 242",
   "--color-background-muted": "247 248 247",
@@ -173,7 +173,7 @@ export const lightVars = {
   /* Focus Ring Indicator  */
   "--color-indicator-primary": "55 55 55",
   "--color-indicator-info": "83 153 236",
-  "--color-indicator-error": "185 28 28",
+  "--color-indicator-danger": "185 28 28",
 };
 export const darkVars = {
   "--background": "17 20 24" /* HSL(210 19% 8%) */,
@@ -237,19 +237,19 @@ export const darkVars = {
   "--color-tertiary-900": "255 242 229",
   "--color-tertiary-950": "255 250 245",
 
-  /* Error */
-  "--color-error-0": "83 19 19",
-  "--color-error-50": "127 29 29",
-  "--color-error-100": "153 27 27",
-  "--color-error-200": "185 28 28",
-  "--color-error-300": "220 38 38",
-  "--color-error-400": "230 53 53",
-  "--color-error-500": "239 68 68",
-  "--color-error-600": "248 113 113",
-  "--color-error-700": "252 165 165",
-  "--color-error-800": "254 202 202",
-  "--color-error-900": "254 226 226",
-  "--color-error-950": "254 233 233",
+  /* danger */
+  "--color-danger-0": "83 19 19",
+  "--color-danger-50": "127 29 29",
+  "--color-danger-100": "153 27 27",
+  "--color-danger-200": "185 28 28",
+  "--color-danger-300": "220 38 38",
+  "--color-danger-400": "230 53 53",
+  "--color-danger-500": "239 68 68",
+  "--color-danger-600": "248 113 113",
+  "--color-danger-700": "252 165 165",
+  "--color-danger-800": "254 202 202",
+  "--color-danger-900": "254 226 226",
+  "--color-danger-950": "254 233 233",
 
   /* Success */
   "--color-success-0": "27 50 36",
@@ -336,7 +336,7 @@ export const darkVars = {
   "--color-background-950": "254 254 254",
 
   /* Background Special */
-  "--color-background-error": "66 43 43",
+  "--color-background-danger": "66 43 43",
   "--color-background-warning": "65 47 35",
   "--color-background-success": "28 43 33",
   "--color-background-muted": "51 51 51",
@@ -345,7 +345,7 @@ export const darkVars = {
   /* Focus Ring Indicator  */
   "--color-indicator-primary": "247 247 247",
   "--color-indicator-info": "161 199 245",
-  "--color-indicator-error": "232 70 69",
+  "--color-indicator-danger": "232 70 69",
 };
 
 export const nativewindConfig = {
