@@ -28,13 +28,11 @@ $$ LANGUAGE plpgsql;
 create table profiles (
   id uuid references auth.users on delete cascade not null primary key,
   updated_at timestamp with time zone,
-  username text unique,
+  email text unique,
   full_name text,
   avatar_url text,
   timezone text,
   tenantid uuid
-
-  constraint username_length check (char_length(username) >= 3)
 );
 -- Set up Row Level Security (RLS)
 -- See https://supabase.com/docs/guides/auth/row-level-security for more details.
@@ -49,16 +47,23 @@ for update using ((select auth.uid()) = id);
 -- This trigger automatically creates a profile entry when a new user signs up via Supabase Auth.
 -- See https://supabase.com/docs/guides/auth/managing-user-data#using-triggers for more details.
 -- drop function public.handle_new_user;
-create OR REPLACE  function public.handle_new_user()
-returns trigger
-set search_path = ''
-as $$
-begin
-  insert into public.profiles (id, email, full_name, avatar_url, timezone, tenantid)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'timezone', new.raw_user_meta_data->>'tenantid');
-  return new;
-end;
-$$ language plpgsql security definer;
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, timezone, tenantid)
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    NEW.raw_user_meta_data->>'full_name', 
+    NEW.raw_user_meta_data->>'avatar_url', 
+    NEW.raw_user_meta_data->>'timezone', 
+    CAST(NEW.raw_user_meta_data->>'tenantid' AS UUID) -- Properly casting the value to UUID
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 create OR REPLACE trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
