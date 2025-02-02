@@ -7,7 +7,8 @@ import { Database } from "@/src/types/database.types";
 // const supaUrl = process.env.EXPO_PUBLIC_SUPA_URL as string;
 // const supaKey = process.env.EXPO_PUBLIC_SUPA_ANON_KEY as string;
 const supabaseUrl = "https://eqevunpprealeqzqpgbc.supabase.co";
-const supabaseAnonKey = "qEW8Y9XZCmGifGZQMsu1v5Uhf2N8+rM1iIlL/yuwNjxToZaJ4ht+JEqx3L6ha/5loyF5rJxtBDeP9Xs9iosvBA==";
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxZXZ1bnBwcmVhbGVxenFwZ2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg0MDI1MzIsImV4cCI6MjA1Mzk3ODUzMn0.V8pG9SKCs0T9SGoTx_8Ynop2IQ_cQE3tK7Bj6xjCw30";
 
 const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
