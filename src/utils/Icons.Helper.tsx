@@ -9,7 +9,7 @@ interface IconProps {
   className?: string;
 }
 
-const Icon = ({ name, size, color, style, className }: IconProps) => {
+const MyIcon = ({ name, size, color, style, className }: IconProps) => {
   const LucideIcon = icons[name as keyof typeof icons];
 
   return <LucideIcon size={size} color={color} style={style} className={className} />;
@@ -27,5 +27,5 @@ export function iconWithClassName(icon: LucideIcon) {
   });
 }
 
-iconWithClassName(Icon as any);
-export default Icon;
+iconWithClassName(MyIcon as any);
+export default MyIcon;

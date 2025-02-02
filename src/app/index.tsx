@@ -1,7 +1,7 @@
 import { ActivityIndicator, Text, View } from "react-native";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
-import Icon from "@/src/utils/Icons.Helper";
+import MyIcon from "@/src/utils/Icons.Helper";
 import { Redirect } from "expo-router";
 
 export default function Index() {
@@ -18,7 +18,7 @@ export default function Index() {
       <Text className="text-4xl text-center text-foreground" onPress={() => toggleTheme()}>
         Welcome to Expo Router
       </Text>
-      <Icon name="AlarmClock" size={50} className="text-warning-100" />
+      <MyIcon name="AlarmClock" size={50} className="text-warning-100" />
     </View>
   );
 }
