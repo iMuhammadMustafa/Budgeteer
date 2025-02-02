@@ -9,7 +9,7 @@
     "dev": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "dbtypes": "supabase gen types typescript --project-id 'eqevunpprealeqzqpgbc' > ./src/types/database.types.ts"
+    "dbtypes": "bunx supabase gen types typescript --project-id 'eqevunpprealeqzqpgbc' > ./src/types/database.types.ts"
   },
   "jest": {
     "preset": "jest-expo"
@@ -32,6 +32,7 @@
     "expo-symbols": "~0.2.1",
     "expo-system-ui": "~4.0.7",
     "expo-web-browser": "~14.0.2",
+    "lucide-react-native": "^0.474.0",
     "nativewind": "^4.1.23",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -42,7 +43,8 @@
     "react-native-screens": "~4.4.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
-    "supabase": "^2.9.6"
+    "supabase": "^2.9.6",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
