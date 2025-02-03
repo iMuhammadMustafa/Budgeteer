@@ -15,12 +15,12 @@ export const getAllAccounts = async () => {
   return data;
 };
 
-export const getAccountById = async (id?: string) => {
+export const getAccountById = async (id: string) => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
     .select()
     .eq("isdeleted", false)
-    .eq("id", id!)
+    .eq("id", id)
     .single();
   if (error) throw new Error(error.message);
   return data;

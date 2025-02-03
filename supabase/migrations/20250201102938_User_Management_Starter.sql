@@ -14,6 +14,8 @@ BEGIN
     -- Correctly access tenantid inside user_metadata
     tenantid_text := current_setting('request.jwt.claims', true)::jsonb->'user_metadata'->>'tenantid';
 
+    --((((current_setting('request.jwt.claims'::text, true))::jsonb -> 'user_metadata'::text) ->> 'tenantid'::text))::uuid
+
     -- If missing or invalid, return NULL
     IF tenantid_text IS NULL OR tenantid_text !~ '^[0-9a-fA-F-]{36}$' THEN
         RETURN NULL;
