@@ -1,7 +1,7 @@
 import "react-native-url-polyfill/auto";
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Database } from "@/src/types/database.types";
+import { Database } from "@/src/types/db/database.types";
 
 // TODO: Replace with your own Supabase URL and Anon Key
 // const supaUrl = process.env.EXPO_PUBLIC_SUPA_URL as string;
