@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 export default function Index() {
@@ -7,9 +7,20 @@ export default function Index() {
 
   if (isSessionLoading) return <ActivityIndicator />;
 
-  if (session?.user) {
-    router.push("/Dashboard");
-  } else {
-    router.push("/Login");
+  if (!session || !session?.user) {
+    router.replace("/Login");
   }
+
+  return (
+    <SafeAreaView className="justify-center items-center w-full">
+      <ScrollView>
+        <View>
+          <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
+        </View>
+        <Pressable className="p-2 my-1 bg-primary" onPress={() => router.replace("/Dashboard")}>
+          <Text className="text-primary-foreground">Dashboard!</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
