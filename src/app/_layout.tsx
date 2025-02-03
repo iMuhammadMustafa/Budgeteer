@@ -13,7 +13,6 @@ export default function RootLayout() {
           <Stack.Screen key="index" name="index" options={{ headerShown: false }} />
           <Stack.Screen key="auth" name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen key="drawer" name="(drawer)" options={{ headerShown: false }} />
-          <Stack.Screen key="tabs" name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </AuthProvider>
     </ThemeProvider>
