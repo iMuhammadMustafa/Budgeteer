@@ -228,9 +228,16 @@ const updateTransactionHelper = async (
   let originalTransferAccount: { id?: string; amount?: number } = {};
 
   // If nothing is changed return
-  if (JSON.stringify(formTransaction) === JSON.stringify(originalData)) {
-    return;
-  }
+  //   if (JSON.stringify(formTransaction) === JSON.stringify(originalData)) {
+  //     return;
+  //   }
+  const isUnchanged = Object.keys(formTransaction).every(key => {
+    if (key in formTransaction && key in originalData) {
+      return formTransaction[key as keyof typeof formTransaction] === originalData[key as keyof typeof originalData];
+    }
+    return false;
+  });
+  if (isUnchanged) return; // Exit early if no changes
 
   // Update trnsactions values
   if (formTransaction.name !== originalData.name) updatedTransaction.name = formTransaction.name;
@@ -246,23 +253,46 @@ const updateTransactionHelper = async (
     updatedTransaction.categoryid = formTransaction.categoryid;
 
   if (formTransaction.isvoid !== originalData.isvoid) updatedTransaction.isvoid = formTransaction.isvoid;
-  if (formTransaction.amount !== originalData.amount) updatedTransaction.amount = formTransaction.amount;
+  if (formTransaction.amount !== originalData.amount) {
+    updatedTransaction.amount = formTransaction.amount;
+    if (originalData.transferid) {
+      updatedTransferTransaction.amount = -formTransaction.amount!;
+    }
+  }
 
   if (formTransaction.accountid !== originalData.accountid) updatedTransaction.accountid = formTransaction.accountid;
   if (formTransaction.transferaccountid !== originalData.transferaccountid)
     updatedTransaction.transferaccountid = formTransaction.transferaccountid;
 
-  if (updatedTransaction.isvoid) {
-    originalAccount = {
-      id: originalData.accountid,
-      amount: -originalData.amount,
-    };
-
-    if (originalData.transferaccountid) {
-      originalTransferAccount = {
-        id: originalData.transferaccountid,
-        amount: originalData.amount,
+  if (updatedTransaction.isvoid !== undefined) {
+    //If voided => Remove Amount from Accounts
+    if (updatedTransaction.isvoid) {
+      originalAccount = {
+        id: originalData.accountid,
+        amount: -originalData.amount,
       };
+
+      if (originalData.transferaccountid) {
+        originalTransferAccount = {
+          id: originalData.transferaccountid,
+          amount: originalData.amount,
+        };
+      }
+    }
+
+    //If Unvoided => Add Amount to Accounts
+    if (originalData.isvoid && !updatedTransaction.isvoid) {
+      originalAccount = {
+        id: formTransaction.accountid,
+        amount: formTransaction.amount,
+      };
+
+      if (formTransaction.transferaccountid) {
+        originalTransferAccount = {
+          id: formTransaction.transferaccountid,
+          amount: -formTransaction.amount!,
+        };
+      }
     }
   }
 
@@ -279,11 +309,15 @@ const updateTransactionHelper = async (
       };
     }
     // Transfer Account Changed
-    if (updatedTransaction.transferaccountid && originalData.transferaccountid) {
-      originalTransferAccount = {
-        id: originalData.transferaccountid,
-        amount: originalData.amount,
-      };
+    if (updatedTransaction.transferaccountid) {
+      if (originalData.transferaccountid) {
+        // Revert the original transfer account
+        originalTransferAccount = {
+          id: originalData.transferaccountid,
+          amount: originalData.amount,
+        };
+      }
+      // Update the new transfer account
       newTransferAccount = {
         id: updatedTransaction.transferaccountid,
         amount: -updatedTransaction.amount,
@@ -294,14 +328,17 @@ const updateTransactionHelper = async (
     if (!updatedTransaction.accountid && !updatedTransaction.transferaccountid) {
       originalAccount = {
         id: originalData.accountid,
-        amount: -originalData.amount + updatedTransaction.amount,
+        amount: -originalData.amount + updatedTransaction.amount, // Adjust the original account
       };
-      originalTransferAccount = {
-        id: originalData.accountid,
-        amount: originalData.amount - updatedTransaction.amount,
-      };
+      if (originalData.transferaccountid) {
+        originalTransferAccount = {
+          id: originalData.transferaccountid,
+          amount: originalData.amount - updatedTransaction.amount, // Adjust the transfer account
+        };
+      }
     }
   }
+  //TODO : Handle Void => Not Void
 
   // Update Transactions
   if (Object.keys(updatedTransaction).length > 0) {
@@ -310,8 +347,6 @@ const updateTransactionHelper = async (
     updatedTransaction.updatedby = userId;
 
     const updatedTransactionRes = await updateTransaction(updatedTransaction);
-
-    updatedTransactions.push(updatedTransaction);
   }
   if (originalData.transferid && Object.keys(updatedTransferTransaction).length > 0) {
     updatedTransferTransaction.id = originalData.transferid;
@@ -321,16 +356,21 @@ const updateTransactionHelper = async (
     const updatedTransferTransactionRes = await updateTransaction(updatedTransferTransaction);
   }
 
-  if (newAccount.id && newAccount.amount) {
-    const resp = await updateAccountBalance(newAccount.id, newAccount.amount);
-  }
-  if (newTransferAccount.id && newTransferAccount.amount) {
-    const resp = await updateAccountBalance(newTransferAccount.id, newTransferAccount.amount);
-  }
-  if (originalAccount.id && originalAccount.amount) {
-    const resp = await updateAccountBalance(originalAccount.id, originalAccount.amount);
-  }
-  if (originalTransferAccount.id && originalTransferAccount.amount) {
-    const resp = await updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount);
+  try {
+    if (newAccount.id && newAccount.amount) {
+      const resp = await updateAccountBalance(newAccount.id, newAccount.amount);
+    }
+    if (newTransferAccount.id && newTransferAccount.amount) {
+      const resp = await updateAccountBalance(newTransferAccount.id, newTransferAccount.amount);
+    }
+    if (originalAccount.id && originalAccount.amount) {
+      const resp = await updateAccountBalance(originalAccount.id, originalAccount.amount);
+    }
+    if (originalTransferAccount.id && originalTransferAccount.amount) {
+      const resp = await updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount);
+    }
+  } catch (error) {
+    // Rollback or handle the error
+    throw new Error("Failed to update account balances");
   }
 };
