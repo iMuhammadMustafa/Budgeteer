@@ -208,7 +208,7 @@ const createTransactionHelper = async (formTransaction: Inserts<TableNames.Trans
   return newTransactions[0];
 };
 
-const updateTransactionHelper = async (
+export const updateTransactionHelper = async (
   formTransaction: Updates<TableNames.Transactions>,
   originalData: Transaction,
   session: Session,
