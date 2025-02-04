@@ -1,8 +1,10 @@
+import { TransactionType } from "../db/Tables.Types";
+
 export type TransactionFilters = {
   name?: string;
   description?: string;
 
-  amount?: string;
+  amount?: number;
 
   startDate?: string;
   endDate?: string;
@@ -10,7 +12,7 @@ export type TransactionFilters = {
   accountid?: string;
   categoryid?: string;
 
-  type?: string;
+  type?: TransactionType;
   isVoid?: boolean;
   tags?: string[];
 

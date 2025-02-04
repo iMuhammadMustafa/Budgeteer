@@ -3,7 +3,15 @@ import supabase from "@/src/providers/Supabase";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllTransactions = async (searchFilters: TransactionFilters) => {
+export const getAllTransactions = async () => {
+  const { data, error } = await supabase.from(ViewNames.TransactionsView).select().eq("isdeleted", false);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+};
+
+export const getTransactions = async (searchFilters: TransactionFilters) => {
   let query = buildQuery(searchFilters);
 
   const { data, error } = await query;
@@ -19,38 +27,36 @@ const buildQuery = (searchFilters: TransactionFilters, isCount = false) => {
     query = supabase.from(ViewNames.TransactionsView).select("*", { count: "exact", head: true });
   }
 
-  if (searchFilters.startDate && searchFilters.startDate != "undefined") {
+  if (searchFilters.startDate) {
     query = query.gte("date", searchFilters.startDate);
   }
-  if (searchFilters.endDate && searchFilters.endDate != "undefined") {
+  if (searchFilters.endDate) {
     query = query.lte("date", searchFilters.endDate);
   }
-  if (searchFilters.name && searchFilters.name != "undefined") {
+  if (searchFilters.name) {
     query = query.ilike("name", searchFilters.name);
   }
-  if (searchFilters.description && searchFilters.description != "undefined") {
+  if (searchFilters.description) {
     query = query.ilike("description", searchFilters.description);
   }
-  if (searchFilters.amount && searchFilters.amount != "undefined") {
+  if (searchFilters.amount) {
     query = query.eq("amount", searchFilters.amount);
   }
-
-  if (searchFilters.categoryid && searchFilters.categoryid != "undefined") {
+  if (searchFilters.categoryid) {
     query = query.eq("categoryid", searchFilters.categoryid);
   }
-  if (searchFilters.accountid && searchFilters.accountid != "undefined") {
+  if (searchFilters.accountid) {
     query = query.eq("accountid", searchFilters.accountid);
   }
   if (searchFilters.isVoid) {
     query = query.eq("isVoid", searchFilters.isVoid);
   }
-  if (searchFilters.type && searchFilters.type != "undefined") {
+  if (searchFilters.type) {
     query = query.eq("type", searchFilters.type);
   }
   if (searchFilters.tags && searchFilters.tags.length > 0) {
     query = query.in("tags", searchFilters.tags);
   }
-
   //   query = query.order("date", { ascending: false });
 
   if (searchFilters.startIndex && searchFilters.endIndex) {
@@ -132,6 +138,7 @@ export const updateTransaction = async (transaction: Updates<TableNames.Transact
   if (error) throw error;
   return data;
 };
+
 export const updateTransferTransaction = async (transaction: Updates<TableNames.Transactions>) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
