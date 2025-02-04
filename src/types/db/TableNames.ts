@@ -4,13 +4,14 @@ export enum TableNames {
   Transactions = "transactions",
   TransactionCategories = "transactioncategories",
   TransactionGroups = "transactiongroups",
+  Configurations = "configurations",
 }
 
 export enum ViewNames {
   TransactionsView = "transactionsview",
   SearchDistinctTransactions = "search_distincttransactions",
   StatsDailyTransactions = "stats_dailytransactions",
-  MonthlyCategoriesTransactions = "stats_monthlycategoriestransactions",
+  StatsMonthlyCategoriesTransactions = "stats_monthlycategoriestransactions",
 }
 
 export enum EnumNames {

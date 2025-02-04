@@ -58,6 +58,7 @@ create table Accounts
     
     Icon TEXT NOT NULL DEFAULT 'Ellipsis'::text,
     Color TEXT NOT NULL DEFAULT 'warning-100',
+    DisplayOrder INT NOT NULL DEFAULT 0,
     
     CategoryId UUID NOT NULL,
 
@@ -77,28 +78,6 @@ CREATE POLICY "Tenant access" ON Accounts as PERMISSIVE  for ALL USING (TenantId
 CREATE INDEX "Accounts_TenantId" ON Accounts (TenantId);
 CREATE INDEX "Accounts_IsDeleted" ON Accounts (IsDeleted);
 
--- CREATE TYPE Configruations AS ENUM 
-
--- CREATE TABLE BUDGETS
--- (
---     Id UUID DEFAULT uuid_generate_v7() PRIMARY KEY,
-    
---     Name TEXT NOT NULL,
---     Description TEXT,
---     Type TransactionTypes NOT NULL DEFAULT 'Expense',
-    
---     Icon TEXT NOT NULL DEFAULT 'Ellipsis'::text,
---     Color TEXT NOT NULL DEFAULT 'warning-100',
---     DisplayOrder INT NOT NULL DEFAULT 0,
-    
---     CreatedBy UUID DEFAULT auth.uid(),
---     CreatedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
---     UpdatedBy UUID DEFAULT auth.uid(),
---     UpdatedAt TIMESTAMPTZ,
---     IsDeleted BOOLEAN NOT NULL DEFAULT FALSE,
-    
---     TenantId UUID NOT NULL
--- );
 
 CREATE Type TransactionTypes AS ENUM ('Expense', 'Income', 'Transfer', 'Adjustment', 'Initial', 'Refund');
 
@@ -210,3 +189,27 @@ CREATE INDEX "Transactions_TenantId" ON Transactions (TenantId);
 CREATE INDEX "Transactions_IsDeleted" ON Transactions (IsDeleted);
 CREATE INDEX "Transactions_Accountid_Date" ON transactions (accountid, date, id) WHERE IsDeleted = false AND IsVoid = false;;
 -- CREATE INDEX "Transactions_Accountid_Date" ON transactions (accountid, date, createdat, updatedat, type, id);
+
+
+CREATE TABLE Configruations
+(
+    Id UUID DEFAULT uuid_generate_v7() PRIMARY KEY,
+    
+    "Table" TEXT NOT NULL,
+    "Type" TEXT NOT NULL,
+    KEY TEXT NOT NULL,
+    Value TEXT NOT NULL,
+    
+    
+    CreatedBy UUID DEFAULT auth.uid(),
+    CreatedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedBy UUID DEFAULT auth.uid(),
+    UpdatedAt TIMESTAMPTZ,
+    IsDeleted BOOLEAN NOT NULL DEFAULT FALSE,
+    
+    TenantId UUID DEFAULT auth.tenantid()
+);
+ALTER TABLE Configruations Enable Row Level Security;
+CREATE POLICY "Tenant access" ON Configruations as PERMISSIVE for ALL USING (TenantId = auth.tenantid());
+CREATE INDEX "Configruations_TenantId" ON Configruations (TenantId);
+CREATE INDEX "Configruations_IsDeleted" ON Configruations (IsDeleted);

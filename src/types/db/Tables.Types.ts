@@ -14,6 +14,8 @@ export type Transaction = Tables<"transactions">;
 export type TransactionCategory = Tables<"transactioncategories">;
 export type TransactionGroup = Tables<"transactiongroups">;
 
+export type Configuration = Tables<"configurations">;
+
 // Materialized Views
 export type TransactionsView = Views<"transactionsview">;
 
