@@ -217,7 +217,6 @@ export const updateTransactionHelper = async (
 
   const currentTimestamp = new Date().toISOString();
 
-  const updatedTransactions: Updates<TableNames.Transactions>[] = [];
   const updatedTransaction: Updates<TableNames.Transactions> = {};
   let updatedTransferTransaction: Updates<TableNames.Transactions> = {};
 
@@ -240,31 +239,62 @@ export const updateTransactionHelper = async (
   if (isUnchanged) return; // Exit early if no changes
 
   // Update trnsactions values
-  if (formTransaction.name !== originalData.name) updatedTransaction.name = formTransaction.name;
-  if (formTransaction.date !== originalData.date) updatedTransaction.date = formTransaction.date;
-  if (formTransaction.payee !== originalData.payee) updatedTransaction.payee = formTransaction.payee;
-  if (formTransaction.description !== originalData.description)
-    updatedTransaction.description = formTransaction.description;
-  if (formTransaction.tags !== originalData.tags) updatedTransaction.tags = formTransaction.tags;
-  if (formTransaction.notes !== originalData.notes) updatedTransaction.notes = formTransaction.notes;
-  if (formTransaction.type !== originalData.type) updatedTransaction.type = formTransaction.type;
-
-  if (formTransaction.categoryid !== originalData.categoryid)
-    updatedTransaction.categoryid = formTransaction.categoryid;
-
-  if (formTransaction.isvoid !== originalData.isvoid) updatedTransaction.isvoid = formTransaction.isvoid;
-  if (formTransaction.amount !== originalData.amount) {
-    updatedTransaction.amount = formTransaction.amount;
+  if (formTransaction.name !== originalData.name) {
+    updatedTransaction.name = formTransaction.name;
     if (originalData.transferid) {
-      updatedTransferTransaction.amount = -formTransaction.amount!;
+      updatedTransferTransaction.name = formTransaction.name;
+    }
+  }
+  if (formTransaction.date !== originalData.date) {
+    updatedTransaction.date = formTransaction.date;
+    if (originalData.transferid) {
+      updatedTransferTransaction.date = formTransaction.date;
+    }
+  }
+  if (formTransaction.payee !== originalData.payee) {
+    updatedTransaction.payee = formTransaction.payee;
+    if (originalData.transferid) {
+      updatedTransferTransaction.payee = formTransaction.payee;
+    }
+  }
+  if (formTransaction.description !== originalData.description) {
+    updatedTransaction.description = formTransaction.description;
+    if (originalData.transferid) {
+      updatedTransferTransaction.description = formTransaction.description;
+    }
+  }
+  if (formTransaction.tags !== originalData.tags) {
+    updatedTransaction.tags = formTransaction.tags;
+    if (originalData.transferid) {
+      updatedTransferTransaction.tags = formTransaction.tags;
+    }
+  }
+  if (formTransaction.notes !== originalData.notes) {
+    updatedTransaction.notes = formTransaction.notes;
+    if (originalData.transferid) {
+      updatedTransferTransaction.notes = formTransaction.notes;
+    }
+  }
+  // if (formTransaction.type !== originalData.type) {
+  //   updatedTransaction.type = formTransaction.type;
+  //   if (originalData.transferid) {
+  //     updatedTransferTransaction.type = formTransaction.type;
+  //   }
+  // }
+
+  if (formTransaction.categoryid !== originalData.categoryid) {
+    updatedTransaction.categoryid = formTransaction.categoryid;
+    if (originalData.transferid) {
+      updatedTransferTransaction.categoryid = formTransaction.categoryid;
     }
   }
 
-  if (formTransaction.accountid !== originalData.accountid) updatedTransaction.accountid = formTransaction.accountid;
-  if (formTransaction.transferaccountid !== originalData.transferaccountid)
-    updatedTransaction.transferaccountid = formTransaction.transferaccountid;
+  if (formTransaction.isvoid !== originalData.isvoid) {
+    updatedTransaction.isvoid = formTransaction.isvoid;
+    if (originalData.transferid) {
+      updatedTransferTransaction.isvoid = formTransaction.isvoid;
+    }
 
-  if (updatedTransaction.isvoid !== undefined) {
     //If voided => Remove Amount from Accounts
     if (updatedTransaction.isvoid) {
       originalAccount = {
@@ -279,7 +309,6 @@ export const updateTransactionHelper = async (
         };
       }
     }
-
     //If Unvoided => Add Amount to Accounts
     if (originalData.isvoid && !updatedTransaction.isvoid) {
       originalAccount = {
@@ -293,6 +322,67 @@ export const updateTransactionHelper = async (
           amount: -formTransaction.amount!,
         };
       }
+    }
+  }
+
+  if (formTransaction.amount !== originalData.amount) {
+    updatedTransaction.amount = formTransaction.amount;
+    if (originalData.transferid) {
+      updatedTransferTransaction.amount = -formTransaction.amount!;
+    }
+  }
+
+  // Handle Account Change =>
+  // 1. Update Transaction with new AccountId
+  // 2. Update TransferTransaction with new TransferAccountId
+  // 3. Update OriginalAccount with AccountId and -OriginalAmount
+  // 4. Update NewAccount with new AccountId and +FormAmount
+  if (formTransaction.accountid !== originalData.accountid) {
+    updatedTransaction.accountid = formTransaction.accountid;
+
+    // originalAccount.id = originalData.accountid;
+    // newAccount.id = formTransaction.accountid;
+    originalAccount = {
+      id: originalData.accountid,
+      amount: originalData.isvoid ? undefined : -originalData.amount,
+    };
+    if (!updatedTransaction.isvoid) {
+      newAccount = {
+        id: formTransaction.accountid,
+        amount: formTransaction.amount ?? originalData.amount,
+      };
+    }
+
+    if (originalData.transferid) {
+      updatedTransferTransaction.transferaccountid = formTransaction.accountid;
+    }
+  }
+
+  // Handle Destination Account Change =>
+  // 1. Update Transaction with new TransferAccountId
+  // 2. Update TransferTransaction with new AccountId
+  // 3. Update Original TransferAccount with TransferAccountId and +OriginalAmount
+  // 3. Update New TransferAccount with new TransferAccountId and -FormAmount
+  if (
+    formTransaction.transferaccountid &&
+    originalData.transferaccountid &&
+    formTransaction.transferaccountid !== originalData.transferaccountid
+  ) {
+    updatedTransaction.transferaccountid = formTransaction.transferaccountid;
+    updatedTransferTransaction.accountid = formTransaction.transferaccountid;
+
+    // originalTransferAccount.id = originalData.transferaccountid;
+    // newTransferAccount.id = formTransaction.transferaccountid;
+
+    originalTransferAccount = {
+      id: originalData.transferaccountid,
+      amount: originalData.isvoid ? undefined : originalData.amount,
+    };
+    if (!updatedTransaction.isvoid) {
+      newTransferAccount = {
+        id: formTransaction.transferaccountid,
+        amount: -formTransaction.amount!,
+      };
     }
   }
 
@@ -338,7 +428,6 @@ export const updateTransactionHelper = async (
       }
     }
   }
-  //TODO : Handle Void => Not Void
 
   // Update Transactions
   if (Object.keys(updatedTransaction).length > 0) {
