@@ -1,0 +1,143 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Configuration, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
+import {
+  createConfiguration,
+  deleteConfiguration,
+  getConfigurationById,
+  getAllConfigurations,
+  restoreConfiguration,
+  updateConfiguration,
+} from "../apis/Configurations.api";
+import { queryClient } from "@/src/providers/QueryProvider";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { Session } from "@supabase/supabase-js";
+
+export const useGetConfigurations = () => {
+  return useQuery<Configuration[]>({
+    queryKey: [TableNames.Configurations],
+    queryFn: getAllConfigurations,
+  });
+};
+
+export const useGetConfigurationById = (id?: string) => {
+  return useQuery<Configuration>({
+    queryKey: [TableNames.Configurations, id],
+    queryFn: async () => getConfigurationById(id!),
+    enabled: !!id,
+  });
+};
+
+export const useCreateConfiguration = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+  return useMutation({
+    mutationFn: async (accountGroup: Inserts<TableNames.Configurations>) => {
+      return await createConfigurationHelper(accountGroup, session);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+    },
+  });
+};
+export const useUpdateConfiguration = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
+  return useMutation({
+    mutationFn: async ({
+      accountGroup,
+      originalData,
+    }: {
+      accountGroup: Updates<TableNames.Configurations>;
+      originalData: Configuration;
+    }) => {
+      return await updateConfigurationHelper(accountGroup, session);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+    },
+  });
+};
+
+export const useUpsertConfiguration = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
+  return useMutation({
+    mutationFn: async ({
+      formConfiguration,
+      originalData,
+    }: {
+      formConfiguration: Inserts<TableNames.Configurations> | Updates<TableNames.Configurations>;
+      originalData?: Configuration;
+    }) => {
+      if (formConfiguration.id && originalData) {
+        return await updateConfigurationHelper(formConfiguration, session);
+      }
+      return await createConfigurationHelper(formConfiguration as Inserts<TableNames.Configurations>, session);
+    },
+    onSuccess: async (_, data) => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+    },
+    onError: (error, variables, context) => {
+      throw new Error(JSON.stringify(error));
+    },
+  });
+};
+
+export const useDeleteConfiguration = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
+  const userId = session.user.id;
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return await deleteConfiguration(id, userId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+    },
+  });
+};
+
+export const useRestoreConfiguration = (id?: string) => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+  const userId = session.user.id;
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return await restoreConfiguration(id, userId);
+    },
+    onSuccess: async id => {
+      await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] })]);
+    },
+  });
+};
+
+const createConfigurationHelper = async (formConfiguration: Inserts<TableNames.Configurations>, session: Session) => {
+  let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
+
+  formConfiguration.createdat = new Date().toISOString();
+  formConfiguration.createdby = userId;
+  formConfiguration.tenantid = tenantid;
+
+  const newConfiguration = await createConfiguration(formConfiguration);
+
+  return newConfiguration;
+};
+
+const updateConfigurationHelper = async (formConfiguration: Updates<TableNames.Configurations>, session: Session) => {
+  let userId = session.user.id;
+
+  formConfiguration.updatedby = userId;
+  formConfiguration.updatedat = new Date().toISOString();
+
+  const updatedConfiguration = await updateConfiguration(formConfiguration);
+
+  return updatedConfiguration;
+};

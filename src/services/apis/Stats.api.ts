@@ -16,7 +16,7 @@ export const getDailyTransactionsSummary = async (startDate?: string, endDate?: 
 };
 export const getMonthlyCategoriesTransactions = async (startDate?: string, endDate?: string) => {
   const { data, error } = await supabase
-    .from(ViewNames.MonthlyCategoriesTransactions)
+    .from(ViewNames.StatsMonthlyCategoriesTransactions)
     .select()
     .gte("date", startDate ?? dayjs().startOf("month").toISOString())
     .lte("date", endDate ?? dayjs().endOf("month").toISOString());

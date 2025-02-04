@@ -1,9 +1,21 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Account, Inserts } from "@/src/types/db/Tables.Types";
+import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { createAccount, deleteAccount, getAccountById, getAllAccounts } from "../apis/Accounts.api";
+import {
+  createAccount,
+  deleteAccount,
+  getAccountById,
+  getAccountOpenedTransaction,
+  getAllAccounts,
+  restoreAccount,
+  updateAccount,
+} from "../apis/Accounts.api";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { Session } from "@supabase/supabase-js";
+import { createTransaction } from "../apis/Transactions.api";
+import { getConfiguration } from "../apis/Configurations.api";
+import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
 
 export const useGetAccounts = () => {
   return useQuery<Account[]>({
@@ -20,25 +32,75 @@ export const useGetAccountById = (id?: string) => {
   });
 };
 
+export const useGetAccountOpenedTransaction = (id: string) => {
+  return useQuery<any>({
+    queryKey: [TableNames.Transactions, id],
+    queryFn: async () => getAccountOpenedTransaction(id),
+    enabled: !!id,
+  });
+};
+
 export const useCreateAccount = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
   return useMutation({
     mutationFn: async (account: Inserts<TableNames.Accounts>) => {
-      return await createAccount(account);
+      return await createAccountHelper(account, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+    },
+  });
+};
+export const useUpdateAccount = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
+  return useMutation({
+    mutationFn: async ({ account, originalData }: { account: Updates<TableNames.Accounts>; originalData: Account }) => {
+      return await updateAccountHelper(account, session, originalData);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+    },
+  });
+};
+
+export const useUpsertAccount = () => {
+  const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
+  return useMutation({
+    mutationFn: async ({
+      formAccount,
+      originalData,
+    }: {
+      formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
+      originalData?: Account;
+    }) => {
+      if (formAccount.id && originalData) {
+        return await updateAccountHelper(formAccount, session, originalData);
+      }
+      return await createAccountHelper(formAccount as Inserts<TableNames.Accounts>, session);
+    },
+    onSuccess: async (_, data) => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+    },
+    onError: (error, variables, context) => {
+      throw new Error(JSON.stringify(error));
     },
   });
 };
 
 export const useDeleteAccount = () => {
   const { session } = useAuth();
-
   const userId = session?.user.id;
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await deleteAccount(id, userId!);
+      // const [_, accountRes] = await Promise.all([deleteAccount(id, userId), deleteAccountTransactions(id, userId)]);
+      return await deleteAccount(id, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -46,129 +108,96 @@ export const useDeleteAccount = () => {
   });
 };
 
-// export const useRestoreAccount = (id?: string) => {
-//   const queryClient = useQueryClient();
-//   const { session } = useAuth();
-//   return useMutation({
-//     mutationFn: async (id: string) => {
-//       const [_, accountRes] = await Promise.all([restoreAccountTransactions(id, session), restoreAccount(id, session)]);
-//       return accountRes;
-//     },
-//     onSuccess: async id => {
-//       await Promise.all([
-//         queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-//         queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] }),
-//         queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
-//       ]);
-//     },
-//   });
-// };
+export const useRestoreAccount = (id?: string) => {
+  const { session } = useAuth();
+  const userId = session?.user.id;
 
-// export const useDeleteAccount = () => {
-//   const { session } = useAuth();
-//   const queryClient = useQueryClient();
-//   return useMutation({
-//     mutationFn: async (id: string) => {
-//       await deleteAccountTransactions(id, session);
-//       return await deleteAccount(id, session);
-//     },
-//     onSuccess: async (_, id) => {
-//       await Promise.all([
-//         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-//         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] }),
-//         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
-//       ]);
-//     },
-//   });
-// };
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // const [_, accountRes] = await Promise.all([restoreAccountTransactions(id, session), restoreAccount(id, session)]);
+      return await restoreAccount(id, userId);
+      // return accountRes;
+    },
+    onSuccess: async id => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
+        queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] }),
+        queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
+      ]);
+    },
+  });
+};
 
-// export const useUpsertAccount = () => {
-//   const queryClient = useQueryClient();
-//   const { session } = useAuth();
+const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, session: Session) => {
+  let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
 
-//   if (!session || !session.user) {
-//     throw new Error("User is not logged in");
-//   }
+  formAccount.createdat = new Date().toISOString();
+  formAccount.createdby = userId;
+  formAccount.tenantid = tenantid;
 
-//   return useMutation({
-//     mutationFn: async ({
-//       formAccount,
-//       originalData,
-//     }: {
-//       formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
-//       originalData?: Account;
-//     }) => {
-//       if (formAccount.id) {
-//         return await upsertUpdateAccount(formAccount, session, originalData);
-//       }
-//       return await upsertCreateAccount(formAccount, session);
-//     },
-//     onSuccess: async (_, data) => {
-//       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-//       await queryClient.invalidateQueries({
-//         queryKey: [TableNames.Accounts, data.formAccount.id ?? data.originalData?.id],
-//       });
-//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-//     },
-//     onError: (error, variables, context) => {
-//       throw new Error(JSON.stringify(error));
-//     },
-//   });
-// };
+  const newAcc = await createAccount(formAccount);
 
-// const upsertUpdateAccount = async (
-//   formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
-//   session: Session,
-//   originalData?: Account,
-// ) => {
-//   formAccount.updatedby = session.user.id;
-//   formAccount.updatedat = new Date().toISOString();
+  if (newAcc) {
+    let config = await getConfiguration(
+      TableNames.TransactionCategories,
+      ConfigurationTypes.AccountOpertationsCategory,
+      "Id",
+    );
+    if (!config) {
+      throw new Error("Account Operations Category not found");
+    }
+    await createTransaction({
+      name: TransactionNames.AccountOpened,
+      amount: formAccount.balance,
+      accountid: newAcc.id,
+      categoryid: config.value,
+      type: "Initial",
+      createdby: userId,
+      createdat: new Date().toISOString(),
+      tenantid: tenantid,
+      date: new Date().toISOString(),
+    });
+  }
 
-//   if (originalData && formAccount.balance && formAccount.balance !== originalData.balance) {
-//     await createTransaction({
-//       amount: formAccount.balance - originalData.balance,
-//       accountid: originalData.id,
-//       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-//       type: "Adjustment",
-//       description: "Balance Adjustment",
-//       createdby: session.user.id,
-//       tenantid: session.user.user_metadata.tenantid,
-//       date: new Date().toISOString(),
-//     });
-//   }
+  return newAcc;
+};
 
-//   return await updateAccount(formAccount);
-// };
-// const upsertCreateAccount = async (
-//   formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>,
-//   session: Session,
-// ) => {
-//   let userId = session.user.id;
-//   let tenantid = session.user.user_metadata.tenantid;
+const updateAccountHelper = async (
+  formAccount: Updates<TableNames.Accounts>,
+  session: Session,
+  originalData: Account,
+) => {
+  let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
 
-//   formAccount.createdat = new Date().toISOString();
-//   formAccount.createdby = userId;
-//   formAccount.tenantid = tenantid;
+  formAccount.updatedby = userId;
+  formAccount.updatedat = new Date().toISOString();
 
-//   const newAcc = await createAccount(formAccount as Inserts<TableNames.Accounts>, session);
-//   await createTransaction({
-//     amount: formAccount.balance ?? 0,
-//     accountid: newAcc.id,
-//     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-//     type: "Initial",
-//     description: "Account Opened",
-//     createdby: userId,
-//     tenantid: tenantid,
-//     date: formAccount.createdat,
-//   });
+  const updatedAccount = await updateAccount(formAccount);
 
-//   return newAcc;
-// };
+  if (formAccount.balance && formAccount.balance !== originalData.balance) {
+    const config = await getConfiguration(
+      TableNames.TransactionCategories,
+      ConfigurationTypes.AccountOpertationsCategory,
+      "Id",
+    );
 
-// export const useGetAccountOpenBalance = (id?: string) => {
-//   return useQuery<any>({
-//     queryKey: [TableNames.Accounts, id],
-//     queryFn: async () => getAccountOpenBalance(id!),
-//     enabled: !!id,
-//   });
-// };
+    if (!config) {
+      throw new Error("Account Operations Category not found");
+    }
+
+    await createTransaction({
+      name: TransactionNames.BalanceAdjustment,
+      amount: formAccount.balance - originalData.balance,
+      accountid: originalData.id,
+      categoryid: config.id,
+      type: "Adjustment",
+      createdby: userId,
+      tenantid: tenantid,
+      date: new Date().toISOString(),
+    });
+  }
+
+  return updatedAccount;
+};

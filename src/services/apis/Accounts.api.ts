@@ -45,12 +45,12 @@ export const updateAccount = async (account: Updates<TableNames.Accounts>) => {
   return data;
 };
 
-export const deleteAccount = async (id: string, userId: string) => {
+export const deleteAccount = async (id: string, userId?: string) => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
     .update({
       isdeleted: true,
-      updatedby: userId,
+      updatedby: userId ?? undefined,
       updatedat: new Date().toISOString(),
     })
     .eq("id", id)
@@ -59,10 +59,10 @@ export const deleteAccount = async (id: string, userId: string) => {
   if (error) throw error;
   return data;
 };
-export const restoreAccount = async (id: string, userId: string) => {
+export const restoreAccount = async (id: string, userId?: string) => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
-    .update({ isdeleted: false, updatedby: userId, updatedat: new Date().toISOString() })
+    .update({ isdeleted: false, updatedby: userId ?? undefined, updatedat: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
