@@ -3,7 +3,7 @@ import { ThemeProvider as ReactThemeProvider } from "@react-navigation/native";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { Platform, StatusBar, View } from "react-native";
 
-import { convertThemeToReactNativeColors, nativewindConfig } from "@/src/utils/theme.config";
+import { applyRootVariables, convertThemeToReactNativeColors, nativewindConfig } from "@/src/utils/theme.config";
 import { ThemeContextType, ThemeMode } from "../types/utils/Theme.Type";
 import { useColorScheme } from "nativewind";
 
@@ -43,6 +43,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     if (isColorSchemeLoaded) {
       AsyncStorage.setItem("theme", theme);
       setColorScheme(theme);
+      applyRootVariables(theme);
     }
   }, [theme, isColorSchemeLoaded]);
 
@@ -61,7 +62,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
           barStyle={theme === "dark" ? "light-content" : "dark-content"}
           backgroundColor={theme === "dark" ? "black" : "white"}
         />
-        <View className="flex-1" style={nativewindConfig[theme]}>
+        <View className="flex-1" style={Platform.OS !== "web" ? nativewindConfig[theme] : {}}>
           {children}
         </View>
       </ReactThemeProvider>

@@ -356,6 +356,8 @@ export const nativewindConfig = {
 export const convertThemeToReactNativeColors = (mode: ThemeMode) => {
   const styles = mode === "dark" ? darkVars : lightVars;
 
+  const rgb = (color: string) => `rgb(${color.replace(/ /g, ",")})`;
+
   return {
     dark: mode === "dark",
     fonts: {
@@ -368,15 +370,24 @@ export const convertThemeToReactNativeColors = (mode: ThemeMode) => {
       heavy: { fontFamily: "System", fontWeight: "900" as const }, // Heavy weight
     },
     colors: {
-      background: `rgb(${styles["--background"].replace(/ /g, ",")})`,
-      text: `rgb(${styles["--foreground"].replace(/ /g, ",")})`,
-      card: `rgb(${styles["--card"].replace(/ /g, ",")})`,
-      border: `rgb(${styles["--border"].replace(/ /g, ",")})`,
-      primary: `rgb(${styles["--primary"].replace(/ /g, ",")})`,
-      notification: `rgb(${styles["--destructive"].replace(/ /g, ",")})`,
+      background: rgb(styles["--background"]),
+      text: rgb(styles["--foreground"]),
+      card: rgb(styles["--card"]),
+      border: rgb(styles["--border"]),
+      primary: rgb(styles["--primary"]),
+      notification: rgb(styles["--destructive"]),
       // Add other React Native-specific colors here
-      muted: `rgb(${styles["--muted"]?.replace(/ /g, ",") || "128,128,128"})`, // Example fallback
-      accent: `rgb(${styles["--accent"]?.replace(/ /g, ",") || "0,123,255"})`, // Example fallback
+      muted: rgb(styles["--muted"] || "128,128,128"),
+      accent: rgb(styles["--accent"] || "0,123,255"),
     },
   };
+};
+
+export const applyRootVariables = (mode: ThemeMode) => {
+  const themeVars = mode === "dark" ? darkVars : lightVars;
+  if (typeof document !== "undefined") {
+    Object.keys(themeVars).forEach(key => {
+      document.documentElement.style.setProperty(key, themeVars[key]);
+    });
+  }
 };
