@@ -1,6 +1,6 @@
 import "react-native-get-random-values";
-import uuid from "uuid";
+import { v7 } from "uuid";
 
-const GenerateUuid = uuid.v7;
+const GenerateUuid = v7;
 
 export default GenerateUuid;
