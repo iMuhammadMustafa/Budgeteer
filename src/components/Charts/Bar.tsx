@@ -1,20 +1,7 @@
 import { useState } from "react";
 import { View, Dimensions, useWindowDimensions, Text, Platform } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
-
-export type BarProps = {
-  data: BarType[];
-  label: string;
-  color?: any;
-  hideY?: boolean;
-};
-
-export type BarType = {
-  x: string;
-  y: Number;
-  color?: string;
-  item?: any;
-};
+import { BarProps } from "@/src/types/components/Charts.types";
 
 export default function Bar({ data, label, color, hideY }: BarProps) {
   const { width } = useWindowDimensions();

@@ -1,18 +1,8 @@
-import { useTheme } from "@/src/providers/ThemeProvider";
 import { useState } from "react";
 import { FlatList, Platform, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { VictoryContainer, VictoryLabel, VictoryLegend, VictoryPie, VictoryTheme } from "victory-native";
-
-export type PieData = {
-  x: string;
-  y: number;
-};
-
-export type PieProps = {
-  data: PieData[];
-  label: string;
-  maxItemsOnChart?: number;
-};
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { PieData, PieProps } from "@/src/types/components/Charts.types";
 
 export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10 }: PieProps) {
   const { width } = useWindowDimensions();
@@ -23,9 +13,9 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
 
   const showLegend = width > 600 * 1.5;
   const availableWidth = showLegend ? width * 0.25 : chartWidth;
-  if (!data || data.length === 0) {
-    return <Text>No data</Text>;
-  }
+  // if (!data || data.length === 0) {
+  //   return <Text>No data</Text>;
+  // }
 
   const totalValue = data.reduce((acc, item) => acc + item.y, 0);
 
@@ -111,32 +101,34 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
               ]}
             />
 
-            {selectedSlice !== null ? (
-              <VictoryLabel
-                backgroundPadding={10}
-                backgroundStyle={
-                  Platform.OS !== "web"
-                    ? {
-                        fill: "white",
-                        fillOpacity: 0.7,
-                        stroke: "black",
-                        strokeWidth: 2,
-                      }
-                    : undefined
-                }
-                textAnchor="middle"
-                verticalAnchor="middle"
-                x={chartWidth * 0.5}
-                y={chartHeight * 0.48}
-                style={{
-                  fontSize: 14,
-                  fontWeight: "bold",
-                  fill: theme === "light" ? "black" : Platform.OS === "web" ? "white" : "black",
-                }}
-                text={`${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
-              \n$${selectedSlice?.y}`}
-              />
-            ) : null}
+            <VictoryLabel
+              backgroundPadding={10}
+              backgroundStyle={
+                Platform.OS !== "web"
+                  ? {
+                      fill: "white",
+                      fillOpacity: 0.7,
+                      stroke: "black",
+                      strokeWidth: 2,
+                    }
+                  : undefined
+              }
+              textAnchor="middle"
+              verticalAnchor="middle"
+              x={chartWidth * 0.5}
+              y={chartHeight * 0.48}
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                fill: theme === "light" ? "black" : Platform.OS === "web" ? "white" : "black",
+              }}
+              text={
+                selectedSlice !== null
+                  ? `${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
+              \n$${selectedSlice?.y}`
+                  : ""
+              }
+            />
           </VictoryContainer>
         </View>
 

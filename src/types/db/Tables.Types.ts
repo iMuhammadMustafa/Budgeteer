@@ -22,6 +22,8 @@ export type TransactionsView = Views<"transactionsview">;
 // Views
 export type SearchDistinctTransactions = Views<"search_distincttransactions">;
 export type StatsDailyTransactions = Views<"stats_dailytransactions">;
+export type StatsMonthlyTransactionsTypes = Views<"stats_monthlytransactionstypes">;
+export type StatsMonthlyCategoriesTransactions = Views<"stats_monthlycategoriestransactions">;
 export type StatsMonthlyAccountsTransactions = Views<"stats_monthlyaccountstransactions">;
 
 // Enums

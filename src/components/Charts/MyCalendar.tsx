@@ -1,28 +1,13 @@
 import { Text, View } from "react-native";
 import { Calendar } from "react-native-calendars";
-
-export type CalendarDayProp = {
-  selected?: boolean;
-  marked?: boolean;
-  selectedColor?: string;
-  activeOpacity?: number;
-  disabled?: boolean;
-  disableTouchEvent?: boolean;
-  dots?: {
-    key: string;
-    color: string;
-  }[];
-};
-
-export type MyCalendarProps = {
-  data: {
-    [day: string]: CalendarDayProp;
-  };
-  label: string;
-  onDayPress?: (day: any) => void;
-};
+import { MyCalendarProps } from "@/src/types/components/Charts.types";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 export default function MyCalendar({ data, label, onDayPress }: MyCalendarProps) {
+  const theme = useTheme();
+
+  const foreground = theme.isDarkMode ? "white" : "black";
+
   return (
     <View className="p-4 m-auto bg-card my-2 rounded-md border border-muted">
       <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
@@ -35,14 +20,14 @@ export default function MyCalendar({ data, label, onDayPress }: MyCalendarProps)
         firstDay={1}
         onDayPress={onDayPress}
         theme={{
-          textSectionTitleColor: "var(--foreground)",
-          textSectionTitleDisabledColor: "var(--muted)",
-          dayTextColor: "var(--foreground)",
-          textDisabledColor: "var(--muted)",
-          textInactiveColor: "var(--muted)",
+          textSectionTitleColor: foreground,
+          textSectionTitleDisabledColor: "grey",
+          dayTextColor: foreground,
+          textDisabledColor: "grey",
+          textInactiveColor: "grey",
           backgroundColor: "transparent",
           calendarBackground: "transparent",
-          monthTextColor: "var(--foreground)",
+          monthTextColor: foreground,
         }}
       />
     </View>

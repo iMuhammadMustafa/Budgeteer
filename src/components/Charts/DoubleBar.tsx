@@ -1,25 +1,18 @@
-import React from "react";
+import { useState } from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
-
-export type DoubleBarPoint = {
-  x: string;
-  barOne: {
-    label: string;
-    value: number;
-    color: string;
-  };
-  barTwo: {
-    label: string;
-    value: number;
-    color: string;
-  };
-};
+import { DoubleBarPoint } from "@/src/types/components/Charts.types";
 
 export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint[]; label: string }) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth * 0.75;
+
+  const barWidth = 20; // A reasonable bar width
+  const spaceBetweenBars = (chartWidth - 30) / (data.length * 3); // Adjust the space based on the number of bars
+  const offset = spaceBetweenBars - barWidth / 2;
+
+  const [selectedSlice, setSelectedSlice] = useState(null);
 
   return (
     <View className="bg-card p-2 m-auto my-1 rounded-md border border-muted">
@@ -27,7 +20,7 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
       <VictoryChart
         width={chartWidth}
         height={chartHeight}
-        domainPadding={{ x: 50, y: 10 }}
+        domainPadding={{ x: 80, y: 10 }}
         theme={VictoryTheme.material}
         padding={{ top: 40, bottom: 50, left: 60, right: 40 }}
       >
@@ -45,16 +38,39 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
             tickLabels: { fontSize: 10, padding: 5 },
           }}
         />
-        <VictoryGroup offset={chartWidth / 10}>
+        <VictoryGroup offset={offset}>
           <VictoryBar
             data={data}
             x="x"
             y={data => data.barOne.value}
             labels={({ datum }) => datum.barOne.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            style={{ data: { fill: ({ datum }) => datum.barOne.color || "black" } }}
+            style={{
+              data: {
+                fill: ({ datum }) => datum.barOne.color || "black",
+                fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.8),
+                stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
+                strokeWidth: 2,
+              },
+            }}
             animate={{
               onLoad: { duration: 500 },
             }}
+            events={[
+              {
+                target: "data",
+                eventHandlers: {
+                  onMouseEnter: (_, props) => {
+                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  },
+                  onMouseLeave: (_, props) => {
+                    setSelectedSlice(null);
+                  },
+                  onPress: (_, props) => {
+                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  },
+                },
+              },
+            ]}
           />
           <VictoryBar
             data={data}
@@ -65,10 +81,33 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
                 maximumFractionDigits: 0,
               })
             }
-            style={{ data: { fill: ({ datum }) => datum.barTwo.color || "black" } }}
+            style={{
+              data: {
+                fill: ({ datum }) => datum.barTwo.color || "black",
+                fillOpacity: ({ datum }) => (selectedSlice === datum.x ? 0.9 : 0.8),
+                stroke: ({ datum }) => (selectedSlice === datum.x ? "black" : "none"),
+                strokeWidth: 2,
+              },
+            }}
             animate={{
               onLoad: { duration: 500 },
             }}
+            events={[
+              {
+                target: "data",
+                eventHandlers: {
+                  onMouseEnter: (_, props) => {
+                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  },
+                  onMouseLeave: (_, props) => {
+                    setSelectedSlice(null);
+                  },
+                  onPress: (_, props) => {
+                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  },
+                },
+              },
+            ]}
           />
         </VictoryGroup>
         <VictoryLegend

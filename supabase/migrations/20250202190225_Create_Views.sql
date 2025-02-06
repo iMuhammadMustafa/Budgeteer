@@ -1,22 +1,39 @@
+CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
+AS
+SELECT 
+type,
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
+coalesce(sum(amount), 0) as sum
+
+FROM transactions
+
+GROUP BY
+type,
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date
+ORDER BY
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
+
 CREATE OR REPLACE VIEW Stats_MonthlyAccountsTransactions WITH (security_invoker)
 AS
 SELECT 
-t.accountid, 
-(date_trunc('month', t.date))::date as date,
-sum(t.amount) as sum
-FROM transactions t
+t.accountid accountid, 
+a.name account,
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
+coalesce(sum(amount), 0) as sum
+FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
 GROUP BY
-t.accountid,
-(date_trunc('month', t.date))::date
+t.accountid, 
+a.name ,
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date
 ORDER BY
-(date_trunc('month', t.date))::date;
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 
 
 CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoker)
 AS
 SELECT 
 tg.name GroupName,
-tg.Type,
+t.Type,
 tc.budgetamount GroupBudgetAmount, 
 tc.budgetfrequency GroupBudgetFrequency,
 tc.icon GroupIcon, 
@@ -29,7 +46,7 @@ tc.icon CategoryIcon,
 tc.color CategoryColor,
 tc.displayorder CategoryDisplayOrder,
 
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date as date,
+date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz as date,
 coalesce(sum(t.amount), 0) as sum
 
 FROM transactiongroups tg 
@@ -38,7 +55,7 @@ LEFT JOIN transactions t ON tc.id = t.categoryid
 
 GROUP BY
 tg.name,
-tg.Type,
+t.Type,
 tc.budgetamount,
 tc.budgetfrequency,
 tc.icon,
@@ -51,9 +68,9 @@ tc.icon,
 tc.color,
 tc.displayorder,
 
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date
+date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
 ORDER BY
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date;
+date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz;
 
 
 CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)

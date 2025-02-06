@@ -563,6 +563,7 @@ export type Database = {
       }
       stats_monthlyaccountstransactions: {
         Row: {
+          account: string | null
           accountid: string | null
           date: string | null
           sum: number | null
@@ -599,6 +600,14 @@ export type Database = {
           groupdisplayorder: number | null
           groupicon: string | null
           groupname: string | null
+          sum: number | null
+          type: Database["public"]["Enums"]["transactiontypes"] | null
+        }
+        Relationships: []
+      }
+      stats_monthlytransactionstypes: {
+        Row: {
+          date: string | null
           sum: number | null
           type: Database["public"]["Enums"]["transactiontypes"] | null
         }

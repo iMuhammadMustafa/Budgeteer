@@ -187,7 +187,7 @@ export const MyCategoriesDropdown = ({
   isModal: boolean;
 }) => {
   return (
-    <MyDropDown
+    <DropdownField
       isModal={isModal}
       label="Category"
       selectedValue={selectedValue}
@@ -234,7 +234,7 @@ export function MyTransactionTypesDropdown({
   isRefundHidden?: boolean;
 }) {
   return (
-    <MyDropDown
+    <DropdownField
       isModal={isModal}
       label="Type"
       options={[
@@ -255,5 +255,5 @@ export function MyTransactionTypesDropdown({
 const areEqual = (prevProps: DropDownProps, nextProps: DropDownProps) => {
   return prevProps.options === nextProps.options && prevProps.selectedValue === nextProps.selectedValue;
 };
-const MyDropDown = memo(UnMemoizedMyDropDown, areEqual);
-export default MyDropDown;
+const DropdownField = memo(UnMemoizedMyDropDown, areEqual);
+export default DropdownField;
