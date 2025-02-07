@@ -1,37 +1,80 @@
-import { useCreateAccount, useDeleteAccount, useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
+import { queryClient } from "@/src/providers/QueryProvider";
 import { TableNames } from "@/src/types/db/TableNames";
-import { Inserts } from "@/src/types/db/Tables.Types";
-import { View, Text, Pressable } from "react-native";
 
-const newAccount: Inserts<TableNames.Accounts> = {
-  balance: 0,
-  categoryid: "0194cd7a-8e70-77f5-9596-cc09d3788363",
-  name: "New ??",
-  createdat: new Date().toISOString(),
-  tenantid: "0194c8af-3fe9-750e-b0e5-b62d5cefc095",
-};
+function useAccounts() {}
 
 export default function Accounts() {
-  const { data: accounts } = useGetAccounts();
-  const mutation = useCreateAccount();
-  const deleteMutation = useDeleteAccount();
+  // const queryClient = useQueryClient();
+  const { data: accounts, isLoading, error } = useGetAccounts();
+  const { data: categories, isLoading: isCategoriesLoading, error: categoriesError } = useGetAccountCategories();
+
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: "first", title: "Accounts" },
+    { key: "second", title: "Categories" },
+  ]);
+  const { mutate: deleteAccount } = useDeleteAccount();
+  const { mutate: deleteCategory } = useDeleteAccountCategory();
+
+  const refershAccounts = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+  };
+  const refreshCategories = async () => {
+    await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+  };
+
   return (
-    <View>
-      <Text>Accounts</Text>
-      <Pressable onPress={() => mutation.mutate(newAccount)}>
-        <Text>Add Account</Text>
-      </Pressable>
-      {accounts?.map(account => (
-        <View key={account.id}>
-          <Text>
-            {account.name} - {account.balance}
-          </Text>
-          <Pressable onPress={() => deleteMutation.mutate(account.id)}>
-            <Text>Delete</Text>
-          </Pressable>
-          <hr />
-        </View>
-      ))}
-    </View>
+    <TabView
+      navigationState={{ index, routes }}
+      tabBarPosition="top"
+      lazy={true}
+      renderScene={SceneMap({
+        first: () => (
+          <Tab
+            title="Accounts"
+            items={accounts?.map(account => ({
+              ...account,
+              details: `${account.owner} - Balance: ${account.balance.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}`,
+            }))}
+            isLoading={isLoading}
+            error={error}
+            deleteItem={deleteAccount}
+            upsertUrl={"/Accounts/Upsert?accountId="}
+            selectable
+            refreshQueries={refershAccounts}
+          />
+        ),
+        second: () => (
+          <Tab
+            title="Categories"
+            items={categories}
+            isLoading={isLoading}
+            error={error}
+            deleteItem={deleteCategory}
+            upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
+            refreshQueries={refreshCategories}
+          />
+        ),
+      })}
+      onIndexChange={setIndex}
+      className="bg-background"
+      renderTabBar={props => {
+        return (
+          <View className={`bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
+            <View className="flex-row border-b mt-3 border-gray-200 bg-background">
+              <TabHeader title="Accounts" isSelected={props.navigationState.index === 0} onPress={() => setIndex(0)} />
+              <TabHeader
+                title="Categories"
+                isSelected={props.navigationState.index === 1}
+                onPress={() => setIndex(1)}
+              />
+            </View>
+          </View>
+        );
+      }}
+    />
   );
 }
