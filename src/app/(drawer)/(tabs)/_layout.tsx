@@ -13,22 +13,38 @@ export default function DashboardLayout() {
 }
 
 const DashboardTab = (
-  <Tabs.Screen
-    name="Dashboard/index"
-    options={{
-      title: "Dashboard",
-      tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
-    }}
-  />
+  <>
+    <Tabs.Screen
+      name="Dashboard/index"
+      options={{
+        title: "Dashboard",
+        tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
+      }}
+    />
+    <Tabs.Screen
+      name="Dashboard/useDashboard"
+      options={{
+        href: null,
+      }}
+    />
+  </>
 );
 const TransactionsTab = (
-  <Tabs.Screen
-    name="Transactions/index"
-    options={{
-      title: "Transactions",
-      tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
-    }}
-  />
+  <>
+    <Tabs.Screen
+      name="Transactions/index"
+      options={{
+        title: "Transactions",
+        tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
+      }}
+    />
+    <Tabs.Screen
+      name="Transactions/useTransactions"
+      options={{
+        href: null,
+      }}
+    />
+  </>
 );
 
 const RemindersTab = (
