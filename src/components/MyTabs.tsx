@@ -1,15 +1,40 @@
-import { useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { View, Text, ScrollView, Platform, Pressable, SafeAreaView, RefreshControl } from "react-native";
 import { Href, Link, router } from "expo-router";
 
 import MyIcon from "@/src/utils/Icons.Helper";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
+import { queryClient } from "@/src/providers/QueryProvider";
 
-export function Tab({ title, items, isLoading, error, onDelete, upsertUrl, selectable = false, onRefresh }: TabProps) {
+export const Tab = memo(TabComponent, (prevProps, nextProps) => {
+  return true;
+});
+
+function TabComponent({
+  title,
+  queryKey,
+  useGet,
+  useDelete,
+  upsertUrl,
+  refreshOnPull = true,
+  selectable = false,
+  customDetails,
+}: TabProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-  // if (isLoading) return <Text>Loading...</Text>;
+  const { data, isLoading, error } = useGet();
+  const { mutate } = useDelete();
+
+  useEffect(() => {
+    console.log("Mounted");
+
+    return () => {
+      console.log("Unmounted");
+    };
+  }, []);
+
+  if (isLoading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;
 
   const handleLongPress = (id: string) => {
@@ -27,23 +52,31 @@ export function Tab({ title, items, isLoading, error, onDelete, upsertUrl, selec
   };
 
   const handleDelete = () => {
-    selectedIds.forEach(id => onDelete(id));
+    selectedIds.forEach(id => mutate(id));
     setSelectedIds([]);
     setIsSelectionMode(false);
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKey });
+  };
+
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-      <PageHeader title={title} upsertLink={[upsertUrl]} />
-      <ScrollView className="flex-1" refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}>
-        {items?.map((item: any) => {
+      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />
+      <ScrollView
+        className="flex-1"
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />}
+      >
+        {data?.map((item: any) => {
           return (
             <ListItem
+              key={item.id}
               id={item.id}
               onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
               onPress={() => handlePress(item.id)}
               name={item.name}
-              details={item.details}
+              details={customDetails ? customDetails(item) : item.details}
               icon={item.icon}
               iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type).color}
               isSelected={selectedIds.includes(item.id)}
@@ -63,11 +96,31 @@ export function Tab({ title, items, isLoading, error, onDelete, upsertUrl, selec
   );
 }
 
-export function PageHeader({ title, upsertLink }: { title: string; upsertLink: Array<Href> }) {
+export function TabBar({ children }: { children: React.ReactNode }) {
+  return (
+    <View className={`bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
+      <View className="flex-row border-b mt-3 border-gray-200 bg-background">{children}</View>
+    </View>
+  );
+}
+export function PageHeader({
+  title,
+  upsertLink,
+  refreshQueries,
+}: {
+  title: string;
+  refreshQueries: () => void;
+  upsertLink: Array<Href>;
+}) {
   return (
     <View className="flex-row justify-between items-center p-2 px-4 bg-background">
       <Text className="font-bold text-foreground">{title}</Text>
       <View className="flex-row gap-2 items-center">
+        {refreshQueries && (
+          <Pressable onPress={refreshQueries}>
+            <MyIcon name="RefreshCw" className="text-foreground" size={20} />
+          </Pressable>
+        )}
         {upsertLink &&
           upsertLink.map(link => {
             return (
@@ -129,13 +182,17 @@ function ListItem({
 
 type TabProps = {
   title: string;
-  items: TabItemType[];
   isLoading: boolean;
   error: any;
-  onDelete: (id: string) => void;
+  useDelete: () => { mutate: (id: string) => void };
   upsertUrl: Href;
   selectable?: boolean;
-  onRefresh: () => void;
+  items?: TabItemType[];
+  useGet: () => { data: any; isLoading: boolean; error: any };
+  queryKey?: string[];
+  refreshOnPull?: boolean;
+  customMapping?: any;
+  customDetails?: (item: any) => string;
 };
 
 type TabItemType = {

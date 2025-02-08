@@ -53,6 +53,7 @@
         "@tanstack/eslint-plugin-query": "^5.66.0",
         "@types/jest": "^29.5.12",
         "@types/react": "~18.3.12",
+        "@types/react-native-web": "^0.19.0",
         "@types/react-test-renderer": "^18.3.0",
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-prettier": "^5.2.3",
@@ -625,6 +626,8 @@
     "@types/prop-types": ["@types/prop-types@15.7.14", "", {}, "sha512-gNMvNH49DJ7OJYv+KAKn0Xp45p8PLl6zo2YnvDIbTd4J6MER2BmWN49TG7n9LvkyihINxeKW8+3bfS2yDC9dzQ=="],
 
     "@types/react": ["@types/react@18.3.18", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.0.2" } }, "sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ=="],
+
+    "@types/react-native-web": ["@types/react-native-web@0.19.0", "", { "dependencies": { "@types/react": "*", "react-native": "*" } }, "sha512-HWagkGzM/k1iPBy2/xnVU9U0MN9oswZu8/2buh8bnuhwJpgt7avPoGlqT9XuFNlBbQykCg5TfEyXoUJR8tGDGg=="],
 
     "@types/react-test-renderer": ["@types/react-test-renderer@18.3.1", "", { "dependencies": { "@types/react": "^18" } }, "sha512-vAhnk0tG2eGa37lkU9+s5SoroCsRI08xnsWFiAXOuPH2jqzMbcXvKExXViPi1P5fIklDeCvXqyrdmipFaSkZrA=="],
 
