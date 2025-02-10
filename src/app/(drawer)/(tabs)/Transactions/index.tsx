@@ -4,6 +4,7 @@ import DaysList from "@/src/components/pages/Transactions/Days";
 import TransactionsPageHeader from "@/src/components/pages/Transactions/PageHeader";
 import TransactionSearchModal from "@/src/components/pages/Transactions/SearchModal";
 import useTransactions from "./useTransactions";
+import { RefreshControl } from "react-native-web";
 
 export default function Transactions() {
   const {
@@ -25,9 +26,11 @@ export default function Transactions() {
     accounts,
     categories,
     params,
+    status,
+    loadMore,
   } = useTransactions();
 
-  if (isLoading) return <ActivityIndicator size="large" color="#0000ff" />;
+  if (isLoading || status === "pending") return <ActivityIndicator size="large" color="#0000ff" />;
   if (error) return <Text>Error: {error.message}</Text>;
 
   return (
@@ -65,8 +68,10 @@ export default function Transactions() {
       <FlatList
         data={days}
         keyExtractor={item => item}
-        // onEndReached={loadMore}
-        // onEndReachedThreshold={0.5}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        onRefresh={refreshTransactions}
+        refreshing={isLoading}
         renderItem={({ item }) => (
           <DaysList
             day={item}

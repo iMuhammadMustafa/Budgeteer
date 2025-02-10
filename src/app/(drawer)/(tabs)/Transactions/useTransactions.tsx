@@ -13,7 +13,7 @@ import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@
 import {
   useCreateTransaction,
   useDeleteTransaction,
-  useGetTransactions,
+  useGetTransactionsInfinite,
 } from "@/src/services/repositories/Transactions.Repository";
 import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
@@ -24,7 +24,11 @@ export default function useTransactions() {
 
   const params = useLocalSearchParams() as TransactionFilters;
 
-  const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
+  // const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
+    useGetTransactionsInfinite(params);
+  const transactions = data?.pages.flatMap(page => page);
+
   const { data: accounts } = useGetAccounts();
   const { data: categories } = useGetTransactionCategories();
   const addMutation = useCreateTransaction();
@@ -130,16 +134,29 @@ export default function useTransactions() {
   };
 
   const refreshTransactions = async () => {
+    // resetInfiniteQueryPagination();
+    // await queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
     await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
     await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
   };
+  const resetInfiniteQueryPagination = (): void => {
+    queryClient.setQueryData([ViewNames.TransactionsView], (oldData: any) => {
+      if (!oldData) return undefined;
 
-  // const loadMore = () => {
-  //   if (hasNextPage && !isFetchingNextPage) {
-  //     fetchNextPage();
-  //   }
-  // };
+      return {
+        ...oldData,
+        pages: oldData.pages.slice(0, 1),
+        pageParams: oldData.pageParams.slice(0, 1),
+      };
+    });
+  };
+
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
   // const { data: accounts } = useGetAccounts() as any;
   // const { data: categories } = useGetCategories() as any;
   // useEffect(() => {
@@ -189,12 +206,13 @@ export default function useTransactions() {
     setFilters,
     showCalendar,
     setShowCalendar,
-    status,
     showSearch,
     setShowSearch,
     params,
     accounts,
     categories,
+    status,
+    loadMore,
   };
 }
 

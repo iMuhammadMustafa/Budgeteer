@@ -59,7 +59,12 @@ const buildQuery = (searchFilters: TransactionFilters, isCount = false) => {
   }
   //   query = query.order("date", { ascending: false });
 
-  if (searchFilters.startIndex && searchFilters.endIndex) {
+  if (
+    searchFilters.startIndex !== undefined &&
+    searchFilters.startIndex >= 0 &&
+    searchFilters.endIndex !== undefined &&
+    searchFilters.endIndex >= 0
+  ) {
     query = query.range(searchFilters.startIndex, searchFilters.endIndex);
   }
 

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { Transaction, Inserts, Updates, TransactionsView } from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import {
@@ -19,6 +19,7 @@ import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { updateAccountBalance } from "../apis/Accounts.api";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
+import { initialSearchFilters } from "@/src/utils/transactions.helper";
 
 export const useGetAllTransactions = () => {
   return useQuery<TransactionsView[]>({
@@ -30,6 +31,33 @@ export const useGetTransactions = (searchFilters: TransactionFilters) => {
   return useQuery<TransactionsView[]>({
     queryKey: [ViewNames.TransactionsView, searchFilters],
     queryFn: async () => getTransactions(searchFilters),
+  });
+};
+export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => {
+  searchParams = Object.keys(searchParams).length !== 0 ? searchParams : initialSearchFilters;
+  return useInfiniteQuery<TransactionsView[]>({
+    queryKey: [ViewNames.TransactionsView], // Include searchParams in the query key
+    initialPageParam: 0, // Start with page 0
+    queryFn: async ({ pageParam = 0 }) => {
+      // Calculate the range for the current page
+      const pageSize = 10; // Number of items per page
+      const startIndex = (pageParam as number) * pageSize;
+      const endIndex = startIndex + pageSize - 1;
+
+      // Fetch transactions for the current page
+      return getTransactions({
+        ...searchParams,
+        startIndex,
+        endIndex,
+      });
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page is empty, there are no more pages
+      if (lastPage.length === 0) return undefined;
+
+      // Return the next page number
+      return allPages.length;
+    },
   });
 };
 
