@@ -54,9 +54,9 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
 
   return (
     <>
-      <Text className="text-base mb-2">{label}</Text>
+      <Text className="text-base mb-2 -z-10">{label}</Text>
       <TouchableOpacity
-        className="p-3 mb-2 rounded border border-gray-300 bg-white items-center"
+        className="p-3 mb-2 rounded border border-gray-300 bg-white items-center -z-10"
         onPress={() => {
           setIsVisible(!isVisible);
           setSearchText("");

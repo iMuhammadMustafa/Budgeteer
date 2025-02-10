@@ -20,10 +20,10 @@ const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps
 
 function TextInputFieldMemo({ label, value, onChange, keyboardType = "default", className }: TextInputFieldProps) {
   return (
-    <View className={`my-1 ${className ?? ""} `}>
+    <View className={`my-1 ${className ?? ""} -z-10`}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
-        className="text-black border rounded-md p-3 border-gray-300 bg-white"
+        className="text-black border rounded-md p-3 border-gray-300 bg-white "
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}
