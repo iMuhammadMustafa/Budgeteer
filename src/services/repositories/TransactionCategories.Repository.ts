@@ -66,19 +66,16 @@ export const useUpsertTransactionCategory = () => {
 
   return useMutation({
     mutationFn: async ({
-      formTransactionCategory,
+      formData,
       originalData,
     }: {
-      formTransactionCategory: Inserts<TableNames.TransactionCategories> | Updates<TableNames.TransactionCategories>;
+      formData: Inserts<TableNames.TransactionCategories> | Updates<TableNames.TransactionCategories>;
       originalData?: TransactionCategory;
     }) => {
-      if (formTransactionCategory.id && originalData) {
-        return await updateTransactionCategoryHelper(formTransactionCategory, session);
+      if (formData.id && originalData) {
+        return await updateTransactionCategoryHelper(formData, session);
       }
-      return await createTransactionCategoryHelper(
-        formTransactionCategory as Inserts<TableNames.TransactionCategories>,
-        session,
-      );
+      return await createTransactionCategoryHelper(formData as Inserts<TableNames.TransactionCategories>, session);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] });

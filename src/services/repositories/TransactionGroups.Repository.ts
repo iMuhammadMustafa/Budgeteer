@@ -66,16 +66,16 @@ export const useUpsertTransactionGroup = () => {
 
   return useMutation({
     mutationFn: async ({
-      formTransactionGroup,
+      formData,
       originalData,
     }: {
-      formTransactionGroup: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+      formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
       originalData?: TransactionGroup;
     }) => {
-      if (formTransactionGroup.id && originalData) {
-        return await updateTransactionGroupHelper(formTransactionGroup, session);
+      if (formData.id && originalData) {
+        return await updateTransactionGroupHelper(formData, session);
       }
-      return await createTransactionGroupHelper(formTransactionGroup as Inserts<TableNames.TransactionGroups>, session);
+      return await createTransactionGroupHelper(formData as Inserts<TableNames.TransactionGroups>, session);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });

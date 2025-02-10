@@ -17,6 +17,8 @@ export const useGetAccountCategories = () => {
   return useQuery<AccountCategory[]>({
     queryKey: [TableNames.AccountCategories],
     queryFn: getAllAccountCategories,
+    // refetchOnMount: true,
+    // refetchOnWindowFocus: true,
   });
 };
 
@@ -66,20 +68,19 @@ export const useUpsertAccountCategory = () => {
 
   return useMutation({
     mutationFn: async ({
-      formAccountCategory,
+      formData,
       originalData,
     }: {
-      formAccountCategory: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
+      formData: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
       originalData?: AccountCategory;
     }) => {
-      if (formAccountCategory.id && originalData) {
-        return await updateAccountCategoryHelper(formAccountCategory, session);
+      if (formData.id && originalData) {
+        return await updateAccountCategoryHelper(formData, session);
       }
-      return await createAccountCategoryHelper(formAccountCategory as Inserts<TableNames.AccountCategories>, session);
+      return await createAccountCategoryHelper(formData as Inserts<TableNames.AccountCategories>, session);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
     },
     onError: (error, variables, context) => {
       throw new Error(JSON.stringify(error));
