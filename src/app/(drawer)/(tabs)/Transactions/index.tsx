@@ -1,38 +1,26 @@
+import { router } from "expo-router";
+import { Text, SafeAreaView, ActivityIndicator, FlatList } from "react-native";
 import DaysList from "@/src/components/pages/Transactions/Days";
 import TransactionsPageHeader from "@/src/components/pages/Transactions/PageHeader";
-import TransactionSearchForm from "@/src/components/pages/Transactions/SearchForm";
 import TransactionSearchModal from "@/src/components/pages/Transactions/SearchModal";
-import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { TransactionSearchFormProps, TransactionsPageHeaderProps } from "@/src/types/pages/Transactions.types";
-import MyIcon from "@/src/utils/Icons.Helper";
-import { Link, router } from "expo-router";
-import { useEffect } from "react";
-import { View, Text, SafeAreaView, ActivityIndicator, FlatList, Platform, BackHandler, Pressable } from "react-native";
-import Modal from "react-native-modal";
+import useTransactions from "./useTransactions";
 
 export default function Transactions() {
   const {
-    transactions,
     error,
     isLoading,
-    selectionMode,
     selectedTransactions,
     selectedSum,
     dailyTransactions,
     days,
-    backAction,
     clearSelection,
     handleLongPress,
     handlePress,
     deleteSelection,
     copyTransactions,
     refreshTransactions,
-    // loadMore,
-    // isFetchingNextPage,
-    status,
     showSearch,
     setShowSearch,
-    filters,
     setFilters,
     accounts,
     categories,
@@ -59,8 +47,8 @@ export default function Transactions() {
         isOpen={showSearch}
         setIsOpen={setShowSearch}
         searchParams={params}
-        accounts={accounts}
-        categories={categories}
+        accounts={accounts ?? []}
+        categories={categories ?? []}
         onSubmit={formValues => {
           setShowSearch(false);
           if (formValues) {

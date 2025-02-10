@@ -3,17 +3,32 @@ import { BackHandler, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 
-const searchFilters: TransactionsSearchParams = {
-  startIndex: 0,
-  endIndex: 10,
-};
+import { TableNames, ViewNames } from "@/src/types/db/TableNames";
+import { TransactionsView } from "@/src/types/db/Tables.Types";
+
+import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@/src/utils/transactions.helper";
+
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useGetTransactions,
+} from "@/src/services/repositories/Transactions.Repository";
+import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
+import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
 
 export default function useTransactions() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+
+  const params = useLocalSearchParams() as TransactionFilters;
+
+  const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
+  const { data: accounts } = useGetAccounts();
+  const { data: categories } = useGetTransactionCategories();
+  const addMutation = useCreateTransaction();
+  const deleteMutation = useDeleteTransaction();
 
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
@@ -22,112 +37,39 @@ export default function useTransactions() {
   const [showSearch, setShowSearch] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
-  const params = useLocalSearchParams() as TransactionsSearchParams;
-  const [filters, setFilters] = useState<TransactionsSearchParams>(params);
-
-  // useEffect(() => {
-  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-  // }, [filters]);
-
-  const { data: accounts } = useGetAccounts() as any;
-  const { data: categories } = useGetCategories() as any;
-  // const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactionsInfinite(
-  //   params ?? searchFilters,
-  // );
-  // const transactions = data?.pages.flatMap(page => page);
-
-  const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? searchFilters);
-
+  const [filters, setFilters] = useState<TransactionFilters>(params);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const addMutation = useUpsertTransaction();
-  const deleteMutation = useDeleteTransaction();
 
-  console.log(transactions);
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      if (selectionMode) {
-        window.addEventListener("keydown", e => {
-          if (e.key === "Escape") {
-            clearSelection();
-            return;
-          }
-        });
-      }
-    }
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
-    return () => {
-      backHandler.remove();
-      window.removeEventListener("keydown", () => {});
-    };
-  }, [selectionMode]);
-
-  // useEffect(() => {
-  //   return () => {
-  //     // Reset the query cache when the component unmounts
-  //     queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView, filter] });
-  //   };
-  // }, [queryClient, filter]);
-
-  // useEffect(() => {
-  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-  // }, [params]);
-
-  const backAction = () => {
+  const backAction = (): boolean => {
     if (selectionMode) {
       clearSelection();
       return true;
     }
+    return false;
   };
   const clearSelection = () => {
     setSelectedTransactions([]);
     setSelectedSum(0);
     setSelectionMode(false); // Clear selection mode when we clear selections
   };
+  useBackAction(selectionMode, backAction);
 
   const copyTransactions = async () => {
     setIsActionLoading(true);
 
     try {
       for (let item of selectedTransactions) {
-        const { accountid, categoryid, ...newTransaction } = { ...item };
+        const newTransaction = duplicateTransaction(item);
 
-        const sourceAccount =
-          (await queryClient
-            .getQueryData<Account[]>([TableNames.Accounts])
-            ?.find((a: any) => a.accountid === item.accountid)) ?? (await getAccountById(item.accountid!));
-        let destinationAccount = null;
-
-        if (item.transferaccountid) {
-          destinationAccount =
-            (await queryClient
-              .getQueryData<Account[]>([TableNames.Accounts])
-              ?.find((a: any) => a.accountid === item.transferaccountid)) ??
-            (await getAccountById(item.transferaccountid));
-        }
-
-        await addMutation.mutateAsync(
-          {
-            fullFormTransaction: {
-              ...item,
-              id: null,
-              date: new Date().toISOString(),
-              createdat: new Date().toISOString(),
-              amount: item.amount ?? 0,
-            },
-            originalData: undefined,
-            sourceAccount: sourceAccount!,
-            destinationAccount: destinationAccount,
-          },
-          {
-            onSuccess: () => addNotification({ message: "Transaction Created Successfully", type: "success" }),
-          },
-        );
+        await addMutation.mutateAsync(newTransaction, {
+          onSuccess: () => console.log({ message: "Transaction Created Successfully", type: "success" }),
+        });
       }
     } catch (error) {
-      addNotification({ message: "Error creating transactions", type: "error" });
+      console.log({ message: "Error creating transactions", type: "error" });
     } finally {
       setIsActionLoading(false);
       clearSelection();
@@ -137,9 +79,9 @@ export default function useTransactions() {
   const deleteSelection = async () => {
     setIsActionLoading(true);
     for (let item of selectedTransactions) {
-      await deleteMutation.mutateAsync(item, {
+      await deleteMutation.mutateAsync(item.id!, {
         onSuccess: () => {
-          addNotification({ message: "Transaction Deleted Successfully", type: "success" });
+          console.log({ message: "Transaction Deleted Successfully", type: "success" });
         },
       });
     }
@@ -198,6 +140,26 @@ export default function useTransactions() {
   //     fetchNextPage();
   //   }
   // };
+  // const { data: accounts } = useGetAccounts() as any;
+  // const { data: categories } = useGetCategories() as any;
+  // useEffect(() => {
+  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+  // }, [filters]);
+  // const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactionsInfinite(
+  //   params ?? searchFilters,
+  // );
+  // const transactions = data?.pages.flatMap(page => page);
+
+  // useEffect(() => {
+  //   return () => {
+  //     // Reset the query cache when the component unmounts
+  //     queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView, filter] });
+  //   };
+  // }, [queryClient, filter]);
+
+  // useEffect(() => {
+  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+  // }, [params]);
 
   /*
   queryClient.setQueryData([ViewNames.TransactionsView], (data) => ({
@@ -227,13 +189,30 @@ export default function useTransactions() {
     setFilters,
     showCalendar,
     setShowCalendar,
-    // loadMore,
-    // isFetchingNextPage,
     status,
     showSearch,
     setShowSearch,
+    params,
     accounts,
     categories,
-    params,
   };
 }
+
+const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      if (selectionMode) {
+        window.addEventListener("keydown", e => {
+          if (e.key === "Escape") {
+            backAction();
+          }
+        });
+      }
+    }
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => {
+      backHandler.remove();
+      window.removeEventListener("keydown", () => {});
+    };
+  }, [selectionMode]);
+};

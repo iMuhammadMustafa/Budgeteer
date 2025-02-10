@@ -38,11 +38,11 @@ export default function TransactionItem({
             />
           </View>
           <View className="flex-1">
-            <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
-              {transaction.description ?? transaction.categoryname ?? "Hello"}
+            <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
+              {transaction.name ?? transaction.categoryname ?? "Hello"}
             </Text>
             <View className="flex-row justify-start items-center gap-2">
-              <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
+              <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
                 {transaction.categoryname}
               </Text>
             </View>
@@ -52,12 +52,12 @@ export default function TransactionItem({
               {transaction.amount!.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })}{" "}
+              })}
               {transaction.currency}
             </Text>
-            <Text className={`text-foreground ${transaction.status === "None" ? "" : "line-through"}`}>
+            <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
               {transaction.accountname} {" | "}
-              {transaction.running_balance?.toLocaleString("en", {
+              {transaction.runningbalance?.toLocaleString("en", {
                 style: "currency",
                 currency: transaction.currency!,
                 minimumFractionDigits: 2,

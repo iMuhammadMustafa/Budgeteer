@@ -16,12 +16,15 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION RefreshTransactionsView()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW TransactionsView;
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+grant execute on function RefreshTransactionsView() to authenticated;
 
 
 CREATE OR REPLACE TRIGGER RefreshTransactionsView

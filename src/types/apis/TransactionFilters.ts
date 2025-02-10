@@ -13,7 +13,7 @@ export type TransactionFilters = {
   categoryid?: string;
 
   type?: TransactionType;
-  isVoid?: boolean;
+  isVoid?: string;
   tags?: string[];
 
   startIndex?: number;

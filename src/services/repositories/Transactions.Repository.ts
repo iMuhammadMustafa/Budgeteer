@@ -52,8 +52,8 @@ export const useCreateTransaction = () => {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
   return useMutation({
-    mutationFn: async (accountGroup: Inserts<TableNames.Transactions>) => {
-      return await createTransactionHelper(accountGroup, session);
+    mutationFn: async (transaction: Inserts<TableNames.Transactions>) => {
+      return await createTransactionHelper(transaction, session);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });

@@ -8,8 +8,7 @@ export const getAllAccountCategories = async () => {
     .select()
     .eq("isdeleted", false)
     .order("displayorder", { ascending: true })
-    .order("name")
-    .order("owner");
+    .order("name");
   if (error) throw new Error(error.message);
   return data;
 };
