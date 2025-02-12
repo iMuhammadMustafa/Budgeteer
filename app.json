@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Budgeteera",
-    "slug": "Budgeteera",
-    "version": "1.0.0",
+    "name": "Budgeteer",
+    "slug": "Budgeteer",
+    "version": "0.20.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -13,13 +13,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.imuhammadmustafa.Budgeteer"
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
