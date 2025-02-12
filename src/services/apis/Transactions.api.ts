@@ -124,6 +124,12 @@ export const createTransaction = async (transaction: Inserts<TableNames.Transact
   if (error) throw error;
   return data;
 };
+export const createTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
+  const { data, error } = await supabase.from(TableNames.Transactions).insert(transactions).select();
+
+  if (error) throw error;
+  return data;
+};
 export const createMultipleTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
   const { data, error } = await supabase.from(TableNames.Transactions).insert(transactions).select();
 

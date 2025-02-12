@@ -211,7 +211,7 @@ export const MyCategoriesDropdown = ({
               : category.type === "Expense"
                 ? "text-danger-500"
                 : "text-info-500",
-          group: category.group,
+          group: category.group.name,
         })) ?? []
       }
       groupBy="group"
@@ -290,12 +290,14 @@ export const AccountSelecterDropdown = ({
   onSelect,
   accounts,
   isModal,
+  groupBy,
 }: {
   label?: string;
   selectedValue: any;
   onSelect: (item: OptionItem | null) => void;
   accounts: any;
   isModal: boolean;
+  groupBy?: string;
 }) => {
   return (
     <DropdownField
@@ -303,16 +305,20 @@ export const AccountSelecterDropdown = ({
       label={label}
       selectedValue={selectedValue}
       options={
-        accounts?.map((account: Account) => ({
+        accounts?.map((account: Account & { category: { name: string } }) => ({
           id: account.id,
           label: account.name,
+          details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD",
+          })}`,
           value: account,
           icon: account.icon,
           iconColorClass: `text-${account.color.replace("100", "500") ?? "gray-500"}`,
-          // group: account.category.name,
+          group: account.category?.name,
         })) ?? []
       }
-      groupBy="group"
+      groupBy={groupBy ? "group" : undefined}
       onSelect={onSelect}
     />
   );

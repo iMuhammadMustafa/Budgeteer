@@ -5,9 +5,10 @@ import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 export const getAllAccounts = async () => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
-    //   .select("*, category:accountscategories!accounts_categoryid_fkey(*)")
-    .select()
+    .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
+    // .select()
     .eq("isdeleted", false)
+    .order("category(displayorder)", { ascending: true })
     .order("displayorder", { ascending: true })
     .order("name")
     .order("owner");

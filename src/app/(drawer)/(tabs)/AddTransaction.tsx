@@ -6,6 +6,7 @@ import { useLocalSearchParams } from "expo-router";
 import { TabBar, TabHeader } from "@/src/components/MyTabs";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
 import { useGetTransactionById } from "@/src/services/repositories/Transactions.Repository";
+import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
 
 export default function AddTransaction() {
   const [index, setIndex] = useState(0);
@@ -25,7 +26,7 @@ export default function AddTransaction() {
       case "first":
         return <FirstRoute transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />;
       case "second":
-        return <SecondRoute />;
+        return <SecondRoute transaction={transaction ?? null} />;
       default:
         return <FirstRoute />;
     }
@@ -57,5 +58,4 @@ const Bar = (props: any) => (
 
 const FirstRoute = ({ transaction }: any) => <TransactionForm transaction={transaction} />;
 
-// const SecondRoute = () => <MultipleTransactions transaction={transaction ?? null} />;
-const SecondRoute = () => <Text>Multiple</Text>;
+const SecondRoute = ({ transaction }: any) => <MultipleTransactions transaction={transaction ?? null} />;

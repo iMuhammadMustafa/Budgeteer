@@ -181,6 +181,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             }}
             isModal={Platform.OS !== "web"}
             accounts={accounts}
+            groupBy="group"
           />
           {formData.type === "Transfer" && (
             <AccountSelecterDropdown

@@ -4,6 +4,7 @@ import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import {
   createMultipleTransactions,
   createTransaction,
+  createTransactions,
   deleteTransaction,
   getAllTransactions,
   getTransactionById,
@@ -21,6 +22,7 @@ import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { initialSearchFilters } from "@/src/utils/transactions.helper";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
 
 export const useGetAllTransactions = () => {
   return useQuery<TransactionsView[]>({
@@ -89,6 +91,69 @@ export const useCreateTransaction = () => {
     },
   });
 };
+
+export const useCreateTransactions = () => {
+  const { session, isSessionLoading } = useAuth();
+
+  if (!isSessionLoading && (!session || !session.user)) {
+    throw new Error("User is not logged in");
+  }
+
+  return useMutation({
+    mutationFn: async ({
+      transactionsGroup,
+      totalAmount,
+    }: {
+      transactionsGroup: MultiTransactionGroup;
+      totalAmount: number;
+    }) => {
+      const userId = session!.user.id;
+      const createdat = new Date().toISOString();
+
+      const transactions = Object.keys(transactionsGroup.transactions).map((key, index) => {
+        if (!key) return;
+        const transaction: Inserts<TableNames.Transactions> = {
+          id: GenerateUuid(),
+          date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
+          type: transactionsGroup.type as any,
+          isvoid: transactionsGroup.isvoid,
+
+          description: transactionsGroup.description,
+          accountid: transactionsGroup.accountid,
+          payee: transactionsGroup.payee,
+          // groupid: transactionsGroup.groupid,
+
+          name: transactionsGroup.transactions[key].name,
+          amount: transactionsGroup.transactions[key].amount,
+          categoryid: transactionsGroup.transactions[key].categoryid,
+          notes: transactionsGroup.transactions[key].notes,
+          tags: transactionsGroup.transactions[key].tags,
+
+          createdby: userId,
+          createdat: dayjs().local().add(index, "millisecond").toISOString(),
+          tenantid: session!.user.user_metadata.tenantid,
+        };
+
+        return transaction;
+      });
+
+      const createdTransactions = await createTransactions(transactions as Inserts<TableNames.Transactions>[]);
+
+      if (transactionsGroup.originalTransactionId) {
+        await deleteTransaction(transactionsGroup.originalTransactionId, userId);
+      }
+      if (!transactionsGroup.isvoid) {
+        await updateAccountBalance(transactionsGroup.accountid, totalAmount);
+      }
+      if (!createdTransactions) {
+        throw new Error("Transaction wasn't created");
+      }
+
+      return createdTransactions;
+    },
+  });
+};
+
 export const useUpdateTransaction = () => {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");

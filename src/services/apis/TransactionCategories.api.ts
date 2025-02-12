@@ -5,9 +5,10 @@ import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 export const getAllTransactionCategories = async () => {
   const { data, error } = await supabase
     .from(TableNames.TransactionCategories)
-    .select()
+    .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
     .eq("isdeleted", false)
     .order("displayorder", { ascending: true })
+    .order("group(displayorder)", { ascending: true })
     .order("name");
   if (error) throw new Error(error.message);
   return data;
