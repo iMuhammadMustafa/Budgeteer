@@ -182,8 +182,8 @@ function ListItem({
 
 type TabProps = {
   title: string;
-  isLoading: boolean;
-  error: any;
+  isLoading?: boolean;
+  error?: any;
   useDelete: () => { mutate: (id: string) => void };
   upsertUrl: Href;
   selectable?: boolean;

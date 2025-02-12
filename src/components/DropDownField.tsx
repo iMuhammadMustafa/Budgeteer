@@ -251,6 +251,29 @@ export function MyTransactionTypesDropdown({
   );
 }
 
+export const ColorsPickerDropdown = ({
+  selectedValue,
+  handleSelect,
+}: {
+  selectedValue: any;
+  handleSelect: (item: OptionItem | null) => void;
+}) => {
+  return (
+    <DropdownField
+      isModal={Platform.OS !== "web"}
+      label="Color"
+      options={[
+        { id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100" },
+        { id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100" },
+        { id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100" },
+        { id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100" },
+      ]}
+      selectedValue={selectedValue}
+      onSelect={handleSelect}
+    />
+  );
+};
+
 //TODO: Fix compare
 const areEqual = (prevProps: DropDownProps, nextProps: DropDownProps) => {
   return prevProps.options === nextProps.options && prevProps.selectedValue === nextProps.selectedValue;

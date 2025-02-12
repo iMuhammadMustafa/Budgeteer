@@ -108,7 +108,7 @@ function DrawerContent(props: any) {
         label="Logout"
         onPress={() => {
           supabase.auth.signOut();
-          router.navigate("/(auth)/Login");
+          router.replace("/(auth)/Login");
         }}
       />
       <DrawerItem

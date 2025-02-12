@@ -8,7 +8,7 @@ import { TableNames } from "@/src/types/db/TableNames";
 import { useGetAccountCategories } from "@/src/services/repositories/AccountCategories.Repository";
 import { useUpsertAccount } from "@/src/services/repositories/Accounts.Repository";
 import TextInputField from "../TextInputField";
-import DropdownField from "../DropDownField";
+import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import { queryClient } from "@/src/providers/QueryProvider";
 
@@ -51,45 +51,37 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         <TextInputField label="Name" value={formData.name} onChange={name => handleFieldChange("name", name)} />
         <TextInputField label="Owner" value={formData.owner} onChange={owner => handleFieldChange("owner", owner)} />
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-          <DropdownField
-            isModal={Platform.OS !== "web"}
-            label="Category"
-            options={
-              accountCategories?.map(item => ({
-                id: item.id,
-                label: item.name,
-                group: item.type,
-                value: item.id,
-                icon: item.icon,
-              })) ?? []
-            }
-            selectedValue={formData.categoryid}
-            groupBy="type"
-            onSelect={value => {
-              handleFieldChange("categoryid", value?.value);
-            }}
-          />
-          <DropdownField
-            isModal={Platform.OS !== "web"}
-            label="Color"
-            options={[
-              { id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100" },
-              { id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100" },
-              { id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100" },
-              { id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100" },
-            ]}
+        <DropdownField
+          isModal={Platform.OS !== "web"}
+          label="Category"
+          options={
+            accountCategories?.map(item => ({
+              id: item.id,
+              label: item.name,
+              group: item.type,
+              value: item.id,
+              icon: item.icon,
+            })) ?? []
+          }
+          selectedValue={formData.categoryid}
+          groupBy="type"
+          onSelect={value => {
+            handleFieldChange("categoryid", value?.value);
+          }}
+        />
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
+          <View className="flex-1">
+            <IconPicker
+              onSelect={(icon: any) => handleFieldChange("icon", icon)}
+              label="Icon"
+              initialIcon={formData.icon ?? "CircleHelp"}
+            />
+          </View>
+          <ColorsPickerDropdown
             selectedValue={formData.color}
-            onSelect={value => {
-              handleFieldChange("color", value?.value);
-            }}
+            handleSelect={value => handleFieldChange("color", value?.value)}
           />
         </View>
-        <IconPicker
-          onSelect={(icon: any) => setFormData(prevFormData => ({ ...prevFormData, icon }))}
-          label="Icon"
-          initialIcon={formData.icon ?? "CircleHelp"}
-        />
 
         <TextInputField
           label="Currency"
@@ -122,7 +114,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 }
 
 export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
-export const initialAccountState: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts> = {
+export const initialState: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts> = {
   name: "",
   categoryid: "",
   balance: 0,

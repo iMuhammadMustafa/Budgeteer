@@ -1,26 +1,37 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, Text } from "react-native";
+import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useUpsertTransactionGroup } from "@/src/services/repositories/TransactionGroups.Repository";
-import DropdownField from "../DropDownField";
+import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
 
-export type CategoryGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 
-export default function CategoryGroupForm({ category }: { category: CategoryGroupFormType }) {
-  const [formData, setFormData] = useState<CategoryGroupFormType>(category);
+export const initialState: TransactionGroupFormType = {
+  name: "",
+  type: "Expense",
+  description: "",
+  budgetamount: 0,
+  budgetfrequency: "",
+  icon: "",
+  color: "",
+  displayorder: 0,
+};
+
+export default function TransactionGroupForm({ group }: { group: TransactionGroupFormType }) {
+  const [formData, setFormData] = useState<TransactionGroupFormType>(group);
   const [isLoading] = useState(false);
 
   useEffect(() => {
-    setFormData(category);
-  }, [category]);
+    setFormData(group);
+  }, [group]);
 
   const { mutate } = useUpsertTransactionGroup();
 
-  const handleTextChange = (name: keyof CategoryGroupFormType, text: string) => {
+  const handleTextChange = (name: keyof TransactionGroupFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
@@ -51,11 +62,19 @@ export default function CategoryGroupForm({ category }: { category: CategoryGrou
           }}
         />
 
-        <IconPicker
-          onSelect={(icon: any) => setFormData(prevFormData => ({ ...prevFormData, icon }))}
-          label="Icon"
-          initialIcon={formData.icon ?? "CircleHelp"}
-        />
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
+          <View className="flex-1">
+            <IconPicker
+              onSelect={(icon: any) => handleTextChange("icon", icon)}
+              label="Icon"
+              initialIcon={formData.icon ?? "CircleHelp"}
+            />
+          </View>
+          <ColorsPickerDropdown
+            selectedValue={formData.color}
+            handleSelect={value => handleTextChange("color", value?.value)}
+          />
+        </View>
 
         <DropdownField
           isModal={Platform.OS !== "web"}
@@ -79,7 +98,7 @@ export default function CategoryGroupForm({ category }: { category: CategoryGrou
             mutate(
               {
                 formData,
-                originalData: category as TransactionGroup,
+                originalData: group as TransactionGroup,
               },
               {
                 onSuccess: () => {

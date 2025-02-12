@@ -5,16 +5,29 @@ import { Inserts, TransactionCategory, Updates } from "@/src/types/db/Tables.Typ
 import { TableNames } from "@/src/types/db/TableNames";
 import { useUpsertTransactionCategory } from "@/src/services/repositories/TransactionCategories.Repository";
 import { useGetTransactionGroups } from "@/src/services/repositories/TransactionGroups.Repository";
-import DropdownField, { MyTransactionTypesDropdown } from "../DropDownField";
+import DropdownField, { ColorsPickerDropdown, MyTransactionTypesDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
 
-export type TransactionCategoryForm =
+export type TransactionCategoryFormType =
   | Inserts<TableNames.TransactionCategories>
   | Updates<TableNames.TransactionCategories>;
 
-export default function CategoryForm({ category }: { category: TransactionCategoryForm }) {
-  const [formData, setFormData] = useState<TransactionCategoryForm>(category);
+export const initialState: TransactionCategoryFormType = {
+  name: "",
+  description: "",
+
+  budgetamount: 0,
+  budgetfrequency: "",
+
+  icon: "",
+  color: "",
+  displayorder: 0,
+  groupid: "",
+};
+
+export default function CategoryForm({ category }: { category: TransactionCategoryFormType }) {
+  const [formData, setFormData] = useState<TransactionCategoryFormType>(category);
   const [isLoading] = useState(false);
 
   useEffect(() => {
@@ -29,7 +42,7 @@ export default function CategoryForm({ category }: { category: TransactionCatego
     setFormData(prevFormData => ({ ...prevFormData, icon }));
   }, []);
 
-  const handleTextChange = (name: keyof TransactionCategoryForm, text: string) => {
+  const handleTextChange = (name: keyof TransactionCategoryFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
@@ -56,6 +69,19 @@ export default function CategoryForm({ category }: { category: TransactionCatego
             handleTextChange("groupid", value?.value);
           }}
         />
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
+          <View className="flex-1">
+            <IconPicker
+              onSelect={(icon: any) => handleTextChange("icon", icon)}
+              label="Icon"
+              initialIcon={formData.icon ?? "CircleHelp"}
+            />
+          </View>
+          <ColorsPickerDropdown
+            selectedValue={formData.color}
+            handleSelect={value => handleTextChange("color", value?.value)}
+          />
+        </View>
 
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
 
