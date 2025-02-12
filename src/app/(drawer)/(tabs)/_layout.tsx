@@ -6,6 +6,7 @@ export default function DashboardLayout() {
     <Tabs screenOptions={{ headerShown: false }}>
       {DashboardTab}
       {TransactionsTab}
+      {AddTransaction}
       {RemindersTab}
       {SummaryTab}
     </Tabs>
@@ -27,6 +28,16 @@ const TransactionsTab = (
     options={{
       title: "Transactions",
       tabBarIcon: ({ color }) => <MyIcon name="ArrowRightLeft" color={color} size={24} />,
+    }}
+  />
+);
+const AddTransaction = (
+  <Tabs.Screen
+    name="AddTransaction"
+    options={{
+      title: "New Transaction",
+      tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color} size={24} />,
+      // unmountOnBlur: true,
     }}
   />
 );

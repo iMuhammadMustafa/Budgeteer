@@ -51,6 +51,7 @@ export default function CategoryForm({ category }: { category: TransactionCatego
   return (
     <SafeAreaView className="p-5 flex-1">
       <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
+        <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
         <DropdownField
           isModal={Platform.OS !== "web"}
           label="Group"
@@ -69,10 +70,13 @@ export default function CategoryForm({ category }: { category: TransactionCatego
             handleTextChange("groupid", value?.value);
           }}
         />
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
+        <View
+          className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between relative z-9`}
+          removeClippedSubviews={false}
+        >
           <View className="flex-1">
             <IconPicker
-              onSelect={(icon: any) => handleTextChange("icon", icon)}
+              onSelect={(icon: any) => handleIconSelect(icon)}
               label="Icon"
               initialIcon={formData.icon ?? "CircleHelp"}
             />
@@ -83,17 +87,39 @@ export default function CategoryForm({ category }: { category: TransactionCatego
           />
         </View>
 
-        <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
+        <View
+          className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between relative z-[-9]`}
+        >
+          <TextInputField
+            label="Budget Amount"
+            value={formData.budgetamount?.toString()}
+            onChange={text => {
+              const numberRegex = /^[0-9]*$/;
+              numberRegex.test(text) && handleTextChange("budgetamount", text);
+            }}
+          />
+          <DropdownField
+            isModal={Platform.OS !== "web"}
+            label="Budget Frequency"
+            options={[
+              { id: "Daily", label: "Daily", value: "Daily" },
+              { id: "Weekly", label: "Weekly", value: "Weekly" },
+              { id: "Monthly", label: "Monthly", value: "Monthly" },
+              { id: "Yearly", label: "Yearly", value: "Yearly" },
+            ]}
+            selectedValue={formData.budgetfrequency}
+            onSelect={value => handleTextChange("budgetfrequency", value?.value)}
+          />
+        </View>
 
         <TextInputField
           label="Description"
           value={formData.description}
           onChange={text => handleTextChange("description", text)}
         />
-        <IconPicker onSelect={handleIconSelect} label="Icon" initialIcon={formData.icon} />
 
         <Pressable
-          className="p-3 flex justify-center items-center"
+          className="p-3 flex justify-center items-center -z-10"
           disabled={isLoading}
           onPress={() => {
             mutate(

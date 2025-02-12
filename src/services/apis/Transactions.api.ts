@@ -111,14 +111,12 @@ export const getTransactionsByName = async (text: string) => {
 
   if (error) throw error;
 
-  return data;
-  //: Promise<SearchableDropdownItem[]>
-  // return (
-  //   data.map(transaction => ({
-  //     label: transaction.description!,
-  //     item: { ...transaction, amount: transaction.amount },
-  //   })) ?? []
-  // );
+  return (
+    data.map(transaction => ({
+      label: transaction.name!,
+      item: { ...transaction, amount: transaction.amount },
+    })) ?? []
+  );
 };
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
   const { data, error } = await supabase.from(TableNames.Transactions).insert(transaction).select().single();

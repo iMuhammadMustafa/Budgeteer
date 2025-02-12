@@ -17,7 +17,7 @@ export default function Upsert() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: categoryId ? "Edit TransactionCategory" : "Add TransactionCategory",
+      title: categoryId ? "Edit Transaction Category" : "Add Transaction Category",
     });
   }, []);
 

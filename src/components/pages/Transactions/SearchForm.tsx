@@ -114,7 +114,7 @@ export default function TransactionSearchForm({
 
         <View className="flex flex-row justify-center items-center gap-2">
           <Pressable
-            className="bg-error-300 p-2 rounded-md w-1/4 justify-center items-center"
+            className="bg-danger-300 p-2 rounded-md w-1/4 justify-center items-center"
             onPress={() => {
               setSearchParams(null);
               onClear();

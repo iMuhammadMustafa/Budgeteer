@@ -1,4 +1,4 @@
-interface DropDownProps {
+export interface DropDownProps {
   options: Array<OptionItem>;
   onSelect: (item: OptionItem | null) => void;
   selectedValue?: string | null;
@@ -8,7 +8,7 @@ interface DropDownProps {
   isWritable?: boolean;
 }
 
-interface OptionItem {
+export interface OptionItem {
   id: string;
   label: string;
   value: any;
@@ -19,23 +19,29 @@ interface OptionItem {
   group?: string;
   details?: string;
 }
-type RenderListProps = {
+export type RenderListProps = {
   groupedOptions: OptionItem[] | (string | undefined)[];
   isModal: boolean;
   options: OptionItem[];
   onItemPress: (item: OptionItem) => void;
 };
 
-type ListContainerProps = {
+export type ListContainerProps = {
   isModal: boolean;
   children: React.ReactNode;
   buttonLayout: { height: number; width: number; top: number; y: number; x: number };
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
-type RenderOptionProps = {
+export type RenderOptionProps = {
   isModal: boolean;
   option: OptionItem;
   onItemPress: (item: OptionItem) => void;
   isGrouped?: boolean;
+};
+
+export type SearchableDropdownItem = {
+  id?: string | null;
+  label: string;
+  item: any;
 };

@@ -9,18 +9,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-export type SearchableDropdownItem = {
-  id?: string | null;
-  label: string;
-  item: any;
-};
+import { SearchableDropdownItem } from "../types/components/DropdownField.types";
+import { UseQueryResult } from "@tanstack/react-query";
 
 type SearchableDropdownType = {
   label: string;
   className?: string;
   initalValue?: string | null;
   placeholder?: string | null;
+  searchSetter?: any;
+  result?: SearchableDropdownItem[];
   searchAction: (searchText: string) => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
   onChange: (item: any) => void;
   onSelectItem: (item: any) => void;
@@ -33,6 +31,8 @@ export default function SearchableDropdown({
   initalValue = "",
   placeholder = null,
   searchAction,
+  searchSetter,
+  result,
   onChange,
   onSelectItem,
   onPress,
@@ -69,6 +69,7 @@ export default function SearchableDropdown({
     const applySearch = async () => {
       if (!ignoreFetch && depouncedText && depouncedText.length > 0) {
         setIsLoading(true);
+
         const data = await searchAction(depouncedText);
         setSuggestions(data);
         setIsLoading(false);

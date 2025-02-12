@@ -5,15 +5,15 @@ import { TableNames } from "../types/db/TableNames";
 import { TransactionFilters } from "../types/apis/TransactionFilters";
 
 export const getTransactionProp = (type: string | null) => {
-  const transactionProp = { iconName: "CircleHelp", color: "error-100", textColor: "foreground", size: 20 };
+  const transactionProp = { iconName: "CircleHelp", color: "danger-100", textColor: "foreground", size: 20 };
   if (type === "Income") {
     transactionProp.iconName = "Plus";
     transactionProp.color = "success-100";
     transactionProp.textColor = "success-500";
   } else if (type === "Expense") {
     transactionProp.iconName = "Minus";
-    transactionProp.color = "error-100";
-    transactionProp.textColor = "error-500";
+    transactionProp.color = "danger-100";
+    transactionProp.textColor = "danger-500";
   } else if (type === "Transfer") {
     transactionProp.iconName = "ArrowLeftRight";
     transactionProp.color = "info-100";

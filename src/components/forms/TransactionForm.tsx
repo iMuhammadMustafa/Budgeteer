@@ -1,25 +1,48 @@
-import { useEffect, useState } from "react";
-import { TransactionFormType, useUpsertTransaction } from "../../repositories/services/transactions.service";
-import { useRouter } from "expo-router";
-import { useNotifications } from "../../providers/NotificationsProvider";
-import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
-import TextInputField from "../TextInputField";
-import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
-import { useGetCategories } from "../../repositories/services/categories.service";
-import { useGetAccounts } from "../../repositories/services/account.service";
-import dayjs from "dayjs";
-import { Box } from "@/components/ui/box";
-import VCalc from "../VCalc";
-import SearchableDropdown, { SearchableDropdownItem } from "../SearchableDropdown";
-import { getTransactionsByDescription } from "../../repositories/apis/transactions.api";
-import Icon from "@/src/lib/IonIcons";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Platform, SafeAreaView, ScrollView, Text, Pressable, View } from "react-native";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import MyDropDown, { MyCategoriesDropdown } from "../MyDropdown";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+import { Account, Inserts, Transaction, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
+import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
+import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
+import {
+  useGetTransactionById,
+  useSearchTransactionsByName,
+  useUpsertTransaction,
+} from "@/src/services/repositories/Transactions.Repository";
+import SearchableDropdown from "../SearchableDropdown";
+import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "../MyDateTimePicker";
+import TextInputField from "../TextInputField";
+import CalculatorComponent from "../Calculator";
+import DropdownField, {
+  AccountSelecterDropdown,
+  MyCategoriesDropdown,
+  MyTransactionTypesDropdown,
+} from "../DropDownField";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+import { getTransactionsByName } from "@/src/services/apis/Transactions.api";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+type TransactionUpsertType = Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+
+export type TransactionFormType = TransactionUpsertType & {
+  amount: number;
+};
 
 export const initialTransactionState: TransactionFormType = {
+  id: undefined,
+  name: "",
+  payee: "",
   description: "",
-  date: dayjs().toISOString(),
+  date: dayjs().local().toISOString(),
   amount: 0,
   type: "Expense",
 
@@ -27,47 +50,217 @@ export const initialTransactionState: TransactionFormType = {
   categoryid: "",
   notes: "",
   tags: null,
-  status: "None",
+  isvoid: false,
 
   transferid: "",
   transferaccountid: null,
-
-  createdat: null,
-
-  accountname: null,
-  balance: null,
-  categorygroup: null,
-  categoryname: null,
-  categorytype: null,
-  createdby: null,
-  currency: null,
-  icon: null,
-  id: null,
-  isdeleted: null,
-  running_balance: null,
-  tenantid: null,
-  updatedat: null,
-  updatedby: null,
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
+  const {
+    formData,
+    setFormData,
+    isEdit,
+    isLoading,
+    isCategoriesLoading,
+    isAccountLoading,
+    mode,
+    setMode,
+    categories,
+    accounts,
+    sourceAccount,
+    destinationAccount,
+    handleTextChange,
+    handleOnMoreSubmit,
+    handleSubmit,
+    onSelectItem,
+  } = useTransactionForm({ transaction });
+
+  // const [searchText, setSearchText] = useState<string>("");
+  // const { data: searchResults, isLoading: isSearchLoading } = useSearchTransactionsByName(searchText);
+
+  if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
+
+  return (
+    <SafeAreaView className="flex-1">
+      <Pressable
+        className="self-end px-5 flex-row items-center"
+        disabled={isLoading}
+        onPress={() => {
+          handleOnMoreSubmit();
+        }}
+      >
+        <MyIcon name="Plus" size={24} className="text-primary-300" />
+      </Pressable>
+      <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
+        <SearchableDropdown
+          label="Name"
+          searchAction={getTransactionsByName}
+          // searchSetter={setSearchText}
+          // result={searchResults}
+          initalValue={transaction.name}
+          onSelectItem={onSelectItem}
+          onChange={val => handleTextChange("name", val)}
+        />
+
+        <MyDateTimePicker
+          label="Date"
+          date={dayjs(formData.date)}
+          onChange={params => {
+            const formatedDate = dayjs(params.date).local().toISOString();
+            handleTextChange("date", formatedDate);
+          }}
+        />
+
+        <View className="flex-row justify-center items-center">
+          <Pressable
+            className={`${formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-danger-400"} border border-muted rounded-lg me-2 p-1.5 mt-4`}
+            onPress={() => {
+              if (Platform.OS !== "web") {
+                Haptics.selectionAsync();
+              }
+              if (mode === "plus") {
+                setMode("minus");
+              } else {
+                setMode("plus");
+              }
+            }}
+          >
+            {formData.type === "Transfer" ? (
+              <MyIcon name="Hash" size={24} className="text-gray-100" />
+            ) : mode === "minus" ? (
+              <MyIcon name="Minus" size={24} className="text-gray-100" />
+            ) : (
+              <MyIcon name="Plus" size={24} className="text-gray-100" />
+            )}
+          </Pressable>
+          <TextInputField
+            label="Amount"
+            value={(formData.amount ?? 0).toString()}
+            keyboardType="numeric"
+            onChange={text => {
+              let numericAmount = text
+                .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
+                .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
+                .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
+                .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+
+              handleTextChange("amount", numericAmount);
+            }}
+            className="flex-1"
+          />
+          <CalculatorComponent
+            onSubmit={(result: string) => handleTextChange("amount", Math.abs(parseFloat(result)).toString())}
+            currentValue={formData.amount}
+          />
+        </View>
+
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+          <MyTransactionTypesDropdown
+            selectedValue={formData.type}
+            onSelect={value => handleTextChange("type", value)}
+            isModal={Platform.OS !== "web"}
+            isEdit={isEdit}
+          />
+          {/** TODO: Handle IS VOID */}
+        </View>
+
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+          <MyCategoriesDropdown
+            selectedValue={formData.categoryid}
+            categories={categories}
+            onSelect={value => handleTextChange("categoryid", value.id)}
+            isModal={Platform.OS !== "web"}
+          />
+
+          <AccountSelecterDropdown
+            label="Account"
+            selectedValue={formData.accountid}
+            onSelect={(value: any) => {
+              handleTextChange("accountid", value.id);
+            }}
+            isModal={Platform.OS !== "web"}
+            accounts={accounts}
+          />
+          {formData.type === "Transfer" && (
+            <AccountSelecterDropdown
+              label="Destinaton"
+              selectedValue={formData.transferaccountid}
+              onSelect={(value: any) => {
+                handleTextChange("transferaccountid", value.id);
+              }}
+              isModal={Platform.OS !== "web"}
+              accounts={accounts}
+            />
+          )}
+        </View>
+
+        <TextInputField
+          label="Tags"
+          value={formData.tags?.toString()}
+          onChange={text => {
+            handleTextChange("tags", text.split(","));
+          }}
+        />
+        <TextInputField
+          label="Notes"
+          value={formData.notes}
+          onChange={text => {
+            handleTextChange("notes", text);
+          }}
+        />
+
+        <View className="flex-row text-center justify-center items-center gap-5 mt-2">
+          <Pressable
+            className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md"
+            onPress={() => {
+              setFormData(initialTransactionState);
+              router.replace("/AddTransaction");
+            }}
+          >
+            <Text className="text-foreground font-medium text-md" selectable={false}>
+              Reset
+            </Text>
+          </Pressable>
+          <Pressable
+            className="bg-primary px-5 py-2 align-center justify-center rounded-md"
+            disabled={isLoading}
+            onPress={handleSubmit}
+          >
+            <Text className={`text-foreground font-medium text-md ${isLoading ? "text-muted" : ""}`} selectable={false}>
+              Save
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const useTransactionForm = ({ transaction }: any) => {
   const [formData, setFormData] = useState<TransactionFormType>({
     ...transaction,
     amount: Math.abs(transaction.amount ?? 0),
   });
+  const [sourceAccount, setSourceAccount] = useState<Account | null>(null);
+  const [destinationAccount, setDestinationAccount] = useState<Account | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [sourceAccount, setSourceAccount] = useState(null);
-  const [destinationAccount, setDestinationAccount] = useState(null);
-  const router = useRouter();
   const [mode, setMode] = useState<"plus" | "minus">("plus");
 
-  const { data: categories, isLoading: isCategoriesLoading } = useGetCategories();
+  const { data: categories, isLoading: isCategoriesLoading } = useGetTransactionCategories();
   const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
 
   const { mutate } = useUpsertTransaction();
-  const { addNotification } = useNotifications();
 
   const isEdit = !!transaction.id;
+
+  const getAccountById = useCallback(
+    (id: string | null | undefined) => {
+      if (!id) return null;
+      return accounts?.find(account => account.id === id) ?? null;
+    },
+    [accounts],
+  );
 
   useEffect(() => {
     if (!transaction.amount || transaction.amount == 0) {
@@ -80,8 +273,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       ...transaction,
       amount: Math.abs(transaction.amount ?? 0),
     });
-    setSourceAccount(accounts?.find(account => account.id === transaction.accountid));
-    setDestinationAccount(accounts?.find(account => account.id === transaction.transferaccountid));
+    setSourceAccount(getAccountById(transaction.accountid));
+    setDestinationAccount(getAccountById(transaction.transferaccountid));
   }, [transaction, accounts]);
 
   const handleTextChange = (name: keyof TransactionFormType, text: string) => {
@@ -101,9 +294,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   };
 
   const handleOnMoreSubmit = () => {
-    const updatedDate = dayjs(formData.date)
-      .add(1, "second") // Add 1 second
-      .toISOString(); // Convert to ISO string
+    const updatedDate = dayjs(formData.date).local().add(1, "second").toISOString();
 
     const newItem: TransactionFormType = {
       ...initialTransactionState,
@@ -112,7 +303,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
-      createdat: dayjs().toISOString(),
+      createdat: dayjs().local().toISOString(),
+      transferid: undefined,
     };
     handleMutate(newItem);
   };
@@ -127,17 +319,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
     mutate(
       {
-        fullFormTransaction: {
+        formData: {
           ...formData,
           amount: amount,
         },
-        originalData: transaction,
-        sourceAccount,
-        destinationAccount,
+        originalData: transaction as Transaction,
       },
       {
         onSuccess: () => {
-          addNotification({
+          console.log({
             message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
             type: "success",
           });
@@ -149,7 +339,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           }
         },
         onError: error => {
-          addNotification({
+          console.log({
             message: error.message,
             type: "error",
           });
@@ -166,211 +356,26 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       amount: Math.abs(item.item.amount),
     });
     setMode(item.item.amount < 0 ? "minus" : "plus");
-    setSourceAccount(accounts?.find(account => account.id === item.item.accountid));
-    setDestinationAccount(accounts?.find(account => account.id === item.item.transferaccountid));
+    setSourceAccount(getAccountById(item.item.accountid));
+    setDestinationAccount(getAccountById(item.item.transferaccountid));
   };
 
-  if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
-
-  return (
-    <SafeAreaView className="flex-1">
-      <TouchableOpacity
-        className="self-end px-5 flex-row items-center"
-        disabled={isLoading}
-        onPress={() => {
-          handleOnMoreSubmit();
-        }}
-      >
-        <Icon name="Plus" size={24} className="text-primary-300" />
-      </TouchableOpacity>
-      <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
-        <SearchableDropdown
-          label="Description"
-          searchAction={val => getTransactionsByDescription(val)}
-          initalValue={transaction.description}
-          onSelectItem={onSelectItem}
-          onChange={val => handleTextChange("description", val)}
-        />
-
-        <MyDateTimePicker
-          label="Date"
-          date={formData.date}
-          onChange={params => {
-            const formatedDate = dayjs(params.date).toISOString();
-            handleTextChange("date", formatedDate);
-          }}
-        />
-
-        <Box className="flex-row justify-center items-center">
-          <Pressable
-            className={`${formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-error-400"} border border-muted rounded-lg me-2 p-1.5 mt-4`}
-            onPress={() => {
-              if (Platform.OS !== "web") {
-                Haptics.selectionAsync();
-              }
-              if (mode === "plus") {
-                setMode("minus");
-              } else {
-                setMode("plus");
-              }
-            }}
-          >
-            {formData.type === "Transfer" ? (
-              <Icon name="Hash" size={24} className="text-gray-100" />
-            ) : mode === "minus" ? (
-              <Icon name="Minus" size={24} className="text-gray-100" />
-            ) : (
-              <Icon name="Plus" size={24} className="text-gray-100" />
-            )}
-          </Pressable>
-          <TextInputField
-            label="Amount"
-            value={(formData.amount ?? 0).toString()}
-            keyboardType="numeric"
-            onChange={text => {
-              let numericAmount = text
-                .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
-                .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-                .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
-                .replace(/^0+(?=\d)/, ""); // Remove leading zeros
-
-              handleTextChange("amount", numericAmount);
-            }}
-            className="flex-1"
-          />
-          <VCalc
-            onSubmit={(result: string) => handleTextChange("amount", Math.abs(parseFloat(result)).toString())}
-            currentValue={formData.amount?.toString()}
-          />
-        </Box>
-
-        <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-          <MyDropDown
-            isModal={Platform.OS !== "web"}
-            label="Type"
-            options={[
-              { id: "Income", label: "Income", value: "Income", disabled: isEdit },
-              { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
-              { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
-              { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
-              { id: "Initial", label: "Initial", value: "Initial", disabled: true },
-              { id: "Refund", label: "Refund", value: "Refund", disabled: true },
-            ]}
-            selectedValue={formData.type}
-            onSelect={value => {
-              handleTextChange("type", value?.value);
-            }}
-          />
-          <MyDropDown
-            isModal={Platform.OS !== "web"}
-            label="Status"
-            options={[
-              { id: "None", label: "None", value: "None" },
-              { id: "Cleared", label: "Cleared", value: "Cleared" },
-              { id: "Reconciled", label: "Reconciled", value: "Reconciled" },
-              { id: "Void", label: "Void", value: "Void" },
-            ]}
-            selectedValue={formData.status}
-            onSelect={value => handleTextChange("status", value?.value)}
-          />
-        </Box>
-
-        <Box className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-          <MyCategoriesDropdown
-            selectedValue={formData.categoryid}
-            categories={categories}
-            onSelect={value => handleTextChange("categoryid", value.id)}
-            isModal={Platform.OS !== "web"}
-          />
-
-          <MyDropDown
-            isModal={Platform.OS !== "web"}
-            label="Account"
-            selectedValue={formData.accountid}
-            options={
-              accounts?.map(account => ({
-                id: account.id,
-                label: account.name,
-                details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                })}`,
-                value: account,
-                passedItem: account,
-                icon: account.icon,
-                iconColorClass: `text-${account.iconColor?.replace("100", "500") ?? "gray-500"}`,
-                group: account.category.name,
-              })) ?? []
-            }
-            groupBy="group"
-            onSelect={(value: any) => {
-              handleTextChange("accountid", value.id);
-              setSourceAccount(value.value);
-            }}
-          />
-          {formData.type === "Transfer" && (
-            <MyDropDown
-              isModal={Platform.OS !== "web"}
-              label="Destinaton Account"
-              selectedValue={formData.transferaccountid}
-              options={
-                accounts?.map(account => ({
-                  id: account.id,
-                  label: account.name,
-                  details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  })}`,
-                  value: account,
-                  passedItem: account,
-                  icon: account.icon,
-                  iconColorClass: `text-${account.iconColor.replace("100", "500")}`,
-                  group: account.category.name,
-                })) ?? []
-              }
-              groupBy="group"
-              onSelect={(value: any) => {
-                handleTextChange("transferaccountid", value.id);
-                setDestinationAccount(value.value);
-              }}
-            />
-          )}
-        </Box>
-
-        <TextInputField
-          label="Tags"
-          value={formData.tags?.toString()}
-          onChange={text => {
-            handleTextChange("tags", text.split(","));
-          }}
-        />
-        <TextInputField
-          label="Notes"
-          value={formData.notes}
-          onChange={text => {
-            handleTextChange("notes", text);
-          }}
-        />
-
-        <Box className="flex-row text-center justify-center items-center gap-5 mt-2">
-          <Button
-            className="bg-error-400"
-            onPress={() => {
-              setFormData(initialTransactionState);
-              router.replace("/AddTransaction");
-            }}
-          >
-            <ButtonText className="text-foreground font-medium text-md">Reset</ButtonText>
-          </Button>
-          <Button className="bg-primary" disabled={isLoading} onPress={handleSubmit}>
-            {isLoading ? (
-              <ButtonSpinner />
-            ) : (
-              <ButtonText className="text-foreground font-medium text-md">Save</ButtonText>
-            )}
-          </Button>
-        </Box>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+  return {
+    formData,
+    setFormData,
+    isEdit,
+    isLoading,
+    isCategoriesLoading,
+    isAccountLoading,
+    mode,
+    setMode,
+    categories,
+    accounts,
+    sourceAccount,
+    destinationAccount,
+    handleTextChange,
+    handleOnMoreSubmit,
+    handleSubmit,
+    onSelectItem,
+  };
+};

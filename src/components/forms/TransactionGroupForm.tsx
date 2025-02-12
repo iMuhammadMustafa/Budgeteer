@@ -36,7 +36,7 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
   };
 
   return (
-    <SafeAreaView className="p-5">
+    <SafeAreaView className="p-5 flex-1">
       <ScrollView>
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
         <TextInputField
@@ -62,7 +62,9 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
           }}
         />
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
+        <View
+          className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between relative z-[9]`}
+        >
           <View className="flex-1">
             <IconPicker
               onSelect={(icon: any) => handleTextChange("icon", icon)}
@@ -76,20 +78,30 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
           />
         </View>
 
-        <DropdownField
-          isModal={Platform.OS !== "web"}
-          label="Color"
-          options={[
-            { id: "info-100", label: "Info", value: "info-100", textColorClass: "info-100" },
-            { id: "success-100", label: "Success", value: "success-100", textColorClass: "success-100" },
-            { id: "warning-100", label: "Warning", value: "warning-100", textColorClass: "warning-100" },
-            { id: "error-100", label: "Error", value: "error-100", textColorClass: "error-100" },
-          ]}
-          selectedValue={formData.color}
-          onSelect={value => {
-            handleTextChange("color", value?.value);
-          }}
-        />
+        <View
+          className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between  relative z-[8]`}
+        >
+          <TextInputField
+            label="Budget Amount"
+            value={formData.budgetamount?.toString()}
+            onChange={text => {
+              const numberRegex = /^[0-9]*$/;
+              numberRegex.test(text) && handleTextChange("budgetamount", text);
+            }}
+          />
+          <DropdownField
+            isModal={Platform.OS !== "web"}
+            label="Budget Frequency"
+            options={[
+              { id: "Daily", label: "Daily", value: "Daily" },
+              { id: "Weekly", label: "Weekly", value: "Weekly" },
+              { id: "Monthly", label: "Monthly", value: "Monthly" },
+              { id: "Yearly", label: "Yearly", value: "Yearly" },
+            ]}
+            selectedValue={formData.budgetfrequency}
+            onSelect={value => handleTextChange("budgetfrequency", value?.value)}
+          />
+        </View>
 
         <Pressable
           className="p-3 flex justify-center items-center"

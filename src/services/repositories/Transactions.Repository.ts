@@ -20,6 +20,7 @@ import { updateAccountBalance } from "../apis/Accounts.api";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { initialSearchFilters } from "@/src/utils/transactions.helper";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 
 export const useGetAllTransactions = () => {
   return useQuery<TransactionsView[]>({
@@ -61,7 +62,7 @@ export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => 
   });
 };
 
-export const useGetTransactionById = (id?: string) => {
+export const useGetTransactionById = (id?: string | null | undefined) => {
   return useQuery<Transaction>({
     queryKey: [TableNames.Transactions, id],
     queryFn: async () => getTransactionById(id!),
@@ -69,7 +70,7 @@ export const useGetTransactionById = (id?: string) => {
   });
 };
 export const useSearchTransactionsByName = (text: string) => {
-  return useQuery<any[]>({
+  return useQuery<SearchableDropdownItem[]>({
     queryKey: [ViewNames.SearchDistinctTransactions + text],
     queryFn: async () => getTransactionsByName(text),
     enabled: !!text,
@@ -114,16 +115,16 @@ export const useUpsertTransaction = () => {
 
   return useMutation({
     mutationFn: async ({
-      formTransaction,
+      formData,
       originalData,
     }: {
-      formTransaction: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+      formData: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
       originalData?: Transaction;
     }) => {
-      if (formTransaction.id && originalData) {
-        return await updateTransactionHelper(formTransaction, originalData, session);
+      if (formData.id && originalData) {
+        return await updateTransactionHelper(formData, originalData, session);
       }
-      return await createTransactionHelper(formTransaction as Inserts<TableNames.Transactions>, session);
+      return await createTransactionHelper(formData as Inserts<TableNames.Transactions>, session);
     },
     onSuccess: async (_, data) => {
       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });

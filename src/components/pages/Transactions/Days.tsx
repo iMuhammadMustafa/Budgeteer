@@ -60,7 +60,7 @@ function DaysListHeader({ day, data }: { day: string; data: GroupedData }) {
           <Text className="text-foreground">{dayjs(day).fromNow()}</Text>
         </View>
       </View>
-      <Text className={`${data[day].amount > 0 ? "text-success-500" : "text-error-500"}`}>
+      <Text className={`${data[day].amount > 0 ? "text-success-500" : "text-danger-500"}`}>
         {amount > 0 ? `+` : ``}
         {amountString} {currency}
       </Text>
