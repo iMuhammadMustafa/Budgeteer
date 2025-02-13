@@ -117,6 +117,7 @@ CREATE TABLE TransactionCategories(
     
     Name TEXT,
     Description TEXT,
+    Type TransactionTypes NOT NULL DEFAULT 'Expense',
     
     BudgetAmount NUMERIC(18, 2) NOT NULL DEFAULT 0,
     BudgetFrequency TEXT NOT NULL DEFAULT 'Monthly',
@@ -195,8 +196,8 @@ CREATE TABLE Configruations
 (
     Id UUID DEFAULT uuid_generate_v7() PRIMARY KEY,
     
-    "Table" TEXT NOT NULL,
-    "Type" TEXT NOT NULL,
+    "table" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
     KEY TEXT NOT NULL,
     Value TEXT NOT NULL,
     
