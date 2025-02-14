@@ -69,7 +69,7 @@ const getStatsDailyTransactionsHelper = async (
   return { barsData, calendarData };
 };
 
-export const useGetStatsMonthlyTransactionsTypes = (startDate: string, endDate: string) => {
+export const useGetStatsYearTransactionsTypes = (startDate: string, endDate: string) => {
   return useQuery<DoubleBarPoint[]>({
     queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate],
     queryFn: async () => getStatsMonthlyTransactionsTypesHelper(startDate, endDate),
@@ -134,7 +134,7 @@ items =
       },
       barTwo: {
         label: "Expense",
-        value: item.expensesSum,
+        value: Math.abs(item.expensesSum),
         color: "rgba(244, 67, 54, 0.6)",
       },
     };

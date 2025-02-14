@@ -5,7 +5,7 @@ import timezone from "dayjs/plugin/timezone";
 import {
   useGetStatsDailyTransactions,
   useGetStatsMonthlyCategoriesTransactions,
-  useGetStatsMonthlyTransactionsTypes,
+  useGetStatsYearTransactionsTypes,
 } from "@/src/services/repositories/Stats.Repository";
 
 dayjs.extend(utc);
@@ -27,7 +27,7 @@ export default function useDashboard() {
   );
   const { data: monthlyTransactionsGroupsAndCategories = [], isLoading: isMonthlyLoading } =
     useGetStatsMonthlyCategoriesTransactions(startOfCurrentMonth, endOfCurrentMonth);
-  const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } = useGetStatsMonthlyTransactionsTypes(
+  const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } = useGetStatsYearTransactionsTypes(
     startOfCurrentYear,
     endOfCurrentYear,
   );
