@@ -16,19 +16,13 @@ async function buildWindows() {
 
     // Step 1: Run Expo Web Export
     console.log("Building web app...");
-    execSync("npx expo export -p web", { stdio: "inherit" });
+    execSync("bunx expo export -p web", { stdio: "inherit" });
 
     // Step 2: Copy Electron files to `dist`
     console.log("Copying Electron files...");
-    const filesToCopy = [
-      "electron-builder.json",
-      "electron-webpack.js",
-      "forge.config.js",
-      "index.js",
-      "package.json"
-    ];
+    const filesToCopy = ["electron-builder.json", "electron-webpack.js", "forge.config.js", "index.js", "package.json"];
 
-    filesToCopy.forEach((file) => {
+    filesToCopy.forEach(file => {
       const sourcePath = path.join(electronSourceDir, file);
       const targetPath = path.join(electronTargetDir, file);
       fs.copyFileSync(sourcePath, targetPath);
@@ -37,11 +31,11 @@ async function buildWindows() {
 
     // Step 3: Run `npm install` inside the `dist` folder
     console.log("Installing dependencies inside `dist`...");
-    execSync("npm install", { cwd: electronTargetDir, stdio: "inherit" });
+    execSync("bun add", { cwd: electronTargetDir, stdio: "inherit" });
 
     // Step 4: Run Electron Builder/Forge build process
     console.log("Packaging Electron app...");
-    execSync("npm run package", {
+    execSync("bun run package", {
       cwd: electronTargetDir,
       stdio: "inherit",
     });
