@@ -4,7 +4,6 @@ import DaysList from "@/src/components/pages/Transactions/Days";
 import TransactionsPageHeader from "@/src/components/pages/Transactions/PageHeader";
 import TransactionSearchModal from "@/src/components/pages/Transactions/SearchModal";
 import useTransactions from "./useTransactions";
-import { RefreshControl } from "react-native-web";
 
 export default function Transactions() {
   const {

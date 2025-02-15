@@ -18,7 +18,7 @@ export default function DrawerLayout() {
   if (!isSessionLoading && (!session || !session.user)) router.navigate("/Login");
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className="flex-1">
       <Drawer
         screenOptions={{
           drawerType: "slide",
