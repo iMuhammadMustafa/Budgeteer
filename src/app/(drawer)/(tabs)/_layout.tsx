@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import MyIcon from "@/src/utils/Icons.Helper";
 
-export default function DashboardLayout() {
+export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       {DashboardTab}
