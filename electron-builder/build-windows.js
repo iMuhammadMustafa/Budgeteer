@@ -31,7 +31,7 @@ async function buildWindows() {
 
     // Step 3: Run `npm install` inside the `dist` folder
     console.log("Installing dependencies inside `dist`...");
-    execSync("bun add", { cwd: electronTargetDir, stdio: "inherit" });
+    execSync("bun install", { cwd: electronTargetDir, stdio: "inherit" });
 
     // Step 4: Run Electron Builder/Forge build process
     console.log("Packaging Electron app...");
