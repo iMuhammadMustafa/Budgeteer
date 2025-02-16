@@ -1,5 +1,5 @@
 import { Dispatch, createContext, useCallback, useContext, useMemo, useReducer, useState } from "react";
-import generateUuid from "../lib/uuidHelper";
+import GenerateUuid from "../utils/UUID.Helper";
 
 export enum ActionTypes {
   Add = "ADD",
@@ -45,7 +45,7 @@ export default function NotificationsProvider({ children }: { children: React.Re
 
   const addNotification = useCallback(
     (notification: NotificationType) =>
-      dispatch({ type: ActionTypes.Add, payload: { ...notification, id: generateUuid() } }),
+      dispatch({ type: ActionTypes.Add, payload: { ...notification, id: GenerateUuid() } }),
     [dispatch],
   );
   const removeNotification = useCallback(
