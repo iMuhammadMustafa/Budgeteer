@@ -21,16 +21,21 @@ export default function AddTransaction() {
   const id = transaction?.id && !transaction?.accountid && !transaction?.categoryid ? transaction.id : null;
   const { data: transactionById, isLoading, error } = useGetTransactionById(id);
 
-  const renderScene = useCallback(({ route }: any) => {
-    switch (route.key) {
-      case "first":
-        return <FirstRoute transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />;
-      case "second":
-        return <SecondRoute transaction={transaction ?? null} />;
-      default:
-        return <FirstRoute />;
-    }
-  }, []);
+  const renderScene = useCallback(
+    ({ route }: any) => {
+      switch (route.key) {
+        case "first":
+          return (
+            <FirstRoute transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />
+          );
+        case "second":
+          return <SecondRoute transaction={transaction ?? null} />;
+        default:
+          return <FirstRoute />;
+      }
+    },
+    [transaction],
+  );
 
   return (
     <TabView
