@@ -51,7 +51,7 @@ const getStatsDailyTransactionsHelper = async (
         .map(item => {
           const x = dayjs(item.date).isSame(today, "date") ? "Today" : dayjs(item.date).format("ddd");
           const y = Math.abs(item.sum ?? 0);
-          const color = (item.sum ?? 0) > 0 ? "rgba(255, 0, 0, 0.6)" : "rgba(0, 255, 0, 0.6)";
+          const color = (item.sum ?? 0) > 0 ? "rgba(244, 67, 54, 0.6)" : "rgba(76, 175, 80, 0.6)";
           return { x, y, color, item };
         }) || []),
     ];
