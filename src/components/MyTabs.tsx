@@ -26,14 +26,6 @@ function TabComponent({
   const { data, isLoading, error } = useGet();
   const { mutate } = useDelete();
 
-  useEffect(() => {
-    console.log("Mounted");
-
-    return () => {
-      console.log("Unmounted");
-    };
-  }, []);
-
   if (isLoading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;
 

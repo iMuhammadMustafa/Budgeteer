@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Transaction, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
+import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
 import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
 import {
@@ -25,8 +25,9 @@ import DropdownField, {
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
 } from "../DropDownField";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 import { getTransactionsByName } from "@/src/services/apis/Transactions.api";
+import { queryClient } from "@/src/providers/QueryProvider";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -102,6 +103,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           onSelectItem={onSelectItem}
           onChange={val => handleTextChange("name", val)}
         />
+        <TextInputField
+          label="Payee"
+          value={formData.payee}
+          onChange={text => {
+            handleTextChange("payee", text);
+          }}
+        />
 
         <MyDateTimePicker
           label="Date"
@@ -155,15 +163,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </View>
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-          <MyTransactionTypesDropdown
-            selectedValue={formData.type}
-            onSelect={value => handleTextChange("type", value)}
-            isModal={Platform.OS !== "web"}
-            isEdit={isEdit}
-          />
-          {/** TODO: Handle IS VOID */}
-        </View>
+        <MyTransactionTypesDropdown
+          selectedValue={formData.type}
+          onSelect={value => handleTextChange("type", value.value)}
+          isModal={Platform.OS !== "web"}
+          isEdit={isEdit}
+        />
+        {/* <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}> */}
+        {/** TODO: Handle IS VOID */}
+        {/* </View> */}
 
         <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
           <MyCategoriesDropdown
@@ -264,6 +272,17 @@ const useTransactionForm = ({ transaction }: any) => {
   );
 
   useEffect(() => {
+    if (!transaction.id) return;
+
+    setFormData({
+      ...transaction,
+      amount: Math.abs(transaction.amount ?? 0),
+    });
+    setSourceAccount(getAccountById(transaction.accountid));
+    setDestinationAccount(getAccountById(transaction.transferaccountid));
+  }, [transaction, accounts]);
+
+  useEffect(() => {
     if (!transaction.amount || transaction.amount == 0) {
       setMode("minus");
     } else {
@@ -327,7 +346,7 @@ const useTransactionForm = ({ transaction }: any) => {
         originalData: transaction as Transaction,
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           console.log({
             message: `Transaction ${transaction.id ? "Updated" : "Created"} Successfully`,
             type: "success",
@@ -336,6 +355,8 @@ const useTransactionForm = ({ transaction }: any) => {
           if (newItem) {
             setFormData({ ...newItem });
           } else {
+            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+            setFormData(initialTransactionState);
             router.replace("/Transactions");
           }
         },

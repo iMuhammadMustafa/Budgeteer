@@ -46,7 +46,6 @@ export default function TransactionSearchForm({
   //                               ? categoryGroups.map(item => ({ id: item.group, label: item.group, item: item }))
   //                               : [];
 
-  console.log(filters);
   return (
     <SafeAreaView className="p-5 flex-1">
       <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>

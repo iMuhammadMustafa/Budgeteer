@@ -19,8 +19,6 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   // const [isOpen, setIsOpen] = useState(false);
   // const { data: openBalance} = useGetAccountOpenBalance(account.id);
 
-  console.log(accountCategories);
-
   useEffect(() => {
     setFormData(account);
   }, [account]);

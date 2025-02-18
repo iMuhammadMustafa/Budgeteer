@@ -243,14 +243,15 @@ export function MyTransactionTypesDropdown({
   isInitialHidden?: boolean;
   isRefundHidden?: boolean;
 }) {
+  console.log(isEdit);
   return (
     <DropdownField
       isModal={isModal}
       label="Type"
       options={[
-        { id: "Income", label: "Income", value: "Income" },
-        { id: "Expense", label: "Expense", value: "Expense" },
-        { id: "Transfer", label: "Transfer", value: "Transfer" },
+        { id: "Income", label: "Income", value: "Income", disabled: isEdit },
+        { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
+        { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
         { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: isEdit || isAdjustmentDisabled },
         { id: "Initial", label: "Initial", value: "Initial", disabled: isEdit || isInitialDisabled },
         { id: "Refund", label: "Refund", value: "Refund", disabled: isEdit || isRefundDisabled },

@@ -15,9 +15,9 @@ import MyDateTimePicker from "../MyDateTimePicker";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../DropDownField";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { queryClient } from "@/src/providers/QueryProvider";
-import { TableNames } from "@/src/types/db/TableNames";
+import { ViewNames } from "@/src/types/db/TableNames";
 
-const groupId = GenerateUuid();
+let groupId = GenerateUuid();
 export const initalState: MultiTransactionGroup = {
   originalTransactionId: null,
   date: dayjs().local(),
@@ -37,6 +37,30 @@ export const initalState: MultiTransactionGroup = {
       groupid: groupId,
     },
   },
+};
+
+const generateInitalState = () => {
+  let groupId = GenerateUuid();
+  return {
+    originalTransactionId: null,
+    date: dayjs().local(),
+    description: "",
+    type: "Expense",
+    accountid: "",
+    isvoid: false,
+    groupid: groupId,
+    payee: "",
+    transactions: {
+      [GenerateUuid()]: {
+        name: "",
+        amount: 0,
+        categoryid: "",
+        notes: null,
+        tags: null,
+        groupid: groupId,
+      },
+    },
+  };
 };
 
 function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
@@ -89,24 +113,32 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     await submitAllMutation.mutateAsync(
       {
         transactionsGroup: group,
-        totalAmount: currentAmount * (mode === "minus" ? -1 : 1),
+        totalAmount: Math.abs(currentAmount) * (mode === "minus" ? -1 : 1),
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           console.log({
             message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
             type: "success",
           });
           setIsLoading(false);
+          await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+          handleReset();
           router.replace("/Transactions");
         },
       },
     );
   };
 
+  const handleReset = () => {
+    setGroup(generateInitalState());
+    setMaxAmount(0);
+    setCurrentAmount(0);
+  };
+
   return (
-    <SafeAreaView className={`m-auto mt-2 ${Platform.OS !== "web" ? "mx-2" : ""}`}>
-      <ScrollView className="flex-1">
+    <SafeAreaView className="flex-1">
+      <ScrollView className={`flex-1 p-5 mt-2 ${Platform.OS !== "web" ? "mx-2" : ""}`}>
         <View className="flex-row gap-2 justify-center w-full">
           <TextInputField
             className="flex-1"
@@ -202,6 +234,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           maxAmount={parseFloat(maxAmount.toString())}
           mode={mode}
           onSubmit={handleSubmit}
+          onReset={handleReset}
         />
       </ScrollView>
     </SafeAreaView>
@@ -455,11 +488,13 @@ const TransactionsFooter = ({
   currentAmount,
   mode,
   onSubmit,
+  onReset,
 }: {
   maxAmount: number;
   currentAmount: number;
   mode: "plus" | "minus";
   onSubmit: () => void;
+  onReset: () => void;
 }) => {
   const isDisabled = currentAmount !== maxAmount * (mode === "minus" ? -1 : 1);
   const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
@@ -472,15 +507,22 @@ const TransactionsFooter = ({
           Remaining: {(globalMultiplier * maxAmount - currentAmount).toFixed(2) ?? 0.0}$
         </Text>
       </View>
-      <Pressable
-        className={`p-2 rounded-md ${isDisabled ? "bg-secondary" : "bg-primary"} `}
-        disabled={isDisabled}
-        onPress={onSubmit}
-      >
-        <Text className="text-center text-foreground" selectable={false}>
-          Submit
-        </Text>
-      </Pressable>
+      <View className="flex gap-2 items-center justify-center">
+        <Pressable
+          className={`${isDisabled ? "bg-secondary" : "bg-primary"} px-4 py-2 align-center justify-center rounded-md`}
+          disabled={isDisabled}
+          onPress={onSubmit}
+        >
+          <Text className="text-center text-foreground" selectable={false}>
+            Submit
+          </Text>
+        </Pressable>
+        <Pressable className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md" onPress={onReset}>
+          <Text className="text-foreground font-medium text-md" selectable={false}>
+            Reset
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 };
