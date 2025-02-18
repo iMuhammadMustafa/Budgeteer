@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/providers/AuthProvider";
-import { Redirect, Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { ActivityIndicator } from "react-native";
 
 export default function AuthLayout() {
@@ -9,7 +9,7 @@ export default function AuthLayout() {
     return <ActivityIndicator />;
   }
   if (session) {
-    return <Redirect href="/" />;
+    router.push("/Dashboard");
   }
 
   return (
