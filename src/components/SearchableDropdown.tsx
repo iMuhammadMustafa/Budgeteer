@@ -50,6 +50,7 @@ export default function SearchableDropdown({
 
   useEffect(() => {
     setInputText(initalValue);
+    console.log("initalValue", initalValue);
   }, [initalValue]);
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function SearchableDropdown({
       if (!ignoreFetch && depouncedText && depouncedText.length > 0) {
         setIsLoading(true);
 
+        console.log(depouncedText);
         const data = await searchAction(depouncedText);
         setSuggestions(data);
         setIsLoading(false);

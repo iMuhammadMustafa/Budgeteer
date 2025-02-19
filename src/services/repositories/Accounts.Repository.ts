@@ -191,7 +191,7 @@ const updateAccountHelper = async (
       name: TransactionNames.BalanceAdjustment,
       amount: formAccount.balance - originalData.balance,
       accountid: originalData.id,
-      categoryid: config.id,
+      categoryid: config.value,
       type: "Adjustment",
       createdby: userId,
       tenantid: tenantid,

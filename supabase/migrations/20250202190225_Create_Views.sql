@@ -99,7 +99,7 @@ AS
     transactions.transferid,
     transactions.transferaccountid
    FROM transactions
-  WHERE (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes]))
+  WHERE (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
   ORDER BY transactions.name, transactions.date DESC;
 
 

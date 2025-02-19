@@ -243,7 +243,6 @@ export function MyTransactionTypesDropdown({
   isInitialHidden?: boolean;
   isRefundHidden?: boolean;
 }) {
-  console.log(isEdit);
   return (
     <DropdownField
       isModal={isModal}

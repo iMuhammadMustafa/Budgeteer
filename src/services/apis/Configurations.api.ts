@@ -22,9 +22,10 @@ export const getConfiguration = async (table: string, type: string, key: string)
     .from(TableNames.Configurations)
     .select()
     .eq("isdeleted", false)
-    .eq("table", table)
-    .eq("type", type)
-    .eq("key", key)
+    .ilike('"table"', table)
+    .ilike("type", type)
+    .ilike("key", key)
+    .limit(1)
     .single();
   if (error) throw new Error(error.message);
   return data;

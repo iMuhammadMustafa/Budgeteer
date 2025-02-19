@@ -29,32 +29,34 @@ const getStatsDailyTransactionsHelper = async (
   barsData?: BarDataType[];
   calendarData: MyCalendarData;
 }> => {
-  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(day => {
-    return {
-      x: day,
-      y: 0,
-    };
-  });
-  const today = dayjs();
   const data = await getStatsDailyTransactions(startDate, endDate, "Expense");
 
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
-    barsData = [
-      ...daysOfWeek,
-      ...(data
-        .filter(
-          x =>
-            dayjs(x.date).local() >= dayjs().startOf("week").local() &&
-            dayjs(x.date).local() <= dayjs().endOf("week").local(),
-        )
-        .map(item => {
-          const x = dayjs(item.date).isSame(today, "date") ? "Today" : dayjs(item.date).format("ddd");
-          const y = Math.abs(item.sum ?? 0);
-          const color = (item.sum ?? 0) > 0 ? "rgba(244, 67, 54, 0.6)" : "rgba(76, 175, 80, 0.6)";
-          return { x, y, color, item };
-        }) || []),
-    ];
+    const today = dayjs().format("ddd");
+    const thisWeekData = data
+      .filter(
+        item =>
+          dayjs(item.date).local() >= dayjs().startOf("week").local() &&
+          dayjs(item.date).local() <= dayjs().endOf("week").local(),
+      )
+      .map(item => {
+        const x = dayjs(item.date).format("ddd");
+        const y = Math.abs(item.sum ?? 0);
+        const color = (item.sum ?? 0) > 0 ? "rgba(76, 175, 80, 0.6)" : "rgba(244, 67, 54, 0.6)";
+        return { x, y, color, item };
+      });
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    barsData = daysOfWeek.map(day => {
+      const dayData = thisWeekData.find(x => x.x === day);
+      const x = today === day ? "Today" : day;
+      return {
+        x,
+        y: dayData?.y ?? 0,
+        color: dayData?.color ?? "rgba(255, 255, 255, 0.6)",
+      };
+    });
   }
 
   const calendarData: MyCalendarData = data.reduce((acc: MyCalendarData, item) => {

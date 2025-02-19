@@ -76,6 +76,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     handleSubmit,
     onSelectItem,
   } = useTransactionForm({ transaction });
+  console.log(transaction);
 
   // const [searchText, setSearchText] = useState<string>("");
   // const { data: searchResults, isLoading: isSearchLoading } = useSearchTransactionsByName(searchText);
@@ -224,7 +225,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md"
             onPress={() => {
               setFormData(initialTransactionState);
-              router.replace("/AddTransaction");
             }}
           >
             <Text className="text-foreground font-medium text-md" selectable={false}>
