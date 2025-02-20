@@ -27,7 +27,7 @@ import DropdownField, {
 } from "../DropDownField";
 import { getTransactionsByName } from "@/src/services/apis/Transactions.api";
 import { queryClient } from "@/src/providers/QueryProvider";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

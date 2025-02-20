@@ -1,35 +1,63 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, SafeAreaView, ScrollView, View } from "react-native";
 import { router } from "expo-router";
-import Modal from "react-native-modal";
 
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useGetAccountCategories } from "@/src/services/repositories/AccountCategories.Repository";
-import { useUpsertAccount } from "@/src/services/repositories/Accounts.Repository";
+import {
+  useGetAccountOpenedTransaction,
+  useUpdateAccountOpenedTransaction,
+  useUpsertAccount,
+} from "@/src/services/repositories/Accounts.Repository";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import { queryClient } from "@/src/providers/QueryProvider";
+import Button from "../Button";
 
 export default function AccountForm({ account }: { account: AccountFormType }) {
   const [formData, setFormData] = useState<AccountFormType>(account);
   const [isLoading, setIsLoading] = useState(false);
   const { data: accountCategories } = useGetAccountCategories();
   // const [isOpen, setIsOpen] = useState(false);
-  // const { data: openBalance} = useGetAccountOpenBalance(account.id);
+  const { data: openTransaction } = useGetAccountOpenedTransaction(account.id);
+  const [openBalance, setOpenBalance] = useState<number | null>(null);
+
+  const isValid: boolean =
+    !isLoading &&
+    !!formData.name &&
+    formData.name.length > 0 &&
+    !!formData.categoryid &&
+    formData.categoryid.length > 0;
 
   useEffect(() => {
     setFormData(account);
   }, [account]);
 
+  useEffect(() => {
+    if (openTransaction) {
+      setOpenBalance(openTransaction.amount);
+    }
+  }, [openTransaction]);
+
   const { mutate } = useUpsertAccount();
+  const { mutate: updateOpenBalance } = useUpdateAccountOpenedTransaction();
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prevData => ({ ...prevData, [field]: value }));
   };
   const handleSubmit = () => {
     setIsLoading(true);
+    console.log(formData);
+
+    if (openBalance) {
+      updateOpenBalance({
+        id: openTransaction.id,
+        amount: openBalance,
+      });
+    }
+
     mutate(
       { formAccount: { ...formData, balance: formData.balance }, originalData: account as Account },
       {
@@ -37,7 +65,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           setIsLoading(false);
           console.log({ message: "Account Created Successfully", type: "success" });
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-          router.back();
+          router.navigate("/Accounts");
         },
       },
     );
@@ -92,20 +120,18 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           onChange={balance => handleFieldChange("balance", balance)}
           keyboardType="numeric"
         />
-        {/* <TextInputField
-          label="Open Balance"
-          value={openBalance.amount?.toString()}
-          onChange={balance => handleFieldChange("openBalance", balance)}
-          keyboardType="numeric"
-        /> */}
+        {openTransaction && (
+          <TextInputField
+            label="Open Balance"
+            value={openBalance?.toString() ?? "0"}
+            onChange={balance => setOpenBalance(balance)}
+            keyboardType="numeric"
+          />
+        )}
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
 
-        <Pressable className="p-3 flex justify-center items-center" disabled={isLoading} onPress={handleSubmit}>
-          <Text className={`font-medium text-sm ml-2 ${isLoading ? "text-muted" : ""}`} selectable={false}>
-            Save
-          </Text>
-        </Pressable>
+        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );

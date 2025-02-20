@@ -13,7 +13,7 @@ import {
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
-import { createTransaction } from "../apis/Transactions.api";
+import { createTransaction, updateTransaction } from "../apis/Transactions.api";
 import { getConfiguration } from "../apis/Configurations.api";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
 
@@ -32,10 +32,10 @@ export const useGetAccountById = (id?: string) => {
   });
 };
 
-export const useGetAccountOpenedTransaction = (id: string) => {
+export const useGetAccountOpenedTransaction = (id?: string) => {
   return useQuery<any>({
     queryKey: [TableNames.Transactions, id],
-    queryFn: async () => getAccountOpenedTransaction(id),
+    queryFn: async () => getAccountOpenedTransaction(id!),
     enabled: !!id,
   });
 };
@@ -127,6 +127,26 @@ export const useRestoreAccount = (id?: string) => {
     },
   });
 };
+export const useUpdateAccountOpenedTransaction = () => {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+
+  return useMutation({
+    mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+      const transaction: Updates<TableNames.Transactions> = {
+        id: id,
+        amount: amount,
+        updatedby: userId,
+        updatedat: new Date().toISOString(),
+      };
+      return await updateTransaction(transaction);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+    },
+  });
+};
 
 const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, session: Session) => {
   let userId = session.user.id;
@@ -163,20 +183,24 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
   return newAcc;
 };
 
-const updateAccountHelper = async (
-  formAccount: Updates<TableNames.Accounts>,
-  session: Session,
-  originalData: Account,
-) => {
+const updateAccountHelper = async (formData: Updates<TableNames.Accounts>, session: Session, originalData: Account) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formAccount.updatedby = userId;
-  formAccount.updatedat = new Date().toISOString();
+  formData.updatedby = userId;
+  formData.updatedat = new Date().toISOString();
 
-  const updatedAccount = await updateAccount(formAccount);
+  const isUnchanged = Object.keys(formData).every(key => {
+    if (key in formData && key in originalData) {
+      return formData[key as keyof typeof formData] === originalData[key as keyof typeof originalData];
+    }
+    return false;
+  });
+  if (isUnchanged) return; // Exit early if no changes
 
-  if (formAccount.balance && formAccount.balance !== originalData.balance) {
+  const updatedAccount = await updateAccount(formData);
+
+  if (formData.balance && formData.balance !== originalData.balance) {
     const config = await getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
@@ -189,7 +213,7 @@ const updateAccountHelper = async (
 
     await createTransaction({
       name: TransactionNames.BalanceAdjustment,
-      amount: formAccount.balance - originalData.balance,
+      amount: formData.balance - originalData.balance,
       accountid: originalData.id,
       categoryid: config.value,
       type: "Adjustment",
