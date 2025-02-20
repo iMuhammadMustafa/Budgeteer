@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, SafeAreaView, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
@@ -7,6 +7,7 @@ import { useUpsertTransactionGroup } from "@/src/services/repositories/Transacti
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
+import Button from "../Button";
 
 export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 
@@ -35,9 +36,26 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
+  const handleSubmit = () => {
+    mutate(
+      {
+        formData,
+        originalData: group as TransactionGroup,
+      },
+      {
+        onSuccess: () => {
+          console.log({ message: "Category Created Successfully", type: "success" });
+          router.replace("/Categories");
+        },
+      },
+    );
+  };
+
+  const isValid = !isLoading && !!formData.name && formData.name.length > 0;
+
   return (
-    <SafeAreaView className="p-5 flex-1">
-      <ScrollView>
+    <SafeAreaView className="flex-1">
+      <ScrollView className="p-5 flex-1">
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
         <TextInputField
           label="Description"
@@ -102,29 +120,7 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
             onSelect={value => handleTextChange("budgetfrequency", value?.value)}
           />
         </View>
-
-        <Pressable
-          className="p-3 flex justify-center items-center"
-          disabled={isLoading}
-          onPress={() => {
-            mutate(
-              {
-                formData,
-                originalData: group as TransactionGroup,
-              },
-              {
-                onSuccess: () => {
-                  console.log({ message: "Category Created Successfully", type: "success" });
-                  router.replace("/Accounts");
-                },
-              },
-            );
-          }}
-        >
-          <Text className={`font-medium text-sm ml-2 ${isLoading ? "text-muted" : ""}`} selectable={false}>
-            Save
-          </Text>
-        </Pressable>
+        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );

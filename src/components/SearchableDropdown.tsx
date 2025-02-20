@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { SearchableDropdownItem } from "../types/components/DropdownField.types";
-import { UseQueryResult } from "@tanstack/react-query";
 
 type SearchableDropdownType = {
   label: string;

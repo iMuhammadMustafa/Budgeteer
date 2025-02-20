@@ -22,7 +22,7 @@ import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { initialSearchFilters } from "@/src/utils/transactions.helper";
 import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 
 export const useGetAllTransactions = () => {
   return useQuery<TransactionsView[]>({

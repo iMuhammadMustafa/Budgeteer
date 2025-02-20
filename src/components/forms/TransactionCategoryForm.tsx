@@ -8,6 +8,7 @@ import { useGetTransactionGroups } from "@/src/services/repositories/Transaction
 import DropdownField, { ColorsPickerDropdown, MyTransactionTypesDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
+import Button from "../Button";
 
 export type TransactionCategoryFormType =
   | Inserts<TableNames.TransactionCategories>
@@ -38,6 +39,9 @@ export default function CategoryForm({ category }: { category: TransactionCatego
 
   const { data: categoryGroups, isLoading: iscategoryGroupLoading } = useGetTransactionGroups();
 
+  const isValid =
+    !isLoading && !!formData.name && formData.name.length > 0 && !!formData.groupid && formData.groupid.length > 0;
+
   const handleIconSelect = useCallback((icon: string) => {
     setFormData(prevFormData => ({ ...prevFormData, icon }));
   }, []);
@@ -46,11 +50,26 @@ export default function CategoryForm({ category }: { category: TransactionCatego
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
+  const handleSubmit = () => {
+    mutate(
+      {
+        formData,
+        originalData: category as TransactionCategory,
+      },
+      {
+        onSuccess: () => {
+          console.log({ message: "Category Created Successfully", type: "success" });
+          router.replace("/Categories");
+        },
+      },
+    );
+  };
+
   if (iscategoryGroupLoading) return <Text>Loading...</Text>;
 
   return (
-    <SafeAreaView className="p-5 flex-1">
-      <ScrollView className="p-5 px-6" nestedScrollEnabled={true}>
+    <SafeAreaView className="flex-1">
+      <ScrollView className="p-5 flex-1 px-6" nestedScrollEnabled={true}>
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
         <DropdownField
           isModal={Platform.OS !== "web"}
@@ -117,29 +136,7 @@ export default function CategoryForm({ category }: { category: TransactionCatego
           value={formData.description}
           onChange={text => handleTextChange("description", text)}
         />
-
-        <Pressable
-          className="p-3 flex justify-center items-center -z-10"
-          disabled={isLoading}
-          onPress={() => {
-            mutate(
-              {
-                formData,
-                originalData: category as TransactionCategory,
-              },
-              {
-                onSuccess: () => {
-                  console.log({ message: "Category Created Successfully", type: "success" });
-                  router.replace("/Categories");
-                },
-              },
-            );
-          }}
-        >
-          <Text className={`font-medium text-sm ml-2 ${isLoading ? "text-muted" : ""}`} selectable={false}>
-            Save
-          </Text>
-        </Pressable>
+        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );

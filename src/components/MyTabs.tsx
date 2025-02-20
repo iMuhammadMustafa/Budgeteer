@@ -6,11 +6,11 @@ import MyIcon from "@/src/utils/Icons.Helper";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { queryClient } from "@/src/providers/QueryProvider";
 
-export const Tab = memo(TabComponent, (prevProps, nextProps) => {
-  return prevProps.items === nextProps.items;
-});
+// export const Tab = memo(TabComponent, (prevProps, nextProps) => {
+//   return prevProps.items === nextProps.items;
+// });
 
-function TabComponent({
+export function Tab({
   title,
   queryKey,
   useGet,

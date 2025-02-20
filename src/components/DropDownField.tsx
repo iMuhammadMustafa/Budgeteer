@@ -138,7 +138,13 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
                   {options
                     .filter(option => option.group === item)
                     .map(option => (
-                      <RenderOption isModal={isModal} option={option} onItemPress={onItemPress} isGrouped />
+                      <RenderOption
+                        key={option.id}
+                        isModal={isModal}
+                        option={option}
+                        onItemPress={onItemPress}
+                        isGrouped
+                      />
                     ))}
                 </View>
               </>
@@ -168,7 +174,7 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
       />
     )}
     <Text
-      className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"} ${option.textColorClass ? `text-${option.textColorClass}` : "text-black"}`}
+      className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
     >
       {option.label}
     </Text>
@@ -326,7 +332,7 @@ export const AccountSelecterDropdown = ({
 
 //TODO: Fix compare
 const areEqual = (prevProps: DropDownProps, nextProps: DropDownProps) => {
-  return prevProps.options === nextProps.options && prevProps.selectedValue === nextProps.selectedValue;
+  return prevProps.selectedValue === nextProps.selectedValue;
 };
 const DropdownField = memo(UnMemoizedMyDropDown, areEqual);
 export default DropdownField;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, SafeAreaView, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
@@ -8,6 +8,7 @@ import { useUpsertAccountCategory } from "@/src/services/repositories/AccountCat
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
+import Button from "../Button";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 export const initialState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
@@ -32,9 +33,25 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
+  const isValid = !isLoading && !!formData.name && formData.name.length > 0;
+  const handleSubmit = () => {
+    mutate(
+      {
+        formData,
+        originalData: category as AccountCategory,
+      },
+      {
+        onSuccess: () => {
+          console.log({ message: "Category Created Successfully", type: "success" });
+          router.replace("/Accounts");
+        },
+      },
+    );
+  };
+
   return (
-    <SafeAreaView className="p-5 flex-1">
-      <ScrollView className="p-5" nestedScrollEnabled={true}>
+    <SafeAreaView className="flex-1">
+      <ScrollView className="p-5 flex-1" nestedScrollEnabled={true}>
         <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
 
         <DropdownField
@@ -62,28 +79,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
           />
         </View>
 
-        <Pressable
-          className="p-3 flex justify-center items-center -z-10"
-          disabled={isLoading}
-          onPress={() => {
-            mutate(
-              {
-                formData,
-                originalData: category as AccountCategory,
-              },
-              {
-                onSuccess: () => {
-                  console.log({ message: "Category Created Successfully", type: "success" });
-                  router.replace("/Accounts");
-                },
-              },
-            );
-          }}
-        >
-          <Text className={`font-medium text-sm ml-2 ${isLoading ? "text-muted" : ""}`} selectable={false}>
-            Save
-          </Text>
-        </Pressable>
+        <Button label="Save" handleSubmit={handleSubmit} isValid={!isValid} />
       </ScrollView>
     </SafeAreaView>
   );
