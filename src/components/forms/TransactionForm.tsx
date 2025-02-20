@@ -76,10 +76,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     handleSubmit,
     onSelectItem,
   } = useTransactionForm({ transaction });
-  console.log(transaction);
+  // console.log(transaction);
 
   // const [searchText, setSearchText] = useState<string>("");
   // const { data: searchResults, isLoading: isSearchLoading } = useSearchTransactionsByName(searchText);
+
+  const handleReset = () => {
+    transaction = initialTransactionState;
+    setFormData(initialTransactionState);
+    router.replace("/AddTransaction");
+  };
 
   if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
 
@@ -104,14 +110,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           onSelectItem={onSelectItem}
           onChange={val => handleTextChange("name", val)}
         />
-        <TextInputField
-          label="Payee"
-          value={formData.payee}
-          onChange={text => {
-            handleTextChange("payee", text);
-          }}
-        />
-
+        {formData.type !== "Transfer" && (
+          <TextInputField
+            label="Payee"
+            value={formData.payee}
+            onChange={text => {
+              handleTextChange("payee", text);
+            }}
+          />
+        )}
         <MyDateTimePicker
           label="Date"
           date={dayjs(formData.date)}
@@ -135,9 +142,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               }
             }}
           >
-            {formData.type === "Transfer" ? (
-              <MyIcon name="Hash" size={24} className="text-gray-100" />
-            ) : mode === "minus" ? (
+            {mode === "minus" ? (
               <MyIcon name="Minus" size={24} className="text-gray-100" />
             ) : (
               <MyIcon name="Plus" size={24} className="text-gray-100" />
@@ -163,25 +168,32 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             currentValue={formData.amount}
           />
         </View>
-
-        <MyTransactionTypesDropdown
-          selectedValue={formData.type}
-          onSelect={value => handleTextChange("type", value.value)}
-          isModal={Platform.OS !== "web"}
-          isEdit={isEdit}
-        />
-        {/* <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}> */}
-        {/** TODO: Handle IS VOID */}
-        {/* </View> */}
-
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-30`}>
           <MyCategoriesDropdown
             selectedValue={formData.categoryid}
             categories={categories}
             onSelect={value => handleTextChange("categoryid", value.id)}
             isModal={Platform.OS !== "web"}
           />
+          <MyTransactionTypesDropdown
+            selectedValue={formData.type}
+            onSelect={value => {
+              handleTextChange("type", value.value);
+              handleTextChange(
+                "categoryid",
+                categories?.find(category => category.name?.startsWith("Account"))?.id ?? "",
+              );
+              setMode("minus");
+            }}
+            isModal={Platform.OS !== "web"}
+            isEdit={isEdit}
+          />
+        </View>
+        {/* <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}> */}
+        {/** TODO: Handle IS VOID */}
+        {/* </View> */}
 
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-20`}>
           <AccountSelecterDropdown
             label="Account"
             selectedValue={formData.accountid}
@@ -204,29 +216,27 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             />
           )}
         </View>
-
-        <TextInputField
-          label="Tags"
-          value={formData.tags?.toString()}
-          onChange={text => {
-            handleTextChange("tags", text.split(","));
-          }}
-        />
-        <TextInputField
-          label="Notes"
-          value={formData.notes}
-          onChange={text => {
-            handleTextChange("notes", text);
-          }}
-        />
+        <View className={` ${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative z-10`}>
+          <TextInputField
+            label="Tags"
+            value={formData.tags?.toString()}
+            onChange={text => {
+              handleTextChange("tags", text.split(","));
+            }}
+            className="flex-1 z-8"
+          />
+          <TextInputField
+            label="Notes"
+            value={formData.notes}
+            onChange={text => {
+              handleTextChange("notes", text);
+            }}
+            className="flex-1 z-8"
+          />
+        </View>
 
         <View className="flex-row text-center justify-center items-center gap-5 mt-2">
-          <Pressable
-            className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md"
-            onPress={() => {
-              setFormData(initialTransactionState);
-            }}
-          >
+          <Pressable className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md" onPress={handleReset}>
             <Text className="text-foreground font-medium text-md" selectable={false}>
               Reset
             </Text>
