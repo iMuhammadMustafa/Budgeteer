@@ -100,35 +100,38 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
                 },
               ]}
             />
-
-            <VictoryLabel
-              backgroundPadding={10}
-              backgroundStyle={
-                Platform.OS !== "web"
-                  ? {
-                      fill: "white",
-                      fillOpacity: 0.7,
-                      stroke: "black",
-                      strokeWidth: 2,
-                    }
-                  : undefined
-              }
-              textAnchor="middle"
-              verticalAnchor="middle"
-              x={chartWidth * 0.5}
-              y={chartHeight * 0.48}
-              style={{
-                fontSize: 14,
-                fontWeight: "bold",
-                fill: theme === "light" ? "black" : Platform.OS === "web" ? "white" : "black",
-              }}
-              text={
-                selectedSlice !== null
-                  ? `${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
-              \n$${selectedSlice?.y}`
-                  : ""
-              }
-            />
+            {selectedSlice !== null ? (
+              <VictoryLabel
+                backgroundPadding={10}
+                backgroundStyle={
+                  Platform.OS !== "web"
+                    ? {
+                        fill: "white",
+                        fillOpacity: 0.7,
+                        stroke: "black",
+                        strokeWidth: 2,
+                      }
+                    : undefined
+                }
+                textAnchor="middle"
+                verticalAnchor="middle"
+                x={chartWidth * 0.5}
+                y={chartHeight * 0.48}
+                style={{
+                  fontSize: 14,
+                  fontWeight: "bold",
+                  fill: theme === "light" ? "black" : Platform.OS === "web" ? "white" : "black",
+                }}
+                text={
+                  selectedSlice !== null
+                    ? `${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
+                  \n$${selectedSlice?.y}`
+                    : ""
+                }
+              />
+            ) : (
+              <></>
+            )}
           </VictoryContainer>
         </View>
 

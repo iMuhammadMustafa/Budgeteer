@@ -3,12 +3,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
 import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
+import * as Updates from "expo-updates";
 
 import supabase from "@/src/providers/Supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
 import MyIcon from "@/src/utils/Icons.Helper";
+import { useEffect } from "react";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -123,3 +125,50 @@ function DrawerContent(props: any) {
     </DrawerContentScrollView>
   );
 }
+const Footer = () => {
+  const { currentlyRunning, isUpdateAvailable, isUpdatePending } = Updates.useUpdates();
+
+  useEffect(() => {
+    if (isUpdatePending) {
+      // Update has successfully downloaded; apply it now
+      Updates.reloadAsync();
+    }
+  }, [isUpdatePending]);
+
+  return (
+    <>
+      <DrawerItem
+        style={[
+          {
+            alignSelf: "center",
+          },
+        ]}
+        label="Logout"
+        onPress={() => {
+          supabase.auth.signOut();
+          router.navigate("/(auth)/Login");
+        }}
+      />
+      <DrawerItem
+        style={[
+          {
+            alignSelf: "center",
+          },
+        ]}
+        label="Version 0.13.0"
+        onPress={() => {}}
+      />
+      {isUpdateAvailable ? (
+        <DrawerItem
+          style={[
+            {
+              alignSelf: "center",
+            },
+          ]}
+          label="Download and run update"
+          onPress={() => Updates.fetchUpdateAsync()}
+        />
+      ) : null}
+    </>
+  );
+};

@@ -10,7 +10,7 @@
     "test": "jest --watchAll",
     "lint": "expo lint",
     "dbtypes": "bunx supabase gen types typescript --project-id 'eqevunpprealeqzqpgbc' > ./src/types/database.types.ts",
-    "build-android": "eas build -p android --profile preview",
+    "build-android": "eas build --profile preview --platform android",
     "build-web": "npx expo export -p web",
     "build-windows": "bun electron-builder/build-windows.js",
     "update-native": "eas update --channel preview --message "
