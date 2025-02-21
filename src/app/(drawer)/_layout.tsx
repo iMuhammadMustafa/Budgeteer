@@ -100,28 +100,7 @@ function DrawerContent(props: any) {
   return (
     <DrawerContentScrollView {...props} className="flex-1">
       <DrawerItemList {...props} />
-      <DrawerItem
-        //style as button
-        style={[
-          {
-            alignSelf: "center",
-          },
-        ]}
-        label="Logout"
-        onPress={() => {
-          supabase.auth.signOut();
-          router.replace("/(auth)/Login");
-        }}
-      />
-      <DrawerItem
-        style={[
-          {
-            alignSelf: "center",
-          },
-        ]}
-        label="Version 0.13.0"
-        onPress={() => {}}
-      />
+      <Footer />
     </DrawerContentScrollView>
   );
 }
