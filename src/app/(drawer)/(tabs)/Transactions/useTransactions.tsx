@@ -229,7 +229,7 @@ const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => {
       backHandler.remove();
-      window.removeEventListener("keydown", () => {});
+      if (Platform.OS === "web") window.removeEventListener("keydown", () => {});
     };
   }, [selectionMode]);
 };
