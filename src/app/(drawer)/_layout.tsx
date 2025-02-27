@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
 import { router } from "expo-router";
@@ -11,6 +11,7 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 
 import MyIcon from "@/src/utils/Icons.Helper";
 import { useEffect } from "react";
+import Button from "@/src/components/Button";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -107,47 +108,40 @@ function DrawerContent(props: any) {
 const Footer = () => {
   const { currentlyRunning, isUpdateAvailable, isUpdatePending } = Updates.useUpdates();
 
-  useEffect(() => {
-    if (isUpdatePending) {
-      // Update has successfully downloaded; apply it now
-      Updates.reloadAsync();
-    }
-  }, [isUpdatePending]);
+  // useEffect(() => {
+  //   if (isUpdatePending) {
+  //     // Update has successfully downloaded; apply it now
+  //     Updates.reloadAsync();
+  //   }
+  // }, [isUpdatePending]);
 
   return (
     <>
-      <DrawerItem
-        style={[
-          {
-            alignSelf: "center",
-          },
-        ]}
-        label="Logout"
+      <View className="flex-row justify-around items-center py-2">
+        <Text className="text-foreground text-center" onPress={async () => await Updates.checkForUpdateAsync()}>
+          Version 0.15.0
+        </Text>
+        {isUpdatePending && !isUpdateAvailable && (
+          <Pressable onPress={async () => await Updates.reloadAsync()}>
+            <MyIcon name="Power" size={24} color="black" />
+          </Pressable>
+        )}
+        {isUpdateAvailable && (
+          <Pressable onPress={async () => await Updates.fetchUpdateAsync()}>
+            <MyIcon name="CloudDownload" size={24} color="black" />
+          </Pressable>
+        )}
+      </View>
+
+      <Pressable
         onPress={() => {
           supabase.auth.signOut();
           router.navigate("/(auth)/Login");
         }}
-      />
-      <DrawerItem
-        style={[
-          {
-            alignSelf: "center",
-          },
-        ]}
-        label="Version 0.13.0"
-        onPress={() => {}}
-      />
-      {isUpdateAvailable ? (
-        <DrawerItem
-          style={[
-            {
-              alignSelf: "center",
-            },
-          ]}
-          label="Download and run update"
-          onPress={() => Updates.fetchUpdateAsync()}
-        />
-      ) : null}
+        className="bg-danger-100 p-2 rounded-md mt-2"
+      >
+        <Text className="text-foreground text-center">Logout</Text>
+      </Pressable>
     </>
   );
 };
