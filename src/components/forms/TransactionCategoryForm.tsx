@@ -136,7 +136,7 @@ export default function CategoryForm({ category }: { category: TransactionCatego
           value={formData.description}
           onChange={text => handleTextChange("description", text)}
         />
-        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
+        <Button isValid={isValid} label="Save" onPress={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );
