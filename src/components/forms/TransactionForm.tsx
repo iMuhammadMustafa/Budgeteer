@@ -90,7 +90,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   if (isLoading || isCategoriesLoading || isAccountLoading) return <ActivityIndicator />;
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="w-full h-full">
       <Pressable
         className="self-end px-5 flex-row items-center"
         disabled={isLoading}

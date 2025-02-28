@@ -1,20 +1,11 @@
 import { router } from "expo-router";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
-import CalculatorComponent from "../components/Calculator";
-import MyDateTimePicker from "../components/MyDateTimePicker";
-import dayjs from "dayjs";
-import Bar from "../components/Charts/Bar";
-import DropdownField from "../components/DropDownField";
 
 export default function Index() {
   const { session, isSessionLoading } = useAuth();
 
   if (isSessionLoading) return <ActivityIndicator />;
-
-  if (!session || !session?.user) {
-    router.replace("/Login");
-  }
 
   return (
     <SafeAreaView className="justify-center items-center w-full">
@@ -22,9 +13,15 @@ export default function Index() {
         <View>
           <Text className="color-primary-100">Welcome! {session?.user.email}</Text>
         </View>
-        <Pressable className="p-2 my-1 bg-primary" onPress={() => router.replace("/Dashboard")}>
-          <Text className="text-primary-foreground">Dashboard!</Text>
-        </Pressable>
+        {!session || !session?.user ? (
+          <Pressable className="p-2 my-1 bg-primary" onPress={() => router.replace("/Login")}>
+            <Text className="text-primary-foreground">Login!</Text>
+          </Pressable>
+        ) : (
+          <Pressable className="p-2 my-1 bg-primary" onPress={() => router.replace("/Dashboard")}>
+            <Text className="text-primary-foreground">Dashboard!</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

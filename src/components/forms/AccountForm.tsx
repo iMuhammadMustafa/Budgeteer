@@ -131,7 +131,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
         <TextInputField label="Notes" value={formData.notes} onChange={notes => handleFieldChange("notes", notes)} />
 
-        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
+        <Button isValid={isValid} label="Save" onPress={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );

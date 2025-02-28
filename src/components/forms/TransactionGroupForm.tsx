@@ -120,7 +120,7 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
             onSelect={value => handleTextChange("budgetfrequency", value?.value)}
           />
         </View>
-        <Button isValid={isValid} label="Save" handleSubmit={handleSubmit} />
+        <Button isValid={isValid} label="Save" onPress={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -9,7 +9,7 @@ export default function AuthLayout() {
     return <ActivityIndicator />;
   }
   if (session) {
-    router.push("/Dashboard");
+    router.replace("/Dashboard");
   }
 
   return (
