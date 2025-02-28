@@ -12,7 +12,7 @@ export default function Button({
   return (
     <Pressable
       className={`p-3 flex justify-center items-center ${isValid ? "bg-primary" : "bg-primary-200"}`}
-      disabled={isValid}
+      disabled={!isValid}
       onPress={handleSubmit}
     >
       <Text className={`font-medium text-sm ml-2 ${isValid ? "" : "text-muted"}`} selectable={false}>

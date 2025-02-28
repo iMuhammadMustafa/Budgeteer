@@ -314,7 +314,8 @@ export const AccountSelecterDropdown = ({
         accounts?.map((account: Account & { category: { name: string } }) => ({
           id: account.id,
           label: account.name,
-          details: `${account.owner} | ${account.balance.toLocaleString("en-US", {
+          /*account.owner*/
+          details: `| ${account.balance.toLocaleString("en-US", {
             style: "currency",
             currency: "USD",
           })}`,
