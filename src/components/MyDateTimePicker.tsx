@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Text, Pressable, View, Keyboard, Platform } from "react-native";
-import Modal from "react-native-modal";
+import { Text, Pressable, View, Keyboard, Platform, Modal } from "react-native";
+
 import DateTimePicker from "react-native-ui-datepicker";
 import dayjs from "dayjs";
 
@@ -85,12 +85,14 @@ const DateTimePickerContainer = ({
       </View>
     ) : (
       <Modal
-        isVisible={isVisible}
+        visible={isVisible}
         onDismiss={() => setIsVisible(false)}
-        onBackButtonPress={() => setIsVisible(false)}
-        onBackdropPress={() => setIsVisible(false)}
+        // onBackButtonPress={() => setIsVisible(false)}
+        // onBackdropPress={() => setIsVisible(false)}
       >
-        <View className="m-auto items-center justify-center bg-white rounded-md p-1">{children}</View>
+        <Pressable onPressOut={() => setIsVisible(false)}>
+          <View className="m-auto items-center justify-center bg-white rounded-md p-1">{children}</View>
+        </Pressable>
       </Modal>
     )}
   </>

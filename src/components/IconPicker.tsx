@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, View, Text, TouchableOpacity, Dimensions } from "react-native";
-import Modal from "react-native-modal";
+import { FlatList, Pressable, View, Text, Dimensions, Modal } from "react-native";
+
 import { icons } from "lucide-react-native";
 import MyIcon from "@/src/utils/Icons.Helper";
 import TextInputField from "./TextInputField";
@@ -55,7 +55,7 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
   return (
     <>
       <Text className="text-base mb-2 -z-10">{label}</Text>
-      <TouchableOpacity
+      <Pressable
         className="p-3 mb-2 rounded border border-gray-300 bg-white items-center -z-10"
         onPress={() => {
           setIsVisible(!isVisible);
@@ -63,42 +63,48 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
         }}
       >
         {icon && !isVisible ? <MyIcon name={icon} size={20} /> : <MyIcon name={"CircleHelp"} size={20} />}
-      </TouchableOpacity>
+      </Pressable>
       {isVisible && (
         <Modal
-          isVisible={isVisible}
+          visible={isVisible}
           onDismiss={() => setIsVisible(false)}
-          onBackButtonPress={() => setIsVisible(false)}
-          onBackdropPress={() => setIsVisible(false)}
+          // onBackButtonPress={() => setIsVisible(false)}
+          // onBackdropPress={() => setIsVisible(false)}
+          transparent={true}
         >
-          <TextInputField
-            label={label ?? "Icon"}
-            value={icon ?? "CircleHelp"}
-            onChange={handleTextChange}
-            keyboardType="default"
-          />
+          <Pressable
+            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
+            onPressOut={() => setIsVisible(false)}
+          >
+            <TextInputField
+              label={label ?? "Icon"}
+              value={icon ?? "CircleHelp"}
+              onChange={handleTextChange}
+              keyboardType="default"
+            />
 
-          <FlatList
-            data={filteredIcons}
-            contentContainerClassName="p-5 gap-5 bg-white rounded-md flex"
-            columnWrapperClassName="flex-row justify-around"
-            numColumns={10}
-            initialNumToRender={25}
-            renderItem={({ item }) => (
-              <Pressable
-                key={item}
-                onPress={() => {
-                  handleIconSelect(item);
-                }}
-                className="overflow-hidden py-2 w-[10%] flex justify-center items-center"
-              >
-                <View className="flex justify-center items-center ">
-                  <MyIcon name={item} size={20} />
-                  <Text className="">{item}</Text>
-                </View>
-              </Pressable>
-            )}
-          />
+            <FlatList
+              data={filteredIcons}
+              contentContainerClassName="p-5 gap-5 bg-white rounded-md flex flex-grow-0"
+              columnWrapperClassName="flex-row justify-around"
+              numColumns={10}
+              initialNumToRender={25}
+              renderItem={({ item }) => (
+                <Pressable
+                  key={item}
+                  onPress={() => {
+                    handleIconSelect(item);
+                  }}
+                  className="overflow-hidden py-2 w-[10%] flex justify-center items-center"
+                >
+                  <View className="flex justify-center items-center ">
+                    <MyIcon name={item} size={20} />
+                    <Text className="">{item}</Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          </Pressable>
         </Modal>
       )}
     </>

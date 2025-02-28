@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { BackHandler, Platform, View } from "react-native";
-import Modal from "react-native-modal";
+import { BackHandler, Platform, View, Modal } from "react-native";
 
 import { TransactionSearchFormProps } from "@/src/types/pages/Transactions.types";
 import TransactionSearchForm from "./SearchForm";
+import { Pressable } from "react-native-gesture-handler";
 
 export default function TransactionSearchModal({
   isOpen,
@@ -46,26 +46,34 @@ export default function TransactionSearchModal({
 
   return isOpen ? (
     <Modal
-      isVisible={isOpen}
+      visible={isOpen}
       onDismiss={() => setIsOpen(false)}
-      onBackButtonPress={() => setIsOpen(false)}
+      transparent={true}
+      // presentationStyle="pageSheet"
+      // onBackButtonPress={() => setIsOpen(false)}
       // onRequestClose={() => setIsOpen(false)}
-      onBackdropPress={() => setIsOpen(false)}
-      className="rounded-md z-50 bg-white"
+      // onBackdropPress={() => setIsOpen(false)}
+      // className="rounded-md z-50 bg-white"
       // transparent
       // presentationClassName="bg-transparent"
     >
-      <View className="p-3 bg-white rounded-md">
-        <TransactionSearchForm
-          filters={searchParams}
-          accounts={accounts}
-          categories={categories}
-          onSubmit={filters => {
-            onSubmit(filters);
-          }}
-          onClear={onClear}
-        />
-      </View>
+      <Pressable
+        className="bg-black bg-opacity-50 flex-1 justify-center items-center"
+        onPressOut={() => setIsOpen(false)}
+        onPress={() => {}}
+      >
+        <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
+          <TransactionSearchForm
+            filters={searchParams}
+            accounts={accounts}
+            categories={categories}
+            onSubmit={filters => {
+              onSubmit(filters);
+            }}
+            onClear={onClear}
+          />
+        </View>
+      </Pressable>
     </Modal>
   ) : (
     <></>

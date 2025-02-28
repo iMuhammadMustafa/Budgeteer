@@ -1,6 +1,6 @@
 import { useEffect, useState, memo } from "react";
-import { FlatList, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import Modal from "react-native-modal";
+import { FlatList, Platform, Pressable, ScrollView, Text, View, Modal } from "react-native";
+
 import MyIcon from "@/src/utils/Icons.Helper";
 import { Account } from "../types/db/Tables.Types";
 import {
@@ -100,13 +100,13 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
     <>
       {isModal ? (
         <Modal
-          isVisible={isOpen}
+          visible={isOpen}
           onDismiss={() => setIsOpen(false)}
-          onBackButtonPress={() => setIsOpen(false)}
-          onBackdropPress={() => setIsOpen(false)}
+          // onBackButtonPress={() => setIsOpen(false)}
+          // onBackdropPress={() => setIsOpen(false)}
           className="rounded-md z-50 bg-card"
         >
-          {children}
+          <Pressable onPressOut={() => setIsOpen(false)}>{children}</Pressable>
         </Modal>
       ) : (
         <View
