@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Modal as ReactModal, ScrollView, Platform } from "react-native";
-import Modal from "react-native-modal";
+import { View, Text, Pressable, Modal, ScrollView, Platform } from "react-native";
+
 import MyIcon from "@/src/utils/Icons.Helper";
 import * as Haptics from "expo-haptics";
 import { FlatList } from "react-native";
@@ -231,19 +231,21 @@ export default function CalculatorComponent({
       </Pressable>
 
       {modalVisible && (
-        <Modal
-          isVisible={modalVisible}
-          onBackdropPress={() => {
-            handleButtonPress("clear");
-            setModalVisible(false);
-          }}
-        >
-          <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
-            <History history={history} />
-            <Display currentExpression={currentExpression} result={result} />
-            <Buttons handleButtonPress={handleButtonPress} />
-            <FormActionButtons handleButtonPress={handleButtonPress} setModalVisible={setModalVisible} />
-          </View>
+        <Modal visible={modalVisible} transparent={true} animationType="fade">
+          <Pressable
+            onPressOut={() => {
+              handleButtonPress("clear");
+              setModalVisible(false);
+            }}
+            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
+          >
+            <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
+              <History history={history} />
+              <Display currentExpression={currentExpression} result={result} />
+              <Buttons handleButtonPress={handleButtonPress} />
+              <FormActionButtons handleButtonPress={handleButtonPress} setModalVisible={setModalVisible} />
+            </View>
+          </Pressable>
         </Modal>
       )}
     </>
