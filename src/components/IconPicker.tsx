@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, View, Text, Dimensions, Modal } from "react-native";
+import { FlatList, Pressable, View, Text, Dimensions, Modal, ScrollView } from "react-native";
 
 import { icons } from "lucide-react-native";
 import MyIcon from "@/src/utils/Icons.Helper";
@@ -15,7 +15,7 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
   useEffect(() => {
     const iconToSet = initialIcon.length > 0 ? initialIcon : "CircleHelp";
     setIcon(iconToSet);
-    setSearchText(iconToSet);
+    setSearchText("");
     onSelect(iconToSet);
   }, []);
   useEffect(() => {
@@ -26,6 +26,7 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
   }, [initialIcon]);
 
   const filteredIcons = useMemo(() => {
+    if (!searchText || searchText.length === 0) return iconNames;
     return iconNames.filter(i => i.toLowerCase().includes(searchText.toLowerCase()));
   }, [searchText]);
 
@@ -71,39 +72,39 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
           // onBackButtonPress={() => setIsVisible(false)}
           // onBackdropPress={() => setIsVisible(false)}
           transparent={true}
+          animationType="fade"
+          className="flex-1 justify-center items-center"
         >
           <Pressable
-            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
             onPressOut={() => setIsVisible(false)}
+            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
           >
-            <TextInputField
-              label={label ?? "Icon"}
-              value={icon ?? "CircleHelp"}
-              onChange={handleTextChange}
-              keyboardType="default"
-            />
-
+            <TextInputField label={label ?? "Icon"} value={icon} onChange={handleTextChange} keyboardType="default" />
+            {/* <ScrollView className="m-auto flex-grow-0 max-w-3xl p-4 rounded-md border border-muted bg-card custom-scrollbar"> */}
             <FlatList
               data={filteredIcons}
-              contentContainerClassName="p-5 gap-5 bg-white rounded-md flex flex-grow-0"
-              columnWrapperClassName="flex-row justify-around"
+              contentContainerClassName="p-5 gap-5 bg-white rounded-md flex flex-grow-0 max-w-3xl custom-scrollbar"
+              columnWrapperClassName="flex-row justify-around custom-scrollbar"
+              className="custom-scrollbar"
               numColumns={10}
-              initialNumToRender={25}
+              initialNumToRender={5}
+              windowSize={5}
               renderItem={({ item }) => (
                 <Pressable
                   key={item}
                   onPress={() => {
                     handleIconSelect(item);
                   }}
-                  className="overflow-hidden py-2 w-[10%] flex justify-center items-center"
+                  className="py-2 w-[10%] flex justify-center items-center text-clip "
                 >
-                  <View className="flex justify-center items-center ">
+                  <View className="flex justify-center items-center  ">
                     <MyIcon name={item} size={20} />
-                    <Text className="">{item}</Text>
+                    <Text selectable={false}>{item}</Text>
                   </View>
                 </Pressable>
               )}
             />
+            {/* </ScrollView> */}
           </Pressable>
         </Modal>
       )}
