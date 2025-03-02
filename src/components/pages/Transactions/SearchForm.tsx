@@ -3,7 +3,11 @@ import { Account, TransactionCategory } from "@/src/types/db/Tables.Types";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import TextInputField from "../../TextInputField";
-import DropdownField, { MyTransactionTypesDropdown } from "../../DropDownField";
+import DropdownField, {
+  AccountSelecterDropdown,
+  MyCategoriesDropdown,
+  MyTransactionTypesDropdown,
+} from "../../DropDownField";
 
 const emptyCategories = [
   {
@@ -62,52 +66,41 @@ export default function TransactionSearchForm({
           }}
           onPress={() => groups}
         /> */}
-
+        <TextInputField label="Name" value={searchParams?.name} onChange={text => handleTextChange("name", text)} />
         <TextInputField
           label="Description"
           value={searchParams?.description}
           onChange={text => handleTextChange("description", text)}
         />
 
-        <DropdownField
-          label="Category"
+        <MyCategoriesDropdown
           selectedValue={searchParams?.categoryid}
-          options={emptyCategories.concat(
-            categories.map(category => ({
-              id: category.id,
-              label: category.name,
-              value: category.id,
-              icon: category.icon,
-              iconColorClass: category.iconColor,
-            })),
-          )}
-          onSelect={value => handleTextChange("categoryid", value?.value)}
-          isModal={Platform.OS !== "web"}
+          categories={categories}
+          onSelect={value => handleTextChange("categoryid", value.id)}
+          isModal
         />
-
-        <DropdownField
+        <AccountSelecterDropdown
           label="Account"
           selectedValue={searchParams?.accountid}
-          options={emptyAccounts.concat(
-            accounts.map(account => ({
-              id: account.id,
-              label: account.name,
-              value: account.id,
-            })),
-          )}
-          onSelect={value => handleTextChange("accountid", value?.value)}
-          isModal={Platform.OS !== "web"}
+          onSelect={(value: any) => {
+            handleTextChange("accountid", value.id);
+          }}
+          isModal
+          accounts={accounts}
+          groupBy="group"
         />
-
         <MyTransactionTypesDropdown
           selectedValue={searchParams?.type}
-          onSelect={value => handleTextChange("type", value?.value)}
-          isModal={Platform.OS !== "web"}
+          onSelect={value => {
+            handleTextChange("type", value.value);
+          }}
+          isModal
+          isEdit={false}
         />
 
         <TextInputField
           label="Amount"
-          value={searchParams?.amount}
+          value={searchParams?.amount?.toString()}
           onChange={text => handleTextChange("amount", text)}
         />
 
