@@ -102,11 +102,20 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
         <Modal
           visible={isOpen}
           onDismiss={() => setIsOpen(false)}
+          transparent={true}
+          animationType="fade"
           // onBackButtonPress={() => setIsOpen(false)}
           // onBackdropPress={() => setIsOpen(false)}
-          className="rounded-md z-50 bg-card"
+          // className="rounded-md z-50 bg-card"
         >
-          <Pressable onPressOut={() => setIsOpen(false)}>{children}</Pressable>
+          <Pressable
+            onPressOut={() => setIsOpen(false)}
+            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
+          >
+            <ScrollView className="m-auto p-4 rounded-md border border-muted flex-grow-0  overflow-x-scroll bg-card custom-scrollbar">
+              {children}
+            </ScrollView>
+          </Pressable>
         </Modal>
       ) : (
         <View
@@ -122,7 +131,7 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
 
 function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderListProps) {
   return (
-    <ScrollView className={`${isModal ? "bg-white m-auto custom-scrollbar rounded-md flex-grow-0" : ""} `}>
+    <View className={`${isModal ? "bg-white " : ""} `}>
       <FlatList
         data={groupedOptions}
         keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
@@ -156,14 +165,14 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
         className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
         contentContainerClassName={`bg-white ${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
       />
-    </ScrollView>
+    </View>
   );
 }
 
 const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionProps) => (
   <Pressable
     key={option.id}
-    className={`p-2 relative z-10 gap-2 items-center ${isModal ? "" : "flex-row items-center justify-center"} ${isGrouped ? "" : "border-b border-gray-300"}`}
+    className={`p-2 relative z-10 gap-2 items-center max-w-48   ${isModal ? "" : "flex-row items-center justify-center"} ${isGrouped ? "" : "border-b border-gray-300 m-auto"}`}
     disabled={option.disabled}
     onPress={() => onItemPress(option)}
   >
@@ -174,7 +183,7 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
       />
     )}
     <Text
-      className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
+      className={`text-base relative text-center z-10  ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
     >
       {option.label}
     </Text>
