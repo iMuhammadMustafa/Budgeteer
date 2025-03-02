@@ -4,6 +4,11 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   darkMode: "class",
+  safelist: [
+    {
+      pattern: /^text-/,
+    },
+  ],
   theme: {
     extend: {
       colors: {
