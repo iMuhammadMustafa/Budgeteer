@@ -106,7 +106,7 @@ function DrawerContent(props: any) {
   );
 }
 const Footer = () => {
-  const { currentlyRunning, isUpdateAvailable, isUpdatePending } = Updates.useUpdates();
+  const { currentlyRunning, isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
 
   // useEffect(() => {
   //   if (isUpdatePending) {
@@ -121,12 +121,13 @@ const Footer = () => {
         <Text className="text-foreground text-center" onPress={async () => await Updates.checkForUpdateAsync()}>
           Version 0.15.0
         </Text>
-        {isUpdatePending && !isUpdateAvailable && (
+        {isUpdatePending && !isUpdateAvailable && !isDownloading && (
           <Pressable onPress={async () => await Updates.reloadAsync()}>
             <MyIcon name="Power" size={24} color="black" />
           </Pressable>
         )}
-        {isUpdateAvailable && (
+        {isDownloading && <ActivityIndicator size="small" color="black" />}
+        {isUpdateAvailable && !isUpdatePending && !isDownloading && (
           <Pressable onPress={async () => await Updates.fetchUpdateAsync()}>
             <MyIcon name="CloudDownload" size={24} color="black" />
           </Pressable>
