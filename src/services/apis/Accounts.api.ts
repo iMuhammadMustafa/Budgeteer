@@ -8,8 +8,8 @@ export const getAllAccounts = async () => {
     .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
     // .select()
     .eq("isdeleted", false)
-    .order("category(displayorder)", { ascending: true })
-    .order("displayorder", { ascending: true })
+    .order("category(displayorder)", { ascending: false })
+    .order("displayorder", { ascending: false })
     .order("name")
     .order("owner");
   if (error) throw new Error(error.message);

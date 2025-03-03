@@ -7,7 +7,7 @@ export const getAllAccountCategories = async () => {
     .from(TableNames.AccountCategories)
     .select()
     .eq("isdeleted", false)
-    .order("displayorder", { ascending: true })
+    .order("displayorder", { ascending: false })
     .order("name");
   if (error) throw new Error(error.message);
   return data;

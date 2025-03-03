@@ -7,7 +7,7 @@ export const getAllTransactionGroups = async () => {
     .from(TableNames.TransactionGroups)
     .select()
     .eq("isdeleted", false)
-    .order("displayorder", { ascending: true })
+    .order("displayorder", { ascending: false })
     .order("name");
   if (error) throw new Error(error.message);
   return data;
