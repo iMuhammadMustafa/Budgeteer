@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { BackHandler, Platform, View } from "react-native";
-import Modal from "react-native-modal";
+import { BackHandler, Platform, View, Modal, Pressable } from "react-native";
 
 import { TransactionSearchFormProps } from "@/src/types/pages/Transactions.types";
 import TransactionSearchForm from "./SearchForm";
+import MyModal from "../../MyModal";
 
 export default function TransactionSearchModal({
   isOpen,
@@ -45,28 +45,17 @@ export default function TransactionSearchModal({
   }, [isOpen]);
 
   return isOpen ? (
-    <Modal
-      isVisible={isOpen}
-      onDismiss={() => setIsOpen(false)}
-      onBackButtonPress={() => setIsOpen(false)}
-      // onRequestClose={() => setIsOpen(false)}
-      onBackdropPress={() => setIsOpen(false)}
-      className="rounded-md z-50 bg-white"
-      // transparent
-      // presentationClassName="bg-transparent"
-    >
-      <View className="p-3 bg-white rounded-md">
-        <TransactionSearchForm
-          filters={searchParams}
-          accounts={accounts}
-          categories={categories}
-          onSubmit={filters => {
-            onSubmit(filters);
-          }}
-          onClear={onClear}
-        />
-      </View>
-    </Modal>
+    <MyModal isOpen={isOpen} setIsOpen={setIsOpen}>
+      <TransactionSearchForm
+        filters={searchParams}
+        accounts={accounts}
+        categories={categories}
+        onSubmit={filters => {
+          onSubmit(filters);
+        }}
+        onClear={onClear}
+      />
+    </MyModal>
   ) : (
     <></>
   );

@@ -20,7 +20,7 @@ export default function TransactionsPageHeader({
           <View className="flex-row">
             <Text className=" text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
             <Text className=" text-primary-500 mr-4">
-              {selectedSum} {selectedTransactions[0].currency}
+              {selectedSum.toFixed(2)} {selectedTransactions[0].currency}
             </Text>
           </View>
           <Pressable onPress={deleteSelection}>
