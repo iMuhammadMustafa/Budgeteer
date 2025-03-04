@@ -35,6 +35,7 @@ export default function DaysList({
             selectedTransactions={selectedTransactions}
             handleLongPress={handleLongPress}
             handlePress={handlePress}
+            transferTransaction={data[day].transactions.find(t => t.id === transaction.transferid)}
           />
         )}
         keyExtractor={transaction => transaction.id!}

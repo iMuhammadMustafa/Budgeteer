@@ -120,7 +120,7 @@ export default function useTransactions() {
       // if (item.transferid) {
       //   item = transactions?.find(t => t.id === item.transferid) ?? item;
       // }
-      router.push({ pathname: `/AddTransaction`, params: item }); // Remove the braces in params
+      router.push({ pathname: `/AddTransaction`, params: item as any }); // Remove the braces in params
     }
   };
 

@@ -122,48 +122,6 @@ export type Database = {
           },
         ]
       }
-      configruations: {
-        Row: {
-          createdat: string
-          createdby: string | null
-          id: string
-          isdeleted: boolean
-          key: string
-          Table: string
-          tenantid: string | null
-          Type: string
-          updatedat: string | null
-          updatedby: string | null
-          value: string
-        }
-        Insert: {
-          createdat?: string
-          createdby?: string | null
-          id?: string
-          isdeleted?: boolean
-          key: string
-          Table: string
-          tenantid?: string | null
-          Type: string
-          updatedat?: string | null
-          updatedby?: string | null
-          value: string
-        }
-        Update: {
-          createdat?: string
-          createdby?: string | null
-          id?: string
-          isdeleted?: boolean
-          key?: string
-          Table?: string
-          tenantid?: string | null
-          Type?: string
-          updatedat?: string | null
-          updatedby?: string | null
-          value?: string
-        }
-        Relationships: []
-      }
       configurations: {
         Row: {
           createdat: string
@@ -171,9 +129,9 @@ export type Database = {
           id: string
           isdeleted: boolean
           key: string
-          Table: string
+          table: string
           tenantid: string | null
-          Type: string
+          type: string
           updatedat: string | null
           updatedby: string | null
           value: string
@@ -184,9 +142,9 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           key: string
-          Table: string
+          table: string
           tenantid?: string | null
-          Type: string
+          type: string
           updatedat?: string | null
           updatedby?: string | null
           value: string
@@ -197,9 +155,9 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           key?: string
-          Table?: string
+          table?: string
           tenantid?: string | null
-          Type?: string
+          type?: string
           updatedat?: string | null
           updatedby?: string | null
           value?: string
@@ -251,6 +209,7 @@ export type Database = {
           isdeleted: boolean
           name: string | null
           tenantid: string
+          type: Database["public"]["Enums"]["transactiontypes"]
           updatedat: string | null
           updatedby: string | null
         }
@@ -268,6 +227,7 @@ export type Database = {
           isdeleted?: boolean
           name?: string | null
           tenantid: string
+          type?: Database["public"]["Enums"]["transactiontypes"]
           updatedat?: string | null
           updatedby?: string | null
         }
@@ -285,6 +245,7 @@ export type Database = {
           isdeleted?: boolean
           name?: string | null
           tenantid?: string
+          type?: Database["public"]["Enums"]["transactiontypes"]
           updatedat?: string | null
           updatedby?: string | null
         }
@@ -364,7 +325,7 @@ export type Database = {
           id: string
           isdeleted: boolean
           isvoid: boolean
-          name: string
+          name: string | null
           notes: string | null
           payee: string | null
           tags: string[] | null
@@ -386,7 +347,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           isvoid?: boolean
-          name: string
+          name?: string | null
           notes?: string | null
           payee?: string | null
           tags?: string[] | null
@@ -408,7 +369,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           isvoid?: boolean
-          name?: string
+          name?: string | null
           notes?: string | null
           payee?: string | null
           tags?: string[] | null
@@ -666,21 +627,13 @@ export type Database = {
       }
     }
     Functions: {
-      updateaccountbalance:
-        | {
-            Args: {
-              accountid: number
-              amount: number
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              accountid: string
-              amount: number
-            }
-            Returns: number
-          }
+      updateaccountbalance: {
+        Args: {
+          accountid: string
+          amount: number
+        }
+        Returns: number
+      }
       uuid_generate_v7: {
         Args: Record<PropertyKey, never>
         Returns: string

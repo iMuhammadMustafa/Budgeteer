@@ -128,6 +128,7 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
                   \n$${selectedSlice?.y}`
                     : ""
                 }
+                events={{ onClick: evt => setSelectedSlice(null) }}
               />
             ) : (
               <></>

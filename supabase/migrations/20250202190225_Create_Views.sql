@@ -131,6 +131,7 @@ SELECT
 
   a.id AS accountid,
   a.name AS accountname,
+  -- ta.name AS transferaccountname,
   a.currency,
   a.balance,
   
@@ -144,6 +145,7 @@ SELECT
   FROM transactions t
     JOIN transactioncategories tc ON t.categoryid = tc.id
     JOIN accounts a ON t.accountid = a.id
+    -- JOIN accounts ta ON t.transferaccountid = ta.id
 WHERE t.isdeleted = false AND tc.isdeleted = false AND a.isdeleted = false
 ORDER BY 
 t.date DESC, 

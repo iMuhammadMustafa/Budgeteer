@@ -179,11 +179,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             selectedValue={formData.type}
             onSelect={value => {
               handleTextChange("type", value.value);
-              handleTextChange(
-                "categoryid",
-                categories?.find(category => category.name?.startsWith("Account"))?.id ?? "",
-              );
-              setMode("minus");
+
+              if (value.value === "Transfer") {
+                handleTextChange("name", value.value);
+                handleTextChange(
+                  "categoryid",
+                  categories?.find(category => category.name?.startsWith("Account"))?.id ?? "",
+                );
+                setMode("minus");
+              }
             }}
             isModal={Platform.OS !== "web"}
             isEdit={isEdit}
