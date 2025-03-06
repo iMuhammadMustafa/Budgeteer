@@ -5,6 +5,7 @@ export default function MyModal({ isOpen, setIsOpen, children }: any) {
     <Modal
       visible={isOpen}
       onDismiss={() => setIsOpen(false)}
+      onRequestClose={() => setIsOpen(false)}
       transparent={true}
       animationType="fade"
       className="flex-1 justify-center items-center"
@@ -16,10 +17,7 @@ export default function MyModal({ isOpen, setIsOpen, children }: any) {
       // transparent
       // presentationClassName="bg-transparent"
     >
-      <Pressable
-        onPressOut={() => setIsOpen(false)}
-        className="bg-black bg-opacity-50 flex-1 justify-center items-center cursor-auto"
-      >
+      <Pressable className="bg-black/50 flex-1 justify-center items-center cursor-auto">
         <Pressable className="flex-1 " onPress={e => e.stopPropagation()}>
           <ScrollView className="p-4 rounded-md border border-muted flex-grow-0 m-auto bg-card cursor-auto">
             {children}

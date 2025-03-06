@@ -102,16 +102,14 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
         <Modal
           visible={isOpen}
           onDismiss={() => setIsOpen(false)}
+          onRequestClose={() => setIsOpen(false)}
           transparent={true}
           animationType="fade"
           // onBackButtonPress={() => setIsOpen(false)}
           // onBackdropPress={() => setIsOpen(false)}
           // className="rounded-md z-50 bg-card"
         >
-          <Pressable
-            onPressOut={() => setIsOpen(false)}
-            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
-          >
+          <Pressable className="bg-black/50 flex-1 justify-center items-center">
             <ScrollView className="m-auto p-4 rounded-md border border-muted flex-grow-0  overflow-x-scroll bg-card custom-scrollbar">
               {children}
             </ScrollView>

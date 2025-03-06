@@ -75,10 +75,7 @@ function IconPickerMemo({ label, initialIcon, onSelect }: any) {
           animationType="fade"
           className="flex-1 justify-center items-center"
         >
-          <Pressable
-            onPressOut={() => setIsVisible(false)}
-            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
-          >
+          <Pressable onPressOut={() => setIsVisible(false)} className="bg-black/50 flex-1 justify-center items-center">
             <TextInputField label={label ?? "Icon"} value={icon} onChange={handleTextChange} keyboardType="default" />
             {/* <ScrollView className="m-auto flex-grow-0 max-w-3xl p-4 rounded-md border border-muted bg-card custom-scrollbar"> */}
             <FlatList

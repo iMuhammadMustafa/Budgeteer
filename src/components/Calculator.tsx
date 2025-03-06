@@ -237,7 +237,7 @@ export default function CalculatorComponent({
               handleButtonPress("clear");
               setModalVisible(false);
             }}
-            className="bg-black bg-opacity-50 flex-1 justify-center items-center"
+            className="bg-black/50 flex-1 justify-center items-center"
           >
             <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
               <History history={history} />
