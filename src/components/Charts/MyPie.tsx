@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlatList, Platform, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { FlatList, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { VictoryContainer, VictoryLabel, VictoryLegend, VictoryPie, VictoryTheme } from "victory-native";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { PieData, PieProps } from "@/src/types/components/Charts.types";
@@ -128,7 +128,7 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
                   \n$${selectedSlice?.y}`
                     : ""
                 }
-                events={{ onClick: evt => setSelectedSlice(null) }}
+                events={{ onPress: () => setSelectedSlice(null), onClick: () => setSelectedSlice(null) }}
               />
             ) : (
               <></>

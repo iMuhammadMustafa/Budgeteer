@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState } from "react";
 import { FlatList, Platform, Pressable, ScrollView, Text, View, Modal } from "react-native";
 
 import MyIcon from "@/src/utils/Icons.Helper";
@@ -10,8 +10,9 @@ import {
   RenderListProps,
   RenderOptionProps,
 } from "../types/components/DropdownField.types";
+import MyModal from "./MyModal";
 
-function UnMemoizedMyDropDown({
+function DropdownField({
   options,
   onSelect,
   selectedValue,
@@ -99,22 +100,9 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
   return (
     <>
       {isModal ? (
-        <Modal
-          visible={isOpen}
-          onDismiss={() => setIsOpen(false)}
-          onRequestClose={() => setIsOpen(false)}
-          transparent={true}
-          animationType="fade"
-          // onBackButtonPress={() => setIsOpen(false)}
-          // onBackdropPress={() => setIsOpen(false)}
-          // className="rounded-md z-50 bg-card"
-        >
-          <Pressable className="bg-black/50 flex-1 justify-center items-center">
-            <ScrollView className="m-auto p-4 rounded-md border border-muted flex-grow-0  overflow-x-scroll bg-card custom-scrollbar">
-              {children}
-            </ScrollView>
-          </Pressable>
-        </Modal>
+        <MyModal isOpen={isOpen} setIsOpen={setIsOpen}>
+          {children}
+        </MyModal>
       ) : (
         <View
           style={{ width: buttonLayout.width, top: buttonLayout.y + buttonLayout.height, left: buttonLayout.x }}
@@ -129,41 +117,41 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
 
 function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderListProps) {
   return (
-    <View className={`${isModal ? "bg-white " : ""} `}>
-      <FlatList
-        data={groupedOptions}
-        keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
-        renderItem={({ item }: { item: OptionItem | string | undefined }) => (
-          <>
-            {typeof item === "string" ? (
-              <>
-                <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
-                {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
-                <View
-                  className={`flex-row flex-wrap  border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
-                >
-                  {options
-                    .filter(option => option.group === item)
-                    .map(option => (
-                      <RenderOption
-                        key={option.id}
-                        isModal={isModal}
-                        option={option}
-                        onItemPress={onItemPress}
-                        isGrouped
-                      />
-                    ))}
-                </View>
-              </>
-            ) : (
-              item && <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} />
-            )}
-          </>
-        )}
-        className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
-        contentContainerClassName={`bg-white ${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
-      />
-    </View>
+    // <ScrollView className={`flex-1 ${isModal ? "bg-white " : ""} `}>
+    <FlatList
+      data={groupedOptions}
+      keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
+      renderItem={({ item }: { item: OptionItem | string | undefined }) => (
+        <>
+          {typeof item === "string" ? (
+            <>
+              <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
+              {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
+              <View
+                className={`flex-row flex-wrap  border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
+              >
+                {options
+                  .filter(option => option.group === item)
+                  .map(option => (
+                    <RenderOption
+                      key={option.id}
+                      isModal={isModal}
+                      option={option}
+                      onItemPress={onItemPress}
+                      isGrouped
+                    />
+                  ))}
+              </View>
+            </>
+          ) : (
+            item && <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} />
+          )}
+        </>
+      )}
+      className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
+      contentContainerClassName={`bg-white ${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
+    />
+    // </ScrollView>
   );
 }
 
@@ -338,9 +326,4 @@ export const AccountSelecterDropdown = ({
   );
 };
 
-//TODO: Fix compare
-const areEqual = (prevProps: DropDownProps, nextProps: DropDownProps) => {
-  return prevProps.selectedValue === nextProps.selectedValue;
-};
-const DropdownField = memo(UnMemoizedMyDropDown, areEqual);
 export default DropdownField;

@@ -37,7 +37,6 @@ const AddTransaction = (
     options={{
       title: "New Transaction",
       tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color} size={24} />,
-      // unmountOnBlur: true,
     }}
   />
 );

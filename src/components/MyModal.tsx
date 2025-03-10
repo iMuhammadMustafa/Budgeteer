@@ -1,4 +1,4 @@
-import { Modal, Pressable, ScrollView } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 export default function MyModal({ isOpen, setIsOpen, children }: any) {
   return (
@@ -9,21 +9,12 @@ export default function MyModal({ isOpen, setIsOpen, children }: any) {
       transparent={true}
       animationType="fade"
       className="flex-1 justify-center items-center"
-      // presentationStyle="pageSheet"
-      // onBackButtonPress={() => setIsOpen(false)}
-      // onRequestClose={() => setIsOpen(false)}
-      // onBackdropPress={() => setIsOpen(false)}
-      // className="rounded-md z-50 bg-white"
-      // transparent
-      // presentationClassName="bg-transparent"
     >
-      <Pressable className="bg-black/50 flex-1 justify-center items-center cursor-auto">
-        <Pressable className="flex-1 " onPress={e => e.stopPropagation()}>
-          <ScrollView className="p-4 rounded-md border border-muted flex-grow-0 m-auto bg-card cursor-auto">
-            {children}
-          </ScrollView>
-        </Pressable>
-      </Pressable>
+      <ScrollView className="flex-1 bg-black/50">
+        <View className="p-4 rounded-md border border-muted flex-1 m-auto bg-card cursor-auto custom-scrollbar">
+          {children}
+        </View>
+      </ScrollView>
     </Modal>
   );
 }

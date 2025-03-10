@@ -119,9 +119,9 @@ const Footer = () => {
     <>
       <View className="flex-row justify-around items-center py-2">
         <Text className="text-foreground text-center" onPress={async () => await Updates.checkForUpdateAsync()}>
-          Version 0.15.0
+          Version 0.15.2
         </Text>
-        {isUpdatePending && !isUpdateAvailable && !isDownloading && (
+        {isUpdatePending && !isDownloading && (
           <Pressable onPress={async () => await Updates.reloadAsync()}>
             <MyIcon name="Power" size={24} color="black" />
           </Pressable>
