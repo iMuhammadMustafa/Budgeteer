@@ -117,7 +117,6 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
 
 function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderListProps) {
   return (
-    // <ScrollView className={`flex-1 ${isModal ? "bg-white " : ""} `}>
     <FlatList
       data={groupedOptions}
       keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
@@ -126,9 +125,8 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
           {typeof item === "string" ? (
             <>
               <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
-              {/* <ScrollView horizontal className="flex-row custom-scrollbar"> */}
               <View
-                className={`flex-row flex-wrap  border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
+                className={`flex-row flex-wrap border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
               >
                 {options
                   .filter(option => option.group === item)
@@ -148,10 +146,15 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
           )}
         </>
       )}
-      className={`rounded-md custom-scrollbar ${isModal ? "flex-grow-0 m-auto" : "max-h-40 border border-gray-300  relative z-10 "}`}
-      contentContainerClassName={`bg-white ${isModal ? "items-center justify-center bg-white rounded-md p-1" : "relative z-10"}`}
+      className={`rounded-md ${isModal ? "max-h-[300px]" : "max-h-40 border border-gray-300 relative z-10"}`}
+      contentContainerStyle={{ 
+        backgroundColor: 'white', 
+        padding: isModal ? 8 : 0, 
+        borderRadius: 8
+      }}
+      showsVerticalScrollIndicator={true}
+      nestedScrollEnabled={true}
     />
-    // </ScrollView>
   );
 }
 

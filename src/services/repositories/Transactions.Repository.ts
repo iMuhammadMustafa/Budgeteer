@@ -424,6 +424,23 @@ export const updateTransactionHelper = async (
     if (originalData.transferid) {
       updatedTransferTransaction.amount = -formTransaction.amount!;
     }
+    
+    // Only set account balance updates if this is the only field changing
+    // and if separate account change logic hasn't already set these
+    if (!updatedTransaction.accountid && !updatedTransaction.transferaccountid && !updatedTransaction.isvoid && !originalData.isvoid) {
+      const amountDiff = formTransaction.amount! - originalData.amount;
+      originalAccount = {
+        id: originalData.accountid,
+        amount: amountDiff,
+      };
+      
+      if (originalData.transferid && originalData.transferaccountid) {
+        originalTransferAccount = {
+          id: originalData.transferaccountid,
+          amount: -amountDiff,
+        };
+      }
+    }
   }
 
   // Handle Account Change =>
@@ -508,16 +525,17 @@ export const updateTransactionHelper = async (
       };
     }
 
-    // Nothing Changed
-    if (!updatedTransaction.accountid && !updatedTransaction.transferaccountid) {
+    // Nothing Changed (except possibly amount, which was already handled above)
+    if (!updatedTransaction.accountid && !updatedTransaction.transferaccountid && 
+        formTransaction.amount === undefined) { // Only enter here if amount wasn't explicitly changed
       originalAccount = {
         id: originalData.accountid,
-        amount: -originalData.amount + updatedTransaction.amount, // Adjust the original account
+        amount: -originalData.amount + (updatedTransaction.amount || originalData.amount), // Adjust the original account
       };
       if (originalData.transferaccountid) {
         originalTransferAccount = {
           id: originalData.transferaccountid,
-          amount: originalData.amount - updatedTransaction.amount, // Adjust the transfer account
+          amount: originalData.amount - (updatedTransaction.amount || originalData.amount), // Adjust the transfer account
         };
       }
     }

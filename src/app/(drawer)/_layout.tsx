@@ -119,7 +119,7 @@ const Footer = () => {
     <>
       <View className="flex-row justify-around items-center py-2">
         <Text className="text-foreground text-center" onPress={async () => await Updates.checkForUpdateAsync()}>
-          Version 0.15.2
+          Version 0.15.3
         </Text>
         {isUpdatePending && !isDownloading && (
           <Pressable onPress={async () => await Updates.reloadAsync()}>
