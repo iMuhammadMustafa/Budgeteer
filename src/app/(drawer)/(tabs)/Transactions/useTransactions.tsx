@@ -153,7 +153,10 @@ export default function useTransactions() {
 
   const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      console.log("Loading more transactions...");
+      fetchNextPage().catch(error => {
+        console.error("Error loading more transactions:", error);
+      });
     }
   };
   // const { data: accounts } = useGetAccounts() as any;

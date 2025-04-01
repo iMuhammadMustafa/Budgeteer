@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BackHandler, Platform, View, Modal, Pressable } from "react-native";
+import { BackHandler, Platform, View } from "react-native";
 
 import { TransactionSearchFormProps } from "@/src/types/pages/Transactions.types";
 import TransactionSearchForm from "./SearchForm";
@@ -14,37 +14,44 @@ export default function TransactionSearchModal({
   onSubmit,
   onClear,
 }: TransactionSearchFormProps) {
+  // Handle escape key and back button
   useEffect(() => {
-    const myFunction = (e: KeyboardEvent) => {
+    const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsOpen(false);
       }
     };
 
-    if (Platform.OS === "web") {
-      window.addEventListener("keydown", myFunction);
-    }
-
-    if (Platform.OS === "android") {
-      BackHandler.addEventListener("hardwareBackPress", () => {
+    const handleBackButton = () => {
+      if (isOpen) {
         setIsOpen(false);
         return true;
-      });
-    }
-    return () => {
-      if (Platform.OS === "android") {
-        BackHandler.removeEventListener("hardwareBackPress", () => {
-          setIsOpen(false);
-          return true;
-        });
       }
+      return false;
+    };
+
+    if (Platform.OS === "web") {
+      window.addEventListener("keydown", handleEscKey);
+    }
+
+    const backHandler = Platform.OS === "android" 
+      ? BackHandler.addEventListener("hardwareBackPress", handleBackButton)
+      : undefined;
+
+    return () => {
+      if (backHandler) {
+        backHandler.remove();
+      }
+      
       if (Platform.OS === "web") {
-        window.removeEventListener("keydown", myFunction);
+        window.removeEventListener("keydown", handleEscKey);
       }
     };
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
-  return isOpen ? (
+  if (!isOpen) return null;
+
+  return (
     <MyModal isOpen={isOpen} setIsOpen={setIsOpen}>
       <TransactionSearchForm
         filters={searchParams}
@@ -53,10 +60,11 @@ export default function TransactionSearchModal({
         onSubmit={filters => {
           onSubmit(filters);
         }}
-        onClear={onClear}
+        onClear={() => {
+          onClear();
+          setIsOpen(false);
+        }}
       />
     </MyModal>
-  ) : (
-    <></>
   );
 }

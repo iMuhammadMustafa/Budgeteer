@@ -10,13 +10,19 @@ export default function MyModal({ isOpen, setIsOpen, children }: any) {
       animationType="fade"
       className="flex-1 justify-center items-center"
     >
-      <View className="flex-1 bg-black/50 justify-center items-center">
-        <View className="max-h-[80%] w-[90%] bg-card rounded-md border border-muted">
+      <Pressable 
+        className="flex-1 bg-black/50 justify-center items-center" 
+        onPress={() => setIsOpen(false)}
+      >
+        <Pressable 
+          className="max-h-[80%] w-[90%] bg-card rounded-md border border-muted"
+          onPress={(e) => e.stopPropagation()}
+        >
           <ScrollView className="flex-grow" contentContainerStyle={{ padding: 16 }}>
             {children}
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

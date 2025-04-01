@@ -104,23 +104,23 @@ export default function TransactionSearchForm({
           onChange={text => handleTextChange("amount", text)}
         />
 
-        <View className="flex flex-row justify-center items-center gap-2">
+        <View className="flex flex-row justify-center items-center gap-4 mt-4">
           <Pressable
-            className="bg-danger-300 p-2 rounded-md w-1/4 justify-center items-center"
+            className="bg-danger-300 p-3 rounded-md flex-1 justify-center items-center"
             onPress={() => {
               setSearchParams(null);
               onClear();
             }}
           >
-            <Text className="text-foreground text-md">Clear</Text>
+            <Text className="text-foreground font-semibold text-md">Clear</Text>
           </Pressable>
           <Pressable
-            className="bg-primary p-2 rounded-md w-1/4 justify-center items-center"
+            className="bg-primary p-3 rounded-md flex-1 justify-center items-center"
             onPress={() => {
               onSubmit(searchParams);
             }}
           >
-            <Text className="text-foreground text-md">Search</Text>
+            <Text className="text-foreground font-semibold text-md">Search</Text>
           </Pressable>
         </View>
       </ScrollView>
