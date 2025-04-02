@@ -35,6 +35,8 @@ export type PieProps = {
   data: PieData[];
   label: string;
   maxItemsOnChart?: number;
+  onPiePress?: (item: PieData) => void;
+  highlightedSlice?: string;
 };
 
 export type CalendarDayProp = {
@@ -54,6 +56,7 @@ export type MyCalendarProps = {
   data: MyCalendarData;
   label: string;
   onDayPress?: (day: any) => void;
+  selectedDate?: string | null;
 };
 
 export type MyCalendarData = {

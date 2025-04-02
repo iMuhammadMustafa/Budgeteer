@@ -3,10 +3,21 @@ import { Calendar } from "react-native-calendars";
 import { MyCalendarProps } from "@/src/types/components/Charts.types";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
-export default function MyCalendar({ data, label, onDayPress }: MyCalendarProps) {
+export default function MyCalendar({ data, label, onDayPress, selectedDate }: MyCalendarProps) {
   const theme = useTheme();
 
   const foreground = theme.isDarkMode ? "white" : "black";
+  
+  // Combine markedDates with the selectedDate highlighted
+  const markedDates = { ...data };
+  if (selectedDate) {
+    // Add or update the selected date with a special style
+    markedDates[selectedDate] = {
+      ...(markedDates[selectedDate] || {}),
+      selected: true,
+      selectedColor: '#0000ff', // Blue color for selection
+    };
+  }
 
   return (
     <View className="p-4 m-auto bg-card my-2 rounded-md border border-muted">
@@ -14,7 +25,7 @@ export default function MyCalendar({ data, label, onDayPress }: MyCalendarProps)
       <Calendar
         hideArrows
         disableMonthChange
-        markedDates={data}
+        markedDates={markedDates}
         markingType={"multi-dot"}
         hideExtraDays={true}
         firstDay={1}

@@ -4,10 +4,21 @@ import { VictoryContainer, VictoryLabel, VictoryLegend, VictoryPie, VictoryTheme
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { PieData, PieProps } from "@/src/types/components/Charts.types";
 
-export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10 }: PieProps) {
+export default function MyPie({ 
+  data = [], 
+  label = "Chart", 
+  maxItemsOnChart = 10,
+  onPiePress,
+  highlightedSlice 
+}: PieProps & { 
+  onPiePress?: (item: PieData) => void;
+  highlightedSlice?: string;
+}) {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
-  const [selectedSlice, setSelectedSlice] = useState<PieData | null>(null);
+  const [selectedSlice, setSelectedSlice] = useState<PieData | null>(
+    highlightedSlice ? data.find(item => item.x === highlightedSlice) || null : null
+  );
   const chartWidth = Math.min(width, 600);
   const chartHeight = Math.min(width, 600);
 
@@ -94,7 +105,13 @@ export default function MyPie({ data = [], label = "Chart", maxItemsOnChart = 10
                   target: "data",
                   eventHandlers: {
                     onPress: (_, props) => {
-                      setSelectedSlice(selectedSlice?.x === props.datum.x ? null : props.datum);
+                      const newSelectedSlice = selectedSlice?.x === props.datum.x ? null : props.datum;
+                      setSelectedSlice(newSelectedSlice);
+                      
+                      // Call the onPiePress callback if provided
+                      if (onPiePress && newSelectedSlice) {
+                        onPiePress(newSelectedSlice);
+                      }
                     },
                   },
                 },

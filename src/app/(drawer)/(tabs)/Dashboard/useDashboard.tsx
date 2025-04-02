@@ -7,6 +7,10 @@ import {
   useGetStatsMonthlyCategoriesTransactions,
   useGetStatsYearTransactionsTypes,
 } from "@/src/services/repositories/Stats.Repository";
+import { useGetTransactions } from "@/src/services/repositories/Transactions.Repository";
+import supabase from "@/src/providers/Supabase";
+import { TableNames, ViewNames } from "@/src/types/db/TableNames";
+import { TransactionsView } from "@/src/types/db/Tables.Types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -49,6 +53,75 @@ export default function useDashboard() {
     return Array.isArray(monthlyTransactionsGroupsAndCategories) ? [] : monthlyTransactionsGroupsAndCategories.groups;
   }, [monthlyTransactionsGroupsAndCategories]);
 
+  // Function to fetch transactions for a specific date
+  const fetchTransactionsForDate = async (dateString: string): Promise<TransactionsView[]> => {
+    try {
+      const startOfDay = dayjs(dateString).startOf('day').toISOString();
+      const endOfDay = dayjs(dateString).endOf('day').toISOString();
+      
+      const { data, error } = await supabase
+        .from(ViewNames.TransactionsView)
+        .select('*')
+        .gte('date', startOfDay)
+        .lte('date', endOfDay)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching transactions for date:', error);
+      return [];
+    }
+  };
+
+  // Function to fetch transactions for a specific category or group
+  const fetchTransactionsForCategory = async (name: string, type: 'category' | 'group'): Promise<TransactionsView[]> => {
+    try {
+      const { data, error } = await supabase
+        .from(ViewNames.TransactionsView)
+        .select('*')
+        .eq(type === 'category' ? 'categoryname' : 'groupname', name)
+        .gte('date', startOfCurrentMonth)
+        .lte('date', endOfCurrentMonth)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error(`Error fetching transactions for ${type}:`, error);
+      return [];
+    }
+  };
+
+  // Function to fetch transactions for a specific month
+  const fetchTransactionsForMonthAndType = async (monthName: string): Promise<TransactionsView[]> => {
+    try {
+      // Convert month name to month number (e.g., "Jan" -> 0)
+      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthName);
+      if (monthIndex === -1) {
+        throw new Error(`Invalid month name: ${monthName}`);
+      }
+      
+      const year = dayjs().year();
+      
+      const startOfMonth = dayjs().year(year).month(monthIndex).startOf('month').toISOString();
+      const endOfMonth = dayjs().year(year).month(monthIndex).endOf('month').toISOString();
+      
+      const { data, error } = await supabase
+        .from(ViewNames.TransactionsView)
+        .select('*')
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching transactions for month:', error);
+      return [];
+    }
+  };
+
   return {
     weeklyTransactionTypesData,
     dailyTransactionTypesData,
@@ -58,5 +131,8 @@ export default function useDashboard() {
     isWeeklyLoading,
     isMonthlyLoading,
     isYearlyLoading,
+    fetchTransactionsForDate,
+    fetchTransactionsForCategory,
+    fetchTransactionsForMonthAndType,
   };
 }

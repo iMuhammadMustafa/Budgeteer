@@ -3,7 +3,17 @@ import { View, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 import { DoubleBarPoint } from "@/src/types/components/Charts.types";
 
-export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint[]; label: string }) {
+export default function NetEarningsChart({ 
+  data, 
+  label, 
+  onBarPress,
+  highlightedBar
+}: { 
+  data: DoubleBarPoint[]; 
+  label: string;
+  onBarPress?: (item: DoubleBarPoint) => void;
+  highlightedBar?: string;
+}) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth * 0.75;
@@ -12,7 +22,7 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
   const spaceBetweenBars = (chartWidth - 30) / (data.length * 3); // Adjust the space based on the number of bars
   const offset = spaceBetweenBars - barWidth / 2;
 
-  const [selectedSlice, setSelectedSlice] = useState(null);
+  const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
 
   return (
     <View className="bg-card p-2 m-auto my-1 rounded-md border border-muted">
@@ -66,7 +76,16 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
                     setSelectedSlice(null);
                   },
                   onPress: (_, props) => {
-                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                    const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
+                    setSelectedSlice(newSelectedSlice);
+                    
+                    // Call the onBarPress callback if provided
+                    if (onBarPress && newSelectedSlice) {
+                      const selectedBar = data.find(item => item.x === newSelectedSlice);
+                      if (selectedBar) {
+                        onBarPress(selectedBar);
+                      }
+                    }
                   },
                 },
               },
@@ -103,7 +122,16 @@ export default function NetEarningsChart({ data, label }: { data: DoubleBarPoint
                     setSelectedSlice(null);
                   },
                   onPress: (_, props) => {
-                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                    const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
+                    setSelectedSlice(newSelectedSlice);
+                    
+                    // Call the onBarPress callback if provided
+                    if (onBarPress && newSelectedSlice) {
+                      const selectedBar = data.find(item => item.x === newSelectedSlice);
+                      if (selectedBar) {
+                        onBarPress(selectedBar);
+                      }
+                    }
                   },
                 },
               },
