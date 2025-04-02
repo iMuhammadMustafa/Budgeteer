@@ -26,23 +26,43 @@ export const getStatsMonthlyTransactionsTypes = async (startDate?: string, endDa
   if (error) throw new Error(error.message);
   return data;
 };
+
 export const getStatsMonthlyCategoriesTransactions = async (startDate?: string, endDate?: string) => {
+  // Format dates to match database format (first day of month at 00:00:00 UTC)
+  const formattedStartDate = startDate 
+    ? dayjs(startDate).startOf('month').format('YYYY-MM-DD')
+    : dayjs().startOf("month").format('YYYY-MM-DD');
+    
+  const formattedEndDate = endDate
+    ? dayjs(endDate).endOf('month').format('YYYY-MM-DD')
+    : dayjs().endOf("month").format('YYYY-MM-DD');
+    
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyCategoriesTransactions)
     .select()
     .in("type", ["Expense", "Adjustment"])
-    .gte("date", startDate ?? dayjs().startOf("month").toISOString())
-    .lte("date", endDate ?? dayjs().endOf("month").toISOString());
+    .gte("date", formattedStartDate)
+    .lte("date", formattedEndDate);
 
   if (error) throw new Error(error.message);
   return data;
 };
+
 export const getStatsMonthlyAccountsTransactions = async (startDate?: string, endDate?: string) => {
+  // Format dates to match database format (first day of month at 00:00:00 UTC)
+  const formattedStartDate = startDate 
+    ? dayjs(startDate).startOf('month').format('YYYY-MM-DD')
+    : dayjs().startOf("month").format('YYYY-MM-DD');
+    
+  const formattedEndDate = endDate
+    ? dayjs(endDate).endOf('month').format('YYYY-MM-DD')
+    : dayjs().endOf("month").format('YYYY-MM-DD');
+  
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyAccountsTransactions)
     .select()
-    .gte("date", startDate ?? dayjs().startOf("week").toISOString())
-    .lte("date", endDate ?? dayjs().endOf("week").toISOString());
+    .gte("date", formattedStartDate)
+    .lte("date", formattedEndDate);
 
   if (error) throw new Error(error.message);
   return data;

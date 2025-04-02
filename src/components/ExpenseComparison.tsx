@@ -1,6 +1,7 @@
 import React from 'react'
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, ScrollView } from 'react-native'
 import { ArrowUp, ArrowDown } from 'lucide-react-native'
+import MyIcon from "@/src/utils/Icons.Helper";
 
 type Props = {
     data: {
@@ -9,137 +10,137 @@ type Props = {
         category: string
         group: string
         amount: number
+        categoryIcon?: string
+        groupIcon?: string
       }[]
     }[]
   }
   
   export default function ExpenseComparison({ data }: Props) {
     const groupedData = transformData(data)
-    const dates = [...new Set(data.map(d => d.date))].sort()
+    
+    // Make sure dates are sorted with the most recent (current) date on the right
+    const dates = [...new Set(data.map(d => d.date))];
+    dates.sort((a, b) => {
+      // Parse dates - if they include spaces (month names), use a different format
+      const dateA = new Date(a.includes(' ') ? a : `${a}-01`);
+      const dateB = new Date(b.includes(' ') ? b : `${b}-01`);
+      return dateA.getTime() - dateB.getTime();
+    });
   
-    const renderAmount = (current: number, previous: number) => {
+    const renderAmount = (current: number, previous: number | undefined) => {
       const hasChanged = previous !== undefined
       const hasIncreased = hasChanged && current > previous
       const hasDecreased = hasChanged && current < previous
   
       return (
-        <View style={styles.amountContainer}>
+        <View className="flex-row items-center gap-1">
           <Text
-            style={[
-              styles.amount,
-              hasIncreased && styles.increased,
-              hasDecreased && styles.decreased,
-            ]}
+            className={`tabular-nums ${hasIncreased ? 'text-danger-500' : hasDecreased ? 'text-success-500' : 'text-foreground'}`}
           >
-            ${current.toFixed(2)}
+            ${Math.abs(current).toFixed(2)}
           </Text>
           {hasIncreased && <ArrowUp size={16} color="#ef4444" />}
           {hasDecreased && <ArrowDown size={16} color="#22c55e" />}
         </View>
       )
     }
+
+    // Calculate group totals for each date
+    const groupTotals: Record<string, Record<string, number>> = {}
+    
+    Object.entries(groupedData).forEach(([group, categories]) => {
+      groupTotals[group] = {}
+      
+      dates.forEach(date => {
+        groupTotals[group][date] = Object.values(categories).reduce((sum, dateAmounts) => {
+          return sum + (dateAmounts[date] || 0)
+        }, 0)
+      })
+    })
+    
+    const cellWidth = dates.length > 1 ? 120 : 150;
   
     return (
-      <ScrollView horizontal>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.row}>
-            <Text style={[styles.cell, styles.headerCell]}>Category</Text>
-            {dates.map(date => (
-              <Text key={date} style={[styles.cell, styles.headerCell]}>
-                {date}
-              </Text>
-            ))}
-          </View>
-  
-          {/* Data Rows */}
-          {Object.entries(groupedData).map(([group, categories]) => (
-            <View key={group}>
-              {/* Group Header */}
-              <View style={styles.groupHeader}>
-                <Text style={styles.groupTitle}>{group}</Text>
-              </View>
-  
-              {/* Categories */}
-              {Object.entries(categories).map(([category, dateAmounts], index) => (
-                <View
-                  key={`${group}-${category}`}
-                  style={[styles.row, index % 2 === 0 && styles.alternateRow]}
-                >
-                  <Text style={[styles.cell, styles.categoryCell]}>{category}</Text>
-                  {dates.map((date, dateIndex) => (
-                    <View key={date} style={styles.cell}>
-                      {renderAmount(
-                        dateAmounts[date] || 0,
-                        dateIndex > 0 ? dateAmounts[dates[dateIndex - 1]] : undefined
-                      )}
-                    </View>
-                  ))}
-                </View>
+      <View className="flex-1 w-full items-center justify-center">
+        <ScrollView horizontal className="w-full items-center justify-center" showsHorizontalScrollIndicator={false}>
+          <View className="bg-background">
+            {/* Header */}
+            <View className="flex-row items-center py-3 border-b border-muted">
+              <Text className={`w-[${cellWidth}px] px-2 font-bold text-foreground`}>Category</Text>
+              {dates.map(date => (
+                <Text key={date} className={`w-[${cellWidth}px] px-2 font-bold text-foreground text-center`}>
+                  {date}
+                </Text>
               ))}
             </View>
-          ))}
-        </View>
-      </ScrollView>
+  
+            {/* Data Rows */}
+            {Object.entries(groupedData).map(([group, categories], groupIndex) => {
+              // Extract group icon from the first transaction in this group (if available)
+              const groupInfo = data[0]?.transactions.find(t => t.group === group);
+              const groupIcon = groupInfo?.groupIcon;
+              
+              return (
+                <View key={group}>
+                  {/* Group Header with totals */}
+                  <View className="py-3 px-2 bg-muted">
+                    <View className="flex-row items-center">
+                      <View className={`w-[${cellWidth}px] px-2 flex-row items-center`}>
+                        {groupIcon && <MyIcon name={groupIcon} className="text-foreground mr-2" size={20} />}
+                        <Text className="font-bold text-foreground">{group}</Text>
+                      </View>
+                      {dates.map((date) => {
+                        const amount = groupTotals[group][date];
+                        return (
+                          <View key={date} className={`w-[${cellWidth}px] px-2 items-center`}>
+                            <Text className="font-bold text-foreground">${Math.abs(amount).toFixed(2)}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+  
+                  {/* Categories */}
+                  {Object.entries(categories).map(([category, dateAmounts], index) => {
+                    // Extract category icon from the transaction (if available)
+                    const categoryInfo = data[0]?.transactions.find(t => 
+                      t.group === group && t.category === category
+                    );
+                    const categoryIcon = categoryInfo?.categoryIcon;
+                    
+                    return (
+                      <View
+                        key={`${group}-${category}`}
+                        className={`flex-row items-center py-3 border-b border-muted ${index % 2 === 0 ? 'bg-card/20' : ''}`}
+                      >
+                        <View className={`w-[${cellWidth}px] px-2 flex-row items-center pl-6`}>
+                          {categoryIcon && <MyIcon name={categoryIcon} className="text-foreground mr-2" size={20} />}
+                          <Text className="text-foreground">{category}</Text>
+                        </View>
+                        {dates.map((date) => (
+                          <View key={date} className={`w-[${cellWidth}px] px-2 items-center`}>
+                            <Text className="text-foreground">${Math.abs(dateAmounts[date] || 0).toFixed(2)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
     )
   }
-  
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#1a1a1a',
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: '#333',
-    },
-    alternateRow: {
-      backgroundColor: '#222',
-    },
-    cell: {
-      width: 120,
-      paddingHorizontal: 8,
-    },
-    headerCell: {
-      color: '#fff',
-      fontWeight: 'bold',
-    },
-    categoryCell: {
-      color: '#fff',
-    },
-    groupHeader: {
-      padding: 12,
-      backgroundColor: '#333',
-    },
-    groupTitle: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    amountContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    amount: {
-      color: '#fff',
-      fontVariant: ['tabular-nums'],
-    },
-    increased: {
-      color: '#ef4444',
-    },
-    decreased: {
-      color: '#22c55e',
-    },
-  })
 
   type Transaction = {
     category: string
     group: string
     amount: number
+    categoryIcon?: string
+    groupIcon?: string
   }
   
   type DayTransactions = {
