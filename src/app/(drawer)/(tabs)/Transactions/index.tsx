@@ -22,12 +22,47 @@ export default function Transactions() {
     showSearch,
     setShowSearch,
     setFilters,
+    filters,
     accounts,
     categories,
     params,
     status,
     loadMore,
   } = useTransactions();
+
+  // Handle search submission
+  const handleSearchSubmit = (formValues: any) => {
+    setShowSearch(false);
+    
+    if (formValues) {
+      // Apply filters
+      setFilters(formValues);
+      
+      // Update URL params
+      router.setParams(formValues);
+      
+      // Refresh transactions list with new filters
+      refreshTransactions();
+    } else {
+      // If no values, just close the modal
+      router.replace({ pathname: "/Transactions" });
+    }
+  };
+
+  // Handle search reset
+  const handleSearchReset = () => {
+    // Clear filters
+    setFilters({});
+    
+    // Reset URL params
+    router.replace({ pathname: "/Transactions" });
+    
+    // Close search modal
+    setShowSearch(false);
+    
+    // Refresh the list with cleared filters
+    refreshTransactions();
+  };
 
   if (error) return (
     <View className="flex-1 justify-center items-center">
@@ -51,20 +86,11 @@ export default function Transactions() {
       <TransactionSearchModal
         isOpen={showSearch}
         setIsOpen={setShowSearch}
-        searchParams={params}
+        searchParams={params || filters}
         accounts={accounts ?? []}
         categories={categories ?? []}
-        onSubmit={formValues => {
-          setShowSearch(false);
-          if (formValues) {
-            router.setParams(formValues);
-          } else {
-            router.replace({ pathname: "/Transactions" });
-          }
-        }}
-        onClear={() => {
-          setFilters({});
-        }}
+        onSubmit={handleSearchSubmit}
+        onClear={handleSearchReset}
       />
 
       {isLoading && days.length === 0 ? (

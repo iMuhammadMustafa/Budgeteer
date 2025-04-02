@@ -62,7 +62,6 @@ export default function TransactionSearchModal({
         }}
         onClear={() => {
           onClear();
-          setIsOpen(false);
         }}
       />
     </MyModal>
