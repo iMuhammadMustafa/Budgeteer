@@ -36,9 +36,9 @@ tg.name GroupName,
 t.Type,
 tc.budgetamount GroupBudgetAmount, 
 tc.budgetfrequency GroupBudgetFrequency,
-tc.icon GroupIcon, 
-tc.color GroupColor,
-tc.displayorder GroupDisplayOrder,
+tg.icon GroupIcon, 
+tg.color GroupColor,
+tg.displayorder GroupDisplayOrder,
 tc.name CategoryName, 
 tc.budgetamount CategoryBudgetAmount, 
 tc.budgetfrequency CategoryBudgetFrequency,
@@ -58,9 +58,9 @@ tg.name,
 t.Type,
 tc.budgetamount,
 tc.budgetfrequency,
-tc.icon,
-tc.color,
-tc.displayorder,
+tg.icon,
+tg.color,
+tg.displayorder,
 tc.name,
 tc.budgetamount,
 tc.budgetfrequency,
@@ -121,13 +121,13 @@ SELECT
   t.transferid,
   t.transferaccountid,
 
-
   tc.id AS categoryid,
   tc.name AS categoryname,
   tc.icon,
   
-  -- tg.id AS groupid,
-  -- tg.name AS groupname,
+  tg.id AS groupid,
+  tg.name AS groupname,
+  tg.icon AS groupicon,
 
   a.id AS accountid,
   a.name AS accountname,
@@ -144,6 +144,7 @@ SELECT
   
   FROM transactions t
     JOIN transactioncategories tc ON t.categoryid = tc.id
+    JOIN transactiongroups tg ON tc.groupid = tg.id
     JOIN accounts a ON t.accountid = a.id
     -- JOIN accounts ta ON t.transferaccountid = ta.id
 WHERE t.isdeleted = false AND tc.isdeleted = false AND a.isdeleted = false

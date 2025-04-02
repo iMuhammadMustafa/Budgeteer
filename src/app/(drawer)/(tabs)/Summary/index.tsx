@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { View, Text, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Pressable, Modal } from "react-native";
+import { View, Text, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Pressable, Modal, Switch } from "react-native";
 import dayjs from "dayjs";
 import ExpenseComparison from "@/src/components/ExpenseComparison";
 import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services/repositories/Stats.Repository";
 import { Calendar } from "react-native-calendars";
 import { getStatsMonthlyCategoriesTransactions } from "@/src/services/apis/Stats.api";
+import { LinearGradient } from 'expo-linear-gradient';
 
 type TimePeriod = 'month' | '3months' | 'year' | 'custom';
 
@@ -27,10 +28,66 @@ type CategoryTransaction = {
   sum: number | null;
 };
 
+// Helper function to calculate budget usage percentage
+const calculateBudgetUsagePercentage = (sum: number, budget: number): number => {
+  if (!budget) return 0;
+  const usage = Math.abs(sum) / budget;
+  return Math.min(usage, 1); // Cap at 100%
+};
+
+// Helper function to get gradient colors based on usage
+const getGradientColors = (usage: number): [string, string] => {
+  if (usage <= 0.5) {
+    // Green to Yellow
+    return ['#4CAF50', '#FFC107'];
+  } else {
+    // Yellow to Red
+    return ['#FFC107', '#F44336'];
+  }
+};
+
+// Budget Progress Bar component
+const BudgetProgressBar = ({ 
+  usage, 
+  budget, 
+  spent, 
+  label 
+}: { 
+  usage: number;
+  budget: number;
+  spent: number;
+  label: string;
+}) => {
+  const gradientColors = getGradientColors(usage);
+  
+  return (
+    <View className="mb-2">
+      <View className="flex-row justify-between items-center mb-1">
+        <Text className="text-sm text-foreground">{label}</Text>
+        <Text className="text-sm text-muted-foreground">
+          ${Math.abs(spent).toFixed(2)} / ${budget.toFixed(2)}
+        </Text>
+      </View>
+      <View className="h-2 bg-muted rounded-full overflow-hidden">
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ 
+            width: `${usage * 100}%`, 
+            height: '100%' 
+          }}
+        />
+      </View>
+    </View>
+  );
+};
+
 export default function Summary() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [currentMonth, setCurrentMonth] = useState(dayjs().format("YYYY-MM"));
   const [previousMonth, setPreviousMonth] = useState(dayjs().subtract(1, 'month').format("YYYY-MM"));
+  const [showBudget, setShowBudget] = useState(false);
   
   const [showFirstMonthPicker, setShowFirstMonthPicker] = useState(false);
   const [showSecondMonthPicker, setShowSecondMonthPicker] = useState(false);
@@ -174,7 +231,9 @@ export default function Summary() {
             group: groupName,
             amount: categoryData?.sum || 0,
             categoryIcon: categoryData?.categoryicon || undefined,
-            groupIcon: categoryData?.groupicon || undefined
+            groupIcon: categoryData?.groupicon || undefined,
+            categoryBudget: categoryData?.categorybudgetamount || 0,
+            groupBudget: categoryData?.groupbudgetamount || 0
           };
         }),
       },
@@ -193,13 +252,40 @@ export default function Summary() {
             group: groupName,
             amount: categoryData?.sum || 0,
             categoryIcon: categoryData?.categoryicon || undefined,
-            groupIcon: categoryData?.groupicon || undefined
+            groupIcon: categoryData?.groupicon || undefined,
+            categoryBudget: categoryData?.categorybudgetamount || 0,
+            groupBudget: categoryData?.groupbudgetamount || 0
           };
         }),
       },
     ];
     
     return comparisonData;
+  };
+  
+  // Calculate budget usage for groups and categories
+  const calculateBudgetUsage = (data: CategoryTransaction[]) => {
+    const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
+    const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
+    
+    data.forEach(item => {
+      if (item.groupname && item.groupbudgetamount) {
+        if (!groupBudgets[item.groupname]) {
+          groupBudgets[item.groupname] = { spent: 0, budget: item.groupbudgetamount };
+        }
+        groupBudgets[item.groupname].spent += Math.abs(item.sum || 0);
+      }
+      
+      if (item.categoryname && item.categorybudgetamount) {
+        const key = `${item.groupname}:${item.categoryname}`;
+        categoryBudgets[key] = {
+          spent: Math.abs(item.sum || 0),
+          budget: item.categorybudgetamount
+        };
+      }
+    });
+    
+    return { groupBudgets, categoryBudgets };
   };
   
   // Month selection handlers
@@ -296,6 +382,7 @@ export default function Summary() {
   }
   
   const comparisonData = transformDataForComparison();
+  const { groupBudgets, categoryBudgets } = calculateBudgetUsage(currentMonthRawData);
   
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -303,6 +390,17 @@ export default function Summary() {
       <ScrollView>
         <View className="items-center px-4 py-6">
           <Text className="text-2xl font-bold text-foreground mb-3">Expense Comparison</Text>
+          
+          {/* Budget toggle */}
+          <View className="w-full max-w-lg mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
+            <Text className="text-foreground">Show Budget Usage</Text>
+            <Switch
+              value={showBudget}
+              onValueChange={setShowBudget}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={showBudget ? '#4CAF50' : '#f4f3f4'}
+            />
+          </View>
           
           {/* Time period selector */}
           <View className="w-full max-w-lg mb-3 bg-card/30 rounded-lg p-1">
@@ -353,6 +451,44 @@ export default function Summary() {
           <Text className="text-base text-muted-foreground mb-4 text-center">
             Comparing: {dateRange.previous.label} vs {dateRange.current.label}
           </Text>
+
+          {/* Budget Usage Section */}
+          {showBudget && (
+            <View className="w-full max-w-lg mb-6 bg-card/30 rounded-lg p-4">
+              <Text className="text-lg font-semibold text-foreground mb-4">Budget Usage</Text>
+              
+              {/* Group Budgets */}
+              <View className="mb-4">
+                <Text className="text-base font-medium text-foreground mb-2">Groups</Text>
+                {Object.entries(groupBudgets).map(([groupName, { spent, budget }]) => (
+                  <BudgetProgressBar
+                    key={groupName}
+                    label={groupName}
+                    usage={calculateBudgetUsagePercentage(spent, budget)}
+                    spent={spent}
+                    budget={budget}
+                  />
+                ))}
+              </View>
+              
+              {/* Category Budgets */}
+              <View>
+                <Text className="text-base font-medium text-foreground mb-2">Categories</Text>
+                {Object.entries(categoryBudgets).map(([key, { spent, budget }]) => {
+                  const [groupName, categoryName] = key.split(':');
+                  return (
+                    <BudgetProgressBar
+                      key={key}
+                      label={`${groupName} • ${categoryName}`}
+                      usage={calculateBudgetUsagePercentage(spent, budget)}
+                      spent={spent}
+                      budget={budget}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
         
         {comparisonData.length > 0 ? (

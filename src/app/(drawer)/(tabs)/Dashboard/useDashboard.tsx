@@ -54,13 +54,14 @@ export default function useDashboard() {
   }, [monthlyTransactionsGroupsAndCategories]);
 
   // Function to fetch transactions for a specific date
-  const fetchTransactionsForDate = async (dateString: string): Promise<TransactionsView[]> => {
+  const fetchTransactionsForDate = async (date: string): Promise<TransactionsView[]> => {
     try {
-      const startOfDay = dayjs(dateString).startOf('day').toISOString();
-      const endOfDay = dayjs(dateString).endOf('day').toISOString();
+      // Convert the date to local timezone for the start and end of the day
+      const startOfDay = dayjs(date).startOf('day').toISOString();
+      const endOfDay = dayjs(date).endOf('day').toISOString();
       
       const { data, error } = await supabase
-        .from(ViewNames.TransactionsView)
+        .from('transactionsview')
         .select('*')
         .gte('date', startOfDay)
         .lte('date', endOfDay)
@@ -75,40 +76,37 @@ export default function useDashboard() {
   };
 
   // Function to fetch transactions for a specific category or group
-  const fetchTransactionsForCategory = async (name: string, type: 'category' | 'group'): Promise<TransactionsView[]> => {
+  const fetchTransactionsForCategory = async (categoryId: string, type: 'category' | 'group'): Promise<TransactionsView[]> => {
     try {
+      // Get the start and end of the current month in local timezone
+      const startOfMonth = dayjs().startOf('month').toISOString();
+      const endOfMonth = dayjs().endOf('month').toISOString();
+      
       const { data, error } = await supabase
-        .from(ViewNames.TransactionsView)
+        .from('transactionsview')
         .select('*')
-        .eq(type === 'category' ? 'categoryname' : 'groupname', name)
-        .gte('date', startOfCurrentMonth)
-        .lte('date', endOfCurrentMonth)
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+        .eq(type === 'category' ? 'categoryid' : 'groupid', categoryId)
         .order('date', { ascending: false });
       
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error(`Error fetching transactions for ${type}:`, error);
+      console.error('Error fetching transactions for category:', error);
       return [];
     }
   };
 
   // Function to fetch transactions for a specific month
-  const fetchTransactionsForMonthAndType = async (monthName: string): Promise<TransactionsView[]> => {
+  const fetchTransactionsForMonthAndType = async (month: string): Promise<TransactionsView[]> => {
     try {
-      // Convert month name to month number (e.g., "Jan" -> 0)
-      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthName);
-      if (monthIndex === -1) {
-        throw new Error(`Invalid month name: ${monthName}`);
-      }
-      
-      const year = dayjs().year();
-      
-      const startOfMonth = dayjs().year(year).month(monthIndex).startOf('month').toISOString();
-      const endOfMonth = dayjs().year(year).month(monthIndex).endOf('month').toISOString();
+      // Convert the month to local timezone for the start and end of the month
+      const startOfMonth = dayjs(month).startOf('month').toISOString();
+      const endOfMonth = dayjs(month).endOf('month').toISOString();
       
       const { data, error } = await supabase
-        .from(ViewNames.TransactionsView)
+        .from('transactionsview')
         .select('*')
         .gte('date', startOfMonth)
         .lte('date', endOfMonth)

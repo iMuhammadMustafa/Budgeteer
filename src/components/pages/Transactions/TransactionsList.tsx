@@ -2,7 +2,13 @@ import React from 'react';
 import { View, Text, FlatList, Pressable } from 'react-native';
 import { TransactionsView } from '@/src/types/db/Tables.Types';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import MyIcon from '@/src/utils/Icons.Helper';
+
+// Extend dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 type TransactionsListProps = {
   transactions: TransactionsView[];
@@ -13,6 +19,9 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
   const renderItem = ({ item }: { item: TransactionsView }) => {
     const isExpense = item.type === 'Expense' || (item.amount ?? 0) < 0;
     const amountColor = isExpense ? 'text-danger-500' : 'text-success-500';
+    
+    // Convert the UTC date to local timezone
+    const localDate = dayjs(item.date || new Date()).local();
     
     return (
       <Pressable 
@@ -29,7 +38,7 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
           <View>
             <Text className="text-foreground font-medium">{item.name || 'Unnamed'}</Text>
             <Text className="text-muted-foreground text-sm">
-              {item.categoryname || 'No Category'} • {dayjs(item.date || new Date()).format('MMM D, YYYY')}
+              {item.categoryname || 'No Category'} • {localDate.format('MMM D, YYYY')}
             </Text>
           </View>
         </View>

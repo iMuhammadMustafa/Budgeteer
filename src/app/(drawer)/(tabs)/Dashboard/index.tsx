@@ -8,55 +8,60 @@ import MyPie from "@/src/components/Charts/MyPie";
 import MyCalendar from "@/src/components/Charts/MyCalendar";
 import { PieData, DoubleBarPoint } from "@/src/types/components/Charts.types";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
 
-// Internal TransactionsList component to avoid import issues
-const TransactionsList = ({ 
-  transactions, 
-  onPress 
-}: { 
-  transactions: TransactionsView[];
-  onPress: (transaction: TransactionsView) => void;
-}) => {
-  const renderItem = ({ item }: { item: TransactionsView }) => {
-    const isExpense = item.type === 'Expense' || (item.amount ?? 0) < 0;
-    const amountColor = isExpense ? 'text-danger-500' : 'text-success-500';
-    
-    return (
-      <Pressable 
-        className="flex-row justify-between items-center p-4 border-b border-muted"
-        onPress={() => onPress(item)}
-      >
-        <View className="flex-row items-center gap-3">
-          {item.icon && (
-            <View className="w-8 h-8 rounded-full bg-card/30 items-center justify-center">
-              <MyIcon name={item.icon} className="text-foreground" size={18} />
-            </View>
-          )}
-          
-          <View>
-            <Text className="text-foreground font-medium">{item.name || 'Unnamed'}</Text>
-            <Text className="text-muted-foreground text-sm">
-              {item.categoryname || 'No Category'} • {dayjs(item.date || new Date()).format('MMM D, YYYY')}
-            </Text>
-          </View>
-        </View>
-        
-        <Text className={`tabular-nums font-medium ${amountColor}`}>
-          {isExpense ? '-' : '+'}${Math.abs(item.amount ?? 0).toFixed(2)}
-        </Text>
-      </Pressable>
-    );
-  };
+// Extend dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
+// Internal TransactionsList component to avoid import issues
+const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
   return (
     <FlatList
       data={transactions}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id ?? `transaction-${Math.random()}`}
-      className="bg-background"
-      contentContainerStyle={{ paddingBottom: 20 }}
+      keyExtractor={(item: TransactionsView) => item.id?.toString() || Math.random().toString()}
+      renderItem={({ item }: { item: TransactionsView }) => {
+        const isExpense = item.amount ? item.amount < 0 : false;
+        const localDate = dayjs(item.date || new Date()).local();
+        const iconToUse = item.groupicon || item.icon;
+        
+        return (
+          <Pressable
+            onPress={() => onPress(item)}
+            className="flex-row items-center justify-between p-4 bg-card/30 rounded-lg mb-2"
+          >
+            <View className="flex-row items-center flex-1">
+              {iconToUse && (
+                <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mr-3">
+                  <MyIcon name={iconToUse} size={20} color="#4CAF50" />
+                </View>
+              )}
+              <View className="flex-1">
+                <Text className="text-base text-foreground font-medium">
+                  {item.name || 'Unnamed Transaction'}
+                </Text>
+                <Text className="text-sm text-muted-foreground">
+                  {item.groupname && item.categoryname ? 
+                    `${item.groupname} • ${item.categoryname}` : 
+                    item.categoryname || 'Uncategorized'}
+                </Text>
+              </View>
+            </View>
+            <View className="items-end">
+              <Text className={`text-base font-medium ${isExpense ? 'text-danger-500' : 'text-success-500'}`}>
+                {isExpense ? '-' : '+'}${Math.abs(item.amount || 0).toFixed(2)}
+              </Text>
+              <Text className="text-sm text-muted-foreground">
+                {localDate.format('MMM D, YYYY')}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      }}
+      className="flex-1"
     />
   );
 };
@@ -97,10 +102,12 @@ export default function Dashboard() {
   const handleDayPress = async (day: any) => {
     try {
       setIsLoadingTransactions(true);
-      setSelectedDay(day.dateString);
+      // Convert the selected date to local timezone
+      const localDate = dayjs(day.dateString).local();
+      setSelectedDay(localDate.format('YYYY-MM-DD'));
       setActiveView('calendar');
       
-      const transactions = await fetchTransactionsForDate(day.dateString);
+      const transactions = await fetchTransactionsForDate(localDate.format('YYYY-MM-DD'));
       setSelectedTransactions(transactions);
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
@@ -172,7 +179,7 @@ export default function Dashboard() {
         <View className="p-4 bg-card/20 mb-4 rounded-md">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-foreground">
-              {activeView === 'calendar' ? `Transactions on ${selectedDay}` :
+              {activeView === 'calendar' ? `Transactions on ${dayjs(selectedDay || '').format('MMM D, YYYY')}` :
                activeView === 'pie' ? `${selectedPieSlice?.type === 'category' ? 'Category' : 'Group'}: ${selectedPieSlice?.data.x}` :
                `Month: ${selectedBarData?.x}`}
             </Text>
