@@ -7,8 +7,8 @@ export default function TabsLayout() {
       {DashboardTab}
       {TransactionsTab}
       {AddTransaction}
-      {RemindersTab}
       {SummaryTab}
+      {RemindersTab}
     </Tabs>
   );
 }

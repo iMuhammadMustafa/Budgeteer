@@ -358,7 +358,7 @@ export default function Summary() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <StatusBar barStyle="light-content" />
+        <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text className="mt-4 text-base text-muted">Loading expense data...</Text>
@@ -370,7 +370,7 @@ export default function Summary() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <StatusBar barStyle="light-content" />
+        <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
         <View className="flex-1 justify-center items-center p-5">
           <Text className="text-lg font-bold text-danger-500 mb-2">Failed to load expense data</Text>
           <Text className="text-sm text-muted text-center">
@@ -386,13 +386,13 @@ export default function Summary() {
   
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <StatusBar barStyle="light-content" />
-      <ScrollView>
-        <View className="items-center px-4 py-6">
+      <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="px-2">
+        <View className="items-center py-6">
           <Text className="text-2xl font-bold text-foreground mb-3">Expense Comparison</Text>
           
           {/* Budget toggle */}
-          <View className="w-full max-w-lg mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
+          <View className="w-full mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
             <Text className="text-foreground">Show Budget Usage</Text>
             <Switch
               value={showBudget}
@@ -403,47 +403,47 @@ export default function Summary() {
           </View>
           
           {/* Time period selector */}
-          <View className="w-full max-w-lg mb-3 bg-card/30 rounded-lg p-1">
+          <View className="w-full mb-3 bg-card/30 rounded-lg p-1">
             <View className="flex-row mb-1">
               <Pressable 
                 className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'month' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('month')}>
-                <Text className={`text-sm font-medium ${timePeriod === 'month' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Monthly</Text>
+                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'month' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Monthly</Text>
               </Pressable>
               <Pressable 
                 className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === '3months' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('3months')}>
-                <Text className={`text-sm font-medium ${timePeriod === '3months' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Last 3 Months</Text>
+                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === '3months' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Last 3 Months</Text>
               </Pressable>
             </View>
             <View className="flex-row">
               <Pressable 
                 className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'year' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('year')}>
-                <Text className={`text-sm font-medium ${timePeriod === 'year' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Yearly</Text>
+                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'year' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Yearly</Text>
               </Pressable>
               <Pressable 
                 className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'custom' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('custom')}>
-                <Text className={`text-sm font-medium ${timePeriod === 'custom' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Custom</Text>
+                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'custom' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Custom</Text>
               </Pressable>
             </View>
           </View>
           
           {timePeriod === 'custom' && (
-            <View className="w-full max-w-lg flex-row mb-4 justify-center gap-3">
+            <View className="w-full flex-row mb-4 justify-center gap-2 sm:gap-3">
               <Pressable 
-                className="flex-1 py-2 px-3 bg-card rounded-md border border-muted"
+                className="flex-1 py-2 px-2 sm:px-3 bg-card rounded-md border border-muted"
                 onPress={() => setShowFirstMonthPicker(true)}
               >
-                <Text className="text-center text-foreground">{dayjs(firstSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs sm:text-sm">{dayjs(firstSelectedMonth).format('MMM YYYY')}</Text>
               </Pressable>
               <Text className="text-foreground self-center">vs</Text>
               <Pressable 
-                className="flex-1 py-2 px-3 bg-card rounded-md border border-muted"
+                className="flex-1 py-2 px-2 sm:px-3 bg-card rounded-md border border-muted"
                 onPress={() => setShowSecondMonthPicker(true)}
               >
-                <Text className="text-center text-foreground">{dayjs(secondSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs sm:text-sm">{dayjs(secondSelectedMonth).format('MMM YYYY')}</Text>
               </Pressable>
             </View>
           )}
@@ -454,7 +454,7 @@ export default function Summary() {
 
           {/* Budget Usage Section */}
           {showBudget && (
-            <View className="w-full max-w-lg mb-6 bg-card/30 rounded-lg p-4">
+            <View className="w-full mb-6 bg-card/30 rounded-lg p-4">
               <Text className="text-lg font-semibold text-foreground mb-4">Budget Usage</Text>
               
               {/* Group Budgets */}
@@ -492,7 +492,7 @@ export default function Summary() {
         </View>
         
         {comparisonData.length > 0 ? (
-          <View className="mb-6">
+          <View className="mb-6 w-full">
             <ExpenseComparison data={comparisonData} />
           </View>
         ) : (
