@@ -41,6 +41,17 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [openTransaction]);
 
+  // Add effect to update account balance when open balance changes
+  useEffect(() => {
+    if (openTransaction && openBalance !== null && openTransaction.amount !== openBalance) {
+      const difference = openBalance - openTransaction.amount;
+      setFormData(prevData => ({
+        ...prevData,
+        balance: Number(prevData.balance || 0) + difference
+      }));
+    }
+  }, [openBalance, openTransaction]);
+
   const { mutate } = useUpsertAccount();
   const { mutate: updateOpenBalance } = useUpdateAccountOpenedTransaction();
 
@@ -51,7 +62,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     setIsLoading(true);
     console.log(formData);
 
-    if (openBalance) {
+    if (openTransaction && openBalance !== null) {
       updateOpenBalance({
         id: openTransaction.id,
         amount: openBalance,
@@ -59,12 +70,13 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
 
     mutate(
-      { formAccount: { ...formData, balance: formData.balance }, originalData: account as Account },
+      { formAccount: { ...formData }, originalData: account as Account },
       {
         onSuccess: () => {
           setIsLoading(false);
           console.log({ message: "Account Created Successfully", type: "success" });
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+          queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
           router.navigate("/Accounts");
         },
       },
