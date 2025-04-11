@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { SafeAreaView, ScrollView, Text, View, Pressable, ActivityIndicator, FlatList } from "react-native";
+import { useState, useCallback } from "react";
+import { SafeAreaView, ScrollView, Text, View, Pressable, ActivityIndicator, FlatList, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import useDashboard from "./useDashboard";
 import Bar from "@/src/components/Charts/Bar";
@@ -12,10 +12,19 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
+import { RefreshCcw } from "lucide-react-native";
+import { queryClient } from "@/src/providers/QueryProvider";
+import { ViewNames } from "@/src/types/db/TableNames";
 
 // Extend dayjs with timezone support
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+// Define type for the TransactionsList component props
+type TransactionsListProps = {
+  transactions: TransactionsView[];
+  onPress: (transaction: TransactionsView) => void;
+};
 
 // Internal TransactionsList component to avoid import issues
 const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
@@ -26,7 +35,8 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
       renderItem={({ item }: { item: TransactionsView }) => {
         const isExpense = item.amount ? item.amount < 0 : false;
         const localDate = dayjs(item.date || new Date()).local();
-        const iconToUse = item.groupicon || item.icon;
+        // Use optional chaining to handle potential undefined properties
+        const iconToUse = (item as any).groupicon || item.icon;
         
         return (
           <Pressable
@@ -44,8 +54,8 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
                   {item.name || 'Unnamed Transaction'}
                 </Text>
                 <Text className="text-sm text-muted-foreground">
-                  {item.groupname && item.categoryname ? 
-                    `${item.groupname} • ${item.categoryname}` : 
+                  {(item as any).groupname && item.categoryname ? 
+                    `${(item as any).groupname} • ${item.categoryname}` : 
                     item.categoryname || 'Uncategorized'}
                 </Text>
               </View>
@@ -85,9 +95,41 @@ export default function Dashboard() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedPieSlice, setSelectedPieSlice] = useState<{data: PieData, type: 'category' | 'group'} | null>(null);
   const [selectedBarData, setSelectedBarData] = useState<DoubleBarPoint | null>(null);
-  const [selectedTransactions, setSelectedTransactions] = useState<any[]>([]);
+  const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [activeView, setActiveView] = useState<'calendar' | 'pie' | 'bar' | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Handle refresh function for pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Invalidate all stats queries
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsDailyTransactions] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes] 
+    }).then(() => {
+      setRefreshing(false);
+    });
+  }, []);
+
+  // Function to manually refresh data with the button
+  const handleRefresh = () => {
+    // Invalidate all stats queries
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsDailyTransactions] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes] 
+    });
+  };
 
   if (isWeeklyLoading && isMonthlyLoading && isYearlyLoading) {
     return (
@@ -319,7 +361,28 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView className="w-full h-full m-auto flex-1">
-      <ScrollView className="flex-1 h-full">
+      <View className="flex-row items-center justify-between px-4 py-2 bg-background">
+        <Text className="text-xl font-bold text-foreground">Dashboard</Text>
+        <Pressable 
+          onPress={handleRefresh}
+          className="p-2"
+        >
+          <RefreshCcw size={24} color="#4CAF50" />
+        </Pressable>
+      </View>
+      <ScrollView 
+        className="flex-1 h-full"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4CAF50"]}
+            tintColor="#4CAF50"
+            title="Pull to refresh"
+            titleColor="#4CAF50"
+          />
+        }
+      >
         {activeView ? renderDetailView() : renderDashboardOverview()}
       </ScrollView>
     </SafeAreaView>

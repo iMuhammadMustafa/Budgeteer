@@ -14,6 +14,8 @@
     "build-web": "npx expo export -p web",
     "build-windows": "bun electron-builder/build-windows.js",
     "update-native": "eas update --channel preview --message "
+    "increment-version": "bun scripts/increment-version.js",
+    "update-native": "bun run increment-version && eas update --channel preview --message "
   },
   "jest": {
     "preset": "jest-expo",

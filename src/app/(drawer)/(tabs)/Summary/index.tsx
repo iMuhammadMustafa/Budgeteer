@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
-import { View, Text, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Pressable, Modal, Switch } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Pressable, Modal, Switch, RefreshControl } from "react-native";
 import dayjs from "dayjs";
 import ExpenseComparison from "@/src/components/ExpenseComparison";
 import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services/repositories/Stats.Repository";
 import { Calendar } from "react-native-calendars";
-import { getStatsMonthlyCategoriesTransactions } from "@/src/services/apis/Stats.api";
 import { LinearGradient } from 'expo-linear-gradient';
+import { queryClient } from "@/src/providers/QueryProvider";
+import { ViewNames } from "@/src/types/db/TableNames";
+import { RefreshCcw } from "lucide-react-native";
 
 type TimePeriod = 'month' | '3months' | 'year' | 'custom';
 
@@ -94,12 +96,7 @@ export default function Summary() {
   
   const [firstSelectedMonth, setFirstSelectedMonth] = useState(previousMonth);
   const [secondSelectedMonth, setSecondSelectedMonth] = useState(currentMonth);
-  
-  // State to store raw API data
-  const [currentMonthRawData, setCurrentMonthRawData] = useState<CategoryTransaction[]>([]);
-  const [previousMonthRawData, setPreviousMonthRawData] = useState<CategoryTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Get date ranges based on selected time period
   const getDateRange = () => {
@@ -161,40 +158,60 @@ export default function Summary() {
   
   const dateRange = getDateRange();
   
-  // Fetch data directly from the API when date ranges change
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Fetch data for both periods
-        const currentData = await getStatsMonthlyCategoriesTransactions(
-          dateRange.current.start,
-          dateRange.current.end
-        );
-        
-        const previousData = await getStatsMonthlyCategoriesTransactions(
-          dateRange.previous.start,
-          dateRange.previous.end
-        );
-        
-        setCurrentMonthRawData(currentData);
-        setPreviousMonthRawData(previousData);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch data'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [dateRange.current.start, dateRange.previous.start]);
+  // Use Tanstack Query instead of direct API calls
+  const { 
+    data: currentMonthData, 
+    isLoading: isCurrentLoading, 
+    error: currentError 
+  } = useGetStatsMonthlyCategoriesTransactions(
+    dateRange.current.start,
+    dateRange.current.end
+  );
+  
+  const { 
+    data: previousMonthData, 
+    isLoading: isPreviousLoading, 
+    error: previousError 
+  } = useGetStatsMonthlyCategoriesTransactions(
+    dateRange.previous.start,
+    dateRange.previous.end
+  );
+  
+  const isLoading = isCurrentLoading || isPreviousLoading;
+  const error = currentError || previousError;
+  
+  // Handle refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Invalidate and refetch queries
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    }).then(() => {
+      setRefreshing(false);
+    });
+  }, []);
+  
+  // Function to manually refresh data
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ 
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    });
+  };
   
   // Function to transform data into the required format for ExpenseComparison
   const transformDataForComparison = () => {
-    if (!currentMonthRawData || !previousMonthRawData) return [];
+    // Check if we have the necessary data from both queries
+    if (!currentMonthData || !previousMonthData) return [];
     
+    // Convert the raw data from the queries
+    const currentMonthRawData = Array.isArray(currentMonthData) 
+      ? currentMonthData 
+      : [];
+      
+    const previousMonthRawData = Array.isArray(previousMonthData)
+      ? previousMonthData
+      : [];
+      
     // Get all unique categories from both datasets
     const allCategories = new Set<string>();
     const allGroups = new Set<string>();
@@ -267,6 +284,8 @@ export default function Summary() {
   const calculateBudgetUsage = (data: CategoryTransaction[]) => {
     const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
     const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
+    
+    if (!data) return { groupBudgets, categoryBudgets };
     
     data.forEach(item => {
       if (item.groupname && item.groupbudgetamount) {
@@ -374,12 +393,23 @@ export default function Summary() {
         <View className="flex-1 justify-center items-center p-5">
           <Text className="text-lg font-bold text-danger-500 mb-2">Failed to load expense data</Text>
           <Text className="text-sm text-muted text-center">
-            {error.message}
+            {error instanceof Error ? error.message : 'Unknown error occurred'}
           </Text>
+          <Pressable 
+            onPress={handleRefresh}
+            className="mt-4 bg-primary py-2 px-4 rounded-md"
+          >
+            <Text className="text-white">Try Again</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
   }
+  
+  // Extract raw data from the query results
+  const currentMonthRawData = currentMonthData ? Array.isArray(currentMonthData) 
+    ? currentMonthData 
+    : [] : [];
   
   const comparisonData = transformDataForComparison();
   const { groupBudgets, categoryBudgets } = calculateBudgetUsage(currentMonthRawData);
@@ -387,9 +417,30 @@ export default function Summary() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="px-2">
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }} 
+        className="px-2"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4CAF50"]}
+            tintColor="#4CAF50"
+            title="Pull to refresh"
+            titleColor="#4CAF50"
+          />
+        }
+      >
         <View className="items-center py-6">
-          <Text className="text-2xl font-bold text-foreground mb-3">Expense Comparison</Text>
+          <View className="flex-row items-center justify-between w-full mb-3">
+            <Text className="text-2xl font-bold text-foreground">Expense Comparison</Text>
+            <Pressable 
+              onPress={handleRefresh}
+              className="p-2"
+            >
+              <RefreshCcw size={24} color="#4CAF50" />
+            </Pressable>
+          </View>
           
           {/* Budget toggle */}
           <View className="w-full mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
@@ -406,49 +457,49 @@ export default function Summary() {
           <View className="w-full mb-3 bg-card/30 rounded-lg p-1">
             <View className="flex-row mb-1">
               <Pressable 
-                className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'month' ? 'bg-primary' : ''}`}
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'month' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('month')}>
-                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'month' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Monthly</Text>
+                <Text className={`text-xs font-medium ${timePeriod === 'month' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Monthly</Text>
               </Pressable>
               <Pressable 
-                className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === '3months' ? 'bg-primary' : ''}`}
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === '3months' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('3months')}>
-                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === '3months' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Last 3 Months</Text>
+                <Text className={`text-xs font-medium ${timePeriod === '3months' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>3 Months</Text>
               </Pressable>
             </View>
             <View className="flex-row">
               <Pressable 
-                className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'year' ? 'bg-primary' : ''}`}
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'year' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('year')}>
-                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'year' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Yearly</Text>
+                <Text className={`text-xs font-medium ${timePeriod === 'year' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Yearly</Text>
               </Pressable>
               <Pressable 
-                className={`flex-1 py-2.5 px-1 items-center rounded-md ${timePeriod === 'custom' ? 'bg-primary' : ''}`}
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'custom' ? 'bg-primary' : ''}`}
                 onPress={() => setTimePeriod('custom')}>
-                <Text className={`text-xs sm:text-sm font-medium ${timePeriod === 'custom' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Custom</Text>
+                <Text className={`text-xs font-medium ${timePeriod === 'custom' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Custom</Text>
               </Pressable>
             </View>
           </View>
           
           {timePeriod === 'custom' && (
-            <View className="w-full flex-row mb-4 justify-center gap-2 sm:gap-3">
+            <View className="w-full flex-row mb-4 justify-center gap-2">
               <Pressable 
-                className="flex-1 py-2 px-2 sm:px-3 bg-card rounded-md border border-muted"
+                className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
                 onPress={() => setShowFirstMonthPicker(true)}
               >
-                <Text className="text-center text-foreground text-xs sm:text-sm">{dayjs(firstSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs">{dayjs(firstSelectedMonth).format('MMM YYYY')}</Text>
               </Pressable>
               <Text className="text-foreground self-center">vs</Text>
               <Pressable 
-                className="flex-1 py-2 px-2 sm:px-3 bg-card rounded-md border border-muted"
+                className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
                 onPress={() => setShowSecondMonthPicker(true)}
               >
-                <Text className="text-center text-foreground text-xs sm:text-sm">{dayjs(secondSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs">{dayjs(secondSelectedMonth).format('MMM YYYY')}</Text>
               </Pressable>
             </View>
           )}
           
-          <Text className="text-base text-muted-foreground mb-4 text-center">
+          <Text className="text-sm text-muted-foreground mb-4 text-center">
             Comparing: {dateRange.previous.label} vs {dateRange.current.label}
           </Text>
 
@@ -492,7 +543,7 @@ export default function Summary() {
         </View>
         
         {comparisonData.length > 0 ? (
-          <View className="mb-6 w-full">
+          <View className="mb-6 w-full px-1">
             <ExpenseComparison data={comparisonData} />
           </View>
         ) : (
