@@ -553,6 +553,7 @@ export type Database = {
           categorycolor: string | null
           categorydisplayorder: number | null
           categoryicon: string | null
+          categoryid: string | null
           categoryname: string | null
           date: string | null
           groupbudgetamount: number | null
@@ -560,6 +561,7 @@ export type Database = {
           groupcolor: string | null
           groupdisplayorder: number | null
           groupicon: string | null
+          groupid: string | null
           groupname: string | null
           sum: number | null
           type: Database["public"]["Enums"]["transactiontypes"] | null

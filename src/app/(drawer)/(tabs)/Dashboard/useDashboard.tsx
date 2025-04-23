@@ -4,7 +4,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {
   useGetStatsDailyTransactions,
-  useGetStatsMonthlyCategoriesTransactions,
+  useGetStatsMonthlyCategoriesTransactionsForDashboard,
   useGetStatsYearTransactionsTypes,
 } from "@/src/services/repositories/Stats.Repository";
 import { useGetTransactions } from "@/src/services/repositories/Transactions.Repository";
@@ -29,8 +29,8 @@ export default function useDashboard() {
     endOfCurrentMonth,
     true,
   );
-  const { data: monthlyTransactionsGroupsAndCategories = [], isLoading: isMonthlyLoading } =
-    useGetStatsMonthlyCategoriesTransactions(startOfCurrentMonth, endOfCurrentMonth);
+  const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
+    useGetStatsMonthlyCategoriesTransactionsForDashboard(startOfCurrentMonth, endOfCurrentMonth);
   const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } = useGetStatsYearTransactionsTypes(
     startOfCurrentYear,
     endOfCurrentYear,
@@ -45,12 +45,11 @@ export default function useDashboard() {
   }, [dailyTransactionsThisMonth]);
 
   const monthlyCategories = useMemo(() => {
-    return Array.isArray(monthlyTransactionsGroupsAndCategories)
-      ? []
-      : monthlyTransactionsGroupsAndCategories.categories;
+    return monthlyTransactionsGroupsAndCategories.categories;
   }, [monthlyTransactionsGroupsAndCategories]);
+
   const monthlyGroups = useMemo(() => {
-    return Array.isArray(monthlyTransactionsGroupsAndCategories) ? [] : monthlyTransactionsGroupsAndCategories.groups;
+    return monthlyTransactionsGroupsAndCategories.groups;
   }, [monthlyTransactionsGroupsAndCategories]);
 
   // Function to fetch transactions for a specific date

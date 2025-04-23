@@ -8,6 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { queryClient } from "@/src/providers/QueryProvider";
 import { ViewNames } from "@/src/types/db/TableNames";
 import { RefreshCcw } from "lucide-react-native";
+import { PieData } from "@/src/types/components/Charts.types";
+import { StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
 
 type TimePeriod = 'month' | '3months' | 'year' | 'custom';
 
@@ -158,11 +160,12 @@ export default function Summary() {
   
   const dateRange = getDateRange();
   
-  // Use Tanstack Query instead of direct API calls
+  // Use Tanstack Query with enabled flag to control when queries run
   const { 
     data: currentMonthData, 
-    isLoading: isCurrentLoading, 
-    error: currentError 
+    isLoading: isCurrentLoading,
+    error: currentError,
+    refetch: refetchCurrent
   } = useGetStatsMonthlyCategoriesTransactions(
     dateRange.current.start,
     dateRange.current.end
@@ -170,8 +173,9 @@ export default function Summary() {
   
   const { 
     data: previousMonthData, 
-    isLoading: isPreviousLoading, 
-    error: previousError 
+    isLoading: isPreviousLoading,
+    error: previousError,
+    refetch: refetchPrevious
   } = useGetStatsMonthlyCategoriesTransactions(
     dateRange.previous.start,
     dateRange.previous.end
@@ -183,49 +187,48 @@ export default function Summary() {
   // Handle refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Invalidate and refetch queries
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
-    }).then(() => {
+    Promise.all([
+      refetchCurrent(),
+      refetchPrevious()
+    ]).finally(() => {
       setRefreshing(false);
     });
-  }, []);
+  }, [refetchCurrent, refetchPrevious]);
   
   // Function to manually refresh data
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
-    });
+    refetchCurrent();
+    refetchPrevious();
+  };
+  
+  // Function to load data for a specific period
+  const loadData = async (period: 'current' | 'previous') => {
+    if (period === 'current') {
+      await refetchCurrent();
+    } else {
+      await refetchPrevious();
+    }
   };
   
   // Function to transform data into the required format for ExpenseComparison
   const transformDataForComparison = () => {
-    // Check if we have the necessary data from both queries
-    if (!currentMonthData || !previousMonthData) return [];
+    // Check if we have the necessary data from both periods
+    if (!Array.isArray(currentMonthData) || !Array.isArray(previousMonthData)) return [];
     
-    // Convert the raw data from the queries
-    const currentMonthRawData = Array.isArray(currentMonthData) 
-      ? currentMonthData 
-      : [];
-      
-    const previousMonthRawData = Array.isArray(previousMonthData)
-      ? previousMonthData
-      : [];
-      
     // Get all unique categories from both datasets
     const allCategories = new Set<string>();
     const allGroups = new Set<string>();
     
     // Track categories by their full names to handle potential name conflicts
-    currentMonthRawData.forEach(item => {
-      if (item.categoryname && item.groupname) {
+    currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
+      if (item.groupname && item.categoryname) {
         allCategories.add(`${item.groupname}:${item.categoryname}`);
         allGroups.add(item.groupname);
       }
     });
     
-    previousMonthRawData.forEach(item => {
-      if (item.categoryname && item.groupname) {
+    previousMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
+      if (item.groupname && item.categoryname) {
         allCategories.add(`${item.groupname}:${item.categoryname}`);
         allGroups.add(item.groupname);
       }
@@ -239,18 +242,18 @@ export default function Summary() {
           const [groupName, categoryName] = fullCategory.split(':');
           
           // Find the matching data in the previous month
-          const categoryData = previousMonthRawData.find(item => 
+          const categoryData = previousMonthData.find((item: StatsMonthlyCategoriesTransactions) => 
             item.groupname === groupName && item.categoryname === categoryName
           );
           
           return {
             category: categoryName,
             group: groupName,
-            amount: categoryData?.sum || 0,
+            amount: Math.abs(categoryData?.sum || 0),
             categoryIcon: categoryData?.categoryicon || undefined,
             groupIcon: categoryData?.groupicon || undefined,
-            categoryBudget: categoryData?.categorybudgetamount || 0,
-            groupBudget: categoryData?.groupbudgetamount || 0
+            categoryBudget: categoryData?.categorybudgetamount || undefined,
+            groupBudget: categoryData?.groupbudgetamount || undefined
           };
         }),
       },
@@ -260,18 +263,18 @@ export default function Summary() {
           const [groupName, categoryName] = fullCategory.split(':');
           
           // Find the matching data in the current month
-          const categoryData = currentMonthRawData.find(item => 
+          const categoryData = currentMonthData.find((item: StatsMonthlyCategoriesTransactions) => 
             item.groupname === groupName && item.categoryname === categoryName
           );
           
           return {
             category: categoryName,
             group: groupName,
-            amount: categoryData?.sum || 0,
+            amount: Math.abs(categoryData?.sum || 0),
             categoryIcon: categoryData?.categoryicon || undefined,
             groupIcon: categoryData?.groupicon || undefined,
-            categoryBudget: categoryData?.categorybudgetamount || 0,
-            groupBudget: categoryData?.groupbudgetamount || 0
+            categoryBudget: categoryData?.categorybudgetamount || undefined,
+            groupBudget: categoryData?.groupbudgetamount || undefined
           };
         }),
       },
@@ -281,25 +284,29 @@ export default function Summary() {
   };
   
   // Calculate budget usage for groups and categories
-  const calculateBudgetUsage = (data: CategoryTransaction[]) => {
+  const calculateBudgetUsage = () => {
     const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
     const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
     
-    if (!data) return { groupBudgets, categoryBudgets };
+    if (!Array.isArray(currentMonthData)) return { groupBudgets, categoryBudgets };
     
-    data.forEach(item => {
-      if (item.groupname && item.groupbudgetamount) {
+    // Process categories data
+    currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
+      if (item.groupname && item.categoryname) {
+        // Add to group totals
         if (!groupBudgets[item.groupname]) {
-          groupBudgets[item.groupname] = { spent: 0, budget: item.groupbudgetamount };
+          groupBudgets[item.groupname] = { 
+            spent: 0, 
+            budget: item.groupbudgetamount || 0 
+          };
         }
         groupBudgets[item.groupname].spent += Math.abs(item.sum || 0);
-      }
-      
-      if (item.categoryname && item.categorybudgetamount) {
+        
+        // Add to category totals
         const key = `${item.groupname}:${item.categoryname}`;
         categoryBudgets[key] = {
           spent: Math.abs(item.sum || 0),
-          budget: item.categorybudgetamount
+          budget: item.categorybudgetamount || 0
         };
       }
     });
@@ -406,13 +413,8 @@ export default function Summary() {
     );
   }
   
-  // Extract raw data from the query results
-  const currentMonthRawData = currentMonthData ? Array.isArray(currentMonthData) 
-    ? currentMonthData 
-    : [] : [];
-  
   const comparisonData = transformDataForComparison();
-  const { groupBudgets, categoryBudgets } = calculateBudgetUsage(currentMonthRawData);
+  const { groupBudgets, categoryBudgets } = calculateBudgetUsage();
   
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -503,6 +505,22 @@ export default function Summary() {
             Comparing: {dateRange.previous.label} vs {dateRange.current.label}
           </Text>
 
+          {/* Load Data Buttons */}
+          <View className="w-full flex-row gap-2 mb-4">
+            <Pressable 
+              className="flex-1 py-2 px-4 bg-primary rounded-md"
+              onPress={() => loadData('previous')}
+            >
+              <Text className="text-white text-center">Load {dateRange.previous.label}</Text>
+            </Pressable>
+            <Pressable 
+              className="flex-1 py-2 px-4 bg-primary rounded-md"
+              onPress={() => loadData('current')}
+            >
+              <Text className="text-white text-center">Load {dateRange.current.label}</Text>
+            </Pressable>
+          </View>
+
           {/* Budget Usage Section */}
           {showBudget && (
             <View className="w-full mb-6 bg-card/30 rounded-lg p-4">
@@ -540,17 +558,19 @@ export default function Summary() {
               </View>
             </View>
           )}
+
+          {comparisonData.length > 0 ? (
+            <View className="w-full items-center mb-6">
+              <View className="w-full max-w-2xl">
+                <ExpenseComparison data={comparisonData} />
+              </View>
+            </View>
+          ) : (
+            <View className="justify-center items-center p-5">
+              <Text className="text-base text-muted-foreground text-center">No transaction data available for comparison</Text>
+            </View>
+          )}
         </View>
-        
-        {comparisonData.length > 0 ? (
-          <View className="mb-6 w-full px-1">
-            <ExpenseComparison data={comparisonData} />
-          </View>
-        ) : (
-          <View className="justify-center items-center p-5">
-            <Text className="text-base text-muted-foreground text-center">No transaction data available for comparison</Text>
-          </View>
-        )}
       </ScrollView>
       
       {/* Month picker modals */}

@@ -32,6 +32,8 @@ date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoker)
 AS
 SELECT 
+tg.id as groupid,
+tc.id as categoryid,
 tg.name GroupName,
 t.Type,
 tc.budgetamount GroupBudgetAmount, 
@@ -54,6 +56,8 @@ LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
 LEFT JOIN transactions t ON tc.id = t.categoryid
 
 GROUP BY
+tg.id,
+tc.id,
 tg.name,
 t.Type,
 tc.budgetamount,

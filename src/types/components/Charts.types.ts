@@ -27,6 +27,7 @@ export type DoubleBarPoint = {
 };
 
 export type PieData = {
+  id: string;
   x: string;
   y: number;
 };

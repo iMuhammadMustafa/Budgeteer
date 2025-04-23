@@ -39,7 +39,18 @@ export const getStatsMonthlyCategoriesTransactions = async (startDate?: string, 
     
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyCategoriesTransactions)
-    .select()
+    .select(`
+      groupid,
+      categoryid,
+      groupname,
+      categoryname,
+      sum,
+      type,
+      groupicon,
+      categoryicon,
+      groupbudgetamount,
+      categorybudgetamount
+    `)
     .in("type", ["Expense", "Adjustment"])
     .gte("date", formattedStartDate)
     .lte("date", formattedEndDate);

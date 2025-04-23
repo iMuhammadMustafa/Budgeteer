@@ -166,7 +166,7 @@ export default function Dashboard() {
       setSelectedPieSlice({ data: item, type });
       setActiveView('pie');
       
-      const transactions = await fetchTransactionsForCategory(item.x, type);
+      const transactions = await fetchTransactionsForCategory(item.id, type);
       setSelectedTransactions(transactions);
     } catch (error) {
       console.error("Error fetching transactions for category:", error);

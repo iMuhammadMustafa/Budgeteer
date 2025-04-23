@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ViewNames } from "@/src/types/db/TableNames";
-import { StatsMonthlyAccountsTransactions } from "@/src/types/db/Tables.Types";
+import { StatsMonthlyAccountsTransactions, StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
 import {
   getStatsDailyTransactions,
   getStatsMonthlyAccountsTransactions,
@@ -146,48 +146,65 @@ items =
 };
 
 export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
-  return useQuery<{
-    groups: PieData[];
-    categories: PieData[];
-  }>({
+  return useQuery<StatsMonthlyCategoriesTransactions[]>({
     queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate],
-    queryFn: async () => getStatsMonthlyCategoriesTransactionsHelper(startDate, endDate),
+    queryFn: async () => getStatsMonthlyCategoriesTransactions(startDate, endDate),
   });
 };
-const getStatsMonthlyCategoriesTransactionsHelper = async (
+
+export const useGetStatsMonthlyCategoriesTransactionsForDashboard = (startDate: string, endDate: string) => {
+  return useQuery<{
+    groups: (PieData & { id: string })[];
+    categories: (PieData & { id: string })[];
+  }>({
+    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, 'dashboard'],
+    queryFn: async () => getStatsMonthlyCategoriesTransactionsDashboardHelper(startDate, endDate),
+  });
+};
+
+const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
   startDate: string,
   endDate: string,
 ): Promise<{
-  groups: PieData[];
-  categories: PieData[];
+  groups: (PieData & { id: string })[];
+  categories: (PieData & { id: string })[];
 }> => {
   const data = await getStatsMonthlyCategoriesTransactions(startDate, endDate);
 
-  const groupMap = new Map<string, number>();
-  const categoryMap = new Map<string, number>();
+  // Group data by IDs
+  const groupsMap = new Map<string, { sum: number; name: string }>();
+  const categoriesMap = new Map<string, { sum: number; name: string }>();
 
-  data.forEach(item => {
-    const group = item.groupname ?? "Unknown";
-    const category = item.categoryname ?? "Unknown";
-    const groupSum = groupMap.get(group) ?? 0;
-    const categorySum = categoryMap.get(category) ?? 0;
-    groupMap.set(group, groupSum + Math.abs(item.sum ?? 0));
-    categoryMap.set(category, categorySum + Math.abs(item.sum ?? 0));
+  data.forEach((item) => {
+    if (item.groupid && item.sum && item.groupname) {
+      const currentData = groupsMap.get(item.groupid) || { sum: 0, name: item.groupname };
+      groupsMap.set(item.groupid, {
+        sum: currentData.sum + Math.abs(item.sum),
+        name: item.groupname
+      });
+    }
+
+    if (item.categoryid && item.sum && item.groupname && item.categoryname) {
+      const currentData = categoriesMap.get(item.categoryid) || { sum: 0, name: `${item.groupname}:${item.categoryname}` };
+      categoriesMap.set(item.categoryid, {
+        sum: currentData.sum + Math.abs(item.sum),
+        name: `${item.categoryname}`
+      });
+    }
   });
 
-  const groups: PieData[] = Array.from(groupMap.entries()).map(([x, y]) => {
-    return {
-      x,
-      y,
-    };
-  });
+  // Convert maps to arrays of PieData with IDs
+  const groups = Array.from(groupsMap.entries()).map(([id, data]) => ({
+    x: data.name,
+    y: data.sum,
+    id: id
+  }));
 
-  const categories: PieData[] = Array.from(categoryMap.entries()).map(([x, y]) => {
-    return {
-      x,
-      y,
-    };
-  });
+  const categories = Array.from(categoriesMap.entries()).map(([id, data]) => ({
+    x: data.name,
+    y: data.sum,
+    id: id
+  }));
 
   return { groups, categories };
 };
