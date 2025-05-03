@@ -43,7 +43,7 @@ export const initialTransactionState: TransactionFormType = {
   name: "",
   payee: "",
   description: "",
-  date: dayjs().local().toISOString(),
+  date: dayjs().local().format("YYYY-MM-DDTHH:mm:ss"),
   amount: 0,
   type: "Expense",
 
@@ -123,7 +123,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           label="Date"
           date={dayjs(formData.date)}
           onChange={params => {
-            const formatedDate = dayjs(params.date).local().toISOString();
+            const formatedDate = dayjs(params.date).local().format("YYYY-MM-DDTHH:mm:ss");
             handleTextChange("date", formatedDate);
           }}
         />
@@ -329,7 +329,7 @@ const useTransactionForm = ({ transaction }: any) => {
   };
 
   const handleOnMoreSubmit = () => {
-    const updatedDate = dayjs(formData.date).local().add(1, "second").toISOString();
+    const updatedDate = dayjs(formData.date).local().add(1, "second").format("YYYY-MM-DDTHH:mm:ss");
 
     const newItem: TransactionFormType = {
       ...initialTransactionState,
@@ -338,7 +338,7 @@ const useTransactionForm = ({ transaction }: any) => {
       type: formData.type,
       categoryid: formData.categoryid,
       accountid: formData.accountid,
-      createdat: dayjs().local().toISOString(),
+      createdat: dayjs().local().format("YYYY-MM-DDTHH:mm:ssZ"),
       transferid: undefined,
     };
     handleMutate(newItem);

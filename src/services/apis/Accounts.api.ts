@@ -1,4 +1,5 @@
 import { FunctionNames, TableNames } from "@/src/types/db/TableNames";
+import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
@@ -52,7 +53,7 @@ export const deleteAccount = async (id: string, userId?: string) => {
     .update({
       isdeleted: true,
       updatedby: userId ?? undefined,
-      updatedat: new Date().toISOString(),
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     })
     .eq("id", id)
     .select()
@@ -63,7 +64,7 @@ export const deleteAccount = async (id: string, userId?: string) => {
 export const restoreAccount = async (id: string, userId?: string) => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
-    .update({ isdeleted: false, updatedby: userId ?? undefined, updatedat: new Date().toISOString() })
+    .update({ isdeleted: false, updatedby: userId ?? undefined, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
     .eq("id", id)
     .select()
     .single();

@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import {
@@ -125,7 +126,7 @@ const createTransactionGroupHelper = async (
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formTransactionGroup.createdat = new Date().toISOString();
+  formTransactionGroup.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formTransactionGroup.createdby = userId;
   formTransactionGroup.tenantid = tenantid;
 
@@ -141,7 +142,7 @@ const updateTransactionGroupHelper = async (
   let userId = session.user.id;
 
   formTransactionGroup.updatedby = userId;
-  formTransactionGroup.updatedat = new Date().toISOString();
+  formTransactionGroup.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
   const updatedTransactionGroup = await updateTransactionGroup(formTransactionGroup);
 

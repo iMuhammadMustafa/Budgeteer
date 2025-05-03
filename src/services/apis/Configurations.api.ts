@@ -1,4 +1,5 @@
 import { TableNames } from "@/src/types/db/TableNames";
+import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
@@ -56,7 +57,7 @@ export const deleteConfiguration = async (id: string, userId: string) => {
     .update({
       isdeleted: true,
       updatedby: userId,
-      updatedat: new Date().toISOString(),
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     })
     .eq("id", id)
     .select()
@@ -67,7 +68,7 @@ export const deleteConfiguration = async (id: string, userId: string) => {
 export const restoreConfiguration = async (id: string, userId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Configurations)
-    .update({ isdeleted: false, updatedby: userId, updatedat: new Date().toISOString() })
+    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
     .eq("id", id)
     .select()
     .single();

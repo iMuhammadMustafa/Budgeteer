@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import {
@@ -126,7 +127,7 @@ const createAccountCategoryHelper = async (
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formAccountCategory.createdat = new Date().toISOString();
+  formAccountCategory.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formAccountCategory.createdby = userId;
   formAccountCategory.tenantid = tenantid;
 
@@ -142,7 +143,7 @@ const updateAccountCategoryHelper = async (
   let userId = session.user.id;
 
   formAccountCategory.updatedby = userId;
-  formAccountCategory.updatedat = new Date().toISOString();
+  formAccountCategory.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
   const updatedAccountCategory = await updateAccountCategory(formAccountCategory);
 

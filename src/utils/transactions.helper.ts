@@ -53,7 +53,7 @@ export const duplicateTransaction = (item: TransactionsView) => {
     type: item.type!,
 
     name: item.name as string,
-    date: new Date().toISOString(),
+    date: dayjs().format("YYYY-MM-DDTHH:mm:ss"),
     payee: item.payee,
     // description: "Duplicated Transaction",
     // notes: item.notes as string,
@@ -63,7 +63,7 @@ export const duplicateTransaction = (item: TransactionsView) => {
     accountid: item.accountid!,
     categoryid: item.categoryid!,
 
-    createdat: new Date().toISOString(),
+    createdat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     isdeleted: false,
     // tenantid: item.tenantid as string,
     // transferaccountid: item.transferaccountid

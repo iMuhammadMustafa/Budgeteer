@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { TransactionCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import {
@@ -125,7 +126,7 @@ const createTransactionCategoryHelper = async (
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formTransactionCategory.createdat = new Date().toISOString();
+  formTransactionCategory.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formTransactionCategory.createdby = userId;
   formTransactionCategory.tenantid = tenantid;
 
@@ -141,7 +142,7 @@ const updateTransactionCategoryHelper = async (
   let userId = session.user.id;
 
   formTransactionCategory.updatedby = userId;
-  formTransactionCategory.updatedat = new Date().toISOString();
+  formTransactionCategory.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
   const updatedTransactionCategory = await updateTransactionCategory(formTransactionCategory);
 

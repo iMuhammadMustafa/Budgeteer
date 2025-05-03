@@ -1,4 +1,5 @@
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
+import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
@@ -165,7 +166,7 @@ export const deleteTransaction = async (id: string, userId: string) => {
     .update({
       isdeleted: true,
       updatedby: userId,
-      updatedat: new Date().toISOString(),
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     })
     .eq("id", id)
     .select()
@@ -179,7 +180,7 @@ export const restoreTransaction = async (id: string, userId: string) => {
     .update({
       isdeleted: false,
       updatedby: userId,
-      updatedat: new Date().toISOString(),
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     })
     .eq("id", id);
   if (error) throw error;

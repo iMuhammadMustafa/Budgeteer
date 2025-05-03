@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Configuration, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import {
@@ -122,7 +123,7 @@ const createConfigurationHelper = async (formConfiguration: Inserts<TableNames.C
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formConfiguration.createdat = new Date().toISOString();
+  formConfiguration.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formConfiguration.createdby = userId;
   formConfiguration.tenantid = tenantid;
 
@@ -135,7 +136,7 @@ const updateConfigurationHelper = async (formConfiguration: Updates<TableNames.C
   let userId = session.user.id;
 
   formConfiguration.updatedby = userId;
-  formConfiguration.updatedat = new Date().toISOString();
+  formConfiguration.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
   const updatedConfiguration = await updateConfiguration(formConfiguration);
 

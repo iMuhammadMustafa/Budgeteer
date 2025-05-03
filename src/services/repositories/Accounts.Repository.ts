@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import {
@@ -137,7 +138,7 @@ export const useUpdateAccountOpenedTransaction = () => {
         id: id,
         amount: amount,
         updatedby: userId,
-        updatedat: new Date().toISOString(),
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       };
       return await updateTransaction(transaction);
     },
@@ -152,7 +153,7 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formAccount.createdat = new Date().toISOString();
+  formAccount.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formAccount.createdby = userId;
   formAccount.tenantid = tenantid;
 
@@ -174,9 +175,9 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
       categoryid: config.value,
       type: "Initial",
       createdby: userId,
-      createdat: new Date().toISOString(),
+      createdat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       tenantid: tenantid,
-      date: new Date().toISOString(),
+      date: dayjs().format("YYYY-MM-DDTHH:mm:ss"),
     });
   }
 
@@ -188,7 +189,7 @@ const updateAccountHelper = async (formData: Updates<TableNames.Accounts>, sessi
   let tenantid = session.user.user_metadata.tenantid;
 
   formData.updatedby = userId;
-  formData.updatedat = new Date().toISOString();
+  formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
   const isUnchanged = Object.keys(formData).every(key => {
     if (key in formData && key in originalData) {
@@ -219,7 +220,7 @@ const updateAccountHelper = async (formData: Updates<TableNames.Accounts>, sessi
       type: "Adjustment",
       createdby: userId,
       tenantid: tenantid,
-      date: new Date().toISOString(),
+      date: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     });
   }
 
