@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, SafeAreaView, ScrollView, View } from "react-native";
+import { Platform, SafeAreaView, ScrollView, View, Switch, Text } from "react-native";
 import { router } from "expo-router";
 
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
@@ -23,6 +23,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   // const [isOpen, setIsOpen] = useState(false);
   const { data: openTransaction } = useGetAccountOpenedTransaction(account.id);
   const [openBalance, setOpenBalance] = useState<number | null>(null);
+  const [addAdjustmentTransaction, setAddAdjustmentTransaction] = useState(true);
 
   const isValid: boolean =
     !isLoading &&
@@ -47,7 +48,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
       const difference = openBalance - openTransaction.amount;
       setFormData(prevData => ({
         ...prevData,
-        balance: Number(prevData.balance || 0) + difference
+        balance: Number(prevData.balance || 0) + difference,
       }));
     }
   }, [openBalance, openTransaction]);
@@ -62,7 +63,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     setIsLoading(true);
     console.log(formData);
 
-    if (openTransaction && openBalance !== null) {
+    if (openTransaction && openBalance !== null && addAdjustmentTransaction) {
       updateOpenBalance({
         id: openTransaction.id,
         amount: openBalance,
@@ -126,12 +127,20 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           value={formData.currency}
           onChange={currency => handleFieldChange("currency", currency)}
         />
-        <TextInputField
-          label="Balance"
-          value={formData.balance?.toString()}
-          onChange={balance => handleFieldChange("balance", balance)}
-          keyboardType="numeric"
-        />
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flex: 1 }}>
+            <TextInputField
+              label="Balance"
+              value={formData.balance?.toString()}
+              onChange={balance => handleFieldChange("balance", balance)}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
+            <Switch value={addAdjustmentTransaction} onValueChange={setAddAdjustmentTransaction} />
+            <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
+          </View>
+        </View>
         {openTransaction && (
           <TextInputField
             label="Open Balance"
