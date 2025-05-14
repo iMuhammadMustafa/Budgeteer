@@ -3,13 +3,13 @@ import { View, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 import { DoubleBarPoint } from "@/src/types/components/Charts.types";
 
-export default function NetEarningsChart({ 
-  data, 
-  label, 
+export default function NetEarningsChart({
+  data,
+  label,
   onBarPress,
-  highlightedBar
-}: { 
-  data: DoubleBarPoint[]; 
+  highlightedBar,
+}: {
+  data: DoubleBarPoint[];
   label: string;
   onBarPress?: (item: DoubleBarPoint) => void;
   highlightedBar?: string;
@@ -18,7 +18,7 @@ export default function NetEarningsChart({
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth * 0.75;
 
-  const barWidth = 20; // A reasonable bar width
+  const barWidth = 10; // A reasonable bar width
   const spaceBetweenBars = (chartWidth - 30) / (data.length * 3); // Adjust the space based on the number of bars
   const offset = spaceBetweenBars - barWidth / 2;
 
@@ -78,7 +78,7 @@ export default function NetEarningsChart({
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
                     setSelectedSlice(newSelectedSlice);
-                    
+
                     // Call the onBarPress callback if provided
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);
@@ -124,7 +124,7 @@ export default function NetEarningsChart({
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
                     setSelectedSlice(newSelectedSlice);
-                    
+
                     // Call the onBarPress callback if provided
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);

@@ -75,12 +75,14 @@ export const useUpsertAccount = () => {
     mutationFn: async ({
       formAccount,
       originalData,
+      addAdjustmentTransaction = false,
     }: {
       formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
       originalData?: Account;
+      addAdjustmentTransaction?: boolean;
     }) => {
       if (formAccount.id && originalData) {
-        return await updateAccountHelper(formAccount, session, originalData);
+        return await updateAccountHelper(formAccount, session, originalData, addAdjustmentTransaction);
       }
       return await createAccountHelper(formAccount as Inserts<TableNames.Accounts>, session);
     },
@@ -184,7 +186,12 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
   return newAcc;
 };
 
-const updateAccountHelper = async (formData: Updates<TableNames.Accounts>, session: Session, originalData: Account) => {
+const updateAccountHelper = async (
+  formData: Updates<TableNames.Accounts>,
+  session: Session,
+  originalData: Account,
+  addAdjustmentTransaction = false,
+) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
@@ -201,7 +208,7 @@ const updateAccountHelper = async (formData: Updates<TableNames.Accounts>, sessi
 
   const updatedAccount = await updateAccount(formData);
 
-  if (formData.balance && formData.balance !== originalData.balance) {
+  if (formData.balance && formData.balance !== originalData.balance && addAdjustmentTransaction) {
     const config = await getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,

@@ -53,7 +53,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [openBalance, openTransaction]);
 
-  const { mutate } = useUpsertAccount();
+  const { mutate: updateAccount } = useUpsertAccount();
   const { mutate: updateOpenBalance } = useUpdateAccountOpenedTransaction();
 
   const handleFieldChange = (field: string, value: any) => {
@@ -61,21 +61,19 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   };
   const handleSubmit = () => {
     setIsLoading(true);
-    console.log(formData);
 
-    if (openTransaction && openBalance !== null && addAdjustmentTransaction) {
+    if (openTransaction && openBalance !== null) {
       updateOpenBalance({
         id: openTransaction.id,
         amount: openBalance,
       });
     }
 
-    mutate(
-      { formAccount: { ...formData }, originalData: account as Account },
+    updateAccount(
+      { formAccount: { ...formData }, originalData: account as Account, addAdjustmentTransaction },
       {
         onSuccess: () => {
           setIsLoading(false);
-          console.log({ message: "Account Created Successfully", type: "success" });
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
           router.navigate("/Accounts");
