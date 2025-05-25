@@ -18,6 +18,7 @@ export function Tab({
   upsertUrl,
   refreshOnPull = true,
   selectable = false,
+  groupedBy,
   customDetails,
 }: TabProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -25,6 +26,11 @@ export function Tab({
 
   const { data, isLoading, error } = useGet();
   const { mutate } = useDelete();
+
+  const getNestedValue = (obj: any, path: string) => {
+    if (!path) return undefined;
+    return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+  };
 
   if (isLoading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;
@@ -53,6 +59,8 @@ export function Tab({
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
 
+  console.log("Data: ", data);
+
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />
@@ -60,22 +68,53 @@ export function Tab({
         className="flex-1"
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />}
       >
-        {data?.map((item: any) => {
-          return (
-            <ListItem
-              key={item.id}
-              id={item.id}
-              onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
-              onPress={() => handlePress(item.id)}
-              name={item.name}
-              details={customDetails ? customDetails(item) : item.details}
-              icon={item.icon}
-              iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type).color}
-              isSelected={selectedIds.includes(item.id)}
-            />
-          );
-        })}
+        {groupedBy && data
+          ? (
+              Object.entries(
+                (data as any[]).reduce(
+                  (acc: Record<string, any[]>, item: any) => {
+                    const groupValue = getNestedValue(item, groupedBy) || "Uncategorized";
+                    (acc[groupValue] = acc[groupValue] || []).push(item);
+                    return acc;
+                  },
+                  {} as Record<string, any[]>,
+                ),
+              ) as Array<[string, any[]]>
+            ).map(([groupName, itemsInGroup]) => (
+              <View key={groupName}>
+                <Text className="font-bold text-lg p-2 px-4 bg-card text-foreground">{groupName}</Text>
+                {itemsInGroup.map((item: any) => (
+                  <ListItem
+                    key={item.id}
+                    id={item.id}
+                    onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
+                    onPress={() => handlePress(item.id)}
+                    name={item.name}
+                    details={customDetails ? customDetails(item) : item.details}
+                    icon={item.icon}
+                    iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type)?.color}
+                    isSelected={selectedIds.includes(item.id)}
+                  />
+                ))}
+              </View>
+            ))
+          : data?.map((item: any) => {
+              return (
+                <ListItem
+                  key={item.id}
+                  id={item.id}
+                  onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
+                  onPress={() => handlePress(item.id)}
+                  name={item.name}
+                  details={customDetails ? customDetails(item) : item.details}
+                  icon={item.icon}
+                  iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type)?.color}
+                  isSelected={selectedIds.includes(item.id)}
+                />
+              );
+            })}
       </ScrollView>
+
       {isSelectionMode && (
         <Pressable
           className="absolute right-4 bottom-4 w-14 h-14 rounded-full bg-red-500 justify-center items-center"
@@ -168,6 +207,7 @@ function ListItem({
         <Text className="text-md text-foreground">{name}</Text>
         <Text className="text-md text-foreground">{details}</Text>
       </View>
+      <MyIcon name="ChevronRight" size={20} className="text-gray-400 dark:text-gray-500" />
     </Pressable>
   );
 }
@@ -185,6 +225,7 @@ type TabProps = {
   refreshOnPull?: boolean;
   customMapping?: any;
   customDetails?: (item: any) => string;
+  groupedBy?: string;
 };
 
 type TabItemType = {

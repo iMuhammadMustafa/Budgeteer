@@ -60,6 +60,7 @@ const FirstRoute = () => (
     useGet={useGetTransactionCategories}
     useDelete={useDeleteTransactionCategory}
     upsertUrl={"/Categories/Upsert?categoryId="}
+    groupedBy="group.name"
   />
 );
 

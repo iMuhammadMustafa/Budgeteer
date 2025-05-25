@@ -70,6 +70,7 @@ const AccountsRoute = () => (
     }
     useDelete={useDeleteAccount}
     upsertUrl={"/Accounts/Upsert?accountId="}
+    groupedBy={"category.name"}
   />
 );
 
