@@ -63,3 +63,8 @@ export type MyCalendarProps = {
 export type MyCalendarData = {
   [day: string]: CalendarDayProp;
 };
+
+export type LineChartPoint = {
+  x: string; // Typically a date or category label
+  y: number; // The value for that point
+};

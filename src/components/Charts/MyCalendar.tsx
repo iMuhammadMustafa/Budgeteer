@@ -2,12 +2,13 @@ import { Text, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { MyCalendarProps } from "@/src/types/components/Charts.types";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import { useMemo } from "react";
 
 export default function MyCalendar({ data, label, onDayPress, selectedDate }: MyCalendarProps) {
-  const theme = useTheme();
+  const themeContext = useTheme();
 
-  const foreground = theme.isDarkMode ? "white" : "black";
-  
+  const textColor = themeContext.isDarkMode ? "white" : "black";
+
   // Combine markedDates with the selectedDate highlighted
   const markedDates = { ...data };
   if (selectedDate) {
@@ -15,9 +16,23 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate }: My
     markedDates[selectedDate] = {
       ...(markedDates[selectedDate] || {}),
       selected: true,
-      selectedColor: '#0000ff', // Blue color for selection
+      selectedColor: "#0000ff", // Blue color for selection
     };
   }
+
+  // Memoize the theme object for the Calendar
+  const calendarTheme = useMemo(() => {
+    return {
+      textSectionTitleColor: textColor,
+      textSectionTitleDisabledColor: "grey",
+      dayTextColor: textColor,
+      textDisabledColor: "grey",
+      textInactiveColor: "grey",
+      backgroundColor: "transparent",
+      calendarBackground: "transparent",
+      monthTextColor: textColor,
+    };
+  }, [textColor]);
 
   return (
     <View className="p-4 m-auto bg-card my-2 rounded-md border border-muted">
@@ -30,16 +45,7 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate }: My
         hideExtraDays={true}
         firstDay={1}
         onDayPress={onDayPress}
-        theme={{
-          textSectionTitleColor: foreground,
-          textSectionTitleDisabledColor: "grey",
-          dayTextColor: foreground,
-          textDisabledColor: "grey",
-          textInactiveColor: "grey",
-          backgroundColor: "transparent",
-          calendarBackground: "transparent",
-          monthTextColor: foreground,
-        }}
+        theme={calendarTheme}
       />
     </View>
   );
