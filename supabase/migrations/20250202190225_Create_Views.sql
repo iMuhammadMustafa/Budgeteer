@@ -28,7 +28,6 @@ date_trunc('month', COALESCE(date::timestamp, NOW()))::date
 ORDER BY
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 
-
 CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoker)
 AS
 SELECT 
@@ -76,7 +75,6 @@ date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
 ORDER BY
 date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz;
 
-
 CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
 AS
 SELECT 
@@ -87,7 +85,6 @@ FROM transactions t
 GROUP BY 
 t.type, 
 date_trunc('day', t.date)::date;
-
 
 CREATE OR REPLACE VIEW Search_DistinctTransactions WITH (security_invoker)
 AS 
@@ -105,9 +102,6 @@ AS
    FROM transactions
   WHERE (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
   ORDER BY transactions.name, transactions.date DESC;
-
-
-
 
 DROP MATERIALIZED VIEW IF EXISTS TransactionsView;
 CREATE MATERIALIZED VIEW TransactionsView AS
@@ -159,11 +153,7 @@ t.updatedat DESC,
 t.type DESC, 
 t.id DESC;
 
-
-
 -- -- Old Views ? --
-
-
 
 -- CREATE OR REPLACE VIEW TransactionsCategoryDateSum AS
 -- SELECT subquery.id, subquery.name, subquery.date, SUM(subquery.amount) 
@@ -208,19 +198,14 @@ t.id DESC;
 
 -- -- date_trunc('day', tra.date AT TIME ZONE 'America/New_York')::date as date
 
-
-
 -- -- SELECT column_name
 -- -- FROM INFORMATION_SCHEMA.COLUMNS
 -- -- WHERE TABLE_NAME = N'transactions'
-
-
 
 -- CREATE VIEW CategoryGroups AS
 -- SELECT 
 -- DISTINCT(c.group)
 -- from categories c
-
 
 -- CREATE  VIEW TransactionDistinct AS
 -- SELECT 
@@ -251,8 +236,6 @@ t.id DESC;
 -- -- FROM INFORMATION_SCHEMA.COLUMNS
 -- -- WHERE TABLE_NAME = N'transactions'
 
-
-
 -- CREATE VIEW CategoryGroups AS
 -- SELECT 
 -- DISTINCT(c.group)
@@ -262,3 +245,18 @@ t.id DESC;
 -- SELECT DISTINCT c."group", c.groupicon
 -- FROM categories c;
 
+-- Add new view for accounts with their latest running balance
+CREATE OR REPLACE VIEW view_accounts_with_running_balance AS
+SELECT
+    acc.*,
+    latest_rb.running_balance
+FROM
+    accounts acc
+LEFT JOIN (
+    SELECT
+        tv.accountid,
+        tv.RunningBalance AS running_balance,
+        ROW_NUMBER() OVER (PARTITION BY tv.accountid ORDER BY tv.date DESC, tv.type DESC, tv.id DESC) as rn
+    FROM
+        TransactionsView tv -- This is the materialized view
+) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;

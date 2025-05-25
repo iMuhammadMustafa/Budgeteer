@@ -18,11 +18,11 @@ export default function Accounts() {
   const renderScene = useCallback(({ route }: any) => {
     switch (route.key) {
       case "first":
-        return <FirstRoute />;
+        return <AccountsRoute />;
       case "second":
-        return <SecondRoute />;
+        return <AccountsCategoriesRoute />;
       default:
-        return <FirstRoute />;
+        return <AccountsRoute />;
     }
   }, []);
 
@@ -50,7 +50,7 @@ const Bar = (props: any) => (
   </>
 );
 
-const FirstRoute = () => (
+const AccountsRoute = () => (
   <Tab
     title="Accounts"
     queryKey={[TableNames.Accounts]}
@@ -63,17 +63,17 @@ const FirstRoute = () => (
       }),
     })}
     customDetails={item =>
-      item.balance.toLocaleString("en-US", {
+      `Balance: ${item.balance.toLocaleString("en-US", {
         style: "currency",
         currency: "USD",
-      })
+      })}`
     }
     useDelete={useDeleteAccount}
     upsertUrl={"/Accounts/Upsert?accountId="}
   />
 );
 
-const SecondRoute = () => (
+const AccountsCategoriesRoute = () => (
   <Tab
     title="Categories"
     queryKey={[TableNames.AccountCategories]}

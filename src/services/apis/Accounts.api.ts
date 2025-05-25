@@ -1,31 +1,30 @@
 import { FunctionNames, TableNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllAccounts = async () => {
+export const getAllAccounts = async (): Promise<Account[]> => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
     .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
-    // .select()
     .eq("isdeleted", false)
     .order("category(displayorder)", { ascending: false })
     .order("displayorder", { ascending: false })
     .order("name")
     .order("owner");
   if (error) throw new Error(error.message);
-  return data;
+  return data as unknown as Account[];
 };
 
-export const getAccountById = async (id: string) => {
+export const getAccountById = async (id: string): Promise<Account | null> => {
   const { data, error } = await supabase
-    .from(TableNames.Accounts)
-    .select()
+    .from("view_accounts_with_running_balance" as any)
+    .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
     .eq("isdeleted", false)
     .eq("id", id)
     .single();
   if (error) throw new Error(error.message);
-  return data;
+  return data as unknown as Account | null;
 };
 
 export const createAccount = async (account: Inserts<TableNames.Accounts>) => {

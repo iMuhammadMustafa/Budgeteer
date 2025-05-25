@@ -26,7 +26,7 @@ export const useGetAccounts = () => {
 };
 
 export const useGetAccountById = (id?: string) => {
-  return useQuery<Account>({
+  return useQuery<Account | null>({
     queryKey: [TableNames.Accounts, id],
     queryFn: async () => getAccountById(id!),
     enabled: !!id,

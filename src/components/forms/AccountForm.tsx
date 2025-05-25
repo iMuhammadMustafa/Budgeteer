@@ -82,6 +82,16 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     );
   };
 
+  const handleSyncRunningBalance = () => {
+    if (account.running_balance && account.id) {
+      const updatedAccount: Updates<TableNames.Accounts> = {
+        id: account.id,
+        balance: account.running_balance,
+      };
+      updateAccount({ formAccount: updatedAccount, originalData: account as Account, addAdjustmentTransaction: false });
+    }
+  };
+
   return (
     <SafeAreaView className="p-5">
       <ScrollView className="px-5">
@@ -125,7 +135,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           value={formData.currency}
           onChange={currency => handleFieldChange("currency", currency)}
         />
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View className="flex flex-row items-center justify-between -z-20">
           <View style={{ flex: 1 }}>
             <TextInputField
               label="Balance"
@@ -139,6 +149,22 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
             <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
           </View>
         </View>
+
+        {account.id && formData.running_balance !== undefined && account.running_balance !== account.balance && (
+          <View className="flex flex-row items-center justify-center gap-2 -z-20">
+            <View style={{ flex: 1 }}>
+              <TextInputField
+                label="Running Balance"
+                isReadOnly={true}
+                value={formData.running_balance?.toString()}
+                keyboardType="numeric"
+                onChange={() => {}}
+              />
+            </View>
+            <Button label="Sync" onPress={handleSyncRunningBalance} />
+          </View>
+        )}
+
         {openTransaction && (
           <TextInputField
             label="Open Balance"
@@ -156,11 +182,14 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   );
 }
 
-export type AccountFormType = Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
-export const initialState: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts> = {
+export type AccountFormType = (Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>) & {
+  running_balance?: number | null;
+};
+export const initialState: AccountFormType = {
   name: "",
   categoryid: "",
   balance: 0,
   currency: "USD",
   notes: "",
+  running_balance: null,
 };
