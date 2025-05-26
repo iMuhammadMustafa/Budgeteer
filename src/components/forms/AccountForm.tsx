@@ -83,7 +83,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   };
 
   const handleSyncRunningBalance = () => {
-    if (account.running_balance && account.id) {
+    if (account.running_balance !== null && account.running_balance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
         id: account.id,
         balance: account.running_balance,
