@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 
 import supabase from "@/src/providers/Supabase";
 import { EnumNames, ViewNames } from "@/src/types/db/TableNames";
-import { TransactionType } from "@/src/types/db/Tables.Types";
+import { StatsMonthlyCategoriesTransactions, TransactionType } from "@/src/types/db/Tables.Types";
 
 export const getStatsDailyTransactions = async (startDate?: string, endDate?: string, type?: TransactionType) => {
   const { data, error } = await supabase
@@ -27,19 +27,23 @@ export const getStatsMonthlyTransactionsTypes = async (startDate?: string, endDa
   return data;
 };
 
-export const getStatsMonthlyCategoriesTransactions = async (startDate?: string, endDate?: string) => {
+export const getStatsMonthlyCategoriesTransactions = async (
+  startDate?: string,
+  endDate?: string,
+): Promise<StatsMonthlyCategoriesTransactions[]> => {
   // Format dates to match database format (first day of month at 00:00:00 UTC)
-  const formattedStartDate = startDate 
-    ? dayjs(startDate).startOf('month').format('YYYY-MM-DD')
-    : dayjs().startOf("month").format('YYYY-MM-DD');
-    
+  const formattedStartDate = startDate
+    ? dayjs(startDate).startOf("month").format("YYYY-MM-DD")
+    : dayjs().startOf("month").format("YYYY-MM-DD");
+
   const formattedEndDate = endDate
-    ? dayjs(endDate).endOf('month').format('YYYY-MM-DD')
-    : dayjs().endOf("month").format('YYYY-MM-DD');
-    
+    ? dayjs(endDate).endOf("month").format("YYYY-MM-DD")
+    : dayjs().endOf("month").format("YYYY-MM-DD");
+
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyCategoriesTransactions)
-    .select(`
+    .select(
+      `
       groupid,
       categoryid,
       groupname,
@@ -49,8 +53,18 @@ export const getStatsMonthlyCategoriesTransactions = async (startDate?: string, 
       groupicon,
       categoryicon,
       groupbudgetamount,
-      categorybudgetamount
-    `)
+      categorybudgetamount,
+      date,
+      categorybudgetamount,
+      categorybudgetfrequency,
+      categorycolor,
+      categorydisplayorder,
+      categoryicon,
+      groupbudgetfrequency,
+      groupcolor,
+      groupdisplayorder
+    `,
+    )
     .in("type", ["Expense", "Adjustment"])
     .gte("date", formattedStartDate)
     .lte("date", formattedEndDate);
@@ -61,19 +75,31 @@ export const getStatsMonthlyCategoriesTransactions = async (startDate?: string, 
 
 export const getStatsMonthlyAccountsTransactions = async (startDate?: string, endDate?: string) => {
   // Format dates to match database format (first day of month at 00:00:00 UTC)
-  const formattedStartDate = startDate 
-    ? dayjs(startDate).startOf('month').format('YYYY-MM-DD')
-    : dayjs().startOf("month").format('YYYY-MM-DD');
-    
+  const formattedStartDate = startDate
+    ? dayjs(startDate).startOf("month").format("YYYY-MM-DD")
+    : dayjs().startOf("month").format("YYYY-MM-DD");
+
   const formattedEndDate = endDate
-    ? dayjs(endDate).endOf('month').format('YYYY-MM-DD')
-    : dayjs().endOf("month").format('YYYY-MM-DD');
-  
+    ? dayjs(endDate).endOf("month").format("YYYY-MM-DD")
+    : dayjs().endOf("month").format("YYYY-MM-DD");
+
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyAccountsTransactions)
     .select()
     .gte("date", formattedStartDate)
     .lte("date", formattedEndDate);
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const getStatsNetWorthGrowth = async (startDate?: string, endDate?: string) => {
+  const { data, error } = await supabase
+    .from(ViewNames.StatsNetWorthGrowth)
+    .select("*")
+    .gte("month", startDate ?? dayjs().startOf("year").format("YYYY-MM-DD"))
+    .lte("month", endDate ?? dayjs().endOf("year").format("YYYY-MM-DD"))
+    .order("month", { ascending: true });
 
   if (error) throw new Error(error.message);
   return data;

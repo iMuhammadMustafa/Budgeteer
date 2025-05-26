@@ -118,6 +118,8 @@ SELECT
   t.isvoid,
   t.transferid,
   t.transferaccountid,
+  t.createdat,
+  t.updatedat,
 
   tc.id AS categoryid,
   tc.name AS categoryname,
@@ -246,7 +248,7 @@ t.id DESC;
 -- FROM categories c;
 
 -- Add new view for accounts with their latest running balance
-CREATE OR REPLACE VIEW view_accounts_with_running_balance AS
+CREATE OR REPLACE VIEW view_accounts_with_running_balance WITH (security_invoker) AS
 SELECT
     acc.*,
     latest_rb.running_balance
@@ -260,3 +262,25 @@ LEFT JOIN (
     FROM
         TransactionsView tv -- This is the materialized view
 ) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;
+
+CREATE VIEW Stats_NetWorthGrowth WITH (security_invoker) AS
+WITH MonthlyLatest AS (
+    SELECT *
+    FROM (
+        SELECT
+            *,
+            date_trunc('month', date) AS month,
+            ROW_NUMBER() OVER (
+                PARTITION BY accountid, date_trunc('month', date)
+                ORDER BY date DESC, createdat DESC, updatedat DESC, type DESC, id DESC
+            ) AS rn
+        FROM TransactionsView
+    ) sub
+    WHERE rn = 1
+)
+SELECT
+    month,
+    SUM(RunningBalance) AS total_net_worth
+FROM MonthlyLatest
+GROUP BY month
+ORDER BY month;

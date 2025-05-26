@@ -6,11 +6,16 @@ import {
   getStatsMonthlyAccountsTransactions,
   getStatsMonthlyCategoriesTransactions,
   getStatsMonthlyTransactionsTypes,
+  getStatsNetWorthGrowth,
 } from "@/src/services/apis/Stats.api";
-import { BarDataType, DoubleBarPoint, MyCalendarData, PieData } from "@/src/types/components/Charts.types";
+import {
+  BarDataType,
+  DoubleBarPoint,
+  LineChartPoint,
+  MyCalendarData,
+  PieData,
+} from "@/src/types/components/Charts.types";
 import dayjs from "dayjs";
-
-// TODO: One Request could be made to get all the data at once
 
 export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
   return useQuery<{
@@ -157,7 +162,7 @@ export const useGetStatsMonthlyCategoriesTransactionsForDashboard = (startDate: 
     groups: (PieData & { id: string })[];
     categories: (PieData & { id: string })[];
   }>({
-    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, 'dashboard'],
+    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, "dashboard"],
     queryFn: async () => getStatsMonthlyCategoriesTransactionsDashboardHelper(startDate, endDate),
   });
 };
@@ -175,20 +180,23 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
   const groupsMap = new Map<string, { sum: number; name: string }>();
   const categoriesMap = new Map<string, { sum: number; name: string }>();
 
-  data.forEach((item) => {
+  data.forEach(item => {
     if (item.groupid && item.sum && item.groupname) {
       const currentData = groupsMap.get(item.groupid) || { sum: 0, name: item.groupname };
       groupsMap.set(item.groupid, {
         sum: currentData.sum + Math.abs(item.sum),
-        name: item.groupname
+        name: item.groupname,
       });
     }
 
     if (item.categoryid && item.sum && item.groupname && item.categoryname) {
-      const currentData = categoriesMap.get(item.categoryid) || { sum: 0, name: `${item.groupname}:${item.categoryname}` };
+      const currentData = categoriesMap.get(item.categoryid) || {
+        sum: 0,
+        name: `${item.groupname}:${item.categoryname}`,
+      };
       categoriesMap.set(item.categoryid, {
         sum: currentData.sum + Math.abs(item.sum),
-        name: `${item.categoryname}`
+        name: `${item.categoryname}`,
       });
     }
   });
@@ -197,13 +205,13 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
   const groups = Array.from(groupsMap.entries()).map(([id, data]) => ({
     x: data.name,
     y: data.sum,
-    id: id
+    id: id,
   }));
 
   const categories = Array.from(categoriesMap.entries()).map(([id, data]) => ({
     x: data.name,
     y: data.sum,
-    id: id
+    id: id,
   }));
 
   return { groups, categories };
@@ -216,7 +224,21 @@ export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDat
   });
 };
 
-// TODO: Implement the following functions
 const getStatsMonthlyAccountsTransactionsHelper = async (startDate: string, endDate: string) => {
   return await getStatsMonthlyAccountsTransactions(startDate, endDate);
+};
+
+export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
+  return useQuery<LineChartPoint[]>({
+    queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate],
+    queryFn: async () => getStatsNetWorthGrowthHelper(startDate, endDate),
+  });
+};
+
+const getStatsNetWorthGrowthHelper = async (startDate: string, endDate: string): Promise<LineChartPoint[]> => {
+  const data = await getStatsNetWorthGrowth(startDate, endDate);
+  return data.map(item => ({
+    x: dayjs(item.month).format("MMM"),
+    y: item.total_net_worth,
+  }));
 };

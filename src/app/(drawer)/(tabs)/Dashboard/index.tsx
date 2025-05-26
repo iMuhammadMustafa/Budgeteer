@@ -1,9 +1,19 @@
 import { useState, useCallback } from "react";
-import { SafeAreaView, ScrollView, Text, View, Pressable, ActivityIndicator, FlatList, RefreshControl } from "react-native";
+import {
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+  Pressable,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+} from "react-native";
 import { router } from "expo-router";
 import useDashboard from "./useDashboard";
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
+import Line from "@/src/components/Charts/Line";
 import MyPie from "@/src/components/Charts/MyPie";
 import MyCalendar from "@/src/components/Charts/MyCalendar";
 import { PieData, DoubleBarPoint } from "@/src/types/components/Charts.types";
@@ -37,7 +47,7 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
         const localDate = dayjs(item.date || new Date()).local();
         // Use optional chaining to handle potential undefined properties
         const iconToUse = (item as any).groupicon || item.icon;
-        
+
         return (
           <Pressable
             onPress={() => onPress(item)}
@@ -50,23 +60,19 @@ const TransactionsList = ({ transactions, onPress }: TransactionsListProps) => {
                 </View>
               )}
               <View className="flex-1">
-                <Text className="text-base text-foreground font-medium">
-                  {item.name || 'Unnamed Transaction'}
-                </Text>
+                <Text className="text-base text-foreground font-medium">{item.name || "Unnamed Transaction"}</Text>
                 <Text className="text-sm text-muted-foreground">
-                  {(item as any).groupname && item.categoryname ? 
-                    `${(item as any).groupname} • ${item.categoryname}` : 
-                    item.categoryname || 'Uncategorized'}
+                  {(item as any).groupname && item.categoryname
+                    ? `${(item as any).groupname} • ${item.categoryname}`
+                    : item.categoryname || "Uncategorized"}
                 </Text>
               </View>
             </View>
             <View className="items-end">
-              <Text className={`text-base font-medium ${isExpense ? 'text-danger-500' : 'text-success-500'}`}>
-                {isExpense ? '-' : '+'}${Math.abs(item.amount || 0).toFixed(2)}
+              <Text className={`text-base font-medium ${isExpense ? "text-danger-500" : "text-success-500"}`}>
+                {isExpense ? "-" : "+"}${Math.abs(item.amount || 0).toFixed(2)}
               </Text>
-              <Text className="text-sm text-muted-foreground">
-                {localDate.format('MMM D, YYYY')}
-              </Text>
+              <Text className="text-sm text-muted-foreground">{localDate.format("MMM D, YYYY")}</Text>
             </View>
           </Pressable>
         );
@@ -83,9 +89,11 @@ export default function Dashboard() {
     yearlyTransactionsTypes,
     monthlyCategories,
     monthlyGroups,
+    netWorthGrowth,
     isWeeklyLoading,
     isMonthlyLoading,
     isYearlyLoading,
+    isNetWorthLoading,
     fetchTransactionsForDate,
     fetchTransactionsForCategory,
     fetchTransactionsForMonthAndType,
@@ -93,45 +101,53 @@ export default function Dashboard() {
 
   // State for selected data and transactions
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [selectedPieSlice, setSelectedPieSlice] = useState<{data: PieData, type: 'category' | 'group'} | null>(null);
+  const [selectedPieSlice, setSelectedPieSlice] = useState<{ data: PieData; type: "category" | "group" } | null>(null);
   const [selectedBarData, setSelectedBarData] = useState<DoubleBarPoint | null>(null);
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const [activeView, setActiveView] = useState<'calendar' | 'pie' | 'bar' | null>(null);
+  const [activeView, setActiveView] = useState<"calendar" | "pie" | "bar" | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Handle refresh function for pull-to-refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     // Invalidate all stats queries
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsDailyTransactions] 
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsDailyTransactions],
     });
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions],
     });
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyTransactionsTypes] 
-    }).then(() => {
-      setRefreshing(false);
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes],
     });
+    queryClient
+      .invalidateQueries({
+        queryKey: [ViewNames.StatsNetWorthGrowth],
+      })
+      .then(() => {
+        setRefreshing(false);
+      });
   }, []);
 
   // Function to manually refresh data with the button
   const handleRefresh = () => {
     // Invalidate all stats queries
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsDailyTransactions] 
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsDailyTransactions],
     });
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] 
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions],
     });
-    queryClient.invalidateQueries({ 
-      queryKey: [ViewNames.StatsMonthlyTransactionsTypes] 
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [ViewNames.StatsNetWorthGrowth],
     });
   };
 
-  if (isWeeklyLoading && isMonthlyLoading && isYearlyLoading) {
+  if (isWeeklyLoading && isMonthlyLoading && isYearlyLoading && isNetWorthLoading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#0000ff" />
@@ -146,10 +162,10 @@ export default function Dashboard() {
       setIsLoadingTransactions(true);
       // Convert the selected date to local timezone
       const localDate = dayjs(day.dateString).local();
-      setSelectedDay(localDate.format('YYYY-MM-DD'));
-      setActiveView('calendar');
-      
-      const transactions = await fetchTransactionsForDate(localDate.format('YYYY-MM-DD'));
+      setSelectedDay(localDate.format("YYYY-MM-DD"));
+      setActiveView("calendar");
+
+      const transactions = await fetchTransactionsForDate(localDate.format("YYYY-MM-DD"));
       setSelectedTransactions(transactions);
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
@@ -160,12 +176,12 @@ export default function Dashboard() {
   };
 
   // Handle pie chart slice press
-  const handlePiePress = async (item: PieData, type: 'category' | 'group') => {
+  const handlePiePress = async (item: PieData, type: "category" | "group") => {
     try {
       setIsLoadingTransactions(true);
       setSelectedPieSlice({ data: item, type });
-      setActiveView('pie');
-      
+      setActiveView("pie");
+
       const transactions = await fetchTransactionsForCategory(item.id, type);
       setSelectedTransactions(transactions);
     } catch (error) {
@@ -181,8 +197,8 @@ export default function Dashboard() {
     try {
       setIsLoadingTransactions(true);
       setSelectedBarData(item);
-      setActiveView('bar');
-      
+      setActiveView("bar");
+
       const transactions = await fetchTransactionsForMonthAndType(item.x);
       setSelectedTransactions(transactions);
     } catch (error) {
@@ -207,7 +223,7 @@ export default function Dashboard() {
     if (transaction.id) {
       router.push({
         pathname: "/AddTransaction",
-        params: { id: transaction.id }
+        params: { id: transaction.id },
       });
     }
   };
@@ -221,78 +237,77 @@ export default function Dashboard() {
         <View className="p-4 bg-card/20 mb-4 rounded-md">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-foreground">
-              {activeView === 'calendar' ? `Transactions on ${dayjs(selectedDay || '').format('MMM D, YYYY')}` :
-               activeView === 'pie' ? `${selectedPieSlice?.type === 'category' ? 'Category' : 'Group'}: ${selectedPieSlice?.data.x}` :
-               `Month: ${selectedBarData?.x}`}
+              {activeView === "calendar"
+                ? `Transactions on ${dayjs(selectedDay || "").format("MMM D, YYYY")}`
+                : activeView === "pie"
+                  ? `${selectedPieSlice?.type === "category" ? "Category" : "Group"}: ${selectedPieSlice?.data.x}`
+                  : `Month: ${selectedBarData?.x}`}
             </Text>
             <View className="flex-row gap-2">
-              <Pressable 
-                className="py-2 px-4 bg-primary/80 rounded-md" 
+              <Pressable
+                className="py-2 px-4 bg-primary/80 rounded-md"
                 onPress={() => {
                   // Navigate to the Transactions page with the relevant filter
-                  if (activeView === 'calendar' && selectedDay) {
+                  if (activeView === "calendar" && selectedDay) {
                     router.push({
                       pathname: "/Transactions",
-                      params: { date: selectedDay }
+                      params: { date: selectedDay },
                     });
-                  } else if (activeView === 'pie' && selectedPieSlice) {
+                  } else if (activeView === "pie" && selectedPieSlice) {
                     router.push({
                       pathname: "/Transactions",
-                      params: { 
-                        [selectedPieSlice.type === 'category' ? 'categoryid' : 'groupid']: selectedPieSlice.data.x 
-                      }
+                      params: {
+                        [selectedPieSlice.type === "category" ? "categoryid" : "groupid"]: selectedPieSlice.data.x,
+                      },
                     });
-                  } else if (activeView === 'bar' && selectedBarData) {
+                  } else if (activeView === "bar" && selectedBarData) {
                     router.push({
                       pathname: "/Transactions",
-                      params: { month: selectedBarData.x }
+                      params: { month: selectedBarData.x },
                     });
                   }
                 }}
               >
                 <Text className="text-white">View All</Text>
               </Pressable>
-              <Pressable 
-                className="py-2 px-4 bg-primary rounded-md" 
-                onPress={handleBackToOverview}
-              >
+              <Pressable className="py-2 px-4 bg-primary rounded-md" onPress={handleBackToOverview}>
                 <Text className="text-white">Back</Text>
               </Pressable>
             </View>
           </View>
 
           {/* Display the relevant chart at the top */}
-          {activeView === 'calendar' && dailyTransactionTypesData && (
-            <MyCalendar 
-              label="" 
-              data={dailyTransactionTypesData} 
+          {activeView === "calendar" && dailyTransactionTypesData && (
+            <MyCalendar
+              label=""
+              data={dailyTransactionTypesData}
               onDayPress={handleDayPress}
               selectedDate={selectedDay}
             />
           )}
-          
-          {activeView === 'pie' && selectedPieSlice?.type === 'category' && (
-            <MyPie 
-              data={monthlyCategories} 
-              label="Categories" 
-              onPiePress={(item) => handlePiePress(item, 'category')}
+
+          {activeView === "pie" && selectedPieSlice?.type === "category" && (
+            <MyPie
+              data={monthlyCategories}
+              label="Categories"
+              onPiePress={item => handlePiePress(item, "category")}
               highlightedSlice={selectedPieSlice?.data.x}
             />
           )}
-          
-          {activeView === 'pie' && selectedPieSlice?.type === 'group' && (
-            <MyPie 
-              data={monthlyGroups} 
-              label="Groups" 
-              onPiePress={(item) => handlePiePress(item, 'group')}
+
+          {activeView === "pie" && selectedPieSlice?.type === "group" && (
+            <MyPie
+              data={monthlyGroups}
+              label="Groups"
+              onPiePress={item => handlePiePress(item, "group")}
               highlightedSlice={selectedPieSlice?.data.x}
             />
           )}
-          
-          {activeView === 'bar' && yearlyTransactionsTypes && (
-            <DoubleBar 
-              data={yearlyTransactionsTypes} 
-              label="Net Earnings" 
+
+          {activeView === "bar" && yearlyTransactionsTypes && (
+            <DoubleBar
+              data={yearlyTransactionsTypes}
+              label="Net Earnings"
               onBarPress={handleBarPress}
               highlightedBar={selectedBarData?.x}
             />
@@ -312,10 +327,7 @@ export default function Dashboard() {
               <Text className="text-muted">No transactions found</Text>
             </View>
           ) : (
-            <TransactionsList 
-              transactions={selectedTransactions}
-              onPress={handleTransactionPress}
-            />
+            <TransactionsList transactions={selectedTransactions} onPress={handleTransactionPress} />
           )}
         </View>
       </View>
@@ -326,35 +338,17 @@ export default function Dashboard() {
   const renderDashboardOverview = () => {
     return (
       <View>
-        <Bar 
-          data={weeklyTransactionTypesData!} 
-          hideY 
-          label="Last Week Expenses" 
-        />
-        
-        <DoubleBar 
-          data={yearlyTransactionsTypes} 
-          label="Net Earnings" 
-          onBarPress={handleBarPress}
-        />
+        <Bar data={weeklyTransactionTypesData!} hideY label="Last Week Expenses" />
 
-        <MyPie 
-          data={monthlyCategories} 
-          label="Categories"
-          onPiePress={(item) => handlePiePress(item, 'category')}
-        />
-        
-        <MyPie 
-          data={monthlyGroups} 
-          label="Groups"
-          onPiePress={(item) => handlePiePress(item, 'group')}
-        />
+        <DoubleBar data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
 
-        <MyCalendar 
-          label="Calendar" 
-          data={dailyTransactionTypesData!} 
-          onDayPress={handleDayPress} 
-        />
+        <Line data={netWorthGrowth} label="Net Worth Growth" color="rgba(76, 175, 80, 0.6)" />
+
+        <MyPie data={monthlyCategories} label="Categories" onPiePress={item => handlePiePress(item, "category")} />
+
+        <MyPie data={monthlyGroups} label="Groups" onPiePress={item => handlePiePress(item, "group")} />
+
+        <MyCalendar label="Calendar" data={dailyTransactionTypesData!} onDayPress={handleDayPress} />
       </View>
     );
   };
@@ -363,14 +357,11 @@ export default function Dashboard() {
     <SafeAreaView className="w-full h-full m-auto flex-1">
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <Text className="text-xl font-bold text-foreground">Dashboard</Text>
-        <Pressable 
-          onPress={handleRefresh}
-          className="p-2"
-        >
+        <Pressable onPress={handleRefresh} className="p-2">
           <RefreshCcw size={24} color="#4CAF50" />
         </Pressable>
       </View>
-      <ScrollView 
+      <ScrollView
         className="flex-1 h-full"
         refreshControl={
           <RefreshControl

@@ -8,6 +8,9 @@ import {
   VictoryScatter,
   VictoryTheme,
   VictoryTooltip,
+  VictoryLegend,
+  VictoryVoronoiContainer,
+  VictoryGroup,
 } from "victory-native";
 import { LineChartPoint } from "@/src/types/components/Charts.types";
 import { convertThemeToReactNativeColors } from "@/src/utils/theme.config";
@@ -80,34 +83,30 @@ export default function Line({ data, label, color, hideY }: LineProps) {
             tickFormat={t => (typeof t === "number" ? `${t / 1000}k` : t)}
           />
         )}
-        <VictoryLine
-          data={data}
-          style={{
-            data: { stroke: lineChartColor, strokeWidth: 2 },
-          }}
-          animate={{
-            duration: 500,
-            onLoad: { duration: 500 },
-          }}
-        />
-        <VictoryScatter
-          data={data}
-          size={4}
-          style={{
-            data: { fill: lineChartColor },
-          }}
-          labels={({ datum }) =>
-            datum.y.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-          } // Show Y value on hover/press
-          labelComponent={
-            <VictoryTooltip
-              cornerRadius={3}
-              flyoutStyle={{ fill: themeColors.card, stroke: themeColors.border }}
-              style={{ fill: themeColors.text, fontSize: 10 }}
-              dx={5}
-              dy={-5}
-            />
-          }
+        <VictoryGroup data={data} color={lineChartColor}>
+          <VictoryLine
+            style={{
+              data: { strokeWidth: 2 }, // Color is inherited from VictoryGroup
+            }}
+            animate={{
+              duration: 500,
+              onLoad: { duration: 500 },
+            }}
+          />
+          <VictoryScatter
+            size={({ active }: { active?: boolean }) => (active ? 8 : 3)}
+            style={{
+              data: { fill: lineChartColor }, // Keep fill for scatter points if different from line
+            }}
+          />
+        </VictoryGroup>
+        <VictoryLegend
+          orientation="horizontal"
+          x={chartWidth / 5}
+          y={chartHeight - 30}
+          data={data.map((point, index) => ({
+            name: `${point.x}: ${point.y}`,
+          }))}
         />
       </VictoryChart>
     </View>

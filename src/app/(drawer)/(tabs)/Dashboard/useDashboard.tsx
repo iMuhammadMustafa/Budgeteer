@@ -6,6 +6,7 @@ import {
   useGetStatsDailyTransactions,
   useGetStatsMonthlyCategoriesTransactionsForDashboard,
   useGetStatsYearTransactionsTypes,
+  useGetStatsNetWorthGrowth,
 } from "@/src/services/repositories/Stats.Repository";
 import { useGetTransactions } from "@/src/services/repositories/Transactions.Repository";
 import supabase from "@/src/providers/Supabase";
@@ -36,6 +37,11 @@ export default function useDashboard() {
     endOfCurrentYear,
   );
 
+  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = useGetStatsNetWorthGrowth(
+    startOfCurrentYear,
+    endOfCurrentYear,
+  );
+
   const weeklyTransactionTypesData = useMemo(() => {
     return dailyTransactionsThisMonth?.barsData;
   }, [dailyTransactionsThisMonth]);
@@ -56,43 +62,46 @@ export default function useDashboard() {
   const fetchTransactionsForDate = async (date: string): Promise<TransactionsView[]> => {
     try {
       // Convert the date to local timezone for the start and end of the day
-      const startOfDay = dayjs(date).startOf('day').toISOString();
-      const endOfDay = dayjs(date).endOf('day').toISOString();
-      
+      const startOfDay = dayjs(date).startOf("day").toISOString();
+      const endOfDay = dayjs(date).endOf("day").toISOString();
+
       const { data, error } = await supabase
-        .from('transactionsview')
-        .select('*')
-        .gte('date', startOfDay)
-        .lte('date', endOfDay)
-        .order('date', { ascending: false });
-      
+        .from("transactionsview")
+        .select("*")
+        .gte("date", startOfDay)
+        .lte("date", endOfDay)
+        .order("date", { ascending: false });
+
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching transactions for date:', error);
+      console.error("Error fetching transactions for date:", error);
       return [];
     }
   };
 
   // Function to fetch transactions for a specific category or group
-  const fetchTransactionsForCategory = async (categoryId: string, type: 'category' | 'group'): Promise<TransactionsView[]> => {
+  const fetchTransactionsForCategory = async (
+    categoryId: string,
+    type: "category" | "group",
+  ): Promise<TransactionsView[]> => {
     try {
       // Get the start and end of the current month in local timezone
-      const startOfMonth = dayjs().startOf('month').toISOString();
-      const endOfMonth = dayjs().endOf('month').toISOString();
-      
+      const startOfMonth = dayjs().startOf("month").toISOString();
+      const endOfMonth = dayjs().endOf("month").toISOString();
+
       const { data, error } = await supabase
-        .from('transactionsview')
-        .select('*')
-        .gte('date', startOfMonth)
-        .lte('date', endOfMonth)
-        .eq(type === 'category' ? 'categoryid' : 'groupid', categoryId)
-        .order('date', { ascending: false });
-      
+        .from("transactionsview")
+        .select("*")
+        .gte("date", startOfMonth)
+        .lte("date", endOfMonth)
+        .eq(type === "category" ? "categoryid" : "groupid", categoryId)
+        .order("date", { ascending: false });
+
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching transactions for category:', error);
+      console.error("Error fetching transactions for category:", error);
       return [];
     }
   };
@@ -101,20 +110,20 @@ export default function useDashboard() {
   const fetchTransactionsForMonthAndType = async (month: string): Promise<TransactionsView[]> => {
     try {
       // Convert the month to local timezone for the start and end of the month
-      const startOfMonth = dayjs(month).startOf('month').toISOString();
-      const endOfMonth = dayjs(month).endOf('month').toISOString();
-      
+      const startOfMonth = dayjs(month).startOf("month").toISOString();
+      const endOfMonth = dayjs(month).endOf("month").toISOString();
+
       const { data, error } = await supabase
-        .from('transactionsview')
-        .select('*')
-        .gte('date', startOfMonth)
-        .lte('date', endOfMonth)
-        .order('date', { ascending: false });
-      
+        .from("transactionsview")
+        .select("*")
+        .gte("date", startOfMonth)
+        .lte("date", endOfMonth)
+        .order("date", { ascending: false });
+
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching transactions for month:', error);
+      console.error("Error fetching transactions for month:", error);
       return [];
     }
   };
@@ -125,9 +134,11 @@ export default function useDashboard() {
     yearlyTransactionsTypes,
     monthlyCategories,
     monthlyGroups,
+    netWorthGrowth,
     isWeeklyLoading,
     isMonthlyLoading,
     isYearlyLoading,
+    isNetWorthLoading,
     fetchTransactionsForDate,
     fetchTransactionsForCategory,
     fetchTransactionsForMonthAndType,

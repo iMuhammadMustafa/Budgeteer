@@ -14,6 +14,7 @@ export enum ViewNames {
   StatsMonthlyTransactionsTypes = "stats_monthlytransactionstypes",
   StatsMonthlyCategoriesTransactions = "stats_monthlycategoriestransactions",
   StatsMonthlyAccountsTransactions = "stats_monthlyaccountstransactions",
+  StatsNetWorthGrowth = "stats_networthgrowth",
 }
 
 export enum EnumNames {
