@@ -184,6 +184,7 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
       "Id",
+      tenantid,
     );
     if (!config) {
       throw new Error("Account Operations Category not found");
@@ -231,6 +232,7 @@ const updateAccountHelper = async (
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
       "Id",
+      tenantid,
     );
 
     if (!config) {
