@@ -3,13 +3,13 @@ AS
 SELECT 
 type,
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
-coalesce(sum(amount), 0) as sum
-
+coalesce(sum(amount), 0) as sum,
+tenantid
 FROM transactions
-
 GROUP BY
 type,
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date
+date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
+tenantid
 ORDER BY
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 
@@ -18,12 +18,14 @@ AS
 SELECT 
 t.accountid accountid, 
 a.name account,
+t.tenantid tenantid,
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
 coalesce(sum(amount), 0) as sum
 FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
 GROUP BY
 t.accountid, 
-a.name ,
+a.name,
+t.tenantid,
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date
 ORDER BY
 date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
@@ -48,7 +50,8 @@ tc.color CategoryColor,
 tc.displayorder CategoryDisplayOrder,
 
 date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz as date,
-coalesce(sum(t.amount), 0) as sum
+coalesce(sum(t.amount), 0) as sum,
+t.tenantid
 
 FROM transactiongroups tg 
 LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
@@ -70,6 +73,7 @@ tc.budgetfrequency,
 tc.icon,
 tc.color,
 tc.displayorder,
+t.tenantid,
 
 date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
 ORDER BY
@@ -80,10 +84,12 @@ AS
 SELECT 
 t.type,
 date_trunc('day', t.date)::date AS date,
-sum(t.amount) AS sum
+sum(t.amount) AS sum,
+t.tenantid
 FROM transactions t
 GROUP BY 
 t.type, 
+t.tenantid,
 date_trunc('day', t.date)::date;
 
 CREATE OR REPLACE VIEW Search_DistinctTransactions WITH (security_invoker)
@@ -98,7 +104,8 @@ AS
     transactions.categoryid,
     transactions.accountid,
     transactions.transferid,
-    transactions.transferaccountid
+    transactions.transferaccountid,
+    transactions.tenantid
    FROM transactions
   WHERE (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
   ORDER BY transactions.name, transactions.date DESC;
@@ -140,7 +147,8 @@ SELECT
           WHEN t.isvoid = false AND t.isdeleted = false THEN t.amount
           ELSE 0::numeric
       END
-      ) OVER (PARTITION BY t.accountid ORDER BY t.date, t.createdat, t.updatedat, t.type, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS RunningBalance
+      ) OVER (PARTITION BY t.accountid ORDER BY t.date, t.createdat, t.updatedat, t.type, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS RunningBalance,
+  t.tenantid
   
   FROM transactions t
     JOIN transactioncategories tc ON t.categoryid = tc.id
@@ -280,7 +288,8 @@ WITH MonthlyLatest AS (
 )
 SELECT
     month,
-    SUM(RunningBalance) AS total_net_worth
+    SUM(RunningBalance) AS total_net_worth,
+    tenantid
 FROM MonthlyLatest
-GROUP BY month
+GROUP BY month, tenantid
 ORDER BY month;
