@@ -113,10 +113,11 @@ export const getTransactionByTransferId = async (id: string, tenantId: string) =
   return data;
 };
 
-export const getTransactionsByName = async (text: string) => {
+export const getTransactionsByName = async (text: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(ViewNames.SearchDistinctTransactions)
     .select()
+    .eq("tenantid", tenantId)
     .ilike("name", `%${text}%`)
     .limit(7);
 
