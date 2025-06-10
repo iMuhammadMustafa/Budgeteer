@@ -79,7 +79,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
           />
         </View>
 
-        <Button label="Save" onPress={handleSubmit} isValid={!isValid} />
+        <Button label="Save" onPress={handleSubmit} isValid={isValid} />
       </ScrollView>
     </SafeAreaView>
   );

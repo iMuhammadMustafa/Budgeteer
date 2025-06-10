@@ -59,8 +59,6 @@ export function Tab({
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
 
-  console.log("Data: ", data);
-
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />
