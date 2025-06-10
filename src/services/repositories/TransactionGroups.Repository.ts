@@ -15,17 +15,29 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 
 export const useGetTransactionGroups = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<TransactionGroup[]>({
-    queryKey: [TableNames.TransactionGroups],
-    queryFn: getAllTransactionGroups,
+    queryKey: [TableNames.TransactionGroups, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAllTransactionGroups(tenantId);
+    },
+    enabled: !!tenantId,
   });
 };
 
 export const useGetTransactionGroupById = (id?: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<TransactionGroup>({
-    queryKey: [TableNames.TransactionGroups, id],
-    queryFn: async () => getTransactionGroupById(id!),
-    enabled: !!id,
+    queryKey: [TableNames.TransactionGroups, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getTransactionGroupById(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 

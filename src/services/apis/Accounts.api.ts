@@ -3,10 +3,11 @@ import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllAccounts = async (): Promise<Account[]> => {
+export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
   const { data, error } = await supabase
     .from(TableNames.Accounts)
     .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .order("category(displayorder)", { ascending: false })
     .order("displayorder", { ascending: false })
@@ -16,10 +17,11 @@ export const getAllAccounts = async (): Promise<Account[]> => {
   return data as unknown as Account[];
 };
 
-export const getAccountById = async (id: string): Promise<Account | null> => {
+export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
   const { data, error } = await supabase
     .from("view_accounts_with_running_balance" as any)
     .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .eq("id", id)
     .single();
@@ -78,10 +80,11 @@ export const updateAccountBalance = async (accountid: string, amount: number) =>
   });
 };
 
-export const getAccountOpenedTransaction = async (accountid: string) => {
+export const getAccountOpenedTransaction = async (accountid: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
     .select("id, amount")
+    .eq("tenantid", tenantId)
     .eq("accountid", accountid)
     .eq("type", "Initial")
     .eq("isdeleted", false)

@@ -15,19 +15,33 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 
 export const useGetAccountCategories = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+
   return useQuery<AccountCategory[]>({
-    queryKey: [TableNames.AccountCategories],
-    queryFn: getAllAccountCategories,
+    queryKey: [TableNames.AccountCategories, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAllAccountCategories(tenantId);
+    },
+    enabled: !!tenantId,
     // refetchOnMount: true,
     // refetchOnWindowFocus: true,
   });
 };
 
 export const useGetAccountCategoryById = (id?: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+
   return useQuery<AccountCategory>({
-    queryKey: [TableNames.AccountCategories, id],
-    queryFn: async () => getAccountCategoryById(id!),
-    enabled: !!id,
+    queryKey: [TableNames.AccountCategories, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAccountCategoryById(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 

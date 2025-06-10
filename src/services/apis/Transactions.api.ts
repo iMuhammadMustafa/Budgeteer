@@ -4,16 +4,20 @@ import supabase from "@/src/providers/Supabase";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllTransactions = async () => {
-  const { data, error } = await supabase.from(ViewNames.TransactionsView).select().eq("isdeleted", false);
+export const getAllTransactions = async (tenantId: string) => {
+  const { data, error } = await supabase
+    .from(ViewNames.TransactionsView)
+    .select()
+    .eq("tenantid", tenantId)
+    .eq("isdeleted", false);
 
   if (error) throw new Error(error.message);
 
   return data;
 };
 
-export const getTransactions = async (searchFilters: TransactionFilters) => {
-  let query = buildQuery(searchFilters);
+export const getTransactions = async (searchFilters: TransactionFilters, tenantId: string) => {
+  let query = buildQuery(searchFilters, tenantId);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -21,11 +25,14 @@ export const getTransactions = async (searchFilters: TransactionFilters) => {
   return data;
 };
 
-const buildQuery = (searchFilters: TransactionFilters, isCount = false) => {
-  let query = supabase.from(ViewNames.TransactionsView).select();
+const buildQuery = (searchFilters: TransactionFilters, tenantId: string, isCount = false) => {
+  let query = supabase.from(ViewNames.TransactionsView).select().eq("tenantid", tenantId);
 
   if (isCount) {
-    query = supabase.from(ViewNames.TransactionsView).select("*", { count: "exact", head: true });
+    query = supabase
+      .from(ViewNames.TransactionsView)
+      .select("*", { count: "exact", head: true })
+      .eq("tenantid", tenantId);
   }
 
   if (searchFilters.startDate) {
@@ -72,30 +79,33 @@ const buildQuery = (searchFilters: TransactionFilters, isCount = false) => {
   return query;
 };
 
-export const getTransactionFullyById = async (transactionid: string) => {
+export const getTransactionFullyById = async (transactionid: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(ViewNames.TransactionsView)
     .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .eq("transactionid", transactionid)
     .single();
   if (error) throw new Error(error.message);
   return data;
 };
-export const getTransactionById = async (transactionid: string) => {
+export const getTransactionById = async (transactionid: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Transactions)
     .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .eq("transactionid", transactionid)
     .single();
   if (error) throw new Error(error.message);
   return data;
 };
-export const getTransactionByTransferId = async (id: string) => {
+export const getTransactionByTransferId = async (id: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(ViewNames.TransactionsView)
     .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .eq("transferid", id)
     .single();

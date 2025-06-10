@@ -16,17 +16,25 @@ import {
   PieData,
 } from "@/src/types/components/Charts.types";
 import dayjs from "dayjs";
+import { useAuth } from "@/src/providers/AuthProvider";
 
 export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<{
     barsData?: BarDataType[];
     calendarData: MyCalendarData;
   }>({
-    queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate],
-    queryFn: async () => getStatsDailyTransactionsHelper(startDate, endDate, week),
+    queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsDailyTransactionsHelper(tenantId, startDate, endDate, week);
+    },
+    enabled: !!tenantId,
   });
 };
 const getStatsDailyTransactionsHelper = async (
+  tenantId: string,
   startDate: string,
   endDate: string,
   week = false,
@@ -34,7 +42,7 @@ const getStatsDailyTransactionsHelper = async (
   barsData?: BarDataType[];
   calendarData: MyCalendarData;
 }> => {
-  const data = await getStatsDailyTransactions(startDate, endDate, "Expense");
+  const data = await getStatsDailyTransactions(tenantId, startDate, endDate, "Expense");
 
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
@@ -77,16 +85,23 @@ const getStatsDailyTransactionsHelper = async (
 };
 
 export const useGetStatsYearTransactionsTypes = (startDate: string, endDate: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<DoubleBarPoint[]>({
-    queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate],
-    queryFn: async () => getStatsMonthlyTransactionsTypesHelper(startDate, endDate),
+    queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsMonthlyTransactionsTypesHelper(tenantId, startDate, endDate);
+    },
+    enabled: !!tenantId,
   });
 };
 const getStatsMonthlyTransactionsTypesHelper = async (
+  tenantId: string,
   startDate: string,
   endDate: string,
 ): Promise<DoubleBarPoint[]> => {
-  const data = await getStatsMonthlyTransactionsTypes(startDate, endDate);
+  const data = await getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
 
   //   [
   //    {
@@ -151,30 +166,43 @@ items =
 };
 
 export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<StatsMonthlyCategoriesTransactions[]>({
-    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate],
-    queryFn: async () => getStatsMonthlyCategoriesTransactions(startDate, endDate),
+    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
+    },
+    enabled: !!tenantId,
   });
 };
 
 export const useGetStatsMonthlyCategoriesTransactionsForDashboard = (startDate: string, endDate: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<{
     groups: (PieData & { id: string })[];
     categories: (PieData & { id: string })[];
   }>({
-    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, "dashboard"],
-    queryFn: async () => getStatsMonthlyCategoriesTransactionsDashboardHelper(startDate, endDate),
+    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, "dashboard", tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsMonthlyCategoriesTransactionsDashboardHelper(tenantId, startDate, endDate);
+    },
+    enabled: !!tenantId,
   });
 };
 
 const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
+  tenantId: string,
   startDate: string,
   endDate: string,
 ): Promise<{
   groups: (PieData & { id: string })[];
   categories: (PieData & { id: string })[];
 }> => {
-  const data = await getStatsMonthlyCategoriesTransactions(startDate, endDate);
+  const data = await getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
 
   // Group data by IDs
   const groupsMap = new Map<string, { sum: number; name: string }>();
@@ -218,25 +246,41 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
 };
 
 export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDate: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<StatsMonthlyAccountsTransactions[]>({
-    queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate],
-    queryFn: async () => getStatsMonthlyAccountsTransactionsHelper(startDate, endDate),
+    queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsMonthlyAccountsTransactionsHelper(tenantId, startDate, endDate);
+    },
+    enabled: !!tenantId,
   });
 };
 
-const getStatsMonthlyAccountsTransactionsHelper = async (startDate: string, endDate: string) => {
-  return await getStatsMonthlyAccountsTransactions(startDate, endDate);
+const getStatsMonthlyAccountsTransactionsHelper = async (tenantId: string, startDate: string, endDate: string) => {
+  return await getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
 };
 
 export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<LineChartPoint[]>({
-    queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate],
-    queryFn: async () => getStatsNetWorthGrowthHelper(startDate, endDate),
+    queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getStatsNetWorthGrowthHelper(tenantId, startDate, endDate);
+    },
+    enabled: !!tenantId,
   });
 };
 
-const getStatsNetWorthGrowthHelper = async (startDate: string, endDate: string): Promise<LineChartPoint[]> => {
-  const data = await getStatsNetWorthGrowth(startDate, endDate);
+const getStatsNetWorthGrowthHelper = async (
+  tenantId: string,
+  startDate: string,
+  endDate: string,
+): Promise<LineChartPoint[]> => {
+  const data = await getStatsNetWorthGrowth(tenantId, startDate, endDate);
   return data.map(item => ({
     x: dayjs(item.month).format("MMM"),
     y: item.total_net_worth,

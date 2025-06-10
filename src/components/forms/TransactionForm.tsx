@@ -75,6 +75,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     handleOnMoreSubmit,
     handleSubmit,
     onSelectItem,
+    handleSwitchAccounts,
   } = useTransactionForm({ transaction });
   // console.log(transaction);
 
@@ -197,28 +198,45 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         {/** TODO: Handle IS VOID */}
         {/* </View> */}
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-20`}>
-          <AccountSelecterDropdown
-            label="Account"
-            selectedValue={formData.accountid}
-            onSelect={(value: any) => {
-              handleTextChange("accountid", value.id);
-            }}
-            isModal={Platform.OS !== "web"}
-            accounts={accounts}
-            groupBy="group"
-          />
-          {formData.type === "Transfer" && (
+        <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""} z-20`}>
+          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
             <AccountSelecterDropdown
-              label="Destinaton"
-              selectedValue={formData.transferaccountid}
+              label="Account"
+              selectedValue={formData.accountid}
               onSelect={(value: any) => {
-                handleTextChange("transferaccountid", value.id);
+                handleTextChange("accountid", value.id);
               }}
               isModal={Platform.OS !== "web"}
               accounts={accounts}
               groupBy="group"
             />
+          </View>
+          {formData.type === "Transfer" && (
+            <>
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") {
+                    Haptics.selectionAsync();
+                  }
+                  handleSwitchAccounts();
+                }}
+                className={`p-2 ${Platform.OS === "web" ? "mx-2" : "my-2 self-center"}`}
+              >
+                <MyIcon name="ArrowUpDown" size={24} className="text-primary-300" />
+              </Pressable>
+              <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                <AccountSelecterDropdown
+                  label="Destinaton"
+                  selectedValue={formData.transferaccountid}
+                  onSelect={(value: any) => {
+                    handleTextChange("transferaccountid", value.id);
+                  }}
+                  isModal={Platform.OS !== "web"}
+                  accounts={accounts}
+                  groupBy="group"
+                />
+              </View>
+            </>
           )}
         </View>
         <View className={` ${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative z-10`}>
@@ -397,6 +415,19 @@ const useTransactionForm = ({ transaction }: any) => {
     setDestinationAccount(getAccountById(item.item.transferaccountid));
   };
 
+  const handleSwitchAccounts = () => {
+    setFormData(prevFormData => {
+      const newAccountId = prevFormData.transferaccountid ?? undefined; // Ensure undefined if null
+      const newTransferAccountId = prevFormData.accountid ?? null; // Keep null if undefined, or pass string
+
+      return {
+        ...prevFormData,
+        accountid: newAccountId,
+        transferaccountid: newTransferAccountId,
+      };
+    });
+  };
+
   return {
     formData,
     setFormData,
@@ -414,5 +445,6 @@ const useTransactionForm = ({ transaction }: any) => {
     handleOnMoreSubmit,
     handleSubmit,
     onSelectItem,
+    handleSwitchAccounts,
   };
 };

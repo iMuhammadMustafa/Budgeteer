@@ -19,25 +19,43 @@ import { getConfiguration } from "../apis/Configurations.api";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
 
 export const useGetAccounts = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<Account[]>({
-    queryKey: [TableNames.Accounts],
-    queryFn: getAllAccounts,
+    queryKey: [TableNames.Accounts, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAllAccounts(tenantId);
+    },
+    enabled: !!tenantId,
   });
 };
 
 export const useGetAccountById = (id?: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<Account | null>({
-    queryKey: [TableNames.Accounts, id],
-    queryFn: async () => getAccountById(id!),
-    enabled: !!id,
+    queryKey: [TableNames.Accounts, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAccountById(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 
 export const useGetAccountOpenedTransaction = (id?: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<any>({
-    queryKey: [TableNames.Transactions, id],
-    queryFn: async () => getAccountOpenedTransaction(id!),
-    enabled: !!id,
+    queryKey: [TableNames.Transactions, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAccountOpenedTransaction(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 

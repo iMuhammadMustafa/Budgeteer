@@ -3,25 +3,31 @@ import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllConfigurations = async () => {
-  const { data, error } = await supabase.from(TableNames.Configurations).select().eq("isdeleted", false);
-  if (error) throw new Error(error.message);
-  return data;
-};
-export const getConfigurationById = async (id?: string) => {
+export const getAllConfigurations = async (tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Configurations)
     .select()
+    .eq("tenantid", tenantId)
+    .eq("isdeleted", false);
+  if (error) throw new Error(error.message);
+  return data;
+};
+export const getConfigurationById = async (id: string, tenantId: string) => {
+  const { data, error } = await supabase
+    .from(TableNames.Configurations)
+    .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
-    .eq("id", id!)
+    .eq("id", id)
     .single();
   if (error) throw new Error(error.message);
   return data;
 };
-export const getConfiguration = async (table: string, type: string, key: string) => {
+export const getConfiguration = async (table: string, type: string, key: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Configurations)
     .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .ilike('"table"', table)
     .ilike("type", type)

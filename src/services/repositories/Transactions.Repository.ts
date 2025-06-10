@@ -25,35 +25,54 @@ import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactio
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 
 export const useGetAllTransactions = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<TransactionsView[]>({
-    queryKey: [TableNames.Transactions],
-    queryFn: getAllTransactions,
+    queryKey: [TableNames.Transactions, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAllTransactions(tenantId);
+    },
+    enabled: !!tenantId,
   });
 };
 export const useGetTransactions = (searchFilters: TransactionFilters) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView, searchFilters],
-    queryFn: async () => getTransactions(searchFilters),
+    queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getTransactions(searchFilters, tenantId);
+    },
+    enabled: !!tenantId,
   });
 };
 export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   searchParams = Object.keys(searchParams).length !== 0 ? searchParams : initialSearchFilters;
   return useInfiniteQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView], // Include searchParams in the query key
+    queryKey: [ViewNames.TransactionsView, searchParams, tenantId], // Include searchParams and tenantId in the query key
     initialPageParam: 0, // Start with page 0
     queryFn: async ({ pageParam = 0 }) => {
+      if (!tenantId) throw new Error("Tenant ID not found in session for infinite query");
       // Calculate the range for the current page
       const pageSize = 10; // Number of items per page
       const startIndex = (pageParam as number) * pageSize;
       const endIndex = startIndex + pageSize - 1;
 
       // Fetch transactions for the current page
-      return getTransactions({
-        ...searchParams,
-        startIndex,
-        endIndex,
-      });
+      return getTransactions(
+        {
+          ...searchParams,
+          startIndex,
+          endIndex,
+        },
+        tenantId,
+      );
     },
+    enabled: !!tenantId, // Ensure tenantId is available before enabling the query
     getNextPageParam: (lastPage, allPages) => {
       // If the last page is empty, there are no more pages
       if (lastPage.length === 0) return undefined;
@@ -65,17 +84,28 @@ export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => 
 };
 
 export const useGetTransactionById = (id?: string | null | undefined) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<Transaction>({
-    queryKey: [TableNames.Transactions, id],
-    queryFn: async () => getTransactionById(id!),
-    enabled: !!id,
+    queryKey: [TableNames.Transactions, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getTransactionById(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 export const useSearchTransactionsByName = (text: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<SearchableDropdownItem[]>({
-    queryKey: [ViewNames.SearchDistinctTransactions + text],
-    queryFn: async () => getTransactionsByName(text),
-    enabled: !!text,
+    queryKey: [ViewNames.SearchDistinctTransactions + text, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getTransactionsByName(text, tenantId);
+    },
+    enabled: !!text && !!tenantId,
   });
 };
 

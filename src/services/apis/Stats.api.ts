@@ -4,10 +4,16 @@ import supabase from "@/src/providers/Supabase";
 import { EnumNames, ViewNames } from "@/src/types/db/TableNames";
 import { StatsMonthlyCategoriesTransactions, TransactionType } from "@/src/types/db/Tables.Types";
 
-export const getStatsDailyTransactions = async (startDate?: string, endDate?: string, type?: TransactionType) => {
+export const getStatsDailyTransactions = async (
+  tenantId: string,
+  startDate?: string,
+  endDate?: string,
+  type?: TransactionType,
+) => {
   const { data, error } = await supabase
     .from(ViewNames.StatsDailyTransactions)
     .select()
+    .eq("tenantid", tenantId)
     .eq("type", type ?? "Expense")
     .gte("date", startDate ?? dayjs().startOf("week").toISOString())
     .lte("date", endDate ?? dayjs().endOf("week").toISOString());
@@ -16,10 +22,11 @@ export const getStatsDailyTransactions = async (startDate?: string, endDate?: st
   return data;
 };
 
-export const getStatsMonthlyTransactionsTypes = async (startDate?: string, endDate?: string) => {
+export const getStatsMonthlyTransactionsTypes = async (tenantId: string, startDate?: string, endDate?: string) => {
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyTransactionsTypes)
     .select()
+    .eq("tenantid", tenantId)
     .gte("date", startDate ?? dayjs().startOf("week").toISOString())
     .lte("date", endDate ?? dayjs().endOf("week").toISOString());
 
@@ -28,6 +35,7 @@ export const getStatsMonthlyTransactionsTypes = async (startDate?: string, endDa
 };
 
 export const getStatsMonthlyCategoriesTransactions = async (
+  tenantId: string,
   startDate?: string,
   endDate?: string,
 ): Promise<StatsMonthlyCategoriesTransactions[]> => {
@@ -65,6 +73,7 @@ export const getStatsMonthlyCategoriesTransactions = async (
       groupdisplayorder
     `,
     )
+    .eq("tenantid", tenantId)
     .in("type", ["Expense", "Adjustment"])
     .gte("date", formattedStartDate)
     .lte("date", formattedEndDate);
@@ -73,7 +82,7 @@ export const getStatsMonthlyCategoriesTransactions = async (
   return data;
 };
 
-export const getStatsMonthlyAccountsTransactions = async (startDate?: string, endDate?: string) => {
+export const getStatsMonthlyAccountsTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
   // Format dates to match database format (first day of month at 00:00:00 UTC)
   const formattedStartDate = startDate
     ? dayjs(startDate).startOf("month").format("YYYY-MM-DD")
@@ -86,6 +95,7 @@ export const getStatsMonthlyAccountsTransactions = async (startDate?: string, en
   const { data, error } = await supabase
     .from(ViewNames.StatsMonthlyAccountsTransactions)
     .select()
+    .eq("tenantid", tenantId)
     .gte("date", formattedStartDate)
     .lte("date", formattedEndDate);
 
@@ -93,10 +103,11 @@ export const getStatsMonthlyAccountsTransactions = async (startDate?: string, en
   return data;
 };
 
-export const getStatsNetWorthGrowth = async (startDate?: string, endDate?: string) => {
+export const getStatsNetWorthGrowth = async (tenantId: string, startDate?: string, endDate?: string) => {
   const { data, error } = await supabase
     .from(ViewNames.StatsNetWorthGrowth)
     .select("*")
+    .eq("tenantid", tenantId)
     .gte("month", startDate ?? dayjs().startOf("year").format("YYYY-MM-DD"))
     .lte("month", endDate ?? dayjs().endOf("year").format("YYYY-MM-DD"))
     .order("month", { ascending: true });

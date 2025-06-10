@@ -3,10 +3,11 @@ import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export const getAllTransactionCategories = async () => {
+export const getAllTransactionCategories = async (tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.TransactionCategories)
     .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .order("displayorder", { ascending: false })
     .order("group(displayorder)", { ascending: false })
@@ -15,12 +16,13 @@ export const getAllTransactionCategories = async () => {
   return data;
 };
 
-export const getTransactionCategoryById = async (id?: string) => {
+export const getTransactionCategoryById = async (id: string, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.TransactionCategories)
     .select()
+    .eq("tenantid", tenantId)
     .eq("isdeleted", false)
-    .eq("id", id!)
+    .eq("id", id)
     .single();
   if (error) throw new Error(error.message);
   return data;

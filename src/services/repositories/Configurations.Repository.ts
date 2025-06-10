@@ -15,17 +15,29 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 
 export const useGetConfigurations = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<Configuration[]>({
-    queryKey: [TableNames.Configurations],
-    queryFn: getAllConfigurations,
+    queryKey: [TableNames.Configurations, tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getAllConfigurations(tenantId);
+    },
+    enabled: !!tenantId,
   });
 };
 
 export const useGetConfigurationById = (id?: string) => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
   return useQuery<Configuration>({
-    queryKey: [TableNames.Configurations, id],
-    queryFn: async () => getConfigurationById(id!),
-    enabled: !!id,
+    queryKey: [TableNames.Configurations, id, tenantId],
+    queryFn: async () => {
+      if (!id) throw new Error("ID is required");
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getConfigurationById(id, tenantId);
+    },
+    enabled: !!id && !!tenantId,
   });
 };
 
