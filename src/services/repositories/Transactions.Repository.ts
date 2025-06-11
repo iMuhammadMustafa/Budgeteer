@@ -172,7 +172,7 @@ export const useCreateTransactions = () => {
       if (transactionsGroup.originalTransactionId) {
         await deleteTransaction(transactionsGroup.originalTransactionId, userId);
       }
-      if (transactionsGroup.isvoid === false) {
+      if (!transactionsGroup.isvoid) {
         await updateAccountBalance(transactionsGroup.accountid, totalAmount);
       }
       if (!createdTransactions) {
@@ -244,7 +244,7 @@ export const useDeleteTransaction = () => {
       if (res.transferid) {
         await deleteTransaction(res.transferid, userId);
       }
-      if (res.isvoid === false) {
+      if (!res.isvoid) {
         await updateAccountBalance(res.accountid, -res.amount);
         if (res.transferaccountid) {
           await updateAccountBalance(res.transferaccountid, res.amount);
@@ -269,7 +269,7 @@ export const useRestoreTransaction = (id?: string) => {
       if (res.transferid) {
         await deleteTransaction(res.transferid, userId);
       }
-      if (res.isvoid === false) {
+      if (!res.isvoid) {
         await updateAccountBalance(res.accountid, res.amount);
         if (res.transferaccountid) {
           await updateAccountBalance(res.transferaccountid, -res.amount);
@@ -434,7 +434,7 @@ export const updateTransactionHelper = async (
       }
     }
     //If Unvoided => Add Amount to Accounts
-    if (originalData.isvoid === true && updatedTransaction.isvoid === false) {
+    if (originalData.isvoid && !updatedTransaction.isvoid) {
       originalAccount = {
         id: formTransaction.accountid,
         amount: formTransaction.amount,
@@ -460,8 +460,8 @@ export const updateTransactionHelper = async (
     if (
       !updatedTransaction.accountid &&
       !updatedTransaction.transferaccountid &&
-      updatedTransaction.isvoid === false &&
-      originalData.isvoid === false
+      !updatedTransaction.isvoid &&
+      !originalData.isvoid
     ) {
       const amountDiff = formTransaction.amount! - originalData.amount;
       originalAccount = {
@@ -488,12 +488,11 @@ export const updateTransactionHelper = async (
 
     // originalAccount.id = originalData.accountid;
     // newAccount.id = formTransaction.accountid;
-
     originalAccount = {
       id: originalData.accountid,
       amount: originalData.isvoid === true ? undefined : -parseFloat(originalData.amount.toString()),
     };
-    if (updatedTransaction.isvoid === false) {
+    if (!updatedTransaction.isvoid) {
       newAccount = {
         id: formTransaction.accountid,
         amount: formTransaction.amount ?? originalData.amount,
@@ -523,9 +522,9 @@ export const updateTransactionHelper = async (
 
     originalTransferAccount = {
       id: originalData.transferaccountid,
-      amount: originalData.isvoid === true ? undefined : originalData.amount,
+      amount: originalData.isvoid ? undefined : originalData.amount,
     };
-    if (updatedTransaction.isvoid === false) {
+    if (!updatedTransaction.isvoid) {
       newTransferAccount = {
         id: formTransaction.transferaccountid,
         amount: -formTransaction.amount!,
@@ -533,7 +532,7 @@ export const updateTransactionHelper = async (
     }
   }
 
-  if (updatedTransaction.amount && updatedTransaction.isvoid === false && originalData.isvoid === false) {
+  if (updatedTransaction.amount && !updatedTransaction.isvoid && !originalData.isvoid) {
     // Account Changed
     if (updatedTransaction.accountid) {
       originalAccount = {
