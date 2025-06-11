@@ -20,13 +20,27 @@ export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
 export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
   const { data, error } = await supabase
     .from("view_accounts_with_running_balance" as any)
-    .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
+    .select(`*`)
     .eq("tenantid", tenantId)
     .eq("isdeleted", false)
     .eq("id", id)
     .single();
+
+  if (!data) return null;
+
+  // Now fetch category manually
+  const { data: category, error: categoryError } = await supabase
+    .from(TableNames.AccountCategories)
+    .select("*")
+    .eq("id", data.categoryid)
+    .single();
+  if (categoryError) throw new Error(categoryError.message);
+
   if (error) throw new Error(error.message);
-  return data as unknown as Account | null;
+  return {
+    ...data,
+    category,
+  } as unknown as Account | null;
 };
 
 export const createAccount = async (account: Inserts<TableNames.Accounts>) => {

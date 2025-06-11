@@ -99,6 +99,9 @@ export const useUpsertAccount = () => {
       originalData?: Account;
       addAdjustmentTransaction?: boolean;
     }) => {
+      formAccount.category = undefined;
+      formAccount.running_balance = undefined;
+
       if (formAccount.id && originalData) {
         return await updateAccountHelper(formAccount, session, originalData, addAdjustmentTransaction);
       }
@@ -176,7 +179,6 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
   formAccount.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formAccount.createdby = userId;
   formAccount.tenantid = tenantid;
-  formAccount.running_balance = undefined;
 
   const newAcc = await createAccount(formAccount);
 

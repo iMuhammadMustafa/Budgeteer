@@ -490,7 +490,7 @@ export const updateTransactionHelper = async (
     // newAccount.id = formTransaction.accountid;
     originalAccount = {
       id: originalData.accountid,
-      amount: originalData.isvoid ? undefined : -originalData.amount,
+      amount: originalData.isvoid === true ? undefined : -parseFloat(originalData.amount.toString()),
     };
     if (!updatedTransaction.isvoid) {
       newAccount = {
