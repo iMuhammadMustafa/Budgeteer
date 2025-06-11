@@ -12,6 +12,11 @@ interface IconProps {
 const MyIcon = ({ name, size, color, style, className }: IconProps) => {
   const LucideIcon = icons[name as keyof typeof icons];
 
+  if (!LucideIcon) {
+    console.warn(`Icon with name "${name}" does not exist in Lucide icons.`);
+    return null;
+  }
+
   return <LucideIcon size={size} color={color} style={style} className={className} />;
 };
 
