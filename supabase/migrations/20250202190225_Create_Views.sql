@@ -271,28 +271,34 @@ LEFT JOIN (
         TransactionsView tv -- This is the materialized view
 ) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;
 
-CREATE VIEW Stats_NetWorthGrowth WITH (security_invoker) AS
-WITH MonthlyLatest AS (
-    SELECT *
-    FROM (
-        SELECT
-            *,
-            date_trunc('month', date) AS month,
-            ROW_NUMBER() OVER (
-                PARTITION BY accountid, date_trunc('month', date)
-                ORDER BY date DESC, createdat DESC, updatedat DESC, type DESC, id DESC
-            ) AS rn
-        FROM TransactionsView
-    ) sub
-    WHERE rn = 1
+CREATE OR REPLACE VIEW Stats_NetWorthGrowth WITH (security_invoker) AS
+WITH calendar AS (
+  SELECT DISTINCT date_trunc('month', date) AS month
+  FROM TransactionsView
+),
+
+latest_per_account_monthly AS (
+  SELECT
+    date_trunc('month', c.month) AS month,
+    t.tenantid,
+    t.accountid,
+    t.RunningBalance,
+    ROW_NUMBER() OVER (
+      PARTITION BY c.month, t.tenantid, t.accountid
+      ORDER BY t.date DESC, t.createdat DESC, t.updatedat DESC, t.type DESC, t.id DESC
+    ) AS rn
+  FROM calendar c
+  JOIN TransactionsView t
+    ON t.date <= c.month + INTERVAL '1 month - 1 day'
 )
 SELECT
-    month,
-    SUM(RunningBalance) AS total_net_worth,
-    tenantid
-FROM MonthlyLatest
-GROUP BY month, tenantid
-ORDER BY month;
+  month,
+  SUM(RunningBalance) AS total_net_worth,
+  tenantid
+FROM latest_per_account_monthly
+WHERE rn = 1
+GROUP BY tenantid, month
+ORDER BY tenantid, month;
 
 CREATE OR REPLACE VIEW Stats_TotalAccountBalance WITH (security_invoker) AS
 SELECT
