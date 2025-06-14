@@ -106,7 +106,7 @@ export default function Line({ data, label, color, hideY }: LineProps) {
             <VictoryGroup data={data} color={lineChartColor}>
               <VictoryLine
                 style={{
-                  data: { strokeWidth: 2 }, // Color is inherited from VictoryGroup
+                  data: { strokeWidth: 2, stroke: lineChartColor },
                 }}
                 animate={{
                   duration: 500,
