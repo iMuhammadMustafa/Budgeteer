@@ -74,6 +74,7 @@ export default function SearchableDropdown({
         setIsLoading(true);
 
         const tenantId = session?.user?.user_metadata?.tenantid;
+        const data = await searchAction(depouncedText, tenantId);
         setSuggestions(data);
         setIsLoading(false);
       } else {
