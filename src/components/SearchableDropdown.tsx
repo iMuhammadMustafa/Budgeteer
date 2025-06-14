@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SearchableDropdownItem } from "../types/components/DropdownField.types";
+import { useAuth } from "../providers/AuthProvider";
 
 type SearchableDropdownType = {
   label: string;
@@ -18,7 +19,7 @@ type SearchableDropdownType = {
   placeholder?: string | null;
   searchSetter?: any;
   result?: SearchableDropdownItem[];
-  searchAction: (searchText: string) => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
+  searchAction: (searchText: string, tenantId: string) => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
   onChange: (item: any) => void;
   onSelectItem: (item: any) => void;
   onPress?: () => Promise<SearchableDropdownItem[]> | SearchableDropdownItem[];
@@ -47,6 +48,8 @@ export default function SearchableDropdown({
     width: 0,
   });
 
+  const { session } = useAuth();
+
   useEffect(() => {
     setInputText(initalValue);
     console.log("initalValue", initalValue);
@@ -70,8 +73,7 @@ export default function SearchableDropdown({
       if (!ignoreFetch && depouncedText && depouncedText.length > 0) {
         setIsLoading(true);
 
-        console.log(depouncedText);
-        const data = await searchAction(depouncedText);
+        const tenantId = session?.user?.user_metadata?.tenantid;
         setSuggestions(data);
         setIsLoading(false);
       } else {

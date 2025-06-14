@@ -1,4 +1,4 @@
-import { FunctionNames, TableNames } from "@/src/types/db/TableNames";
+import { FunctionNames, TableNames, ViewNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
@@ -19,7 +19,7 @@ export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
 
 export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
   const { data, error } = await supabase
-    .from("view_accounts_with_running_balance" as any)
+    .from(ViewNames.ViewAccountsWithRunningBalance)
     .select(`*`)
     .eq("tenantid", tenantId)
     .eq("isdeleted", false)
@@ -106,4 +106,21 @@ export const getAccountOpenedTransaction = async (accountid: string, tenantId: s
 
   if (error) throw new Error(error.message);
   return data;
+};
+
+export const getTotalAccountBalance = async (tenantId: string): Promise<{ totalbalance: number } | null> => {
+  const { data, error } = await supabase
+    .from(ViewNames.StatsTotalAccountBalance)
+    .select("totalbalance")
+    .eq("tenantid", tenantId)
+    .single();
+
+  if (error) {
+    // If the error is because no rows were found, it's not a critical error, return null
+    if (error.code === "PGRST116") {
+      return { totalbalance: 0 }; // Or return null if you prefer to indicate no data vs zero balance
+    }
+    throw new Error(error.message);
+  }
+  return data as { totalbalance: number } | null;
 };

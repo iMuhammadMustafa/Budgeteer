@@ -293,3 +293,13 @@ SELECT
 FROM MonthlyLatest
 GROUP BY month, tenantid
 ORDER BY month;
+
+CREATE OR REPLACE VIEW Stats_TotalAccountBalance WITH (security_invoker) AS
+SELECT
+    SUM(acc.balance) as TotalBalance,
+    acc.tenantid
+FROM
+    accounts acc
+WHERE acc.isdeleted = false
+GROUP BY
+    acc.tenantid;

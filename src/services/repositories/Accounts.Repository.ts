@@ -8,6 +8,7 @@ import {
   getAccountById,
   getAccountOpenedTransaction,
   getAllAccounts,
+  getTotalAccountBalance,
   restoreAccount,
   updateAccount,
 } from "../apis/Accounts.api";
@@ -26,6 +27,19 @@ export const useGetAccounts = () => {
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
       return getAllAccounts(tenantId);
+    },
+    enabled: !!tenantId,
+  });
+};
+
+export const useGetTotalAccountBalance = () => {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+  return useQuery<{ totalbalance: number } | null>({
+    queryKey: ["Stats_TotalAccountBalance", tenantId],
+    queryFn: async () => {
+      if (!tenantId) throw new Error("Tenant ID not found in session");
+      return getTotalAccountBalance(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -99,8 +113,10 @@ export const useUpsertAccount = () => {
       originalData?: Account;
       addAdjustmentTransaction?: boolean;
     }) => {
-      formAccount.category = undefined;
-      formAccount.running_balance = undefined;
+      // Explicitly cast to any to allow deletion of properties that might not be in the base type
+      // This is to ensure these potentially existing properties are not sent to the database
+      (formAccount as any).category = undefined;
+      (formAccount as any).running_balance = undefined;
 
       if (formAccount.id && originalData) {
         return await updateAccountHelper(formAccount, session, originalData, addAdjustmentTransaction);

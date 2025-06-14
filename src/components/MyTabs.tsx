@@ -20,6 +20,7 @@ export function Tab({
   selectable = false,
   groupedBy,
   customDetails,
+  Footer,
 }: TabProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -121,6 +122,8 @@ export function Tab({
           <MyIcon name="Trash" size={24} className="bg-red-500" />
         </Pressable>
       )}
+
+      {Footer && <View className="p-2">{Footer}</View>}
     </SafeAreaView>
   );
 }
@@ -224,6 +227,7 @@ type TabProps = {
   customMapping?: any;
   customDetails?: (item: any) => string;
   groupedBy?: string;
+  Footer?: React.ReactNode;
 };
 
 type TabItemType = {

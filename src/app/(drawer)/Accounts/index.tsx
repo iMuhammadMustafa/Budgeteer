@@ -4,9 +4,14 @@ import {
   useDeleteAccountCategory,
   useGetAccountCategories,
 } from "@/src/services/repositories/AccountCategories.Repository";
-import { useDeleteAccount, useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
+import {
+  useDeleteAccount,
+  useGetAccounts,
+  useGetTotalAccountBalance,
+} from "@/src/services/repositories/Accounts.Repository";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
+import { Text, View, ActivityIndicator } from "react-native";
 
 export default function Accounts() {
   const [index, setIndex] = useState(0);
@@ -50,29 +55,54 @@ const Bar = (props: any) => (
   </>
 );
 
-const AccountsRoute = () => (
-  <Tab
-    title="Accounts"
-    queryKey={[TableNames.Accounts]}
-    useGet={useGetAccounts}
-    customMapping={(item: any) => ({
-      ...item,
-      details: item.balance.toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-      }),
-    })}
-    customDetails={item =>
-      `Balance: ${item.balance.toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-      })}`
+const AccountsRoute = () => {
+  const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = useGetTotalAccountBalance();
+
+  const FooterContent = () => {
+    if (isLoadingTotalBalance) {
+      return <ActivityIndicator animating={true} className="my-1" />;
     }
-    useDelete={useDeleteAccount}
-    upsertUrl={"/Accounts/Upsert?accountId="}
-    groupedBy={"category.name"}
-  />
-);
+    if (totalBalanceData) {
+      return (
+        <View className="bg-white border-t border-border items-center rounded-b-lg shadow-md">
+          <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
+          <Text className="font-md font-pbold text-primary-focus text-foreground">
+            {totalBalanceData.totalbalance.toLocaleString("en-US", {
+              style: "currency",
+              currency: "USD", // TODO: Make currency dynamic based on user settings
+            })}
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <Tab
+      title="Accounts"
+      queryKey={[TableNames.Accounts]}
+      useGet={useGetAccounts}
+      customMapping={(item: any) => ({
+        ...item,
+        details: item.balance.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD", // TODO: Make currency dynamic
+        }),
+      })}
+      customDetails={item =>
+        `Balance: ${item.balance.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD", // TODO: Make currency dynamic
+        })}`
+      }
+      useDelete={useDeleteAccount}
+      upsertUrl={"/Accounts/Upsert?accountId="}
+      groupedBy={"category.name"}
+      Footer={<FooterContent />}
+    />
+  );
+};
 
 const AccountsCategoriesRoute = () => (
   <Tab
