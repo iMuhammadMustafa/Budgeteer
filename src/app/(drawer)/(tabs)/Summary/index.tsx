@@ -1,17 +1,28 @@
 import { useState, useCallback } from "react";
-import { View, Text, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Pressable, Modal, Switch, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  ScrollView,
+  Pressable,
+  Modal,
+  Switch,
+  RefreshControl,
+} from "react-native";
 import dayjs from "dayjs";
 import ExpenseComparison from "@/src/components/ExpenseComparison";
 import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services/repositories/Stats.Repository";
 import { Calendar } from "react-native-calendars";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { ViewNames } from "@/src/types/db/TableNames";
 import { RefreshCcw } from "lucide-react-native";
 import { PieData } from "@/src/types/components/Charts.types";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
 
-type TimePeriod = 'month' | '3months' | 'year' | 'custom';
+type TimePeriod = "month" | "3months" | "year" | "custom";
 
 // Type for the raw API response
 type CategoryTransaction = {
@@ -43,27 +54,27 @@ const calculateBudgetUsagePercentage = (sum: number, budget: number): number => 
 const getGradientColors = (usage: number): [string, string] => {
   if (usage <= 0.5) {
     // Green to Yellow
-    return ['#4CAF50', '#FFC107'];
+    return ["#4CAF50", "#FFC107"];
   } else {
     // Yellow to Red
-    return ['#FFC107', '#F44336'];
+    return ["#FFC107", "#F44336"];
   }
 };
 
 // Budget Progress Bar component
-const BudgetProgressBar = ({ 
-  usage, 
-  budget, 
-  spent, 
-  label 
-}: { 
+const BudgetProgressBar = ({
+  usage,
+  budget,
+  spent,
+  label,
+}: {
   usage: number;
   budget: number;
   spent: number;
   label: string;
 }) => {
   const gradientColors = getGradientColors(usage);
-  
+
   return (
     <View className="mb-2">
       <View className="flex-row justify-between items-center mb-1">
@@ -77,9 +88,9 @@ const BudgetProgressBar = ({
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={{ 
-            width: `${usage * 100}%`, 
-            height: '100%' 
+          style={{
+            width: `${usage * 100}%`,
+            height: "100%",
           }}
         />
       </View>
@@ -88,137 +99,128 @@ const BudgetProgressBar = ({
 };
 
 export default function Summary() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("month");
   const [currentMonth, setCurrentMonth] = useState(dayjs().format("YYYY-MM"));
-  const [previousMonth, setPreviousMonth] = useState(dayjs().subtract(1, 'month').format("YYYY-MM"));
+  const [previousMonth, setPreviousMonth] = useState(dayjs().subtract(1, "month").format("YYYY-MM"));
   const [showBudget, setShowBudget] = useState(false);
-  
+
   const [showFirstMonthPicker, setShowFirstMonthPicker] = useState(false);
   const [showSecondMonthPicker, setShowSecondMonthPicker] = useState(false);
-  
+
   const [firstSelectedMonth, setFirstSelectedMonth] = useState(previousMonth);
   const [secondSelectedMonth, setSecondSelectedMonth] = useState(currentMonth);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Get date ranges based on selected time period
   const getDateRange = () => {
-    switch(timePeriod) {
-      case 'month':
+    switch (timePeriod) {
+      case "month":
         return {
           current: {
-            start: dayjs(currentMonth).startOf('month').toISOString(),
-            end: dayjs(currentMonth).endOf('month').toISOString(),
-            label: dayjs(currentMonth).format('MMMM YYYY')
+            start: dayjs(currentMonth).startOf("month").toISOString(),
+            end: dayjs(currentMonth).endOf("month").toISOString(),
+            label: dayjs(currentMonth).format("MMMM YYYY"),
           },
           previous: {
-            start: dayjs(previousMonth).startOf('month').toISOString(),
-            end: dayjs(previousMonth).endOf('month').toISOString(),
-            label: dayjs(previousMonth).format('MMMM YYYY')
-          }
+            start: dayjs(previousMonth).startOf("month").toISOString(),
+            end: dayjs(previousMonth).endOf("month").toISOString(),
+            label: dayjs(previousMonth).format("MMMM YYYY"),
+          },
         };
-      case '3months':
+      case "3months":
         return {
           current: {
-            start: dayjs().subtract(2, 'month').startOf('month').toISOString(),
-            end: dayjs().endOf('month').toISOString(),
-            label: `Last 3 Months`
+            start: dayjs().subtract(2, "month").startOf("month").toISOString(),
+            end: dayjs().endOf("month").toISOString(),
+            label: `Last 3 Months`,
           },
           previous: {
-            start: dayjs().subtract(5, 'month').startOf('month').toISOString(),
-            end: dayjs().subtract(3, 'month').endOf('month').toISOString(),
-            label: `Previous 3 Months`
-          }
+            start: dayjs().subtract(5, "month").startOf("month").toISOString(),
+            end: dayjs().subtract(3, "month").endOf("month").toISOString(),
+            label: `Previous 3 Months`,
+          },
         };
-      case 'year':
+      case "year":
         return {
           current: {
-            start: dayjs().startOf('year').toISOString(),
-            end: dayjs().endOf('year').toISOString(),
-            label: dayjs().format('YYYY')
+            start: dayjs().startOf("year").toISOString(),
+            end: dayjs().endOf("year").toISOString(),
+            label: dayjs().format("YYYY"),
           },
           previous: {
-            start: dayjs().subtract(1, 'year').startOf('year').toISOString(),
-            end: dayjs().subtract(1, 'year').endOf('year').toISOString(),
-            label: dayjs().subtract(1, 'year').format('YYYY')
-          }
+            start: dayjs().subtract(1, "year").startOf("year").toISOString(),
+            end: dayjs().subtract(1, "year").endOf("year").toISOString(),
+            label: dayjs().subtract(1, "year").format("YYYY"),
+          },
         };
-      case 'custom':
+      case "custom":
         return {
           current: {
-            start: dayjs(secondSelectedMonth).startOf('month').toISOString(),
-            end: dayjs(secondSelectedMonth).endOf('month').toISOString(),
-            label: dayjs(secondSelectedMonth).format('MMMM YYYY')
+            start: dayjs(secondSelectedMonth).startOf("month").toISOString(),
+            end: dayjs(secondSelectedMonth).endOf("month").toISOString(),
+            label: dayjs(secondSelectedMonth).format("MMMM YYYY"),
           },
           previous: {
-            start: dayjs(firstSelectedMonth).startOf('month').toISOString(),
-            end: dayjs(firstSelectedMonth).endOf('month').toISOString(),
-            label: dayjs(firstSelectedMonth).format('MMMM YYYY')
-          }
+            start: dayjs(firstSelectedMonth).startOf("month").toISOString(),
+            end: dayjs(firstSelectedMonth).endOf("month").toISOString(),
+            label: dayjs(firstSelectedMonth).format("MMMM YYYY"),
+          },
         };
     }
   };
-  
+
   const dateRange = getDateRange();
-  
+
   // Use Tanstack Query with enabled flag to control when queries run
-  const { 
-    data: currentMonthData, 
+  const {
+    data: currentMonthData,
     isLoading: isCurrentLoading,
     error: currentError,
-    refetch: refetchCurrent
-  } = useGetStatsMonthlyCategoriesTransactions(
-    dateRange.current.start,
-    dateRange.current.end
-  );
-  
-  const { 
-    data: previousMonthData, 
+    refetch: refetchCurrent,
+  } = useGetStatsMonthlyCategoriesTransactions(dateRange.current.start, dateRange.current.end);
+
+  const {
+    data: previousMonthData,
     isLoading: isPreviousLoading,
     error: previousError,
-    refetch: refetchPrevious
-  } = useGetStatsMonthlyCategoriesTransactions(
-    dateRange.previous.start,
-    dateRange.previous.end
-  );
-  
+    refetch: refetchPrevious,
+  } = useGetStatsMonthlyCategoriesTransactions(dateRange.previous.start, dateRange.previous.end);
+
   const isLoading = isCurrentLoading || isPreviousLoading;
   const error = currentError || previousError;
-  
+
   // Handle refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([
-      refetchCurrent(),
-      refetchPrevious()
-    ]).finally(() => {
+    Promise.all([refetchCurrent(), refetchPrevious()]).finally(() => {
       setRefreshing(false);
     });
   }, [refetchCurrent, refetchPrevious]);
-  
+
   // Function to manually refresh data
   const handleRefresh = () => {
     refetchCurrent();
     refetchPrevious();
   };
-  
+
   // Function to load data for a specific period
-  const loadData = async (period: 'current' | 'previous') => {
-    if (period === 'current') {
+  const loadData = async (period: "current" | "previous") => {
+    if (period === "current") {
       await refetchCurrent();
     } else {
       await refetchPrevious();
     }
   };
-  
+
   // Function to transform data into the required format for ExpenseComparison
   const transformDataForComparison = () => {
     // Check if we have the necessary data from both periods
     if (!Array.isArray(currentMonthData) || !Array.isArray(previousMonthData)) return [];
-    
+
     // Get all unique categories from both datasets
     const allCategories = new Set<string>();
     const allGroups = new Set<string>();
-    
+
     // Track categories by their full names to handle potential name conflicts
     currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
       if (item.groupname && item.categoryname) {
@@ -226,26 +228,27 @@ export default function Summary() {
         allGroups.add(item.groupname);
       }
     });
-    
+
     previousMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
       if (item.groupname && item.categoryname) {
         allCategories.add(`${item.groupname}:${item.categoryname}`);
         allGroups.add(item.groupname);
       }
     });
-    
+
     // Create comparison data
     const comparisonData = [
       {
         date: dateRange.previous.label,
         transactions: Array.from(allCategories).map((fullCategory: string) => {
-          const [groupName, categoryName] = fullCategory.split(':');
-          
+          const [groupName, categoryName] = fullCategory.split(":");
+
           // Find the matching data in the previous month
-          const categoryData = previousMonthData.find((item: StatsMonthlyCategoriesTransactions) => 
-            item.groupname === groupName && item.categoryname === categoryName
+          const categoryData = previousMonthData.find(
+            (item: StatsMonthlyCategoriesTransactions) =>
+              item.groupname === groupName && item.categoryname === categoryName,
           );
-          
+
           return {
             category: categoryName,
             group: groupName,
@@ -253,20 +256,21 @@ export default function Summary() {
             categoryIcon: categoryData?.categoryicon || undefined,
             groupIcon: categoryData?.groupicon || undefined,
             categoryBudget: categoryData?.categorybudgetamount || undefined,
-            groupBudget: categoryData?.groupbudgetamount || undefined
+            groupBudget: categoryData?.groupbudgetamount || undefined,
           };
         }),
       },
       {
         date: dateRange.current.label,
         transactions: Array.from(allCategories).map((fullCategory: string) => {
-          const [groupName, categoryName] = fullCategory.split(':');
-          
+          const [groupName, categoryName] = fullCategory.split(":");
+
           // Find the matching data in the current month
-          const categoryData = currentMonthData.find((item: StatsMonthlyCategoriesTransactions) => 
-            item.groupname === groupName && item.categoryname === categoryName
+          const categoryData = currentMonthData.find(
+            (item: StatsMonthlyCategoriesTransactions) =>
+              item.groupname === groupName && item.categoryname === categoryName,
           );
-          
+
           return {
             category: categoryName,
             group: groupName,
@@ -274,50 +278,50 @@ export default function Summary() {
             categoryIcon: categoryData?.categoryicon || undefined,
             groupIcon: categoryData?.groupicon || undefined,
             categoryBudget: categoryData?.categorybudgetamount || undefined,
-            groupBudget: categoryData?.groupbudgetamount || undefined
+            groupBudget: categoryData?.groupbudgetamount || undefined,
           };
         }),
       },
     ];
-    
+
     return comparisonData;
   };
-  
+
   // Calculate budget usage for groups and categories
   const calculateBudgetUsage = () => {
     const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
     const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
-    
+
     if (!Array.isArray(currentMonthData)) return { groupBudgets, categoryBudgets };
-    
+
     // Process categories data
     currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
       if (item.groupname && item.categoryname) {
         // Add to group totals
         if (!groupBudgets[item.groupname]) {
-          groupBudgets[item.groupname] = { 
-            spent: 0, 
-            budget: item.groupbudgetamount || 0 
+          groupBudgets[item.groupname] = {
+            spent: 0,
+            budget: item.groupbudgetamount || 0,
           };
         }
         groupBudgets[item.groupname].spent += Math.abs(item.sum || 0);
-        
+
         // Add to category totals
         const key = `${item.groupname}:${item.categoryname}`;
         categoryBudgets[key] = {
           spent: Math.abs(item.sum || 0),
-          budget: item.categorybudgetamount || 0
+          budget: item.categorybudgetamount || 0,
         };
       }
     });
-    
+
     return { groupBudgets, categoryBudgets };
   };
-  
+
   // Month selection handlers
   const handleMonthSelect = (date: { dateString: string }) => {
-    const formattedDate = dayjs(date.dateString).format('YYYY-MM');
-    
+    const formattedDate = dayjs(date.dateString).format("YYYY-MM");
+
     if (showFirstMonthPicker) {
       setFirstSelectedMonth(formattedDate);
       setShowFirstMonthPicker(false);
@@ -325,51 +329,46 @@ export default function Summary() {
       setSecondSelectedMonth(formattedDate);
       setShowSecondMonthPicker(false);
     }
-    
-    if (timePeriod !== 'custom') {
-      setTimePeriod('custom');
+
+    if (timePeriod !== "custom") {
+      setTimePeriod("custom");
     }
   };
-  
+
   const renderMonthPicker = (isFirstMonth: boolean) => {
     const visible = isFirstMonth ? showFirstMonthPicker : showSecondMonthPicker;
     const setVisible = isFirstMonth ? setShowFirstMonthPicker : setShowSecondMonthPicker;
-    
+
     return (
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setVisible(false)}
-      >
+      <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={() => setVisible(false)}>
         <View className="flex-1 bg-black/50 justify-center items-center">
           <View className="bg-card rounded-md p-4 w-[90%] max-w-md">
             <Text className="text-lg font-semibold text-foreground mb-4 text-center">
-              Select {isFirstMonth ? 'First' : 'Second'} Month
+              Select {isFirstMonth ? "First" : "Second"} Month
             </Text>
-            
+
             <Calendar
               onDayPress={handleMonthSelect}
               hideExtraDays
               markedDates={{
-                [isFirstMonth ? 
-                  dayjs(firstSelectedMonth).format('YYYY-MM-DD') : 
-                  dayjs(secondSelectedMonth).format('YYYY-MM-DD')]: { selected: true, selectedColor: '#4CAF50' }
+                [isFirstMonth
+                  ? dayjs(firstSelectedMonth).format("YYYY-MM-DD")
+                  : dayjs(secondSelectedMonth).format("YYYY-MM-DD")]: { selected: true, selectedColor: "#4CAF50" },
               }}
               theme={{
-                backgroundColor: '#ffffff',
-                calendarBackground: '#ffffff',
-                textSectionTitleColor: '#b6c1cd',
-                selectedDayBackgroundColor: '#4CAF50',
-                selectedDayTextColor: '#ffffff',
-                todayTextColor: '#4CAF50',
-                dayTextColor: '#2d4150',
-                textDisabledColor: '#d9e1e8',
-                monthTextColor: '#2d4150',
+                backgroundColor: "#ffffff",
+                calendarBackground: "#ffffff",
+                textSectionTitleColor: "#b6c1cd",
+                selectedDayBackgroundColor: "#4CAF50",
+                selectedDayTextColor: "#ffffff",
+                todayTextColor: "#4CAF50",
+                dayTextColor: "#2d4150",
+                textDisabledColor: "#d9e1e8",
+                monthTextColor: "#2d4150",
               }}
             />
-            
-            <Pressable 
+
+            <Pressable
               className="bg-danger-500 py-2 px-4 rounded-md mt-4 self-center"
               onPress={() => setVisible(false)}
             >
@@ -380,7 +379,7 @@ export default function Summary() {
       </Modal>
     );
   };
-  
+
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-background">
@@ -392,7 +391,7 @@ export default function Summary() {
       </SafeAreaView>
     );
   }
-  
+
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-background">
@@ -400,27 +399,24 @@ export default function Summary() {
         <View className="flex-1 justify-center items-center p-5">
           <Text className="text-lg font-bold text-danger-500 mb-2">Failed to load expense data</Text>
           <Text className="text-sm text-muted text-center">
-            {error instanceof Error ? error.message : 'Unknown error occurred'}
+            {error instanceof Error ? error.message : "Unknown error occurred"}
           </Text>
-          <Pressable 
-            onPress={handleRefresh}
-            className="mt-4 bg-primary py-2 px-4 rounded-md"
-          >
+          <Pressable onPress={handleRefresh} className="mt-4 bg-primary py-2 px-4 rounded-md">
             <Text className="text-white">Try Again</Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
-  
+
   const comparisonData = transformDataForComparison();
   const { groupBudgets, categoryBudgets } = calculateBudgetUsage();
-  
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
-      <ScrollView 
-        contentContainerStyle={{ flexGrow: 1 }} 
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
         className="px-2"
         refreshControl={
           <RefreshControl
@@ -436,87 +432,102 @@ export default function Summary() {
         <View className="items-center py-6">
           <View className="flex-row items-center justify-between w-full mb-3">
             <Text className="text-2xl font-bold text-foreground">Expense Comparison</Text>
-            <Pressable 
-              onPress={handleRefresh}
-              className="p-2"
-            >
+            <Pressable onPress={handleRefresh} className="p-2">
               <RefreshCcw size={24} color="#4CAF50" />
             </Pressable>
           </View>
-          
+
           {/* Budget toggle */}
           <View className="w-full mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
             <Text className="text-foreground">Show Budget Usage</Text>
             <Switch
               value={showBudget}
               onValueChange={setShowBudget}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={showBudget ? '#4CAF50' : '#f4f3f4'}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={showBudget ? "#4CAF50" : "#f4f3f4"}
             />
           </View>
-          
+
           {/* Time period selector */}
           <View className="w-full mb-3 bg-card/30 rounded-lg p-1">
             <View className="flex-row mb-1">
-              <Pressable 
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'month' ? 'bg-primary' : ''}`}
-                onPress={() => setTimePeriod('month')}>
-                <Text className={`text-xs font-medium ${timePeriod === 'month' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Monthly</Text>
+              <Pressable
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "month" ? "bg-primary" : ""}`}
+                onPress={() => setTimePeriod("month")}
+              >
+                <Text
+                  className={`text-xs font-medium ${timePeriod === "month" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  Monthly
+                </Text>
               </Pressable>
-              <Pressable 
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === '3months' ? 'bg-primary' : ''}`}
-                onPress={() => setTimePeriod('3months')}>
-                <Text className={`text-xs font-medium ${timePeriod === '3months' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>3 Months</Text>
+              <Pressable
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "3months" ? "bg-primary" : ""}`}
+                onPress={() => setTimePeriod("3months")}
+              >
+                <Text
+                  className={`text-xs font-medium ${timePeriod === "3months" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  3 Months
+                </Text>
               </Pressable>
             </View>
             <View className="flex-row">
-              <Pressable 
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'year' ? 'bg-primary' : ''}`}
-                onPress={() => setTimePeriod('year')}>
-                <Text className={`text-xs font-medium ${timePeriod === 'year' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Yearly</Text>
+              <Pressable
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "year" ? "bg-primary" : ""}`}
+                onPress={() => setTimePeriod("year")}
+              >
+                <Text
+                  className={`text-xs font-medium ${timePeriod === "year" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  Yearly
+                </Text>
               </Pressable>
-              <Pressable 
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === 'custom' ? 'bg-primary' : ''}`}
-                onPress={() => setTimePeriod('custom')}>
-                <Text className={`text-xs font-medium ${timePeriod === 'custom' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>Custom</Text>
+              <Pressable
+                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "custom" ? "bg-primary" : ""}`}
+                onPress={() => setTimePeriod("custom")}
+              >
+                <Text
+                  className={`text-xs font-medium ${timePeriod === "custom" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  Custom
+                </Text>
               </Pressable>
             </View>
           </View>
-          
-          {timePeriod === 'custom' && (
+
+          {timePeriod === "custom" && (
             <View className="w-full flex-row mb-4 justify-center gap-2">
-              <Pressable 
+              <Pressable
                 className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
                 onPress={() => setShowFirstMonthPicker(true)}
               >
-                <Text className="text-center text-foreground text-xs">{dayjs(firstSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs">
+                  {dayjs(firstSelectedMonth).format("MMM YYYY")}
+                </Text>
               </Pressable>
               <Text className="text-foreground self-center">vs</Text>
-              <Pressable 
+              <Pressable
                 className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
                 onPress={() => setShowSecondMonthPicker(true)}
               >
-                <Text className="text-center text-foreground text-xs">{dayjs(secondSelectedMonth).format('MMM YYYY')}</Text>
+                <Text className="text-center text-foreground text-xs">
+                  {dayjs(secondSelectedMonth).format("MMM YYYY")}
+                </Text>
               </Pressable>
             </View>
           )}
-          
+
           <Text className="text-sm text-muted-foreground mb-4 text-center">
             Comparing: {dateRange.previous.label} vs {dateRange.current.label}
           </Text>
 
           {/* Load Data Buttons */}
           <View className="w-full flex-row gap-2 mb-4">
-            <Pressable 
-              className="flex-1 py-2 px-4 bg-primary rounded-md"
-              onPress={() => loadData('previous')}
-            >
+            <Pressable className="flex-1 py-2 px-4 bg-primary rounded-md" onPress={() => loadData("previous")}>
               <Text className="text-white text-center">Load {dateRange.previous.label}</Text>
             </Pressable>
-            <Pressable 
-              className="flex-1 py-2 px-4 bg-primary rounded-md"
-              onPress={() => loadData('current')}
-            >
+            <Pressable className="flex-1 py-2 px-4 bg-primary rounded-md" onPress={() => loadData("current")}>
               <Text className="text-white text-center">Load {dateRange.current.label}</Text>
             </Pressable>
           </View>
@@ -525,7 +536,7 @@ export default function Summary() {
           {showBudget && (
             <View className="w-full mb-6 bg-card/30 rounded-lg p-4">
               <Text className="text-lg font-semibold text-foreground mb-4">Budget Usage</Text>
-              
+
               {/* Group Budgets */}
               <View className="mb-4">
                 <Text className="text-base font-medium text-foreground mb-2">Groups</Text>
@@ -539,12 +550,12 @@ export default function Summary() {
                   />
                 ))}
               </View>
-              
+
               {/* Category Budgets */}
               <View>
                 <Text className="text-base font-medium text-foreground mb-2">Categories</Text>
                 {Object.entries(categoryBudgets).map(([key, { spent, budget }]) => {
-                  const [groupName, categoryName] = key.split(':');
+                  const [groupName, categoryName] = key.split(":");
                   return (
                     <BudgetProgressBar
                       key={key}
@@ -560,22 +571,24 @@ export default function Summary() {
           )}
 
           {comparisonData.length > 0 ? (
-            <View className="w-full items-center mb-6">
+            <View className="w-full items-center  mb-6">
               <View className="w-full max-w-2xl">
                 <ExpenseComparison data={comparisonData} />
               </View>
             </View>
           ) : (
             <View className="justify-center items-center p-5">
-              <Text className="text-base text-muted-foreground text-center">No transaction data available for comparison</Text>
+              <Text className="text-base text-muted-foreground text-center">
+                No transaction data available for comparison
+              </Text>
             </View>
           )}
         </View>
       </ScrollView>
-      
+
       {/* Month picker modals */}
       {renderMonthPicker(true)}
       {renderMonthPicker(false)}
     </SafeAreaView>
-  )
+  );
 }

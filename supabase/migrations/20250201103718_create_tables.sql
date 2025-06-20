@@ -214,3 +214,55 @@ ALTER TABLE Configruations Enable Row Level Security;
 CREATE POLICY "Tenant access" ON Configruations as PERMISSIVE for ALL USING (TenantId = auth.tenantid());
 CREATE INDEX "Configruations_TenantId" ON Configruations (TenantId);
 CREATE INDEX "Configruations_IsDeleted" ON Configruations (IsDeleted);
+
+-- Add Reminders Table
+CREATE TABLE IF NOT EXISTS reminders (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    createdby uuid REFERENCES auth.users(id),
+    createdat timestamptz DEFAULT now(),
+    updatedby uuid REFERENCES auth.users(id),
+    updatedat timestamptz DEFAULT now(),
+    isdeleted boolean DEFAULT false,
+    tenantid uuid NOT NULL,
+    name text NOT NULL,
+    description text,
+    Type TransactionTypes NOT NULL DEFAULT 'Expense',
+    nextoccurrencedate date NOT NULL,
+    recurrencerule text NOT NULL, -- e.g., 'FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=15'
+    enddate date,
+    amount numeric(12, 2) NOT NULL,
+    currencycode char(3) NOT NULL DEFAULT 'USD',
+    sourceaccountid uuid NOT NULL REFERENCES accounts(id),
+    categoryid uuid REFERENCES TransactionCategories(id),
+    payeename text,
+    notes text,
+    isactive boolean DEFAULT true,
+    lastexecutedat timestamptz
+);
+
+-- Renaming columns in 'reminders' table to remove underscores
+ALTER TABLE reminders RENAME COLUMN created_by TO createdBy;
+ALTER TABLE reminders RENAME COLUMN created_at TO createdAt;
+ALTER TABLE reminders RENAME COLUMN updated_by TO updatedBy;
+ALTER TABLE reminders RENAME COLUMN updated_at TO updatedAt;
+ALTER TABLE reminders RENAME COLUMN is_deleted TO isDeleted;
+ALTER TABLE reminders RENAME COLUMN tenant_id TO tenantId;
+ALTER TABLE reminders RENAME COLUMN next_occurrence_date TO nextOccurrenceDate;
+ALTER TABLE reminders RENAME COLUMN recurrence_rule TO recurrenceRule;
+ALTER TABLE reminders RENAME COLUMN end_date TO endDate;
+ALTER TABLE reminders RENAME COLUMN currency_code TO currencyCode;
+ALTER TABLE reminders RENAME COLUMN source_account_id TO sourceAccountId;
+ALTER TABLE reminders RENAME COLUMN category_id TO categoryId;
+ALTER TABLE reminders RENAME COLUMN payee_name TO payeeName;
+ALTER TABLE reminders RENAME COLUMN is_active TO isActive;
+ALTER TABLE reminders RENAME COLUMN last_executed_at TO lastExecutedAt;
+
+-- RLS Policies for Reminders Table
+Alter table reminders Enable Row Level Security;
+-- Note: The RLS policy references TenantId. If tenant_id was renamed to tenantId,
+-- this policy might need to be updated if it was created before the rename.
+-- However, if the RENAME happens before this policy is applied in a fresh setup, it should use the new name.
+-- For existing databases, ensure the policy condition uses the new column name if it was already created.
+CREATE POLICY "Tenant access" ON reminders as PERMISSIVE  for ALL USING (tenantId = auth.tenantid()); -- Assuming tenantId is the new name
+CREATE INDEX IF NOT EXISTS "Reminders_TenantId" ON Reminders (tenantId); -- Assuming tenantId is the new name
+CREATE INDEX IF NOT EXISTS "Reminders_IsDeleted" ON Reminders (isDeleted); -- Assuming isDeleted is the new name

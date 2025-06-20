@@ -52,7 +52,6 @@ export default function SearchableDropdown({
 
   useEffect(() => {
     setInputText(initalValue);
-    console.log("initalValue", initalValue);
   }, [initalValue]);
 
   useEffect(() => {

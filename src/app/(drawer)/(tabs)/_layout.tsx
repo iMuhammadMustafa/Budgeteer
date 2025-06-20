@@ -43,7 +43,7 @@ const AddTransaction = (
 
 const RemindersTab = (
   <Tabs.Screen
-    name="Reminders/index"
+    name="Reminders"
     options={{
       title: "Reminders",
       tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color} size={24} />,

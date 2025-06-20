@@ -21,6 +21,7 @@ export function Tab({
   groupedBy,
   customDetails,
   Footer,
+  customRenderItem, // Added new prop
 }: TabProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -82,23 +83,39 @@ export function Tab({
             ).map(([groupName, itemsInGroup]) => (
               <View key={groupName}>
                 <Text className="font-bold text-lg p-2 px-4 bg-card text-foreground">{groupName}</Text>
-                {itemsInGroup.map((item: any) => (
-                  <ListItem
-                    key={item.id}
-                    id={item.id}
-                    onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
-                    onPress={() => handlePress(item.id)}
-                    name={item.name}
-                    details={customDetails ? customDetails(item) : item.details}
-                    icon={item.icon}
-                    iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type)?.color}
-                    isSelected={selectedIds.includes(item.id)}
-                  />
-                ))}
+                {itemsInGroup.map((item: any) =>
+                  customRenderItem ? (
+                    customRenderItem(
+                      item,
+                      selectedIds.includes(item.id),
+                      () => (selectable ? handleLongPress(item.id) : null),
+                      () => handlePress(item.id),
+                    )
+                  ) : (
+                    <ListItem
+                      key={item.id}
+                      id={item.id}
+                      onLongPress={() => (selectable ? handleLongPress(item.id) : null)}
+                      onPress={() => handlePress(item.id)}
+                      name={item.name}
+                      details={customDetails ? customDetails(item) : item.details}
+                      icon={item.icon}
+                      iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type)?.color}
+                      isSelected={selectedIds.includes(item.id)}
+                    />
+                  ),
+                )}
               </View>
             ))
-          : data?.map((item: any) => {
-              return (
+          : data?.map((item: any) =>
+              customRenderItem ? (
+                customRenderItem(
+                  item,
+                  selectedIds.includes(item.id),
+                  () => (selectable ? handleLongPress(item.id) : null),
+                  () => handlePress(item.id),
+                )
+              ) : (
                 <ListItem
                   key={item.id}
                   id={item.id}
@@ -110,8 +127,8 @@ export function Tab({
                   iconColor={item.iconColor ? item.iconColor : getTransactionProp(item.type)?.color}
                   isSelected={selectedIds.includes(item.id)}
                 />
-              );
-            })}
+              ),
+            )}
       </ScrollView>
 
       {isSelectionMode && (
@@ -228,6 +245,7 @@ type TabProps = {
   customDetails?: (item: any) => string;
   groupedBy?: string;
   Footer?: React.ReactNode;
+  customRenderItem?: (item: any, isSelected: boolean, onLongPress: () => void, onPress: () => void) => React.ReactNode; // Added to props type
 };
 
 type TabItemType = {

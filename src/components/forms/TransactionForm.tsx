@@ -122,10 +122,18 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         )}
         <MyDateTimePicker
           label="Date"
-          date={dayjs(formData.date)}
-          onChange={params => {
-            const formatedDate = dayjs(params.date).local().format("YYYY-MM-DDTHH:mm:ss");
-            handleTextChange("date", formatedDate);
+          date={dayjs(formData.date)} // MyDateTimePicker expects Dayjs | null | undefined
+          onChange={isoDateString => {
+            // onChange now provides string | null
+            if (isoDateString) {
+              const formatedDate = dayjs(isoDateString).local().format("YYYY-MM-DDTHH:mm:ss");
+              handleTextChange("date", formatedDate);
+            } else {
+              // Handle case where date is cleared, if applicable for transactions
+              // For now, we assume a date is always required for a transaction.
+              // If it can be nullable, set formData.date to null or an appropriate default.
+              // For example: handleTextChange("date", null);
+            }
           }}
         />
 
@@ -173,7 +181,12 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           <MyCategoriesDropdown
             selectedValue={formData.categoryid}
             categories={categories}
-            onSelect={value => handleTextChange("categoryid", value.id)}
+            onSelect={value => {
+              if (value) {
+                // Handle possible null
+                handleTextChange("categoryid", value.id);
+              }
+            }}
             isModal={Platform.OS !== "web"}
           />
           <MyTransactionTypesDropdown

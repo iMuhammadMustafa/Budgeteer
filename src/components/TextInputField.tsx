@@ -8,6 +8,9 @@ type TextInputFieldProps = {
   keyboardType?: "default" | "numeric" | "email-address";
   className?: string;
   isReadOnly?: boolean;
+  placeholder?: string;
+  multiline?: boolean;
+  maxLength?: number;
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
@@ -26,17 +29,24 @@ function TextInputFieldMemo({
   keyboardType = "default",
   className,
   isReadOnly = false,
+  placeholder,
+  multiline = false,
+  maxLength,
 }: TextInputFieldProps) {
   return (
     <View className={`my-1 ${className ?? ""} -z-10 relative`}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
-        className={`text-black border rounded-md p-3 border-gray-300 ${isReadOnly ? "bg-gray-200" : "bg-white"} `}
+        className={`text-black border rounded-md p-3 border-gray-300 ${isReadOnly ? "bg-gray-200" : "bg-white"} ${multiline ? "h-20" : ""}`}
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}
         aria-disabled={isReadOnly}
         editable={!isReadOnly}
+        placeholder={placeholder}
+        placeholderTextColor="#9ca3af" // gray-400
+        multiline={multiline}
+        maxLength={maxLength}
       />
     </View>
   );

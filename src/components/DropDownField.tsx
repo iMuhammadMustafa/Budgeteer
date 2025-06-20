@@ -147,10 +147,10 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
         </>
       )}
       className={`rounded-md ${isModal ? "max-h-[300px]" : "max-h-40 border border-gray-300 relative z-10"}`}
-      contentContainerStyle={{ 
-        backgroundColor: 'white', 
-        padding: isModal ? 8 : 0, 
-        borderRadius: 8
+      contentContainerStyle={{
+        backgroundColor: "white",
+        padding: isModal ? 8 : 0,
+        borderRadius: 8,
       }}
       showsVerticalScrollIndicator={true}
       nestedScrollEnabled={true}
@@ -192,35 +192,49 @@ export const MyCategoriesDropdown = ({
   categories,
   onSelect,
   isModal,
+  label = "Category", // Added default label
+  showClearButton, // Added
+  onClear, // Added
 }: {
-  selectedValue: any;
-  categories: any;
-  onSelect: (value: any) => any;
+  selectedValue: string | null | undefined; // More specific type
+  categories: import("../types/db/Tables.Types").TransactionCategory[] | undefined; // Use specific type
+  onSelect: (value: OptionItem | null) => any; // onSelect provides OptionItem or null
   isModal: boolean;
+  label?: string; // Added label prop
+  showClearButton?: boolean; // Added
+  onClear?: () => void; // Added
 }) => {
   return (
-    <DropdownField
-      isModal={isModal}
-      label="Category"
-      selectedValue={selectedValue}
-      options={
-        categories?.map((category: any) => ({
-          id: category.id,
-          label: category.name,
-          value: category,
-          icon: category.icon,
-          iconColorClass:
-            category.type === "Income"
-              ? "text-success-500"
-              : category.type === "Expense"
-                ? "text-danger-500"
-                : "text-info-500",
-          group: category.group.name,
-        })) ?? []
-      }
-      groupBy="group"
-      onSelect={(value: any) => onSelect(value)}
-    />
+    <View className="flex-row items-end">
+      <DropdownField
+        isModal={isModal}
+        label={label} // Use the passed label
+        selectedValue={selectedValue}
+        options={
+          categories?.map(category => ({
+            // category is now TransactionCategory
+            id: category.id,
+            label: category.name ?? "Unnamed Category", // Handle possible null name
+            value: category, // The whole category object can be the value
+            icon: category.icon ?? undefined, // Handle possible null icon
+            iconColorClass:
+              category.transaction_type === "Income" // Assuming transaction_type field exists
+                ? "text-success-500"
+                : category.transaction_type === "Expense"
+                  ? "text-danger-500"
+                  : "text-info-500", // Default or for other types
+            group: category.group?.name ?? "Uncategorized", // Handle possible null group or group.name
+          })) ?? []
+        }
+        groupBy="group"
+        onSelect={onSelect} // Pass onSelect directly
+      />
+      {showClearButton && onClear && selectedValue && (
+        <Pressable onPress={onClear} className="p-2 mb-3 ml-1 bg-gray-200 rounded">
+          <MyIcon name="X" size={18} className="text-gray-600" />
+        </Pressable>
+      )}
+    </View>
   );
 };
 
