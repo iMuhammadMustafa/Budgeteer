@@ -1,9 +1,9 @@
-import { Text, View, Pressable } from "react-native";
+import { Text, View, Pressable, Modal, TextInput, StyleSheet } from "react-native";
 import { Tab } from "@/src/components/MyTabs";
 import {
   useListReminders,
   useDeleteReminder,
-  useExecuteReminderAction, // Changed from useApplyReminderTransaction
+  useExecuteReminderAction,
 } from "@/src/services/repositories/Reminders.Repository";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Reminder } from "@/src/types/db/Tables.Types";
@@ -12,6 +12,7 @@ import MyIcon from "@/src/utils/Icons.Helper";
 import { router, Href } from "expo-router";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
+import { useState } from "react";
 
 export default function RemindersScreen() {
   const { session } = useAuth();
@@ -19,28 +20,35 @@ export default function RemindersScreen() {
 
   const { mutate: executeReminder, isPending: isApplying } = useExecuteReminderAction();
 
-  const handleExecuteReminder = (id: string) => {
+  // State for modal to enter amount
+  const [modalVisible, setModalVisible] = useState(false);
+  const [pendingReminderId, setPendingReminderId] = useState<string | null>(null);
+  const [amountInput, setAmountInput] = useState<string>("");
+
+  const handleExecuteReminder = (id: string, amountOverride?: number) => {
     if (!tenantId) {
       console.error("Tenant ID not found");
       return;
     }
-    executeReminder(id, {
-      onSuccess: () => {
-        console.log("Reminder executed successfully, transaction created and reminder updated:", id);
-        // Invalidation is handled within the useExecuteReminderAction's onSuccess
+    executeReminder(
+      { id, amount: amountOverride },
+      {
+        onSuccess: () => {
+          setModalVisible(false);
+          setAmountInput("");
+          setPendingReminderId(null);
+          // Invalidation is handled within the useExecuteReminderAction's onSuccess
+        },
+        onError: (error: Error) => {
+          console.error("Error executing reminder:", id, error.message);
+        },
       },
-      onError: (error: Error) => {
-        // Added Error type
-        console.error("Error executing reminder:", id, error.message);
-        // Optionally, show a user-facing error message (e.g., using a toast)
-      },
-    });
+    );
   };
 
   const customReminderDetails = (item: Reminder) => {
     let details = `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")} | Amount: ${item.amount} ${item.currencycode}`;
     if (item.recurrencerule) {
-      // Basic parsing for display, can be improved
       const parts = item.recurrencerule.split(";");
       const freq = parts.find(p => p.startsWith("FREQ="))?.split("=")[1];
       const interval = parts.find(p => p.startsWith("INTERVAL="))?.split("=")[1];
@@ -70,8 +78,13 @@ export default function RemindersScreen() {
         </View>
         <Pressable
           onPress={e => {
-            e.stopPropagation(); // Prevent triggering the item's onPress
-            handleExecuteReminder(item.id); // Changed to handleExecuteReminder
+            e.stopPropagation();
+            if (!item.amount || item.amount === 0) {
+              setPendingReminderId(item.id);
+              setModalVisible(true);
+            } else {
+              handleExecuteReminder(item.id);
+            }
           }}
           disabled={isApplying}
           className="p-2  rounded-md ml-2"
@@ -83,16 +96,121 @@ export default function RemindersScreen() {
   };
 
   return (
-    <Tab
-      title="Recurring Reminders"
-      queryKey={[TableNames.Reminders, tenantId]}
-      useGet={() => useListReminders()}
-      useDelete={useDeleteReminder}
-      upsertUrl={"/Reminders/Upsert?id=" as any} // Path to the creation/edit page
-      selectable={true} // Enable long press for delete
-      // customDetails={customReminderDetails} // Using custom renderItem instead
-      customRenderItem={renderReminderItem} // Pass the custom render function
-      // Grouping can be added later if needed, e.g., by is_active or nextoccurrencedate
-    />
+    <>
+      <Tab
+        title="Recurring Reminders"
+        queryKey={[TableNames.Reminders, tenantId]}
+        useGet={() => useListReminders()}
+        useDelete={useDeleteReminder}
+        upsertUrl={"/Reminders/Upsert?id=" as any}
+        selectable={true}
+        customRenderItem={renderReminderItem}
+      />
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setModalVisible(false);
+          setAmountInput("");
+          setPendingReminderId(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Enter Amount</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={amountInput}
+              onChangeText={setAmountInput}
+              placeholder="Amount"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => {
+                  setModalVisible(false);
+                  setAmountInput("");
+                  setPendingReminderId(null);
+                }}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.button, styles.applyButton]}
+                onPress={() => {
+                  if (pendingReminderId && parseFloat(amountInput) > 0) {
+                    handleExecuteReminder(pendingReminderId, parseFloat(amountInput));
+                  }
+                }}
+                disabled={
+                  !pendingReminderId ||
+                  !amountInput ||
+                  isNaN(Number(amountInput)) ||
+                  parseFloat(amountInput) <= 0 ||
+                  isApplying
+                }
+              >
+                <Text style={styles.buttonText}>Apply</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 24,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 10,
+    width: "100%",
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  button: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    marginHorizontal: 4,
+  },
+  cancelButton: {
+    backgroundColor: "#ccc",
+  },
+  applyButton: {
+    backgroundColor: "#007bff",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});

@@ -203,13 +203,17 @@ export const useExecuteReminderAction = () => {
   const userId = session?.user.id;
   const tenantId = session?.user?.user_metadata?.tenantid;
 
+  /**
+   * Accepts { id, amount? }
+   * If amount is provided, it overrides the reminder's amount for this execution.
+   */
   return useMutation({
-    mutationFn: async (reminderIdString: string) => {
+    mutationFn: async (params: { id: string; amount?: number }) => {
+      const { id: reminderIdString, amount } = params;
       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
       // 1. Fetch the reminder details
       const reminder = await getReminderById(reminderIdString, tenantId);
-      // Reminder object properties are now all lowercase as per TS errors
       if (!reminder || !reminder.isactive) {
         throw new Error("Reminder not found, not active, or does not belong to tenant.");
       }
@@ -220,17 +224,16 @@ export const useExecuteReminderAction = () => {
       const transactionPayload: TransactionInserts<TableNames.Transactions> = {
         name: reminder.name,
         description: reminder.description,
-        amount: reminder.amount,
-        // currencycode: reminder.currencycode, // Ignoring for now, would be lowercase
+        amount: typeof amount === "number" && !isNaN(amount) && amount > 0 ? amount : reminder.amount,
         date: currentNextOccurrenceDate.toISOString(),
-        accountid: reminder.sourceaccountid, // lowercase from reminder object
-        payee: reminder.payeename, // lowercase
-        notes: reminder.notes, // lowercase
-        type: reminder.type, // Use reminder.type
+        accountid: reminder.sourceaccountid,
+        payee: reminder.payeename,
+        notes: reminder.notes,
+        type: reminder.type,
         tenantid: tenantId,
         createdby: userId,
         createdat: dayjs().toISOString(),
-        categoryid: reminder.categoryid ?? " ", // lowercase from reminder, placeholder if null
+        categoryid: reminder.categoryid ?? " ",
       };
 
       const newTransaction = await createTransaction(transactionPayload);
@@ -240,7 +243,7 @@ export const useExecuteReminderAction = () => {
 
       // 3. Calculate the new next_occurrence_date
       let newNextOccurrenceDate: dayjs.Dayjs;
-      const rrule = reminder.recurrencerule; // lowercase
+      const rrule = reminder.recurrencerule;
       let freq = "MONTHLY";
       let interval = 1;
 
@@ -272,17 +275,15 @@ export const useExecuteReminderAction = () => {
       }
 
       // 4. Update the reminder
-      // UpdateReminderDto now expects all lowercase properties
       const reminderUpdateData: UpdateReminderDto = {
-        lastexecutedat: currentNextOccurrenceDate.toISOString(), // lowercase
-        nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"), // lowercase
-        updatedby: userId, // lowercase
-        updatedat: dayjs().toISOString(), // lowercase
+        lastexecutedat: currentNextOccurrenceDate.toISOString(),
+        nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
+        updatedby: userId,
+        updatedat: dayjs().toISOString(),
       };
 
       if (reminder.enddate && newNextOccurrenceDate.isAfter(dayjs(reminder.enddate))) {
-        // lowercase
-        (reminderUpdateData as any).isactive = false; // lowercase
+        (reminderUpdateData as any).isactive = false;
       }
 
       await updateReminder(reminderIdString, reminderUpdateData, tenantId);
@@ -291,14 +292,12 @@ export const useExecuteReminderAction = () => {
     },
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, variables, tenantId] }); // Invalidate specific reminder
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }); // Invalidate transactions
-      // Potentially invalidate views that depend on transactions
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, variables.id, tenantId] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
     },
     onError: error => {
       console.error("Error executing reminder action:", error);
-      // Consider user-facing error reporting here (e.g., via toast)
       throw error;
     },
   });
