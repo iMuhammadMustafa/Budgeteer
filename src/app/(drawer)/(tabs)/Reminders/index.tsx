@@ -1,4 +1,5 @@
-import { Text, View, Pressable, Modal, TextInput, StyleSheet } from "react-native";
+import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Tab } from "@/src/components/MyTabs";
 import {
   useListReminders,
@@ -23,6 +24,8 @@ export default function RemindersScreen() {
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingReminderId, setPendingReminderId] = useState<string | null>(null);
+  const [pendingReminderType, setPendingReminderType] = useState<string | null>(null);
+  const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [amountInput, setAmountInput] = useState<string>("");
 
   const handleExecuteReminder = (id: string, amountOverride?: number) => {
@@ -30,14 +33,20 @@ export default function RemindersScreen() {
       console.error("Tenant ID not found");
       return;
     }
+    // Apply sign to amount if not Transfer
+    let finalAmount = amountOverride;
+    if (pendingReminderType !== "Transfer" && typeof amountOverride === "number") {
+      finalAmount = mode === "minus" ? -Math.abs(amountOverride) : Math.abs(amountOverride);
+    }
     executeReminder(
-      { id, amount: amountOverride },
+      { id, amount: finalAmount },
       {
         onSuccess: () => {
           setModalVisible(false);
           setAmountInput("");
           setPendingReminderId(null);
-          // Invalidation is handled within the useExecuteReminderAction's onSuccess
+          setPendingReminderType(null);
+          setMode("minus");
         },
         onError: (error: Error) => {
           console.error("Error executing reminder:", id, error.message);
@@ -81,6 +90,8 @@ export default function RemindersScreen() {
             e.stopPropagation();
             if (!item.amount || item.amount === 0) {
               setPendingReminderId(item.id);
+              setPendingReminderType(item.type);
+              setMode(item.type === "Transfer" ? "plus" : "minus");
               setModalVisible(true);
             } else {
               handleExecuteReminder(item.id);
@@ -114,32 +125,57 @@ export default function RemindersScreen() {
           setModalVisible(false);
           setAmountInput("");
           setPendingReminderId(null);
+          setPendingReminderType(null);
+          setMode("minus");
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Amount</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              value={amountInput}
-              onChangeText={setAmountInput}
-              placeholder="Amount"
-              autoFocus
-            />
-            <View style={styles.modalButtons}>
+        <View className="flex-1 bg-black/40 justify-center items-center">
+          <View className="bg-white rounded-xl p-6 w-4/5 items-center">
+            <Text className="text-lg font-bold mb-4">Enter Amount</Text>
+            <View className="w-full flex-row items-center mb-3">
+              <TextInput
+                className="flex-1 border border-gray-300 rounded-md p-2 text-base mr-2"
+                keyboardType="numeric"
+                value={amountInput}
+                onChangeText={setAmountInput}
+                placeholder="Amount"
+                autoFocus
+              />
               <Pressable
-                style={[styles.button, styles.cancelButton]}
+                className={`ml-2 p-2 rounded-md border min-w-[44px] min-h-[44px] justify-center items-center ${
+                  pendingReminderType === "Transfer"
+                    ? "bg-sky-400 border-sky-400 opacity-70"
+                    : mode === "plus"
+                      ? "bg-green-500 border-green-500"
+                      : "bg-red-500 border-red-500"
+                }`}
+                disabled={pendingReminderType === "Transfer"}
+                onPress={() => {
+                  if (pendingReminderType === "Transfer") return;
+                  if (Platform.OS !== "web") Haptics.selectionAsync();
+                  setMode(m => (m === "plus" ? "minus" : "plus"));
+                }}
+              >
+                {mode === "minus" ? (
+                  <MyIcon name="Minus" size={24} className="text-gray-100" />
+                ) : (
+                  <MyIcon name="Plus" size={24} className="text-gray-100" />
+                )}
+              </Pressable>
+            </View>
+            <View className="flex-row justify-between w-full">
+              <Pressable
+                className="flex-1 p-3 rounded-md items-center mx-1 bg-gray-300"
                 onPress={() => {
                   setModalVisible(false);
                   setAmountInput("");
                   setPendingReminderId(null);
                 }}
               >
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Text className="font-bold text-white">Cancel</Text>
               </Pressable>
               <Pressable
-                style={[styles.button, styles.applyButton]}
+                className="flex-1 p-3 rounded-md items-center mx-1 bg-blue-600"
                 onPress={() => {
                   if (pendingReminderId && parseFloat(amountInput) > 0) {
                     handleExecuteReminder(pendingReminderId, parseFloat(amountInput));
@@ -153,7 +189,7 @@ export default function RemindersScreen() {
                   isApplying
                 }
               >
-                <Text style={styles.buttonText}>Apply</Text>
+                <Text className="font-bold text-white">Apply</Text>
               </Pressable>
             </View>
           </View>
@@ -162,55 +198,3 @@ export default function RemindersScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 24,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    width: "100%",
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 6,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: "#ccc",
-  },
-  applyButton: {
-    backgroundColor: "#007bff",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-});
