@@ -13,6 +13,7 @@ import {
 } from "../apis/Reminders.api";
 // Import createTransaction from Transactions.api
 import { createTransaction } from "../apis/Transactions.api";
+import { updateAccountBalance } from "../apis/Accounts.api";
 import { Inserts as TransactionInserts } from "@/src/types/db/Tables.Types"; // For Transaction DTO
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
@@ -241,6 +242,12 @@ export const useExecuteReminderAction = () => {
         throw new Error("Failed to create transaction for reminder.");
       }
 
+      // Explicitly update the account balance
+      if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
+        throw new Error("Transaction amount is invalid for account balance update.");
+      }
+      await updateAccountBalance(reminder.sourceaccountid, transactionPayload.amount);
+
       // 3. Calculate the new next_occurrence_date
       let newNextOccurrenceDate: dayjs.Dayjs;
       const rrule = reminder.recurrencerule;
@@ -295,6 +302,7 @@ export const useExecuteReminderAction = () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, variables.id, tenantId] });
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
     },
     onError: error => {
       console.error("Error executing reminder action:", error);
