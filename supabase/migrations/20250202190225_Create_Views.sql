@@ -1,96 +1,96 @@
 CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
-AS
-SELECT 
-type,
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
-coalesce(sum(amount), 0) as sum,
-tenantid
-FROM transactions
-GROUP BY
-type,
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
-tenantid
-ORDER BY
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
+  AS
+  SELECT 
+  type,
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
+  coalesce(sum(amount), 0) as sum,
+  tenantid
+  FROM transactions
+  GROUP BY
+  type,
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
+  tenantid
+  ORDER BY
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 
 CREATE OR REPLACE VIEW Stats_MonthlyAccountsTransactions WITH (security_invoker)
-AS
-SELECT 
-t.accountid accountid, 
-a.name account,
-t.tenantid tenantid,
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
-coalesce(sum(amount), 0) as sum
-FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
-GROUP BY
-t.accountid, 
-a.name,
-t.tenantid,
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date
-ORDER BY
-date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
+  AS
+  SELECT 
+  t.accountid accountid, 
+  a.name account,
+  t.tenantid tenantid,
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
+  coalesce(sum(amount), 0) as sum
+  FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
+  GROUP BY
+  t.accountid, 
+  a.name,
+  t.tenantid,
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date
+  ORDER BY
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
 
 CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoker)
-AS
-SELECT 
-tg.id as groupid,
-tc.id as categoryid,
-tg.name GroupName,
-t.Type,
-tc.budgetamount GroupBudgetAmount, 
-tc.budgetfrequency GroupBudgetFrequency,
-tg.icon GroupIcon, 
-tg.color GroupColor,
-tg.displayorder GroupDisplayOrder,
-tc.name CategoryName, 
-tc.budgetamount CategoryBudgetAmount, 
-tc.budgetfrequency CategoryBudgetFrequency,
-tc.icon CategoryIcon, 
-tc.color CategoryColor,
-tc.displayorder CategoryDisplayOrder,
+  AS
+  SELECT 
+  tg.id as groupid,
+  tc.id as categoryid,
+  tg.name GroupName,
+  t.Type,
+  tc.budgetamount GroupBudgetAmount, 
+  tc.budgetfrequency GroupBudgetFrequency,
+  tg.icon GroupIcon, 
+  tg.color GroupColor,
+  tg.displayorder GroupDisplayOrder,
+  tc.name CategoryName, 
+  tc.budgetamount CategoryBudgetAmount, 
+  tc.budgetfrequency CategoryBudgetFrequency,
+  tc.icon CategoryIcon, 
+  tc.color CategoryColor,
+  tc.displayorder CategoryDisplayOrder,
 
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz as date,
-coalesce(sum(t.amount), 0) as sum,
-t.tenantid
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz as date,
+  coalesce(sum(t.amount), 0) as sum,
+  t.tenantid
 
-FROM transactiongroups tg 
-LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
-LEFT JOIN transactions t ON tc.id = t.categoryid
+  FROM transactiongroups tg 
+  LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
+  LEFT JOIN transactions t ON tc.id = t.categoryid
 
-GROUP BY
-tg.id,
-tc.id,
-tg.name,
-t.Type,
-tc.budgetamount,
-tc.budgetfrequency,
-tg.icon,
-tg.color,
-tg.displayorder,
-tc.name,
-tc.budgetamount,
-tc.budgetfrequency,
-tc.icon,
-tc.color,
-tc.displayorder,
-t.tenantid,
+  GROUP BY
+  tg.id,
+  tc.id,
+  tg.name,
+  t.Type,
+  tc.budgetamount,
+  tc.budgetfrequency,
+  tg.icon,
+  tg.color,
+  tg.displayorder,
+  tc.name,
+  tc.budgetamount,
+  tc.budgetfrequency,
+  tc.icon,
+  tc.color,
+  tc.displayorder,
+  t.tenantid,
 
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
-ORDER BY
-date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz;
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
+  ORDER BY
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz;
 
 CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
-AS
-SELECT 
-t.type,
-date_trunc('day', t.date)::date AS date,
-sum(t.amount) AS sum,
-t.tenantid
-FROM transactions t
-GROUP BY 
-t.type, 
-t.tenantid,
-date_trunc('day', t.date)::date;
+  AS
+  SELECT 
+  t.type,
+  date_trunc('day', t.date)::date AS date,
+  sum(t.amount) AS sum,
+  t.tenantid
+  FROM transactions t
+  GROUP BY 
+  t.type, 
+  t.tenantid,
+  date_trunc('day', t.date)::date;
 
 CREATE OR REPLACE VIEW Search_DistinctTransactions WITH (security_invoker)
 AS 
@@ -257,55 +257,55 @@ t.id DESC;
 
 -- Add new view for accounts with their latest running balance
 CREATE OR REPLACE VIEW view_accounts_with_running_balance WITH (security_invoker) AS
-SELECT
-    acc.*,
-    latest_rb.running_balance
-FROM
-    accounts acc
-LEFT JOIN (
-    SELECT
-        tv.accountid,
-        tv.RunningBalance AS running_balance,
-        ROW_NUMBER() OVER (PARTITION BY tv.accountid ORDER BY tv.date DESC, tv.type DESC, tv.id DESC) as rn
-    FROM
-        TransactionsView tv -- This is the materialized view
-) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;
+  SELECT
+      acc.*,
+      latest_rb.running_balance
+  FROM
+      accounts acc
+  LEFT JOIN (
+      SELECT
+          tv.accountid,
+          tv.RunningBalance AS running_balance,
+          ROW_NUMBER() OVER (PARTITION BY tv.accountid ORDER BY tv.date DESC, tv.type DESC, tv.id DESC) as rn
+      FROM
+          TransactionsView tv -- This is the materialized view
+  ) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;
 
 CREATE OR REPLACE VIEW Stats_NetWorthGrowth WITH (security_invoker) AS
-WITH calendar AS (
-  SELECT DISTINCT date_trunc('month', date) AS month
-  FROM TransactionsView
-),
+  WITH calendar AS (
+    SELECT DISTINCT date_trunc('month', date) AS month
+    FROM TransactionsView
+  ),
 
-latest_per_account_monthly AS (
+  latest_per_account_monthly AS (
+    SELECT
+      date_trunc('month', c.month) AS month,
+      t.tenantid,
+      t.accountid,
+      t.RunningBalance,
+      ROW_NUMBER() OVER (
+        PARTITION BY c.month, t.tenantid, t.accountid
+        ORDER BY t.date DESC, t.createdat DESC, t.updatedat DESC, t.type DESC, t.id DESC
+      ) AS rn
+    FROM calendar c
+    JOIN TransactionsView t
+      ON t.date <= c.month + INTERVAL '1 month - 1 day'
+  )
   SELECT
-    date_trunc('month', c.month) AS month,
-    t.tenantid,
-    t.accountid,
-    t.RunningBalance,
-    ROW_NUMBER() OVER (
-      PARTITION BY c.month, t.tenantid, t.accountid
-      ORDER BY t.date DESC, t.createdat DESC, t.updatedat DESC, t.type DESC, t.id DESC
-    ) AS rn
-  FROM calendar c
-  JOIN TransactionsView t
-    ON t.date <= c.month + INTERVAL '1 month - 1 day'
-)
-SELECT
-  month,
-  SUM(RunningBalance) AS total_net_worth,
-  tenantid
-FROM latest_per_account_monthly
-WHERE rn = 1
-GROUP BY tenantid, month
-ORDER BY tenantid, month;
+    month,
+    SUM(RunningBalance) AS total_net_worth,
+    tenantid
+  FROM latest_per_account_monthly
+  WHERE rn = 1
+  GROUP BY tenantid, month
+  ORDER BY tenantid, month;
 
 CREATE OR REPLACE VIEW Stats_TotalAccountBalance WITH (security_invoker) AS
-SELECT
-    SUM(acc.balance) as TotalBalance,
-    acc.tenantid
-FROM
-    accounts acc
-WHERE acc.isdeleted = false
-GROUP BY
-    acc.tenantid;
+  SELECT
+      SUM(acc.balance) as TotalBalance,
+      acc.tenantid
+  FROM
+      accounts acc
+  WHERE acc.isdeleted = false
+  GROUP BY
+      acc.tenantid;

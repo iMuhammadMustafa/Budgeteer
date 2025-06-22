@@ -205,7 +205,7 @@ export const MyCategoriesDropdown = ({
   onClear?: () => void; // Added
 }) => {
   return (
-    <View className="flex-row items-end">
+    <View className="flex-row items-end flex-grow">
       <DropdownField
         isModal={isModal}
         label={label} // Use the passed label
@@ -217,12 +217,7 @@ export const MyCategoriesDropdown = ({
             label: category.name ?? "Unnamed Category", // Handle possible null name
             value: category, // The whole category object can be the value
             icon: category.icon ?? undefined, // Handle possible null icon
-            iconColorClass:
-              category.transaction_type === "Income" // Assuming transaction_type field exists
-                ? "text-success-500"
-                : category.transaction_type === "Expense"
-                  ? "text-danger-500"
-                  : "text-info-500", // Default or for other types
+            iconColorClass: `text-${category.color}`,
             group: category.group?.name ?? "Uncategorized", // Handle possible null group or group.name
           })) ?? []
         }
