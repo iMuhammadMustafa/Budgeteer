@@ -38,8 +38,11 @@ export default function RemindersScreen() {
     if (pendingReminderType !== "Transfer" && typeof amountOverride === "number") {
       finalAmount = mode === "minus" ? -Math.abs(amountOverride) : Math.abs(amountOverride);
     }
+
+    let x = typeof finalAmount === "number" && !isNaN(finalAmount) && finalAmount > 0 ? finalAmount : 0;
+
     executeReminder(
-      { id, amount: finalAmount },
+      { id, amount: finalAmount ?? 0 },
       {
         onSuccess: () => {
           setModalVisible(false);
@@ -177,8 +180,11 @@ export default function RemindersScreen() {
               <Pressable
                 className="flex-1 p-3 rounded-md items-center mx-1 bg-blue-600"
                 onPress={() => {
-                  if (pendingReminderId && parseFloat(amountInput) > 0) {
-                    handleExecuteReminder(pendingReminderId, parseFloat(amountInput));
+                  if (pendingReminderId && amountInput) {
+                    const amount = parseFloat(amountInput);
+                    if (amount > 0) {
+                      handleExecuteReminder(pendingReminderId, amount);
+                    }
                   }
                 }}
                 disabled={

@@ -225,7 +225,7 @@ export const useExecuteReminderAction = () => {
       const transactionPayload: TransactionInserts<TableNames.Transactions> = {
         name: reminder.name,
         description: reminder.description,
-        amount: typeof amount === "number" && !isNaN(amount) && amount > 0 ? amount : reminder.amount,
+        amount: typeof amount === "number" && !isNaN(amount) ? amount : reminder.amount,
         date: currentNextOccurrenceDate.toISOString(),
         accountid: reminder.sourceaccountid,
         payee: reminder.payeename,

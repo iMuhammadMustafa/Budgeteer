@@ -58,14 +58,10 @@ export default function TransactionItem({
           <View className="flex items-end">
             <Text className={`text-${getTransactionProp(transaction.type).textColor}`}>
               {isTransfer
-                ? Math.abs(
-                    parseFloat(
-                      transaction.amount!.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }),
-                    ),
-                  )
+                ? Math.abs(parseFloat(transaction.amount?.toString() ?? "0")).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
                 : transaction.amount!.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,

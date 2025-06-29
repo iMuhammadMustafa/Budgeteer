@@ -32,6 +32,7 @@ type ReminderFormType = Omit<CreateReminderDto | UpdateReminderDto, "recurrencer
   frequency: RecurrenceFrequency;
   interval: number;
   type: ReminderTransactionType; // Added type field
+  destinationaccountid: string | null;
   recurrencerule?: string; // Will be constructed
 };
 
@@ -63,6 +64,7 @@ export const initialReminderState: ReminderFormType = {
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
+  destinationaccountid: null,
   categoryid: null,
   payeename: null,
   notes: null,
@@ -196,15 +198,31 @@ export default function ReminderUpsertScreen() {
           isModal={Platform.OS !== "web"}
           groupBy="category.name"
         />
-        <MyCategoriesDropdown
-          label="Category (Optional)"
-          selectedValue={formData.categoryid}
-          categories={categories}
-          onSelect={category => handleTextChange("categoryid", category?.id || null)}
-          isModal={Platform.OS !== "web"}
-          showClearButton={!!formData.categoryid}
-          onClear={() => handleTextChange("categoryid", null)}
-        />
+        {formData.type === "Transfer" && (
+          <AccountSelecterDropdown
+            label="Destination Account"
+            selectedValue={formData.destinationaccountid}
+            onSelect={account => {
+              if (account) {
+                handleTextChange("destinationaccountid", account.id);
+              }
+            }}
+            accounts={accounts}
+            isModal={Platform.OS !== "web"}
+            groupBy="category.name"
+          />
+        )}
+        {formData.type !== "Transfer" && (
+          <MyCategoriesDropdown
+            label="Category (Optional)"
+            selectedValue={formData.categoryid}
+            categories={categories}
+            onSelect={category => handleTextChange("categoryid", category?.id || null)}
+            isModal={Platform.OS !== "web"}
+            showClearButton={!!formData.categoryid}
+            onClear={() => handleTextChange("categoryid", null)}
+          />
+        )}
         <TextInputField
           label="Payee Name (Optional)"
           value={formData.payeename ?? ""}
@@ -301,7 +319,17 @@ const useReminderForm = (reminderIdToEdit?: string) => {
     name: keyof ReminderFormType,
     value: string | number | boolean | null | string[] | RecurrenceFrequency | ReminderTransactionType,
   ) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const newState = { ...prev, [name]: value };
+      if (name === "type") {
+        if (value === "Transfer") {
+          newState.categoryid = null; // Transfers don't have categories
+        } else {
+          newState.destinationaccountid = null; // Other types don't have a destination account
+        }
+      }
+      return newState;
+    });
   };
 
   const handleDateChange = (
