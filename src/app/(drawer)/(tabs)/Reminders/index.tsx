@@ -23,36 +23,28 @@ export default function RemindersScreen() {
 
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
-  const [pendingReminderId, setPendingReminderId] = useState<string | null>(null);
-  const [pendingReminderType, setPendingReminderType] = useState<string | null>(null);
+  const [pendingReminder, setPendingReminder] = useState<Reminder | null>(null);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [amountInput, setAmountInput] = useState<string>("");
 
-  const handleExecuteReminder = (id: string, amountOverride?: number) => {
-    if (!tenantId) {
-      console.error("Tenant ID not found");
-      return;
-    }
-    // Apply sign to amount if not Transfer
-    let finalAmount = amountOverride;
-    if (pendingReminderType !== "Transfer" && typeof amountOverride === "number") {
-      finalAmount = mode === "minus" ? -Math.abs(amountOverride) : Math.abs(amountOverride);
-    }
+  const handleExecuteReminder = (item: Reminder, amountOverride?: number) => {
+    let finalAmount = item.amount;
 
-    let x = typeof finalAmount === "number" && !isNaN(finalAmount) && finalAmount > 0 ? finalAmount : 0;
+    if (amountOverride !== undefined && !isNaN(amountOverride)) {
+      finalAmount = mode === "plus" ? amountOverride : -amountOverride;
+    }
 
     executeReminder(
-      { id, amount: finalAmount ?? 0 },
+      { item, amount: finalAmount ?? 0 },
       {
         onSuccess: () => {
           setModalVisible(false);
           setAmountInput("");
-          setPendingReminderId(null);
-          setPendingReminderType(null);
+          setPendingReminder(null);
           setMode("minus");
         },
         onError: (error: Error) => {
-          console.error("Error executing reminder:", id, error.message);
+          console.error("Error executing reminder:", item.id, error.message);
         },
       },
     );
@@ -92,12 +84,11 @@ export default function RemindersScreen() {
           onPress={e => {
             e.stopPropagation();
             if (!item.amount || item.amount === 0) {
-              setPendingReminderId(item.id);
-              setPendingReminderType(item.type);
-              setMode(item.type === "Transfer" ? "plus" : "minus");
+              setPendingReminder(item);
+              setMode(item.type === "Income" ? "plus" : "minus");
               setModalVisible(true);
             } else {
-              handleExecuteReminder(item.id);
+              handleExecuteReminder(item);
             }
           }}
           disabled={isApplying}
@@ -127,8 +118,7 @@ export default function RemindersScreen() {
         onRequestClose={() => {
           setModalVisible(false);
           setAmountInput("");
-          setPendingReminderId(null);
-          setPendingReminderType(null);
+          setPendingReminder(null);
           setMode("minus");
         }}
       >
@@ -146,15 +136,15 @@ export default function RemindersScreen() {
               />
               <Pressable
                 className={`ml-2 p-2 rounded-md border min-w-[44px] min-h-[44px] justify-center items-center ${
-                  pendingReminderType === "Transfer"
+                  pendingReminder?.type === "Transfer"
                     ? "bg-sky-400 border-sky-400 opacity-70"
                     : mode === "plus"
                       ? "bg-green-500 border-green-500"
                       : "bg-red-500 border-red-500"
                 }`}
-                disabled={pendingReminderType === "Transfer"}
+                disabled={pendingReminder?.type === "Transfer"}
                 onPress={() => {
-                  if (pendingReminderType === "Transfer") return;
+                  if (pendingReminder?.type === "Transfer") return;
                   if (Platform.OS !== "web") Haptics.selectionAsync();
                   setMode(m => (m === "plus" ? "minus" : "plus"));
                 }}
@@ -172,7 +162,7 @@ export default function RemindersScreen() {
                 onPress={() => {
                   setModalVisible(false);
                   setAmountInput("");
-                  setPendingReminderId(null);
+                  setPendingReminder(null);
                 }}
               >
                 <Text className="font-bold text-white">Cancel</Text>
@@ -180,15 +170,15 @@ export default function RemindersScreen() {
               <Pressable
                 className="flex-1 p-3 rounded-md items-center mx-1 bg-blue-600"
                 onPress={() => {
-                  if (pendingReminderId && amountInput) {
+                  if (pendingReminder && amountInput) {
                     const amount = parseFloat(amountInput);
                     if (amount > 0) {
-                      handleExecuteReminder(pendingReminderId, amount);
+                      handleExecuteReminder(pendingReminder, amount);
                     }
                   }
                 }}
                 disabled={
-                  !pendingReminderId ||
+                  !pendingReminder ||
                   !amountInput ||
                   isNaN(Number(amountInput)) ||
                   parseFloat(amountInput) <= 0 ||

@@ -54,22 +54,22 @@ const reminderTypeOptions: OptionItem[] = [
 
 export const initialReminderState: ReminderFormType = {
   name: "",
-  description: null,
+  description: undefined,
   nextoccurrencedate: dayjs().local().format("YYYY-MM-DD"),
   type: "Expense", // Default type
   // recurrencerule: "FREQ=MONTHLY;INTERVAL=1", // Default to monthly - will be constructed
   frequency: "MONTHLY",
   interval: 1,
-  enddate: null,
+  enddate: undefined,
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
-  destinationaccountid: null,
-  categoryid: null,
-  payeename: null,
-  notes: null,
+  destinationaccountid: undefined,
+  categoryid: undefined,
+  payeename: undefined,
+  notes: undefined,
   isactive: true,
-  lastexecutedat: null,
+  lastexecutedat: undefined,
   tenantid: "", // Will be overridden by session, but required by type
   // Standard fields will be set by hooks/API
   // id: undefined, // Handled by Supabase or edit mode

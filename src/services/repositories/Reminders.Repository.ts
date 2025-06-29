@@ -209,12 +209,11 @@ export const useExecuteReminderAction = () => {
    * If amount is provided, it overrides the reminder's amount for this execution.
    */
   return useMutation({
-    mutationFn: async (params: { id: string; amount?: number }) => {
-      const { id: reminderIdString, amount } = params;
+    mutationFn: async (params: { item: Reminder; amount?: number }) => {
+      const { item: reminder, amount } = params;
       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
       // 1. Fetch the reminder details
-      const reminder = await getReminderById(reminderIdString, tenantId);
       if (!reminder || !reminder.isactive) {
         throw new Error("Reminder not found, not active, or does not belong to tenant.");
       }
@@ -293,7 +292,7 @@ export const useExecuteReminderAction = () => {
         (reminderUpdateData as any).isactive = false;
       }
 
-      await updateReminder(reminderIdString, reminderUpdateData, tenantId);
+      await updateReminder(reminder.id, reminderUpdateData, tenantId);
 
       return { newTransaction, updatedReminder: reminderUpdateData };
     },

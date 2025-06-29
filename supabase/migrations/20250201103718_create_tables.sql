@@ -230,7 +230,7 @@ CREATE TABLE IF NOT EXISTS reminders (
     nextoccurrencedate date NOT NULL,
     recurrencerule text NOT NULL, -- e.g., 'FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=15'
     enddate date,
-    amount numeric(12, 2) NOT NULL,
+    amount numeric(12, 2),
     currencycode char(3) NOT NULL DEFAULT 'USD',
     sourceaccountid uuid NOT NULL REFERENCES accounts(id),
     categoryid uuid REFERENCES TransactionCategories(id),
@@ -239,23 +239,6 @@ CREATE TABLE IF NOT EXISTS reminders (
     isactive boolean DEFAULT true,
     lastexecutedat timestamptz
 );
-
--- Renaming columns in 'reminders' table to remove underscores
-ALTER TABLE reminders RENAME COLUMN created_by TO createdBy;
-ALTER TABLE reminders RENAME COLUMN created_at TO createdAt;
-ALTER TABLE reminders RENAME COLUMN updated_by TO updatedBy;
-ALTER TABLE reminders RENAME COLUMN updated_at TO updatedAt;
-ALTER TABLE reminders RENAME COLUMN is_deleted TO isDeleted;
-ALTER TABLE reminders RENAME COLUMN tenant_id TO tenantId;
-ALTER TABLE reminders RENAME COLUMN next_occurrence_date TO nextOccurrenceDate;
-ALTER TABLE reminders RENAME COLUMN recurrence_rule TO recurrenceRule;
-ALTER TABLE reminders RENAME COLUMN end_date TO endDate;
-ALTER TABLE reminders RENAME COLUMN currency_code TO currencyCode;
-ALTER TABLE reminders RENAME COLUMN source_account_id TO sourceAccountId;
-ALTER TABLE reminders RENAME COLUMN category_id TO categoryId;
-ALTER TABLE reminders RENAME COLUMN payee_name TO payeeName;
-ALTER TABLE reminders RENAME COLUMN is_active TO isActive;
-ALTER TABLE reminders RENAME COLUMN last_executed_at TO lastExecutedAt;
 
 -- RLS Policies for Reminders Table
 Alter table reminders Enable Row Level Security;
