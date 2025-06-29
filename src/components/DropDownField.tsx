@@ -322,7 +322,7 @@ export const AccountSelecterDropdown = ({
           id: account.id,
           label: account.name,
           /*account.owner*/
-          details: `| ${account.balance.toLocaleString("en-US", {
+          details: `${account.balance.toLocaleString("en-US", {
             style: "currency",
             currency: "USD",
           })}`,

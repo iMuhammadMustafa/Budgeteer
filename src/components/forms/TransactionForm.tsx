@@ -219,7 +219,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               onSelect={(value: any) => {
                 handleTextChange("accountid", value.id);
               }}
-              isModal={Platform.OS !== "web"}
+              isModal
               accounts={accounts}
               groupBy="group"
             />
