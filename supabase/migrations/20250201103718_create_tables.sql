@@ -238,6 +238,10 @@ CREATE TABLE IF NOT EXISTS recurrings (
     notes text,
     isactive boolean DEFAULT true,
     lastexecutedat timestamptz
+
+    FOREIGN KEY (sourceaccountid) REFERENCES accounts(id),
+    FOREIGN KEY (categoryid) REFERENCES TransactionCategories(id)
+
 );
 
 -- RLS Policies for Recurrings Table

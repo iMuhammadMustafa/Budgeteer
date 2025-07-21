@@ -14,8 +14,8 @@ export const listRecurrings = async (params: { tenantId: string; filters?: any }
     .from(TableNames.Recurrings)
     .select(
       `*, 
-       source_account:${TableNames.Accounts}!recurrings_source_account_id_fkey(*), 
-       category:${TableNames.TransactionCategories}!recurrings_category_id_fkey(*)`,
+       source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
+       category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
     )
     .eq("tenantid", params.tenantId) // Lowercase
     .eq("isdeleted", false); // Lowercase
@@ -39,8 +39,8 @@ export const getRecurringById = async (id: string, tenantId: string): Promise<Re
     .from(TableNames.Recurrings)
     .select(
       `*, 
-       source_account:${TableNames.Accounts}!recurrings_source_account_id_fkey(*), 
-       category:${TableNames.TransactionCategories}!recurrings_category_id_fkey(*)`,
+       source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
+       category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
     )
     .eq("tenantid", tenantId) // Lowercase
     .eq("isdeleted", false) // Lowercase
