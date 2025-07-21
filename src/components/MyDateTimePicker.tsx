@@ -75,7 +75,7 @@ export default function MyDateTimePicker({
             mode="single"
             date={pickerDate} // Use internal pickerDate
             displayFullDays
-            // timePicker // Removed time picker for date-only as per reminder table
+            // timePicker // Removed time picker for date-only as per recurring table
             onChange={(params: { date: DateType }) => {
               // Use DateType from library
               if (params.date) {

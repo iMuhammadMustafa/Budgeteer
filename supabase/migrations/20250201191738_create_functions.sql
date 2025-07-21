@@ -83,10 +83,10 @@ Handle amount change, account change, IsDeleted change, IsVoid Change
 */
 
 /*
-CREATE OR REPLACE FUNCTION public.apply_reminder_transaction(reminder_id_param uuid)
+CREATE OR REPLACE FUNCTION public.apply_recurring_transaction(recurring_id_param uuid)
 RETURNS VOID AS $$
 DECLARE
-    reminder_record RECORD;
+    recurring_record RECORD;
     new_transaction_id UUID;
     current_next_occurrence_date DATE;
     new_next_occurrence_date DATE;
@@ -96,24 +96,24 @@ DECLARE
     tenant_id_val UUID;
     created_by_val UUID;
 BEGIN
-    -- 1. Fetch the reminder details
-    SELECT * INTO reminder_record
-    FROM public.reminders
-    WHERE id = reminder_id_param AND is_active = TRUE;
+    -- 1. Fetch the recurring details
+    SELECT * INTO recurring_record
+    FROM public.recurrings
+    WHERE id = recurring_id_param AND is_active = TRUE;
 
-    -- Exit if reminder not found or not active
+    -- Exit if recurring not found or not active
     IF NOT FOUND THEN
-        RAISE NOTICE 'Reminder % not found or not active for execution.', reminder_id_param;
+        RAISE NOTICE 'Recurring % not found or not active for execution.', recurring_id_param;
         RETURN;
     END IF;
 
     -- Store current next_occurrence_date before it's updated
-    current_next_occurrence_date := reminder_record.next_occurrence_date;
-    tenant_id_val := reminder_record.tenant_id;
-    created_by_val := reminder_record.created_by; -- Use the reminder's creator for the transaction
+    current_next_occurrence_date := recurring_record.next_occurrence_date;
+    tenant_id_val := recurring_record.tenant_id;
+    created_by_val := recurring_record.created_by; -- Use the recurring's creator for the transaction
 
     -- 2. Create a new transaction
-    -- Assuming reminder.amount is positive and represents an expense.
+    -- Assuming recurring.amount is positive and represents an expense.
     -- Transaction type is 'Expense' and status defaults to 'Pending' from table definition.
     INSERT INTO public.transactions (
         name,
@@ -129,48 +129,48 @@ BEGIN
         -- status will use table default 'Pending'
         tenant_id,
         created_by,
-        reminder_id -- Link transaction to the reminder that generated it
+        recurring_id -- Link transaction to the recurring that generated it
     )
     VALUES (
-        reminder_record.name,
-        reminder_record.description,
-        reminder_record.amount,
-        reminder_record.currency_code,
+        recurring_record.name,
+        recurring_record.description,
+        recurring_record.amount,
+        recurring_record.currency_code,
         current_next_occurrence_date,
-        reminder_record.source_account_id,
-        reminder_record.category_id,
-        reminder_record.payee_name,
-        reminder_record.notes,
+        recurring_record.source_account_id,
+        recurring_record.category_id,
+        recurring_record.payee_name,
+        recurring_record.notes,
         'Expense',
         tenant_id_val,
         created_by_val,
-        reminder_id_param
+        recurring_id_param
     )
     RETURNING id INTO new_transaction_id;
 
-    RAISE NOTICE 'Created transaction % for reminder %', new_transaction_id, reminder_id_param;
+    RAISE NOTICE 'Created transaction % for recurring %', new_transaction_id, recurring_id_param;
 
     -- 3. Calculate the new next_occurrence_date
     -- Basic parsing for 'FREQ=X;INTERVAL=Y'
     SELECT trim(split_part(rule_part, '=', 2))
     INTO rrule_freq
-    FROM unnest(string_to_array(reminder_record.recurrence_rule, ';')) AS rule_part
+    FROM unnest(string_to_array(recurring_record.recurrence_rule, ';')) AS rule_part
     WHERE rule_part LIKE 'FREQ=%'
     LIMIT 1;
 
     SELECT trim(split_part(rule_part, '=', 2))
     INTO rrule_interval_text
-    FROM unnest(string_to_array(reminder_record.recurrence_rule, ';')) AS rule_part
+    FROM unnest(string_to_array(recurring_record.recurrence_rule, ';')) AS rule_part
     WHERE rule_part LIKE 'INTERVAL=%'
     LIMIT 1;
 
     IF rrule_freq IS NULL OR rrule_interval_text IS NULL THEN
-        RAISE EXCEPTION 'Invalid recurrence_rule format for reminder %: %', reminder_id_param, reminder_record.recurrence_rule;
+        RAISE EXCEPTION 'Invalid recurrence_rule format for recurring %: %', recurring_id_param, recurring_record.recurrence_rule;
     END IF;
 
     rrule_interval := rrule_interval_text::INT;
     IF rrule_interval <= 0 THEN
-        RAISE EXCEPTION 'INTERVAL must be positive in recurrence_rule for reminder %: %', reminder_id_param, reminder_record.recurrence_rule;
+        RAISE EXCEPTION 'INTERVAL must be positive in recurrence_rule for recurring %: %', recurring_id_param, recurring_record.recurrence_rule;
     END IF;
 
     IF rrule_freq = 'DAILY' THEN
@@ -182,25 +182,25 @@ BEGIN
     ELSIF rrule_freq = 'YEARLY' THEN
         new_next_occurrence_date := current_next_occurrence_date + (rrule_interval * INTERVAL '1 year');
     ELSE
-        RAISE EXCEPTION 'Unsupported FREQ value "%" in recurrence_rule for reminder %', rrule_freq, reminder_id_param;
+        RAISE EXCEPTION 'Unsupported FREQ value "%" in recurrence_rule for recurring %', rrule_freq, recurring_id_param;
     END IF;
 
-    -- 4. Update the reminder
-    UPDATE public.reminders
+    -- 4. Update the recurring
+    UPDATE public.recurrings
     SET
         last_executed_at = current_next_occurrence_date,
         next_occurrence_date = new_next_occurrence_date,
         is_active = CASE
-                        WHEN reminder_record.end_date IS NOT NULL AND new_next_occurrence_date > reminder_record.end_date THEN FALSE
+                        WHEN recurring_record.end_date IS NOT NULL AND new_next_occurrence_date > recurring_record.end_date THEN FALSE
                         ELSE TRUE -- Keep it active if no end date or not past end date
                     END
-    WHERE id = reminder_id_param;
+    WHERE id = recurring_id_param;
 
-    RAISE NOTICE 'Updated reminder %: next_occurrence_date set to %, last_executed_at to %', reminder_id_param, new_next_occurrence_date, current_next_occurrence_date;
+    RAISE NOTICE 'Updated recurring %: next_occurrence_date set to %, last_executed_at to %', recurring_id_param, new_next_occurrence_date, current_next_occurrence_date;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE WARNING 'Error in apply_reminder_transaction for reminder % (Transaction ID %): %', reminder_id_param, COALESCE(new_transaction_id::text, 'N/A'), SQLERRM;
+        RAISE WARNING 'Error in apply_recurring_transaction for recurring % (Transaction ID %): %', recurring_id_param, COALESCE(new_transaction_id::text, 'N/A'), SQLERRM;
         -- Re-raise the exception to ensure the calling transaction rolls back
         RAISE;
 END;

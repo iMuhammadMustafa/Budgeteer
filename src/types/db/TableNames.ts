@@ -5,7 +5,7 @@ export enum TableNames {
   TransactionCategories = "transactioncategories",
   TransactionGroups = "transactiongroups",
   Configurations = "configurations",
-  Reminders = "reminders",
+  Recurrings = "recurrings",
 }
 
 export enum ViewNames {
@@ -28,5 +28,5 @@ export enum EnumNames {
 
 export enum FunctionNames {
   UpdateAccountBalance = "updateaccountbalance",
-  ApplyReminderTransaction = "apply_reminder_transaction",
+  ApplyRecurringTransaction = "apply_recurring_transaction",
 }

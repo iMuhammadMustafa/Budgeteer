@@ -215,8 +215,8 @@ CREATE POLICY "Tenant access" ON Configruations as PERMISSIVE for ALL USING (Ten
 CREATE INDEX "Configruations_TenantId" ON Configruations (TenantId);
 CREATE INDEX "Configruations_IsDeleted" ON Configruations (IsDeleted);
 
--- Add Reminders Table
-CREATE TABLE IF NOT EXISTS reminders (
+-- Add Recurrings Table
+CREATE TABLE IF NOT EXISTS recurrings (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     createdby uuid REFERENCES auth.users(id),
     createdat timestamptz DEFAULT now(),
@@ -240,12 +240,12 @@ CREATE TABLE IF NOT EXISTS reminders (
     lastexecutedat timestamptz
 );
 
--- RLS Policies for Reminders Table
-Alter table reminders Enable Row Level Security;
+-- RLS Policies for Recurrings Table
+Alter table recurrings Enable Row Level Security;
 -- Note: The RLS policy references TenantId. If tenant_id was renamed to tenantId,
 -- this policy might need to be updated if it was created before the rename.
 -- However, if the RENAME happens before this policy is applied in a fresh setup, it should use the new name.
 -- For existing databases, ensure the policy condition uses the new column name if it was already created.
-CREATE POLICY "Tenant access" ON reminders as PERMISSIVE  for ALL USING (tenantId = auth.tenantid()); -- Assuming tenantId is the new name
-CREATE INDEX IF NOT EXISTS "Reminders_TenantId" ON Reminders (tenantId); -- Assuming tenantId is the new name
-CREATE INDEX IF NOT EXISTS "Reminders_IsDeleted" ON Reminders (isDeleted); -- Assuming isDeleted is the new name
+CREATE POLICY "Tenant access" ON recurrings as PERMISSIVE  for ALL USING (tenantId = auth.tenantid()); -- Assuming tenantId is the new name
+CREATE INDEX IF NOT EXISTS "Recurrings_TenantId" ON Recurrings (tenantId); -- Assuming tenantId is the new name
+CREATE INDEX IF NOT EXISTS "Recurrings_IsDeleted" ON Recurrings (isDeleted); -- Assuming isDeleted is the new name

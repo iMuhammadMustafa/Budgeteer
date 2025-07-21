@@ -1,21 +1,21 @@
 import { FunctionNames, TableNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Reminder, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-// Define DTOs based on the 'reminders' table structure
+// Define DTOs based on the 'recurrings' table structure
 // These DTOs will automatically include the 'type' field (e.g., "Expense", "Income", "Transfer")
-// once the Reminder type in Tables.Types.ts is updated to reflect the database schema.
-export type CreateReminderDto = Inserts<TableNames.Reminders>;
-export type UpdateReminderDto = Updates<TableNames.Reminders>;
+// once the Recurring type in Tables.Types.ts is updated to reflect the database schema.
+export type CreateRecurringDto = Inserts<TableNames.Recurrings>;
+export type UpdateRecurringDto = Updates<TableNames.Recurrings>;
 
-export const listReminders = async (params: { tenantId: string; filters?: any }): Promise<Reminder[]> => {
+export const listRecurrings = async (params: { tenantId: string; filters?: any }): Promise<Recurring[]> => {
   let query = supabase
-    .from(TableNames.Reminders)
+    .from(TableNames.Recurrings)
     .select(
       `*, 
-       source_account:${TableNames.Accounts}!reminders_source_account_id_fkey(*), 
-       category:${TableNames.TransactionCategories}!reminders_category_id_fkey(*)`,
+       source_account:${TableNames.Accounts}!recurrings_source_account_id_fkey(*), 
+       category:${TableNames.TransactionCategories}!recurrings_category_id_fkey(*)`,
     )
     .eq("tenantid", params.tenantId) // Lowercase
     .eq("isdeleted", false); // Lowercase
@@ -31,16 +31,16 @@ export const listReminders = async (params: { tenantId: string; filters?: any })
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return data as unknown as Reminder[];
+  return data as unknown as Recurring[];
 };
 
-export const getReminderById = async (id: string, tenantId: string): Promise<Reminder | null> => {
+export const getRecurringById = async (id: string, tenantId: string): Promise<Recurring | null> => {
   const { data, error } = await supabase
-    .from(TableNames.Reminders)
+    .from(TableNames.Recurrings)
     .select(
       `*, 
-       source_account:${TableNames.Accounts}!reminders_source_account_id_fkey(*), 
-       category:${TableNames.TransactionCategories}!reminders_category_id_fkey(*)`,
+       source_account:${TableNames.Accounts}!recurrings_source_account_id_fkey(*), 
+       category:${TableNames.TransactionCategories}!recurrings_category_id_fkey(*)`,
     )
     .eq("tenantid", tenantId) // Lowercase
     .eq("isdeleted", false) // Lowercase
@@ -54,15 +54,15 @@ export const getReminderById = async (id: string, tenantId: string): Promise<Rem
     }
     throw new Error(error.message);
   }
-  return data as unknown as Reminder | null;
+  return data as unknown as Recurring | null;
 };
 
-export const createReminder = async (reminderData: CreateReminderDto, tenantId: string) => {
+export const createRecurring = async (recurringData: CreateRecurringDto, tenantId: string) => {
   const { data, error } = await supabase
-    .from(TableNames.Reminders)
-    // reminderData (CreateReminderDto) is already all lowercase.
+    .from(TableNames.Recurrings)
+    // recurringData (CreateRecurringDto) is already all lowercase.
     // tenantId property added here must also be lowercase.
-    .insert({ ...reminderData, tenantid: tenantId }) // Lowercase
+    .insert({ ...recurringData, tenantid: tenantId }) // Lowercase
     .select()
     .single();
 
@@ -70,12 +70,12 @@ export const createReminder = async (reminderData: CreateReminderDto, tenantId: 
   return data;
 };
 
-export const updateReminder = async (id: string, reminderData: UpdateReminderDto, tenantId: string) => {
+export const updateRecurring = async (id: string, recurringData: UpdateRecurringDto, tenantId: string) => {
   const { data, error } = await supabase
-    .from(TableNames.Reminders)
-    // reminderData (UpdateReminderDto) is already all lowercase.
+    .from(TableNames.Recurrings)
+    // recurringData (UpdateRecurringDto) is already all lowercase.
     // updatedat property added here is already lowercase.
-    .update({ ...reminderData, updatedat: dayjs().toISOString() })
+    .update({ ...recurringData, updatedat: dayjs().toISOString() })
     .eq("id", id)
     .eq("tenantid", tenantId) // Lowercase
     .select()
@@ -85,9 +85,9 @@ export const updateReminder = async (id: string, reminderData: UpdateReminderDto
   return data;
 };
 
-export const deleteReminder = async (id: string, tenantId: string, userId?: string) => {
+export const deleteRecurring = async (id: string, tenantId: string, userId?: string) => {
   const { data, error } = await supabase
-    .from(TableNames.Reminders)
+    .from(TableNames.Recurrings)
     .update({
       // All keys in payload must be lowercase
       isdeleted: true,
@@ -102,5 +102,5 @@ export const deleteReminder = async (id: string, tenantId: string, userId?: stri
   return data;
 };
 
-// Removed applyReminderTransaction that calls RPC.
+// Removed applyRecurringTransaction that calls RPC.
 // The repository will now handle the multi-step execution logic.

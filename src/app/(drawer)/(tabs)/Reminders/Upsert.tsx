@@ -6,11 +6,15 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Account, Inserts, Reminder, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
+import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
 import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
-import { useGetReminder, useCreateReminder, useUpdateReminder } from "@/src/services/repositories/Reminders.Repository";
+import {
+  useGetRecurring,
+  useCreateRecurring,
+  useUpdateRecurring,
+} from "@/src/services/repositories/Recurrings.Repository";
 import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.api";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
@@ -19,19 +23,19 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateReminderDto, UpdateReminderDto } from "@/src/services/apis/Reminders.api";
+import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.api";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Define ReminderType, assuming these are the valid types
-export type ReminderTransactionType = "Expense" | "Income" | "Transfer";
+// Define RecurringType, assuming these are the valid types
+export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
 
-type ReminderFormType = Omit<CreateReminderDto | UpdateReminderDto, "recurrencerule"> & {
+type RecurringFormType = Omit<CreateRecurringDto | UpdateRecurringDto, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
-  type: ReminderTransactionType; // Added type field
+  type: RecurringTransactionType; // Added type field
   destinationaccountid: string | null;
   recurrencerule?: string; // Will be constructed
 };
@@ -46,13 +50,13 @@ const recurrenceFrequencyOptions: OptionItem[] = [
   { id: "YEARLY", label: "Yearly", value: "YEARLY" },
 ];
 
-const reminderTypeOptions: OptionItem[] = [
+const recurringTypeOptions: OptionItem[] = [
   { id: "Expense", label: "Expense", value: "Expense" },
   { id: "Income", label: "Income", value: "Income" },
   { id: "Transfer", label: "Transfer", value: "Transfer" },
 ];
 
-export const initialReminderState: ReminderFormType = {
+export const initialRecurringState: RecurringFormType = {
   name: "",
   description: undefined,
   nextoccurrencedate: dayjs().local().format("YYYY-MM-DD"),
@@ -80,8 +84,8 @@ export const initialReminderState: ReminderFormType = {
   // is_deleted: false,
 };
 
-export default function ReminderUpsertScreen() {
-  const { id: reminderIdToEdit } = useLocalSearchParams<{ id?: string }>();
+export default function RecurringUpsertScreen() {
+  const { id: recurringIdToEdit } = useLocalSearchParams<{ id?: string }>();
   const {
     formData,
     setFormData,
@@ -96,14 +100,16 @@ export default function ReminderUpsertScreen() {
     handleBlueprintTransactionSelect,
     handleSubmit,
     handleCancel,
-  } = useReminderForm(reminderIdToEdit);
+  } = useRecurringForm(recurringIdToEdit);
 
   if (isLoading) return <ActivityIndicator className="flex-1 justify-center items-center" />;
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
-        <Text className="text-2xl font-bold text-foreground mb-5">{isEdit ? "Edit Reminder" : "Create Reminder"}</Text>
+        <Text className="text-2xl font-bold text-foreground mb-5">
+          {isEdit ? "Edit Recurring" : "Create Recurring"}
+        </Text>
 
         {!isEdit && (
           <SearchableDropdown
@@ -130,11 +136,11 @@ export default function ReminderUpsertScreen() {
         />
         <DropdownField
           label="Type"
-          options={reminderTypeOptions}
+          options={recurringTypeOptions}
           selectedValue={formData.type}
           onSelect={(item: OptionItem | null) => {
             if (item) {
-              handleTextChange("type", item.id as ReminderTransactionType);
+              handleTextChange("type", item.id as RecurringTransactionType);
             }
           }}
           isModal={Platform.OS !== "web"}
@@ -267,31 +273,31 @@ export default function ReminderUpsertScreen() {
   );
 }
 
-const useReminderForm = (reminderIdToEdit?: string) => {
+const useRecurringForm = (recurringIdToEdit?: string) => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
 
-  const { data: reminderToEdit, isLoading: isLoadingReminder } = useGetReminder(reminderIdToEdit);
-  const [formData, setFormData] = useState<ReminderFormType>(initialReminderState);
+  const { data: recurringToEdit, isLoading: isLoadingRecurring } = useGetRecurring(recurringIdToEdit);
+  const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: categories, isLoading: isLoadingCategories } = useGetTransactionCategories();
   const { data: accounts, isLoading: isLoadingAccounts } = useGetAccounts();
 
-  const { mutate: createReminder } = useCreateReminder();
-  const { mutate: updateReminder } = useUpdateReminder();
+  const { mutate: createRecurring } = useCreateRecurring();
+  const { mutate: updateRecurring } = useUpdateRecurring();
 
-  const isEdit = !!reminderIdToEdit;
-  const isLoading = isLoadingReminder || isLoadingCategories || isLoadingAccounts;
+  const isEdit = !!recurringIdToEdit;
+  const isLoading = isLoadingRecurring || isLoadingCategories || isLoadingAccounts;
 
   useEffect(() => {
-    if (isEdit && reminderToEdit) {
+    if (isEdit && recurringToEdit) {
       // Parse recurrencerule
       let freq: RecurrenceFrequency = "MONTHLY";
       let interv = 1;
-      if (reminderToEdit.recurrencerule) {
-        const parts = reminderToEdit.recurrencerule.split(";");
+      if (recurringToEdit.recurrencerule) {
+        const parts = recurringToEdit.recurrencerule.split(";");
         const freqPart = parts.find(p => p.startsWith("FREQ="));
         const intervalPart = parts.find(p => p.startsWith("INTERVAL="));
         if (freqPart) {
@@ -303,21 +309,21 @@ const useReminderForm = (reminderIdToEdit?: string) => {
       }
 
       setFormData({
-        ...(reminderToEdit as any), // Cast to any to allow additional form fields like frequency, interval
-        type: (reminderToEdit.type as ReminderTransactionType) || "Expense", // Set type, default if not present
+        ...(recurringToEdit as any), // Cast to any to allow additional form fields like frequency, interval
+        type: (recurringToEdit.type as RecurringTransactionType) || "Expense", // Set type, default if not present
         frequency: freq,
         interval: interv,
-        nextoccurrencedate: dayjs(reminderToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
-        enddate: reminderToEdit.enddate ? dayjs(reminderToEdit.enddate).format("YYYY-MM-DD") : null,
+        nextoccurrencedate: dayjs(recurringToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
+        enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
       });
     } else if (!isEdit) {
-      setFormData({ ...initialReminderState, tenantid: tenantId || "" }); // Ensure tenantId is set if available
+      setFormData({ ...initialRecurringState, tenantid: tenantId || "" }); // Ensure tenantId is set if available
     }
-  }, [reminderToEdit, isEdit]);
+  }, [recurringToEdit, isEdit]);
 
   const handleTextChange = (
-    name: keyof ReminderFormType,
-    value: string | number | boolean | null | string[] | RecurrenceFrequency | ReminderTransactionType,
+    name: keyof RecurringFormType,
+    value: string | number | boolean | null | string[] | RecurrenceFrequency | RecurringTransactionType,
   ) => {
     setFormData(prev => {
       const newState = { ...prev, [name]: value };
@@ -333,13 +339,13 @@ const useReminderForm = (reminderIdToEdit?: string) => {
   };
 
   const handleDateChange = (
-    name: keyof Pick<ReminderFormType, "nextoccurrencedate" | "enddate">,
+    name: keyof Pick<RecurringFormType, "nextoccurrencedate" | "enddate">,
     isoDateString: string | null,
   ) => {
     setFormData(prev => ({ ...prev, [name]: isoDateString ? dayjs(isoDateString).format("YYYY-MM-DD") : null }));
   };
 
-  const handleSwitchChange = (name: keyof Pick<ReminderFormType, "isactive">, value: boolean) => {
+  const handleSwitchChange = (name: keyof Pick<RecurringFormType, "isactive">, value: boolean) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -355,9 +361,9 @@ const useReminderForm = (reminderIdToEdit?: string) => {
             ...prev,
             name: blueprintTransaction.name || prev.name,
             description: blueprintTransaction.description || prev.description,
-            amount: Math.abs(blueprintTransaction.amount || 0), // Reminders usually positive
-            // Assuming blueprintTransaction.type exists and is compatible with ReminderTransactionType
-            type: (blueprintTransaction.type as ReminderTransactionType) || prev.type,
+            amount: Math.abs(blueprintTransaction.amount || 0), // Recurrings usually positive
+            // Assuming blueprintTransaction.type exists and is compatible with RecurringTransactionType
+            type: (blueprintTransaction.type as RecurringTransactionType) || prev.type,
             currencycode:
               accounts?.find(acc => acc.id === blueprintTransaction.accountid)?.currency || prev.currencycode,
             sourceaccountid: blueprintTransaction.accountid || prev.sourceaccountid,
@@ -388,7 +394,7 @@ const useReminderForm = (reminderIdToEdit?: string) => {
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
     const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: CreateReminderDto | UpdateReminderDto = {
+    const dataToSubmitApi: CreateRecurringDto | UpdateRecurringDto = {
       ...restOfFormData,
       recurrencerule: recurrenceRule,
     };
@@ -400,26 +406,26 @@ const useReminderForm = (reminderIdToEdit?: string) => {
       }
     });
 
-    if (isEdit && reminderIdToEdit) {
-      updateReminder(
-        { id: reminderIdToEdit, reminderData: dataToSubmitApi as UpdateReminderDto },
+    if (isEdit && recurringIdToEdit) {
+      updateRecurring(
+        { id: recurringIdToEdit, recurringData: dataToSubmitApi as UpdateRecurringDto },
         {
           onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, tenantId] });
-            queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, reminderIdToEdit, tenantId] });
+            queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
+            queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, recurringIdToEdit, tenantId] });
             router.back();
           },
-          onError: e => console.error("Error updating reminder:", e),
+          onError: e => console.error("Error updating recurring:", e),
           onSettled: () => setIsSubmitting(false),
         },
       );
     } else {
-      createReminder(dataToSubmitApi as CreateReminderDto, {
+      createRecurring(dataToSubmitApi as CreateRecurringDto, {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: [TableNames.Reminders, tenantId] });
+          queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();
         },
-        onError: e => console.error("Error creating reminder:", e),
+        onError: e => console.error("Error creating recurring:", e),
         onSettled: () => setIsSubmitting(false),
       });
     }

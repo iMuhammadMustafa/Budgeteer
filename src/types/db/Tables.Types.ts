@@ -15,7 +15,7 @@ export type TransactionCategory = Tables<"transactioncategories">;
 export type TransactionGroup = Tables<"transactiongroups">;
 
 export type Configuration = Tables<"configurations">;
-export type Reminder = Tables<"reminders"> & { type: TransactionType };
+export type Recurring = Tables<"recurrings"> & { type: TransactionType };
 
 // Materialized Views
 export type TransactionsView = Views<"transactionsview">;

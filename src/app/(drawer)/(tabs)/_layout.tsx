@@ -8,7 +8,7 @@ export default function TabsLayout() {
       {TransactionsTab}
       {AddTransaction}
       {SummaryTab}
-      {RemindersTab}
+      {RecurringsTab}
     </Tabs>
   );
 }
@@ -41,11 +41,11 @@ const AddTransaction = (
   />
 );
 
-const RemindersTab = (
+const RecurringsTab = (
   <Tabs.Screen
-    name="Reminders"
+    name="Recurrings"
     options={{
-      title: "Reminders",
+      title: "Recurrings",
       tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color} size={24} />,
     }}
   />
@@ -93,7 +93,7 @@ const SummaryTab = (
         }}
       />
       <Tabs.Screen
-        name="Reminders"
+        name="Recurrings"
         options={{
           tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color} size={24} />,
         }}
