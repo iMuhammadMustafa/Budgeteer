@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } fr
 import { useAuth } from "@/src/providers/AuthProvider";
 
 import Landing from "@/src/components/pages/Landing";
+import BudgeteerLanding from "@/src/components/pages/VLanding";
 export default function Index() {
   const { session, isSessionLoading } = useAuth();
 
@@ -13,7 +14,8 @@ export default function Index() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="flex-1 justify-center items-center">
           {/* Landing Page */}
-          <Landing session={session} />
+          {/* <Landing session={session} /> */}
+          <BudgeteerLanding session={session} router={router} />
         </View>
       </ScrollView>
     </SafeAreaView>
