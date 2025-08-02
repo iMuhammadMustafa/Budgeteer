@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetAccountCategoryById } from "@/src/services/repositories/AccountCategories.Repository";
+import { useGetAccountCategoryById } from "@/src/services/repositories/AccountCategories";
 import AccountCategoryForm, { AccountCategoryFormType, initialState } from "@/src/components/forms/AccountCategoryForm";
 
 export default function Upsert() {

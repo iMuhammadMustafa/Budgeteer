@@ -1,14 +1,7 @@
 import { useCallback, useState } from "react";
 import { TabView } from "react-native-tab-view";
-import {
-  useDeleteAccountCategory,
-  useGetAccountCategories,
-} from "@/src/services/repositories/AccountCategories.Repository";
-import {
-  useDeleteAccount,
-  useGetAccounts,
-  useGetTotalAccountBalance,
-} from "@/src/services/repositories/Accounts.Repository";
+import { useDeleteAccountCategory, useGetAccountCategories } from "@/src/services/repositories/AccountCategories";
+import { useDeleteAccount, useGetAccounts, useGetTotalAccountBalance } from "@/src/services/repositories/Accounts";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
 import { Text, View, ActivityIndicator, Pressable } from "react-native";

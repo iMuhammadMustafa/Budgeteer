@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetAccountById } from "@/src/services/repositories/Accounts.Repository";
+import { useGetAccountById } from "@/src/services/repositories/Accounts";
 import AccountForm, { AccountFormType, initialState } from "@/src/components/forms/AccountForm";
 
 export default function Upsert() {

@@ -15,7 +15,7 @@ import {
   useDeleteTransaction,
   useGetTransactionsInfinite,
 } from "@/src/services/repositories/Transactions.Repository";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
+import { useGetAccounts } from "@/src/services/repositories/Accounts";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
 
 export default function useTransactions() {

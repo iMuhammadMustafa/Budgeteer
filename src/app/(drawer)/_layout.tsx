@@ -12,6 +12,7 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { useEffect } from "react";
 import Button from "@/src/components/Button";
+import { useDemoMode } from "@/src/providers/DemoModeProvider";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -98,8 +99,14 @@ function ThemeToggler({ toggleTheme, isDarkMode }: { toggleTheme: () => void; is
 }
 
 function DrawerContent(props: any) {
+  const { isDemo } = useDemoMode();
   return (
     <DrawerContentScrollView {...props} className="flex-1">
+      {isDemo && (
+        <View className="bg-yellow-300 p-2 mb-2 rounded-md items-center">
+          <Text className="text-black font-bold">Demo Mode</Text>
+        </View>
+      )}
       <DrawerItemList {...props} />
       <Footer />
     </DrawerContentScrollView>
@@ -107,6 +114,7 @@ function DrawerContent(props: any) {
 }
 const Footer = () => {
   const { currentlyRunning, isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
+  const { setDemo } = useDemoMode();
 
   // useEffect(() => {
   //   if (isUpdatePending) {
@@ -114,6 +122,12 @@ const Footer = () => {
   //     Updates.reloadAsync();
   //   }
   // }, [isUpdatePending]);
+
+  const handleLogout = () => {
+    setDemo(false);
+    supabase.auth.signOut();
+    router.navigate("/(auth)/Login");
+  };
 
   return (
     <>
@@ -134,13 +148,7 @@ const Footer = () => {
         )}
       </View>
 
-      <Pressable
-        onPress={() => {
-          supabase.auth.signOut();
-          router.navigate("/(auth)/Login");
-        }}
-        className="bg-danger-100 p-2 rounded-md mt-2"
-      >
+      <Pressable onPress={handleLogout} className="bg-danger-100 p-2 rounded-md mt-2">
         <Text className="text-foreground text-center">Logout</Text>
       </Pressable>
     </>

@@ -9,12 +9,8 @@ import timezone from "dayjs/plugin/timezone";
 import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Repository";
-import {
-  useGetRecurring,
-  useCreateRecurring,
-  useUpdateRecurring,
-} from "@/src/services/repositories/Recurrings.Repository";
+import { useGetAccounts } from "@/src/services/repositories/Accounts";
+import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/repositories/Recurrings";
 import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.api";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";

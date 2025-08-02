@@ -6,11 +6,13 @@ type AuthType = {
   session: Session | null;
   user?: Session["user"];
   isSessionLoading: boolean;
+  setSession?: (session: Session | null) => void;
 };
 
 const AuthContext = createContext<AuthType>({
   session: null,
   isSessionLoading: true,
+  setSession: undefined,
 });
 
 export default function AuthProvider({ children }: PropsWithChildren) {
@@ -30,7 +32,9 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     fetchSession();
   }, []);
 
-  return <AuthContext.Provider value={{ session, user, isSessionLoading }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ session, user, isSessionLoading, setSession }}>{children}</AuthContext.Provider>
+  );
 }
 // export const useAuth = () => useContext(AuthContext);
 export const useAuth = () => {
