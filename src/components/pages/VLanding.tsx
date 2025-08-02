@@ -39,22 +39,22 @@ const BudgeteerLogo = ({ size = 80 }) => (
 
 // Feature Card Component
 const FeatureCard = ({ icon, title, description }) => (
-  <View className="bg-white rounded-2xl p-6 shadow-lg mb-4 border border-gray-100">
+  <View className="bg-card rounded-2xl p-6 shadow-lg mb-4 border border-border">
     <View className="flex-row items-center mb-3">
-      <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center mr-3">
-        <Text className="text-blue-600 text-lg font-bold">{icon}</Text>
+      <View className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center mr-3">
+        <Text className="text-primary-600 text-lg font-bold">{icon}</Text>
       </View>
-      <Text className="text-lg font-bold text-gray-900 flex-1">{title}</Text>
+      <Text className="text-lg font-bold text-foreground flex-1">{title}</Text>
     </View>
-    <Text className="text-gray-600 text-sm leading-5">{description}</Text>
+    <Text className="text-muted-foreground text-sm leading-5">{description}</Text>
   </View>
 );
 
 // Stats Component
 const StatCard = ({ number, label }) => (
   <View className="items-center">
-    <Text className="text-2xl font-extrabold text-blue-600">{number}</Text>
-    <Text className="text-gray-600 text-sm text-center">{label}</Text>
+    <Text className="text-2xl font-extrabold text-muted-foreground">{number}</Text>
+    <Text className="text-muted-foreground text-sm text-center">{label}</Text>
   </View>
 );
 
@@ -95,31 +95,33 @@ export default function BudgeteerLanding({ session, router }) {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       {/* Hero Section */}
-      <View className="bg-gradient-to-br from-blue-600 to-blue-800 px-6 pt-16 pb-12">
+      <View className="bg-gradient-to-br from-primary-600 to-primary-800 px-4 md:px-16 lg:px-32 pt-16 pb-12">
         <View className="items-center mb-8">
           <BudgeteerLogo size={100} />
-          <Text className="text-4xl font-extrabold text-white mt-4 mb-2">Budgeteer</Text>
-          <Text className="text-xl text-blue-100 text-center font-medium">Your Personal Finance Companion</Text>
+          <Text className="text-3xl md:text-4xl font-extrabold text-primary-foreground mt-4 mb-2">Budgeteer</Text>
+          <Text className="text-lg md:text-xl text-primary-100 text-center font-medium">
+            Your Personal Finance Companion
+          </Text>
         </View>
 
         <View className="items-center mb-8">
-          <Text className="text-lg text-blue-100 text-center leading-6 mb-6 px-4">
+          <Text className="text-base md:text-lg text-primary-100 text-center leading-6 mb-6 px-2 md:px-4">
             Take control of your finances with smart budgeting, expense tracking, and financial insights that help you
             achieve your goals.
           </Text>
 
           <Pressable
-            className="bg-white px-8 py-4 rounded-full shadow-lg active:scale-95"
+            className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
             onPress={() => (session && session.user ? router.replace("/Dashboard") : router.replace("/Login"))}
           >
-            <Text className="text-blue-600 text-lg font-bold">
+            <Text className="text-primary-600 text-base md:text-lg font-bold">
               {session && session.user ? "Go to Dashboard" : "Start Your Journey"}
             </Text>
           </Pressable>
         </View>
 
         {/* Stats Section */}
-        <View className="flex-row justify-around bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <View className="flex-col md:flex-row justify-around items-center bg-primary-100/10 rounded-2xl p-6 backdrop-blur-sm md:space-x-12">
           <StatCard number="10K+" label="Active Users" />
           <StatCard number="$2M+" label="Money Tracked" />
           <StatCard number="4.8★" label="App Rating" />
@@ -127,13 +129,16 @@ export default function BudgeteerLanding({ session, router }) {
       </View>
 
       {/* Features Section */}
-      <View className="px-6 py-12">
+      <View className="px-6 md:px-16 lg:px-32 py-12">
         <View className="items-center mb-8">
-          <Text className="text-3xl font-extrabold text-gray-900 mb-2">Powerful Features</Text>
-          <Text className="text-gray-600 text-center text-lg">Everything you need to master your finances</Text>
+          <Text className="text-2xl md:text-3xl font-extrabold text-foreground mb-2">Powerful Features</Text>
+          <Text className="text-muted-foreground text-center text-base md:text-lg">
+            Everything you need to master your finances
+          </Text>
         </View>
 
-        <View className="space-y-4">
+        {/* Responsive grid for features */}
+        <View className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {features.map((feature, index) => (
             <FeatureCard key={index} icon={feature.icon} title={feature.title} description={feature.description} />
           ))}
@@ -141,18 +146,20 @@ export default function BudgeteerLanding({ session, router }) {
       </View>
 
       {/* CTA Section */}
-      <View className="bg-gradient-to-r from-green-500 to-blue-600 mx-6 rounded-3xl p-8 mb-8">
+      <View className="bg-gradient-to-r from-success-500 to-primary-600 mx-4 md:mx-16 lg:mx-32 rounded-3xl p-6 md:p-8 mb-8">
         <View className="items-center">
-          <Text className="text-2xl font-extrabold text-white mb-2 text-center">Ready to Transform Your Finances?</Text>
-          <Text className="text-green-100 text-center mb-6 text-lg">
+          <Text className="text-xl md:text-2xl font-extrabold text-primary-foreground mb-2 text-center">
+            Ready to Transform Your Finances?
+          </Text>
+          <Text className="text-success-100 text-center mb-6 text-base md:text-lg">
             Join thousands of users who've taken control of their money
           </Text>
 
           <Pressable
-            className="bg-white px-8 py-4 rounded-full shadow-lg active:scale-95"
+            className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
             onPress={() => (session && session.user ? router.replace("/Dashboard") : router.replace("/Login"))}
           >
-            <Text className="text-blue-600 text-lg font-bold">
+            <Text className="text-primary-600 text-base md:text-lg font-bold">
               {session && session.user ? "Open Dashboard" : "Get Started Free"}
             </Text>
           </Pressable>
@@ -160,11 +167,13 @@ export default function BudgeteerLanding({ session, router }) {
       </View>
 
       {/* Footer */}
-      <View className="bg-gray-900 px-6 py-8">
+      <View className="bg-background px-4 md:px-16 lg:px-32 py-8">
         <View className="items-center">
           <BudgeteerLogo size={60} />
-          <Text className="text-white text-lg font-bold mt-2 mb-1">Budgeteer</Text>
-          <Text className="text-gray-400 text-center text-sm">Making financial wellness accessible to everyone</Text>
+          <Text className="text-primary-foreground text-lg font-bold mt-2 mb-1">Budgeteer</Text>
+          <Text className="text-muted-foreground text-center text-sm">
+            Making financial wellness accessible to everyone
+          </Text>
         </View>
       </View>
     </ScrollView>
