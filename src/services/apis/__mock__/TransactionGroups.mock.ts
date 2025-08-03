@@ -3,13 +3,13 @@
 import { TransactionGroup } from "@/src/types/db/Tables.Types";
 import { transactionGroups, transactionCategories } from "./mockDataStore";
 
-export const getAllTransactionGroups = async (tenantId: string) => {
+export const getAllTransactionGroups = async (tenantId: string): Promise<TransactionGroup[]> => {
   return transactionGroups
     .filter(group => group.tenantid === tenantId || tenantId === "demo")
     .map(group => ({ ...group }));
 };
 
-export const getTransactionGroupById = async (id: string, tenantId: string) => {
+export const getTransactionGroupById = async (id: string, tenantId: string): Promise<TransactionGroup | null> => {
   const group = transactionGroups.find(
     group => group.id === id && (group.tenantid === tenantId || tenantId === "demo"),
   );

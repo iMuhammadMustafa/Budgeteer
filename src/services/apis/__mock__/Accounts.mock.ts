@@ -1,21 +1,25 @@
 import { Account } from "@/src/types/db/Tables.Types";
 import { accounts, accountCategories } from "./mockDataStore";
 
-// Helper: simulate random error
-function maybeThrowError(message: string) {
-  if (Math.random() < 0.15) throw new Error(message);
-}
-
 export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
-  return accounts.filter(acc => acc.tenantid === tenantId || tenantId === "demo");
+  return accounts
+    .filter(acc => acc.tenantid === tenantId || tenantId === "demo")
+    .map(acc => ({
+      ...acc,
+      category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
+    }));
 };
 
 export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
-  return accounts.find(acc => acc.id === id && (acc.tenantid === tenantId || tenantId === "demo")) ?? null;
+  const acc = accounts.find(acc => acc.id === id && (acc.tenantid === tenantId || tenantId === "demo"));
+  if (!acc) return null;
+  return {
+    ...acc,
+    category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
+  };
 };
 
 export const createAccount = async (account: any) => {
-  maybeThrowError("Failed to create account (simulated error)");
   if (accounts.some(a => a.name === account.name && a.tenantid === account.tenantid)) {
     throw new Error("Account name already exists");
   }
@@ -28,7 +32,6 @@ export const createAccount = async (account: any) => {
 };
 
 export const updateAccount = async (account: any) => {
-  maybeThrowError("Failed to update account (simulated error)");
   const idx = accounts.findIndex(a => a.id === account.id);
   if (idx === -1) throw new Error("Account not found");
   accounts[idx] = { ...accounts[idx], ...account };
@@ -36,7 +39,6 @@ export const updateAccount = async (account: any) => {
 };
 
 export const deleteAccount = async (id: string, userId?: string) => {
-  maybeThrowError("Failed to delete account (simulated error)");
   const idx = accounts.findIndex(a => a.id === id);
   if (idx === -1) throw new Error("Account not found");
   accounts[idx].isdeleted = true;
@@ -45,7 +47,6 @@ export const deleteAccount = async (id: string, userId?: string) => {
 };
 
 export const restoreAccount = async (id: string, userId?: string) => {
-  maybeThrowError("Failed to restore account (simulated error)");
   const idx = accounts.findIndex(a => a.id === id);
   if (idx === -1) throw new Error("Account not found");
   accounts[idx].isdeleted = false;
@@ -54,7 +55,6 @@ export const restoreAccount = async (id: string, userId?: string) => {
 };
 
 export const updateAccountBalance = async (accountid: string, amount: number) => {
-  maybeThrowError("Failed to update account balance (simulated error)");
   const idx = accounts.findIndex(a => a.id === accountid);
   if (idx === -1) throw new Error("Account not found");
   accounts[idx].balance += amount;

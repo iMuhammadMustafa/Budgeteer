@@ -1,14 +1,26 @@
 // Mock implementation for Recurrings API
 
 import { CreateRecurringDto, UpdateRecurringDto } from "../supabase/Recurrings.api.supa";
-import { recurrings } from "./mockDataStore";
+import { recurrings, accounts, transactionCategories } from "./mockDataStore";
 
 export const listRecurrings = async (params: { tenantId: string; filters?: any }) => {
-  return recurrings.filter(rec => rec.tenantid === params.tenantId || params.tenantId === "demo");
+  return recurrings
+    .filter(rec => rec.tenantid === params.tenantId || params.tenantId === "demo")
+    .map(rec => ({
+      ...rec,
+      source_account: accounts.find((acc: any) => acc.id === (rec as any).sourceaccountid) ?? null,
+      category: transactionCategories.find((cat: any) => cat.id === (rec as any).categoryid) ?? null,
+    }));
 };
 
 export const getRecurringById = async (id: string, tenantId: string) => {
-  return recurrings.find(rec => rec.id === id && (rec.tenantid === tenantId || tenantId === "demo")) ?? null;
+  const rec = recurrings.find(rec => rec.id === id && (rec.tenantid === tenantId || tenantId === "demo"));
+  if (!rec) return null;
+  return {
+    ...rec,
+    source_account: accounts.find((acc: any) => acc.id === (rec as any).sourceaccountid) ?? null,
+    category: transactionCategories.find((cat: any) => cat.id === (rec as any).categoryid) ?? null,
+  };
 };
 
 export const createRecurring = async (recurringData: CreateRecurringDto, tenantId: string) => {
@@ -28,7 +40,13 @@ export const createRecurring = async (recurringData: CreateRecurringDto, tenantI
 export const updateRecurring = async (id: string, recurringData: UpdateRecurringDto, tenantId: string) => {
   const idx = recurrings.findIndex(rec => rec.id === id && (rec.tenantid === tenantId || tenantId === "demo"));
   if (idx === -1) throw new Error("Recurring not found");
-  recurrings[idx] = { ...recurrings[idx], ...recurringData, updatedat: new Date().toISOString() };
+  recurrings[idx] = {
+    ...recurrings[idx],
+    ...recurringData,
+    updatedat: new Date().toISOString(),
+    isdeleted: false,
+    createdat: recurrings[idx].createdat ?? new Date().toISOString(),
+  };
   return recurrings[idx];
 };
 

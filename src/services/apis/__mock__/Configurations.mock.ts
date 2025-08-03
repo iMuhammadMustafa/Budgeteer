@@ -3,15 +3,20 @@
 import { Configuration } from "@/src/types/db/Tables.Types";
 import { configurations } from "./mockDataStore";
 
-export const getAllConfigurations = async (tenantId: string) => {
+export const getAllConfigurations = async (tenantId: string): Promise<Configuration[]> => {
   return configurations.filter(conf => conf.tenantid === tenantId || tenantId === "demo");
 };
 
-export const getConfigurationById = async (id: string, tenantId: string) => {
+export const getConfigurationById = async (id: string, tenantId: string): Promise<Configuration | null> => {
   return configurations.find(conf => conf.id === id && (conf.tenantid === tenantId || tenantId === "demo")) ?? null;
 };
 
-export const getConfiguration = async (table: string, type: string, key: string, tenantId: string) => {
+export const getConfiguration = async (
+  table: string,
+  type: string,
+  key: string,
+  tenantId: string,
+): Promise<Configuration | null> => {
   return (
     configurations.find(
       conf =>

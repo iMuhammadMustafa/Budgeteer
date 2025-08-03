@@ -10,9 +10,12 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
 import MyIcon from "@/src/utils/Icons.Helper";
-import { useEffect } from "react";
 import Button from "@/src/components/Button";
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
+import {
+  initializeMockDataInLocalStorage,
+  resetMockDataInLocalStorage,
+} from "@/src/services/apis/__mock__/mockDataLocalStorage";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -98,8 +101,17 @@ function ThemeToggler({ toggleTheme, isDarkMode }: { toggleTheme: () => void; is
   );
 }
 
+import { useEffect } from "react";
+
 function DrawerContent(props: any) {
   const { isDemo } = useDemoMode();
+
+  useEffect(() => {
+    if (isDemo) {
+      initializeMockDataInLocalStorage();
+    }
+  }, [isDemo]);
+
   return (
     <DrawerContentScrollView {...props} className="flex-1">
       {isDemo && (
@@ -114,19 +126,20 @@ function DrawerContent(props: any) {
 }
 const Footer = () => {
   const { currentlyRunning, isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
-  const { setDemo } = useDemoMode();
-
-  // useEffect(() => {
-  //   if (isUpdatePending) {
-  //     // Update has successfully downloaded; apply it now
-  //     Updates.reloadAsync();
-  //   }
-  // }, [isUpdatePending]);
+  const { setDemo, isDemo } = useDemoMode();
 
   const handleLogout = () => {
     setDemo(false);
     supabase.auth.signOut();
     router.navigate("/(auth)/Login");
+  };
+
+  const handleResetDemoData = () => {
+    resetMockDataInLocalStorage();
+    // Optionally, reload the app to reflect changes
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
   };
 
   return (
@@ -147,6 +160,12 @@ const Footer = () => {
           </Pressable>
         )}
       </View>
+
+      {isDemo && (
+        <Pressable onPress={handleResetDemoData} className="bg-yellow-200 p-2 rounded-md mt-2 mb-2">
+          <Text className="text-black text-center font-bold">Reset Demo Data</Text>
+        </Pressable>
+      )}
 
       <Pressable onPress={handleLogout} className="bg-danger-100 p-2 rounded-md mt-2">
         <Text className="text-foreground text-center">Logout</Text>

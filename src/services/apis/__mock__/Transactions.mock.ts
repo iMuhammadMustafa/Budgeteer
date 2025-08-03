@@ -1,33 +1,38 @@
 // Mock implementation for Transactions API
 
 import { Transaction, TransactionsView } from "@/src/types/db/Tables.Types";
-import { transactions } from "./mockDataStore";
+import { transactions, accounts, transactionCategories, transactionGroups } from "./mockDataStore";
 
-const toTransactionsView = (tr: Transaction): TransactionsView => ({
-  accountid: tr.accountid,
-  accountname: null,
-  amount: tr.amount,
-  balance: null,
-  categoryid: tr.categoryid,
-  categoryname: null,
-  createdat: tr.createdat,
-  currency: null,
-  date: tr.date,
-  groupicon: null,
-  groupid: null,
-  groupname: null,
-  icon: null,
-  id: tr.id,
-  isvoid: tr.isvoid,
-  name: tr.name,
-  payee: tr.payee,
-  runningbalance: null,
-  tenantid: tr.tenantid,
-  transferaccountid: tr.transferaccountid,
-  transferid: tr.transferid,
-  type: tr.type,
-  updatedat: tr.updatedat,
-});
+const toTransactionsView = (tr: Transaction): TransactionsView => {
+  const account = accounts.find(acc => acc.id === tr.accountid) ?? null;
+  const category = transactionCategories.find(cat => cat.id === tr.categoryid) ?? null;
+  const group = category && category.groupid ? transactionGroups.find(g => g.id === category.groupid) : null;
+  return {
+    accountid: tr.accountid,
+    accountname: account?.name ?? null,
+    amount: tr.amount,
+    balance: null,
+    categoryid: tr.categoryid,
+    categoryname: category?.name ?? null,
+    createdat: tr.createdat,
+    currency: account?.currency ?? null,
+    date: tr.date,
+    groupicon: group?.icon ?? null,
+    groupid: group?.id ?? null,
+    groupname: group?.name ?? null,
+    icon: category?.icon ?? null,
+    id: tr.id,
+    isvoid: tr.isvoid,
+    name: tr.name,
+    payee: tr.payee,
+    runningbalance: null,
+    tenantid: tr.tenantid,
+    transferaccountid: tr.transferaccountid,
+    transferid: tr.transferid,
+    type: tr.type,
+    updatedat: tr.updatedat,
+  };
+};
 
 export const getAllTransactions = async (tenantId: string) => {
   return transactions.map(toTransactionsView);

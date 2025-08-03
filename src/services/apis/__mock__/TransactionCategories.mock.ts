@@ -1,15 +1,18 @@
 // Mock implementation for TransactionCategories API
 
 import { TransactionCategory } from "@/src/types/db/Tables.Types";
-import { transactionCategories, transactions } from "./mockDataStore";
+import { transactionCategories, transactions, transactionGroups } from "./mockDataStore";
 
 export const getAllTransactionCategories = async (tenantId: string) => {
   return transactionCategories
     .filter(cat => cat.tenantid === tenantId || tenantId === "demo")
-    .map(category => ({
-      ...category,
-      group: { id: category.groupid, name: `Mock Group ${category.groupid?.split("-")[1]}` },
-    }));
+    .map(category => {
+      const group = category.groupid ? transactionGroups.find((g: any) => g.id === category.groupid) : null;
+      return {
+        ...category,
+        group: group ? { ...group } : { id: category.groupid, name: `Mock Group ${category.groupid?.split("-")[1]}` },
+      };
+    });
 };
 
 export const getTransactionCategoryById = async (id: string, tenantId: string) => {
