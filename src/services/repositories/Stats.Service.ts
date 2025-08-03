@@ -283,6 +283,6 @@ const getStatsNetWorthGrowthHelper = async (
   const data = await getStatsNetWorthGrowth(tenantId, startDate, endDate);
   return data.map(item => ({
     x: dayjs(item.month).format("MMM"),
-    y: item.total_net_worth,
+    y: item.total_net_worth ?? 0,
   }));
 };

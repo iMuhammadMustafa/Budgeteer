@@ -298,7 +298,7 @@ export const useExecuteRecurringAction = () => {
     },
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.id, tenantId] });
+      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.item.id, tenantId] });
       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
