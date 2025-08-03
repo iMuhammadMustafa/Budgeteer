@@ -12,12 +12,12 @@ import {
   getTransactionsByName,
   restoreTransaction,
   updateTransaction,
-} from "../apis/Transactions.api";
+} from "../apis/Transactions.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { updateAccountBalance } from "../apis/Accounts.api";
+import { updateAccountBalance } from "../apis/Accounts.repository";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { initialSearchFilters } from "@/src/utils/transactions.helper";

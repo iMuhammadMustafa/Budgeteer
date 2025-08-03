@@ -1,6 +1,6 @@
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
-import * as real from "./Recurrings.api.real";
-import * as mock from "./__mock__/Recurrings.api";
+import * as real from "./supabase/Recurrings.api.supa";
+import * as mock from "./__mock__/Recurrings.mock";
 
 // Proxy hook to select real or mock API
 export function useRecurringsApi() {
@@ -9,4 +9,4 @@ export function useRecurringsApi() {
 }
 
 // Re-export all real API methods for compatibility
-export * from "./Recurrings.api.real";
+export * from "./supabase/Recurrings.api.supa";

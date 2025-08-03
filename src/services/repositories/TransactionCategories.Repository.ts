@@ -9,7 +9,7 @@ import {
   getAllTransactionCategories,
   restoreTransactionCategory,
   updateTransactionCategory,
-} from "../apis/TransactionCategories.api";
+} from "../apis/TransactionCategories.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";

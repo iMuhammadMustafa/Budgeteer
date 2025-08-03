@@ -25,7 +25,7 @@ import DropdownField, {
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
 } from "../DropDownField";
-import { getTransactionsByName } from "@/src/services/apis/Transactions.api";
+import { getTransactionsByName } from "@/src/services/apis/Transactions.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 

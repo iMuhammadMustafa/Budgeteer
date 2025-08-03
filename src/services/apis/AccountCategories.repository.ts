@@ -1,6 +1,6 @@
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
-import * as Real from "./AccountCategories.api.real";
-import * as Mock from "./__mock__/AccountCategories.api";
+import * as Real from "./supabase/AccountCategories.supa";
+import * as Mock from "./__mock__/AccountCategories.mock";
 
 // Proxy pattern: swap to mock if demo mode is active, otherwise use real
 export const getAllAccountCategories = (...args: Parameters<typeof Real.getAllAccountCategories>) => {

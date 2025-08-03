@@ -1,4 +1,4 @@
-import { useTransactionGroupsApi } from "@/src/services/apis/TransactionGroups.api";
+import { useTransactionGroupsApi } from "@/src/services/apis/TransactionGroups.repository";
 
 // Repository hooks always use the API layer
 

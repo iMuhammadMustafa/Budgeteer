@@ -2,8 +2,8 @@ import { Session } from "@supabase/supabase-js";
 import { updateTransactionHelper } from "../Transactions.Repository";
 import { Transaction, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { updateTransaction } from "../../apis/Transactions.api";
-import { updateAccountBalance } from "../../apis/Accounts.api";
+import { updateTransaction } from "../../apis/Transactions.repository";
+import { updateAccountBalance } from "../../apis/Accounts.repository";
 
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
 jest.mock("../../apis/Transactions.api", () => ({

@@ -1,7 +1,7 @@
 // Mock implementation for Recurrings API
 
 import { Configuration } from "@/src/types/db/Tables.Types";
-import { CreateRecurringDto, UpdateRecurringDto } from "../Recurrings.api.real";
+import { CreateRecurringDto, UpdateRecurringDto } from "../supabase/Recurrings.api.supa";
 
 const mockConfigurations: Configuration[] = [
   {

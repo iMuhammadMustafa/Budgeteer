@@ -11,7 +11,7 @@ import { TableNames } from "@/src/types/db/TableNames";
 import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
 import { useGetAccounts } from "@/src/services/repositories/Accounts";
 import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/repositories/Recurrings";
-import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.api";
+import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.repository";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
@@ -19,7 +19,7 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.api";
+import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);

@@ -1,7 +1,7 @@
 // Proxy API for Transactions: switches between real and mock based on demo mode
 
-import * as Real from "./Transactions.api.real";
-import * as Mock from "./__mock__/Transactions.api";
+import * as Real from "./supabase/Transactions.supa";
+import * as Mock from "./__mock__/Transactions.mock";
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
 
 // Returns the correct API implementation based on demo mode
@@ -11,4 +11,4 @@ export function useTransactionsApi() {
 }
 
 // Re-export all real API methods for compatibility
-export * from "./Transactions.api.real";
+export * from "./supabase/Transactions.supa";

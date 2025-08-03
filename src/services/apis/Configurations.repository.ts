@@ -1,6 +1,6 @@
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
-import * as real from "./Configurations.api.real";
-import * as mock from "./__mock__/Configurations.api";
+import * as real from "./supabase/Configurations.supa";
+import * as mock from "./__mock__/Configurations.mock";
 
 // Proxy hook to select real or mock API
 export function useConfigurationsApi() {
@@ -9,4 +9,4 @@ export function useConfigurationsApi() {
 }
 
 // Re-export all real API methods for compatibility
-export * from "./Configurations.api.real";
+export * from "./supabase/Configurations.supa";
