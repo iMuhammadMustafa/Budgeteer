@@ -4,12 +4,12 @@ import { router } from "expo-router";
 
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetAccountCategories } from "@/src/services/repositories/AccountCategories";
+import { useGetAccountCategories } from "@/src/services/repositories/AccountCategories.Service";
 import {
   useGetAccountOpenedTransaction,
   useUpdateAccountOpenedTransaction,
   useUpsertAccount,
-} from "@/src/services/repositories/Accounts";
+} from "@/src/services/repositories/Accounts.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";

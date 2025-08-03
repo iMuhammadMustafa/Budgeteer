@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, ActivityIndicator, Alert } from "react
 import Button from "@/src/components/Button";
 import MyModal from "@/src/components/MyModal";
 import ConfigurationForm, { ConfigurationFormType, initialState } from "@/src/components/forms/ConfigurationForm";
-import { useGetConfigurations, useDeleteConfiguration } from "@/src/services/repositories/Configurations";
+import { useGetConfigurations, useDeleteConfiguration } from "@/src/services/repositories/Configurations.Service";
 
 export default function Settings() {
   const { data, isLoading, error } = useGetConfigurations();

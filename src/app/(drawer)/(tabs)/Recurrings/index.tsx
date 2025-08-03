@@ -5,7 +5,7 @@ import {
   useListRecurrings,
   useDeleteRecurring,
   useExecuteRecurringAction,
-} from "@/src/services/repositories/Recurrings";
+} from "@/src/services/repositories/Recurrings.Service";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Recurring } from "@/src/types/db/Tables.Types";
 import dayjs from "dayjs";

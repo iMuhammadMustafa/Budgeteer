@@ -4,7 +4,7 @@ import { View, Text } from "react-native";
 import TextInputField from "../TextInputField";
 import Button from "../Button";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { useUpsertConfiguration } from "@/src/services/repositories/Configurations";
+import { useUpsertConfiguration } from "@/src/services/repositories/Configurations.Service";
 
 export type ConfigurationFormType = {
   id?: string;
