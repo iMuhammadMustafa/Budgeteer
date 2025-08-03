@@ -1,52 +1,116 @@
 // Mock implementation for Stats API
 
+import { transactions, transactionCategories, transactionGroups, accounts } from "./mockDataStore";
+
 export const getStatsDailyTransactions = async (
   tenantId: string,
   startDate?: string,
   endDate?: string,
   type?: string,
 ) => {
-  // TODO: Return mock daily transactions
-  return [{ date: startDate ?? "2025-08-01", sum: 100, type: type ?? "Expense", tenantid: tenantId }];
+  const filtered = transactions.filter(
+    tr =>
+      (tr.tenantid === tenantId || tenantId === "demo") &&
+      (!type || tr.type === type) &&
+      (!startDate || tr.date >= startDate) &&
+      (!endDate || tr.date <= endDate),
+  );
+  const grouped: { [date: string]: number } = {};
+  filtered.forEach(tr => {
+    const date = tr.date.split("T")[0];
+    grouped[date] = (grouped[date] || 0) + tr.amount;
+  });
+  return Object.entries(grouped).map(([date, sum]) => ({
+    date,
+    sum,
+    type: type ?? "All",
+    tenantid: tenantId,
+  }));
 };
 
 export const getStatsMonthlyTransactionsTypes = async (tenantId: string, startDate?: string, endDate?: string) => {
-  // TODO: Return mock monthly transaction types
-  return [{ date: startDate ?? "2025-08-01", type: "Expense", sum: 100, tenantid: tenantId }];
+  const filtered = transactions.filter(
+    tr =>
+      (tr.tenantid === tenantId || tenantId === "demo") &&
+      (!startDate || tr.date >= startDate) &&
+      (!endDate || tr.date <= endDate),
+  );
+  const grouped: { [type: string]: number } = {};
+  filtered.forEach(tr => {
+    grouped[tr.type] = (grouped[tr.type] || 0) + tr.amount;
+  });
+  return Object.entries(grouped).map(([type, sum]) => ({
+    date: startDate ?? new Date().toISOString().split("T")[0],
+    type,
+    sum,
+    tenantid: tenantId,
+  }));
 };
 
 export const getStatsMonthlyCategoriesTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
-  // TODO: Return mock monthly categories transactions
-  return [
-    {
-      groupid: "mockGroup",
-      categoryid: "mockCategory",
-      groupname: "Mock Group",
-      categoryname: "Mock Category",
-      sum: 100,
-      type: "Expense",
-      groupicon: "icon",
-      categoryicon: "icon",
-      groupbudgetamount: 200,
-      categorybudgetamount: 100,
-      date: startDate ?? "2025-08-01",
-      categorybudgetfrequency: "Monthly",
-      categorycolor: "#000",
-      categorydisplayorder: 1,
-      groupbudgetfrequency: "Monthly",
-      groupcolor: "#111",
-      groupdisplayorder: 1,
+  const filtered = transactions.filter(
+    tr =>
+      (tr.tenantid === tenantId || tenantId === "demo") &&
+      (!startDate || tr.date >= startDate) &&
+      (!endDate || tr.date <= endDate),
+  );
+  const grouped: { [catId: string]: number } = {};
+  filtered.forEach(tr => {
+    grouped[tr.categoryid] = (grouped[tr.categoryid] || 0) + tr.amount;
+  });
+  return Object.entries(grouped).map(([categoryid, sum]) => {
+    const cat = transactionCategories.find(c => c.id === categoryid);
+    const group = cat ? transactionGroups.find(g => g.id === cat.groupid) : undefined;
+    return {
+      groupid: group?.id ?? "unknown",
+      categoryid,
+      groupname: group?.name ?? "Unknown",
+      categoryname: cat?.name ?? "Unknown",
+      sum,
+      type: cat?.type ?? "Unknown",
+      groupicon: group?.icon ?? "",
+      categoryicon: cat?.icon ?? "",
+      groupbudgetamount: group?.budgetamount ?? 0,
+      categorybudgetamount: cat?.budgetamount ?? 0,
+      date: startDate ?? new Date().toISOString().split("T")[0],
+      categorybudgetfrequency: cat?.budgetfrequency ?? "",
+      categorycolor: cat?.color ?? "",
+      categorydisplayorder: cat?.displayorder ?? 0,
+      groupbudgetfrequency: group?.budgetfrequency ?? "",
+      groupcolor: group?.color ?? "",
+      groupdisplayorder: group?.displayorder ?? 0,
       tenantid: tenantId,
-    },
-  ];
+    };
+  });
 };
 
 export const getStatsMonthlyAccountsTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
-  // TODO: Return mock monthly accounts transactions
-  return [{ accountid: "mockAccount", sum: 100, date: startDate ?? "2025-08-01", tenantid: tenantId }];
+  const filtered = transactions.filter(
+    tr =>
+      (tr.tenantid === tenantId || tenantId === "demo") &&
+      (!startDate || tr.date >= startDate) &&
+      (!endDate || tr.date <= endDate),
+  );
+  const grouped: { [accId: string]: number } = {};
+  filtered.forEach(tr => {
+    grouped[tr.accountid] = (grouped[tr.accountid] || 0) + tr.amount;
+  });
+  return Object.entries(grouped).map(([accountid, sum]) => ({
+    accountid,
+    sum,
+    date: startDate ?? new Date().toISOString().split("T")[0],
+    tenantid: tenantId,
+  }));
 };
 
 export const getStatsNetWorthGrowth = async (tenantId: string, startDate?: string, endDate?: string) => {
-  // TODO: Return mock net worth growth
-  return [{ month: startDate ?? "2025-01-01", networth: 1000, tenantid: tenantId }];
+  const filtered = accounts.filter(acc => acc.tenantid === tenantId || tenantId === "demo");
+  const total = filtered.reduce((sum, acc) => sum + (acc.isdeleted ? 0 : acc.balance), 0);
+  return [
+    {
+      month: startDate ?? new Date().toISOString().split("T")[0],
+      networth: total,
+      tenantid: tenantId,
+    },
+  ];
 };

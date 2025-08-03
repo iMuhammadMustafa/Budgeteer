@@ -1,89 +1,19 @@
 // Mock implementation for Configurations API
 
 import { Configuration } from "@/src/types/db/Tables.Types";
-
-const mockConfigurations: Configuration[] = [
-  {
-    id: "conf-1",
-    key: "currency",
-    value: "USD",
-    table: "settings",
-    type: "string",
-    isdeleted: false,
-    createdat: "2025-01-01T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-  },
-  {
-    id: "conf-2",
-    key: "theme",
-    value: "dark",
-    table: "settings",
-    type: "string",
-    isdeleted: false,
-    createdat: "2025-01-02T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-  },
-  {
-    id: "conf-3",
-    key: "timezone",
-    value: "America/Chicago",
-    table: "settings",
-    type: "string",
-    isdeleted: false,
-    createdat: "2025-01-03T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-  },
-  {
-    id: "conf-4",
-    key: "language",
-    value: "en-US",
-    table: "settings",
-    type: "string",
-    isdeleted: false,
-    createdat: "2025-01-04T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-  },
-  {
-    id: "conf-5",
-    key: "notifications",
-    value: "enabled",
-    table: "settings",
-    type: "boolean",
-    isdeleted: false,
-    createdat: "2025-01-05T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-  },
-];
+import { configurations } from "./mockDataStore";
 
 export const getAllConfigurations = async (tenantId: string) => {
-  // TODO: Return mock configurations
-  return mockConfigurations.filter(conf => conf.tenantid === tenantId || tenantId === "demo");
+  return configurations.filter(conf => conf.tenantid === tenantId || tenantId === "demo");
 };
 
 export const getConfigurationById = async (id: string, tenantId: string) => {
-  // TODO: Return mock configuration by id
-  return mockConfigurations.find(conf => conf.id === id && (conf.tenantid === tenantId || tenantId === "demo")) ?? null;
+  return configurations.find(conf => conf.id === id && (conf.tenantid === tenantId || tenantId === "demo")) ?? null;
 };
 
 export const getConfiguration = async (table: string, type: string, key: string, tenantId: string) => {
-  // TODO: Return mock configuration by table/type/key
   return (
-    mockConfigurations.find(
+    configurations.find(
       conf =>
         conf.table === table &&
         conf.type === type &&
@@ -94,26 +24,50 @@ export const getConfiguration = async (table: string, type: string, key: string,
 };
 
 export const createConfiguration = async (configuration: any) => {
-  // TODO: Return created mock configuration
-  return {
+  if (
+    configurations.some(
+      conf =>
+        conf.key === configuration.key &&
+        conf.table === configuration.table &&
+        conf.tenantid === configuration.tenantid &&
+        !conf.isdeleted,
+    )
+  ) {
+    throw new Error("Configuration key already exists for this table");
+  }
+  const newConfig = {
     ...configuration,
-    id: `conf-${mockConfigurations.length + 1}`,
+    id: `conf-${Date.now()}`,
     createdat: new Date().toISOString(),
     isdeleted: false,
+    updatedat: null,
+    updatedby: null,
   };
+  configurations.push(newConfig);
+  return newConfig;
 };
 
 export const updateConfiguration = async (configuration: any) => {
-  // TODO: Return updated mock configuration
-  return { ...configuration };
+  const idx = configurations.findIndex(conf => conf.id === configuration.id);
+  if (idx === -1) throw new Error("Configuration not found");
+  configurations[idx] = { ...configurations[idx], ...configuration };
+  return configurations[idx];
 };
 
 export const deleteConfiguration = async (id: string, userId: string) => {
-  // TODO: Return deleted mock configuration
-  return { id, isdeleted: true, updatedby: userId };
+  const idx = configurations.findIndex(conf => conf.id === id);
+  if (idx === -1) throw new Error("Configuration not found");
+  configurations[idx].isdeleted = true;
+  configurations[idx].updatedby = userId ?? "demo";
+  configurations[idx].updatedat = new Date().toISOString();
+  return { id, isdeleted: true, updatedby: userId ?? "demo" };
 };
 
 export const restoreConfiguration = async (id: string, userId: string) => {
-  // TODO: Return restored mock configuration
-  return { id, isdeleted: false, updatedby: userId };
+  const idx = configurations.findIndex(conf => conf.id === id);
+  if (idx === -1) throw new Error("Configuration not found");
+  configurations[idx].isdeleted = false;
+  configurations[idx].updatedby = userId ?? "demo";
+  configurations[idx].updatedat = new Date().toISOString();
+  return { id, isdeleted: false, updatedby: userId ?? "demo" };
 };

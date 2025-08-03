@@ -1,221 +1,69 @@
 // Mock implementation for TransactionCategories API
 
 import { TransactionCategory } from "@/src/types/db/Tables.Types";
+import { transactionCategories, transactions } from "./mockDataStore";
 
-const mockTransactionCategories: TransactionCategory[] = [
-  {
-    id: "tc-1",
-    name: "Groceries",
-    color: "#4CAF50",
-    icon: "shopping-cart",
-    displayorder: 1,
-    isdeleted: false,
-    createdat: "2025-01-01T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-1",
-    budgetamount: 500,
-    budgetfrequency: "Monthly",
-    description: "Food and groceries",
-  },
-  {
-    id: "tc-2",
-    name: "Salary",
-    color: "#2196F3",
-    icon: "briefcase",
-    displayorder: 2,
-    isdeleted: false,
-    createdat: "2025-01-02T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Income",
-    groupid: "tg-2",
-    budgetamount: 3000,
-    budgetfrequency: "Monthly",
-    description: "Monthly salary",
-  },
-  {
-    id: "tc-3",
-    name: "Dining Out",
-    color: "#FF9800",
-    icon: "restaurant",
-    displayorder: 3,
-    isdeleted: false,
-    createdat: "2025-01-03T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-3",
-    budgetamount: 200,
-    budgetfrequency: "Monthly",
-    description: "Restaurants and cafes",
-  },
-  {
-    id: "tc-4",
-    name: "Electricity",
-    color: "#607D8B",
-    icon: "flash-on",
-    displayorder: 4,
-    isdeleted: false,
-    createdat: "2025-01-04T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-4",
-    budgetamount: 100,
-    budgetfrequency: "Monthly",
-    description: "Electricity bills",
-  },
-  {
-    id: "tc-5",
-    name: "Doctor Visits",
-    color: "#E91E63",
-    icon: "local-hospital",
-    displayorder: 5,
-    isdeleted: false,
-    createdat: "2025-01-05T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-5",
-    budgetamount: 150,
-    budgetfrequency: "Monthly",
-    description: "Medical expenses",
-  },
-  {
-    id: "tc-6",
-    name: "Internet",
-    color: "#03A9F4",
-    icon: "wifi",
-    displayorder: 6,
-    isdeleted: false,
-    createdat: "2025-01-06T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-4",
-    budgetamount: 60,
-    budgetfrequency: "Monthly",
-    description: "Internet bills",
-  },
-  {
-    id: "tc-7",
-    name: "Games",
-    color: "#8BC34A",
-    icon: "sports-esports",
-    displayorder: 7,
-    isdeleted: false,
-    createdat: "2025-01-07T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-3",
-    budgetamount: 100,
-    budgetfrequency: "Monthly",
-    description: "Video games and entertainment",
-  },
-  {
-    id: "tc-8",
-    name: "Water",
-    color: "#2196F3",
-    icon: "opacity",
-    displayorder: 8,
-    isdeleted: false,
-    createdat: "2025-01-08T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-4",
-    budgetamount: 40,
-    budgetfrequency: "Monthly",
-    description: "Water bills",
-  },
-  {
-    id: "tc-9",
-    name: "Pharmacy",
-    color: "#F06292",
-    icon: "local-pharmacy",
-    displayorder: 9,
-    isdeleted: false,
-    createdat: "2025-01-09T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Expense",
-    groupid: "tg-5",
-    budgetamount: 80,
-    budgetfrequency: "Monthly",
-    description: "Medicines and pharmacy",
-  },
-  {
-    id: "tc-10",
-    name: "Freelance Income",
-    color: "#4CAF50",
-    icon: "work",
-    displayorder: 10,
-    isdeleted: false,
-    createdat: "2025-01-10T10:00:00Z",
-    createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    updatedat: null,
-    updatedby: null,
-    tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
-    type: "Income",
-    groupid: "tg-2",
-    budgetamount: 1200,
-    budgetfrequency: "Monthly",
-    description: "Freelance projects",
-  },
-];
+export const getAllTransactionCategories = async (tenantId: string) => {
+  return transactionCategories
+    .filter(cat => cat.tenantid === tenantId || tenantId === "demo")
+    .map(category => ({
+      ...category,
+      group: { id: category.groupid, name: `Mock Group ${category.groupid?.split("-")[1]}` },
+    }));
+};
 
-export const getAllTransactionCategories = async (tenantId: string) => [
-  ...mockTransactionCategories.map(category => ({
-    ...category,
-    tenantid: tenantId,
-    group: { id: category.groupid, name: `Mock Group ${category.groupid.split("-")[1]}` },
-  })),
-];
+export const getTransactionCategoryById = async (id: string, tenantId: string) => {
+  const cat = transactionCategories.find(
+    category => category.id === id && (category.tenantid === tenantId || tenantId === "demo"),
+  );
+  return cat ? { ...cat } : null;
+};
 
-export const getTransactionCategoryById = async (id: string, tenantId: string) => ({
-  ...mockTransactionCategories.find(category => category.id === id),
-  tenantid: tenantId,
-});
+export const createTransactionCategory = async (transactionCategory: any) => {
+  if (
+    transactionCategories.some(
+      cat => cat.name === transactionCategory.name && cat.tenantid === transactionCategory.tenantid && !cat.isdeleted,
+    )
+  ) {
+    throw new Error("Transaction category name already exists");
+  }
+  const newCategory = {
+    ...transactionCategory,
+    id: `tc-${Date.now()}`,
+    isdeleted: false,
+    createdat: new Date().toISOString(),
+    updatedat: null,
+    updatedby: null,
+  };
+  transactionCategories.push(newCategory);
+  return newCategory;
+};
 
-export const createTransactionCategory = async (transactionCategory: any) => ({
-  ...transactionCategory,
-  id: `tc-${Math.random().toString(36).substring(2, 9)}`, // Generate a random ID
-});
+export const updateTransactionCategory = async (transactionCategory: any) => {
+  const idx = transactionCategories.findIndex(cat => cat.id === transactionCategory.id);
+  if (idx === -1) throw new Error("Transaction category not found");
+  transactionCategories[idx] = { ...transactionCategories[idx], ...transactionCategory };
+  return transactionCategories[idx];
+};
 
-export const updateTransactionCategory = async (transactionCategory: any) => ({
-  ...transactionCategory,
-  updated: true,
-});
+export const deleteTransactionCategory = async (id: string, userId: string) => {
+  // Prevent deletion if referenced by any transaction
+  if (transactions.some(tr => tr.categoryid === id && !tr.isdeleted)) {
+    throw new Error("Cannot delete: Category is referenced by transactions");
+  }
+  const idx = transactionCategories.findIndex(cat => cat.id === id);
+  if (idx === -1) throw new Error("Transaction category not found");
+  transactionCategories[idx].isdeleted = true;
+  transactionCategories[idx].updatedby = userId ?? "demo";
+  transactionCategories[idx].updatedat = new Date().toISOString();
+  return { id, isdeleted: true, updatedby: userId ?? "demo" };
+};
 
-export const deleteTransactionCategory = async (id: string, userId: string) => ({
-  id,
-  deleted: true,
-  updatedby: userId,
-});
-
-export const restoreTransactionCategory = async (id: string, userId: string) => ({
-  id,
-  restored: true,
-  updatedby: userId,
-});
+export const restoreTransactionCategory = async (id: string, userId: string) => {
+  const idx = transactionCategories.findIndex(cat => cat.id === id);
+  if (idx === -1) throw new Error("Transaction category not found");
+  transactionCategories[idx].isdeleted = false;
+  transactionCategories[idx].updatedby = userId ?? "demo";
+  transactionCategories[idx].updatedat = new Date().toISOString();
+  return { id, isdeleted: false, updatedby: userId ?? "demo" };
+};
