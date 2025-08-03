@@ -1,72 +1,14 @@
-import { TableNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
-import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+// Proxy API for TransactionGroups: switches between real and mock based on demo mode
 
-export const getAllTransactionGroups = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
-};
+import * as Real from "./TransactionGroups.api.real";
+import * as Mock from "./__mock__/TransactionGroups.api";
+import { useDemoMode } from "@/src/providers/DemoModeProvider";
 
-export const getTransactionGroupById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+// Returns the correct API implementation based on demo mode
+export function useTransactionGroupsApi() {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock : Real;
+}
 
-export const createTransactionGroup = async (transactionGroup: Inserts<TableNames.TransactionGroups>) => {
-  const { data, error } = await supabase.from(TableNames.TransactionGroups).insert(transactionGroup).select().single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateTransactionGroup = async (transactionGroup: Updates<TableNames.TransactionGroups>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({ ...transactionGroup })
-    .eq("id", transactionGroup.id!)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const deleteTransactionGroup = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreTransactionGroup = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
+// Re-export all real API methods for compatibility
+export * from "./TransactionGroups.api.real";

@@ -1,42 +1,45 @@
-import * as Real from "./TransactionGroups.Repository";
-import * as Mock from "./__mock__/TransactionGroups.Repository";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
+import { useTransactionGroupsApi } from "@/src/services/apis/TransactionGroups.api";
 
-// Proxy hooks: swap to mock if demo mode is active, otherwise use real
-export const useGetTransactionGroups = (...args: Parameters<typeof Real.useGetTransactionGroups>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useGetTransactionGroups(...args) : Real.useGetTransactionGroups(...args);
+// Repository hooks always use the API layer
+
+export const useGetTransactionGroups = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["getAllTransactionGroups"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.getAllTransactionGroups(...args);
 };
 
-export const useGetTransactionGroupById = (...args: Parameters<typeof Real.useGetTransactionGroupById>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useGetTransactionGroupById(...args) : Real.useGetTransactionGroupById(...args);
+export const useGetTransactionGroupById = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["getTransactionGroupById"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.getTransactionGroupById(...args);
 };
 
-export const useCreateTransactionGroup = (...args: Parameters<typeof Real.useCreateTransactionGroup>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useCreateTransactionGroup(...args) : Real.useCreateTransactionGroup(...args);
+export const useCreateTransactionGroup = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["createTransactionGroup"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.createTransactionGroup(...args);
 };
 
-export const useUpdateTransactionGroup = (...args: Parameters<typeof Real.useUpdateTransactionGroup>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useUpdateTransactionGroup(...args) : Real.useUpdateTransactionGroup(...args);
+export const useUpdateTransactionGroup = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["updateTransactionGroup"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.updateTransactionGroup(...args);
 };
 
-export const useUpsertTransactionGroup = (...args: Parameters<typeof Real.useUpsertTransactionGroup>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useUpsertTransactionGroup(...args) : Real.useUpsertTransactionGroup(...args);
+export const useDeleteTransactionGroup = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["deleteTransactionGroup"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.deleteTransactionGroup(...args);
 };
 
-export const useDeleteTransactionGroup = (...args: Parameters<typeof Real.useDeleteTransactionGroup>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useDeleteTransactionGroup(...args) : Real.useDeleteTransactionGroup(...args);
+export const useRestoreTransactionGroup = (
+  ...args: Parameters<ReturnType<typeof useTransactionGroupsApi>["restoreTransactionGroup"]>
+) => {
+  const api = useTransactionGroupsApi();
+  return api.restoreTransactionGroup(...args);
 };
-
-export const useRestoreTransactionGroup = (id?: string) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useRestoreTransactionGroup() : Real.useRestoreTransactionGroup(id);
-};
-
-// Export any other real hooks/helpers by default
-export * from "./TransactionGroups.Repository";

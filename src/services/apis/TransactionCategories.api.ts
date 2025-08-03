@@ -1,77 +1,14 @@
-import { TableNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
-import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+// Proxy API for TransactionCategories: switches between real and mock based on demo mode
 
-export const getAllTransactionCategories = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("group(displayorder)", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
-};
+import * as Real from "./TransactionCategories.api.real";
+import * as Mock from "./__mock__/TransactionCategories.api";
+import { useDemoMode } from "@/src/providers/DemoModeProvider";
 
-export const getTransactionCategoryById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+// Returns the correct API implementation based on demo mode
+export function useTransactionCategoriesApi() {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock : Real;
+}
 
-export const createTransactionCategory = async (transactionCategory: Inserts<TableNames.TransactionCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .insert(transactionCategory)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateTransactionCategory = async (transactionCategory: Updates<TableNames.TransactionCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({ ...transactionCategory })
-    .eq("id", transactionCategory.id!)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const deleteTransactionCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreTransactionCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
+// Re-export all real API methods for compatibility
+export * from "./TransactionCategories.api.real";

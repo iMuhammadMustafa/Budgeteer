@@ -1,72 +1,34 @@
-import { TableNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
-import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { useDemoMode } from "@/src/providers/DemoModeProvider";
+import * as Real from "./AccountCategories.api.real";
+import * as Mock from "./__mock__/AccountCategories.api";
 
-export const getAllAccountCategories = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
+// Proxy pattern: swap to mock if demo mode is active, otherwise use real
+export const getAllAccountCategories = (...args: Parameters<typeof Real.getAllAccountCategories>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.getAllAccountCategories(...args) : Real.getAllAccountCategories(...args);
 };
 
-export const getAccountCategoryById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+export const getAccountCategoryById = (...args: Parameters<typeof Real.getAccountCategoryById>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.getAccountCategoryById(...args) : Real.getAccountCategoryById(...args);
 };
 
-export const createAccountCategory = async (accountCategory: Inserts<TableNames.AccountCategories>) => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).select().single();
-
-  if (error) throw error;
-  return data;
+export const createAccountCategory = (...args: Parameters<typeof Real.createAccountCategory>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.createAccountCategory(...args) : Real.createAccountCategory(...args);
 };
 
-export const updateAccountCategory = async (accountCategory: Updates<TableNames.AccountCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({ ...accountCategory })
-    .eq("id", accountCategory.id!)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const updateAccountCategory = (...args: Parameters<typeof Real.updateAccountCategory>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.updateAccountCategory(...args) : Real.updateAccountCategory(...args);
 };
 
-export const deleteAccountCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export const deleteAccountCategory = (...args: Parameters<typeof Real.deleteAccountCategory>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.deleteAccountCategory(...args) : Real.deleteAccountCategory(...args);
 };
-export const restoreAccountCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+
+export const restoreAccountCategory = (...args: Parameters<typeof Real.restoreAccountCategory>) => {
+  const { isDemo } = useDemoMode();
+  return isDemo ? Mock.restoreAccountCategory(...args) : Real.restoreAccountCategory(...args);
 };

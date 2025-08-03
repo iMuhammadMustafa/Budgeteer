@@ -1,42 +1,45 @@
-import * as Real from "./TransactionCategories.Repository";
-import * as Mock from "./__mock__/TransactionCategories.Repository";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
+import { useTransactionCategoriesApi } from "@/src/services/apis/TransactionCategories.api";
 
-// Proxy hooks: swap to mock if demo mode is active, otherwise use real
-export const useGetTransactionCategories = (...args: Parameters<typeof Real.useGetTransactionCategories>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useGetTransactionCategories(...args) : Real.useGetTransactionCategories(...args);
+// Repository hooks always use the API layer
+
+export const useGetTransactionCategories = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["getAllTransactionCategories"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.getAllTransactionCategories(...args);
 };
 
-export const useGetTransactionCategoryById = (...args: Parameters<typeof Real.useGetTransactionCategoryById>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useGetTransactionCategoryById(...args) : Real.useGetTransactionCategoryById(...args);
+export const useGetTransactionCategoryById = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["getTransactionCategoryById"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.getTransactionCategoryById(...args);
 };
 
-export const useCreateTransactionCategory = (...args: Parameters<typeof Real.useCreateTransactionCategory>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useCreateTransactionCategory(...args) : Real.useCreateTransactionCategory(...args);
+export const useCreateTransactionCategory = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["createTransactionCategory"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.createTransactionCategory(...args);
 };
 
-export const useUpdateTransactionCategory = (...args: Parameters<typeof Real.useUpdateTransactionCategory>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useUpdateTransactionCategory(...args) : Real.useUpdateTransactionCategory(...args);
+export const useUpdateTransactionCategory = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["updateTransactionCategory"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.updateTransactionCategory(...args);
 };
 
-export const useUpsertTransactionCategory = (...args: Parameters<typeof Real.useUpsertTransactionCategory>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useUpsertTransactionCategory(...args) : Real.useUpsertTransactionCategory(...args);
+export const useDeleteTransactionCategory = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["deleteTransactionCategory"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.deleteTransactionCategory(...args);
 };
 
-export const useDeleteTransactionCategory = (...args: Parameters<typeof Real.useDeleteTransactionCategory>) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useDeleteTransactionCategory(...args) : Real.useDeleteTransactionCategory(...args);
+export const useRestoreTransactionCategory = (
+  ...args: Parameters<ReturnType<typeof useTransactionCategoriesApi>["restoreTransactionCategory"]>
+) => {
+  const api = useTransactionCategoriesApi();
+  return api.restoreTransactionCategory(...args);
 };
-
-export const useRestoreTransactionCategory = (id?: string) => {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock.useRestoreTransactionCategory() : Real.useRestoreTransactionCategory(id);
-};
-
-// Export any other real hooks/helpers by default
-export * from "./TransactionCategories.Repository";
