@@ -230,7 +230,7 @@ export const useUpsertTransaction = () => {
     },
   });
 };
-
+//TODO: Fix this
 export const useDeleteTransaction = () => {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
@@ -244,7 +244,8 @@ export const useDeleteTransaction = () => {
       if (res.transferid) {
         await deleteTransaction(res.transferid, userId);
       }
-      if (res.isvoid !== false) {
+      console.log("Transaction deleted:", res);
+      if (!res.isvoid || res.isvoid !== false) {
         await updateAccountBalance(res.accountid, -res.amount);
         if (res.transferaccountid) {
           await updateAccountBalance(res.transferaccountid, res.amount);
