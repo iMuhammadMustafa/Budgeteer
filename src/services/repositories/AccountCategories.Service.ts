@@ -33,8 +33,7 @@ export const useGetAccountCategories = () => {
 export const useGetAccountCategoryById = (id?: string) => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-
-  return useQuery<AccountCategory>({
+  return useQuery<AccountCategory | null>({
     queryKey: [TableNames.AccountCategories, id, tenantId],
     queryFn: async () => {
       if (!id) throw new Error("ID is required");

@@ -18,6 +18,7 @@ import { Session } from "@supabase/supabase-js";
 import { createTransaction, updateTransaction } from "../apis/Transactions.repository";
 import { getConfiguration } from "../apis/Configurations.repository";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
+import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 
 export const useGetAccounts = () => {
   const { session } = useAuth();

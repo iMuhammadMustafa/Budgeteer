@@ -2,12 +2,11 @@
 
 import * as Real from "./supabase/TransactionCategories.supa";
 import * as Mock from "./__mock__/TransactionCategories.mock";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
+import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 
 // Returns the correct API implementation based on demo mode
-export function useTransactionCategoriesApi() {
-  const { isDemo } = useDemoMode();
-  return isDemo ? Mock : Real;
+export function getTransactionCategoriesApi() {
+  return getDemoMode() ? Mock : Real;
 }
 
 // Re-export all real API methods for compatibility
