@@ -1,13 +1,27 @@
-// Proxy API for TransactionGroups: switches between real and mock based on demo mode
-
+import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 import * as Real from "./supabase/TransactionGroups.supa";
 import * as Mock from "./__mock__/TransactionGroups.mock";
-import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 
-// Returns the correct API implementation based on demo mode
-export function getTransactionGroupsApi() {
-  return getDemoMode() ? Mock : Real;
-}
+export const getAllTransactionGroups = (...args: Parameters<typeof Real.getAllTransactionGroups>) => {
+  return getDemoMode() ? Mock.getAllTransactionGroups(...args) : Real.getAllTransactionGroups(...args);
+};
 
-// Re-export all real API methods for compatibility
-export * from "./supabase/TransactionGroups.supa";
+export const getTransactionGroupById = (...args: Parameters<typeof Real.getTransactionGroupById>) => {
+  return getDemoMode() ? Mock.getTransactionGroupById(...args) : Real.getTransactionGroupById(...args);
+};
+
+export const createTransactionGroup = (...args: Parameters<typeof Real.createTransactionGroup>) => {
+  return getDemoMode() ? Mock.createTransactionGroup(...args) : Real.createTransactionGroup(...args);
+};
+
+export const updateTransactionGroup = (...args: Parameters<typeof Real.updateTransactionGroup>) => {
+  return getDemoMode() ? Mock.updateTransactionGroup(...args) : Real.updateTransactionGroup(...args);
+};
+
+export const deleteTransactionGroup = (...args: Parameters<typeof Real.deleteTransactionGroup>) => {
+  return getDemoMode() ? Mock.deleteTransactionGroup(...args) : Real.deleteTransactionGroup(...args);
+};
+
+export const restoreTransactionGroup = (...args: Parameters<typeof Real.restoreTransactionGroup>) => {
+  return getDemoMode() ? Mock.restoreTransactionGroup(...args) : Real.restoreTransactionGroup(...args);
+};

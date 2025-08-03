@@ -1,11 +1,33 @@
 import { getDemoMode } from "@/src/providers/DemoModeGlobal";
-import * as real from "./supabase/Stats.supa";
-import * as mock from "./__mock__/Stats.mock";
+import * as Real from "./supabase/Stats.supa";
+import * as Mock from "./__mock__/Stats.mock";
 
-// Proxy function to select real or mock API
-export function getStatsApi() {
-  return getDemoMode() ? mock : real;
-}
+export const getStatsDailyTransactions = (...args: Parameters<typeof Real.getStatsDailyTransactions>) => {
+  return getDemoMode() ? Mock.getStatsDailyTransactions(...args) : Real.getStatsDailyTransactions(...args);
+};
 
-// Re-export all real API methods for compatibility
-export * from "./supabase/Stats.supa";
+export const getStatsMonthlyTransactionsTypes = (...args: Parameters<typeof Real.getStatsMonthlyTransactionsTypes>) => {
+  return getDemoMode()
+    ? Mock.getStatsMonthlyTransactionsTypes(...args)
+    : Real.getStatsMonthlyTransactionsTypes(...args);
+};
+
+export const getStatsMonthlyCategoriesTransactions = (
+  ...args: Parameters<typeof Real.getStatsMonthlyCategoriesTransactions>
+) => {
+  return getDemoMode()
+    ? Mock.getStatsMonthlyCategoriesTransactions(...args)
+    : Real.getStatsMonthlyCategoriesTransactions(...args);
+};
+
+export const getStatsMonthlyAccountsTransactions = (
+  ...args: Parameters<typeof Real.getStatsMonthlyAccountsTransactions>
+) => {
+  return getDemoMode()
+    ? Mock.getStatsMonthlyAccountsTransactions(...args)
+    : Real.getStatsMonthlyAccountsTransactions(...args);
+};
+
+export const getStatsNetWorthGrowth = (...args: Parameters<typeof Real.getStatsNetWorthGrowth>) => {
+  return getDemoMode() ? Mock.getStatsNetWorthGrowth(...args) : Real.getStatsNetWorthGrowth(...args);
+};
