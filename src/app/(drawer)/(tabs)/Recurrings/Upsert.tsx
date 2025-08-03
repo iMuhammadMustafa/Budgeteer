@@ -8,7 +8,7 @@ import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Repository";
+import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
 import { useGetAccounts } from "@/src/services/repositories/Accounts";
 import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/repositories/Recurrings";
 import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.repository";

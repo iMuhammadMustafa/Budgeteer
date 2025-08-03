@@ -1,4 +1,4 @@
-import * as Real from "./Accounts.Repository";
+import * as Real from "./Accounts.Service";
 
 // Export all hooks/helpers from the real repository implementation
-export * from "./Accounts.Repository";
+export * from "./Accounts.Service";

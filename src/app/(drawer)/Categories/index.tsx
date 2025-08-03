@@ -5,11 +5,11 @@ import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
 import {
   useDeleteTransactionCategory,
   useGetTransactionCategories,
-} from "@/src/services/repositories/TransactionCategories.Repository";
+} from "@/src/services/repositories/TransactionCategories.Service";
 import {
   useDeleteTransactionGroup,
   useGetTransactionGroups,
-} from "@/src/services/repositories/TransactionGroups.Repository";
+} from "@/src/services/repositories/TransactionGroups.Service";
 
 export default function Categories() {
   const [index, setIndex] = useState(0);

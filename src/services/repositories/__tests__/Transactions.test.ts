@@ -1,5 +1,5 @@
 import { Session } from "@supabase/supabase-js";
-import { updateTransactionHelper } from "../Transactions.Repository";
+import { updateTransactionHelper } from "../Transactions.Service";
 import { Transaction, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { updateTransaction } from "../../apis/Transactions.repository";

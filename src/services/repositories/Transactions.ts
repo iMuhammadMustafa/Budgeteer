@@ -1,4 +1,4 @@
-import * as Real from "./Transactions.Repository";
+import * as Real from "./Transactions.Service";
 import * as Mock from "./__mock__/Transactions.Repository";
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
 
@@ -54,4 +54,4 @@ export const useRestoreTransaction = (id?: string) => {
 };
 
 // Export any other real hooks/helpers by default
-export * from "./Transactions.Repository";
+export * from "./Transactions.Service";

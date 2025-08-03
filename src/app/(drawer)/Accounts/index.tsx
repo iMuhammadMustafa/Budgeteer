@@ -10,7 +10,7 @@ import MyModal from "@/src/components/MyModal";
 import TextInputField from "@/src/components/TextInputField";
 import { AccountSelecterDropdown } from "@/src/components/DropDownField";
 import MyIcon from "@/src/utils/Icons.Helper";
-import { useCreateTransaction } from "@/src/services/repositories/Transactions.Repository";
+import { useCreateTransaction } from "@/src/services/repositories/Transactions.Service";
 
 export default function Accounts() {
   const [index, setIndex] = useState(0);

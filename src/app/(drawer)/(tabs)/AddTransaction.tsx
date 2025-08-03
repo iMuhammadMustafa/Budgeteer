@@ -5,7 +5,7 @@ import { useLocalSearchParams } from "expo-router";
 
 import { TabBar, TabHeader } from "@/src/components/MyTabs";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
-import { useGetTransactionById } from "@/src/services/repositories/Transactions.Repository";
+import { useGetTransactionById } from "@/src/services/repositories/Transactions.Service";
 import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
 
 export default function AddTransaction() {
