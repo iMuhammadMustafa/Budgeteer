@@ -1,10 +1,14 @@
-# Local Storage Implementation (IndexedDB)
+# Local Storage Implementation
 
-This directory contains the local storage implementation for the Budgeteer application using IndexedDB via Dexie.js.
+This directory contains the local storage implementation for the Budgeteer application supporting both IndexedDB (web) and SQLite (native).
 
 ## Overview
 
-The local storage implementation provides persistent client-side data storage that mirrors the Supabase database schema. It supports all CRUD operations and maintains referential integrity constraints.
+The local storage implementation provides persistent client-side data storage that mirrors the Supabase database schema across platforms:
+- **Web**: IndexedDB with Dexie.js
+- **Native**: SQLite with expo-sqlite
+
+Both implementations support all CRUD operations and maintain referential integrity constraints.
 
 ## Architecture
 
