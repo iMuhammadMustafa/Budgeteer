@@ -124,7 +124,7 @@ export const executeValidationRule = (
  * Validates a single field against its validation rules
  */
 export const validateField = <T>(
-  fieldName: keyof T,
+  _fieldName: keyof T,
   value: any,
   validationRules: ValidationRule[],
   formData?: T
@@ -260,7 +260,7 @@ export const safeStringValidator = (value: string): boolean => {
 export const numericStringValidator = (value: string): boolean => {
   if (!value) return true;
   const num = parseFloat(value);
-  return !isNaN(num) && isFinite(num);
+  return !isNaN(num) && isFinite(num) && value.trim() === num.toString();
 };
 
 // ============================================================================
