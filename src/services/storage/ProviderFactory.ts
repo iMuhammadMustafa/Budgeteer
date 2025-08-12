@@ -27,6 +27,16 @@ import * as RecurringsMock from '../apis/__mock__/Recurrings.mock';
 import * as StatsSupabase from '../apis/supabase/Stats.supa';
 import * as StatsMock from '../apis/__mock__/Stats.mock';
 
+// Import local implementations
+import * as AccountsLocal from '../apis/local/Accounts.local';
+import * as AccountCategoriesLocal from '../apis/local/AccountCategories.local';
+import * as TransactionsLocal from '../apis/local/Transactions.local';
+import * as TransactionCategoriesLocal from '../apis/local/TransactionCategories.local';
+import * as TransactionGroupsLocal from '../apis/local/TransactionGroups.local';
+import * as ConfigurationsLocal from '../apis/local/Configurations.local';
+import * as RecurringsLocal from '../apis/local/Recurrings.local';
+import * as StatsLocal from '../apis/local/Stats.local';
+
 export class ProviderFactory {
   private static instance: ProviderFactory;
   
@@ -72,8 +82,7 @@ export class ProviderFactory {
       case 'demo':
         return AccountsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return AccountsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -86,8 +95,7 @@ export class ProviderFactory {
       case 'demo':
         return AccountCategoriesMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return AccountCategoriesLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -100,8 +108,7 @@ export class ProviderFactory {
       case 'demo':
         return TransactionsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return TransactionsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -114,8 +121,7 @@ export class ProviderFactory {
       case 'demo':
         return TransactionCategoriesMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return TransactionCategoriesLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -128,8 +134,7 @@ export class ProviderFactory {
       case 'demo':
         return TransactionGroupsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return TransactionGroupsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -142,8 +147,7 @@ export class ProviderFactory {
       case 'demo':
         return ConfigurationsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return ConfigurationsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -156,8 +160,7 @@ export class ProviderFactory {
       case 'demo':
         return RecurringsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return RecurringsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
@@ -170,8 +173,7 @@ export class ProviderFactory {
       case 'demo':
         return StatsMock;
       case 'local':
-        // TODO: Will be implemented in task 3 and 4
-        throw new Error('Local storage provider not yet implemented');
+        return StatsLocal;
       default:
         throw new Error(`Unknown storage mode: ${mode}`);
     }
