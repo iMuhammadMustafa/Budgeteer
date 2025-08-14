@@ -9,7 +9,7 @@ import { IDataProvider } from './ReferentialIntegrityValidator';
 import { MockDataProvider } from './MockDataProvider';
 import { SupabaseDataProvider } from './SupabaseDataProvider';
 import { LocalDataProvider } from './LocalDataProvider';
-import { DemoModeGlobal } from '../DemoModeGlobal';
+import { DemoModeGlobal } from '../../../providers/DemoModeGlobal';
 
 export type StorageMode = 'cloud' | 'demo' | 'local';
 

@@ -1,16 +1,29 @@
 /**
  * Storage Validation Framework
- * 
+ *
  * This class provides comprehensive validation and testing for all storage implementations
  * to ensure they maintain consistent behavior across Supabase, Mock, and Local modes.
  */
 
-import { StorageMode, ProviderRegistry, EntityType } from '../types';
-import { Database } from '@/src/types/db/database.types';
-import { ReferentialIntegrityValidator } from '../../apis/validation/ReferentialIntegrityValidator';
-import { ValidationService } from '../../apis/validation/ValidationService';
+import { StorageMode } from "@/src/types/storage/StorageTypes";
+export type EntityType =
+  | "accounts"
+  | "accountCategories"
+  | "transactions"
+  | "transactionCategories"
+  | "transactionGroups"
+  | "configurations"
+  | "recurrings"
+  | "stats";
 
-type Tables = Database['public']['Tables'];
+export type ProviderRegistry = {
+  [K in EntityType]: any;
+};
+import { Database } from "@/src/types/db/database.types";
+import { ReferentialIntegrityValidator } from "../../apis/validation/ReferentialIntegrityValidator";
+import { ValidationService } from "../../apis/validation/ValidationService";
+
+type Tables = Database["public"]["Tables"];
 type TableName = keyof Tables;
 
 export interface ValidationReport {
@@ -29,8 +42,8 @@ export interface ValidationReport {
 export interface ValidationResult {
   testName: string;
   entityType: EntityType;
-  operation: 'create' | 'read' | 'update' | 'delete' | 'interface' | 'integrity';
-  status: 'passed' | 'failed' | 'skipped';
+  operation: "create" | "read" | "update" | "delete" | "interface" | "integrity";
+  status: "passed" | "failed" | "skipped";
   duration: number;
   details?: string;
   error?: Error;
@@ -54,7 +67,7 @@ export interface CRUDTestData {
  */
 export class StorageValidation {
   private validationService: ValidationService;
-  private testTenantId = 'test-tenant-validation-' + Date.now();
+  private testTenantId = "test-tenant-validation-" + Date.now();
 
   constructor() {
     this.validationService = ValidationService.getInstance();
@@ -63,16 +76,13 @@ export class StorageValidation {
   /**
    * Validate a complete storage implementation
    */
-  async validateImplementation(
-    providers: ProviderRegistry,
-    mode: StorageMode
-  ): Promise<ValidationReport> {
+  async validateImplementation(providers: ProviderRegistry, mode: StorageMode): Promise<ValidationReport> {
     const report: ValidationReport = {
       mode,
       timestamp: new Date().toISOString(),
       summary: { totalTests: 0, passed: 0, failed: 0, skipped: 0 },
       results: [],
-      errors: []
+      errors: [],
     };
 
     console.log(`Starting validation for ${mode} storage mode...`);
@@ -80,13 +90,13 @@ export class StorageValidation {
     // Test each entity type
     for (const entityType of Object.keys(providers) as EntityType[]) {
       const provider = providers[entityType];
-      
+
       // Test CRUD operations
       await this.testCRUDOperations(provider, entityType, report);
-      
+
       // Test interface compliance
       await this.testInterfaceCompliance(provider, entityType, report);
-      
+
       // Test referential integrity (if applicable)
       if (this.hasReferentialConstraints(entityType)) {
         await this.testReferentialIntegrity(provider, entityType, report);
@@ -95,9 +105,9 @@ export class StorageValidation {
 
     // Calculate summary
     report.summary.totalTests = report.results.length;
-    report.summary.passed = report.results.filter(r => r.status === 'passed').length;
-    report.summary.failed = report.results.filter(r => r.status === 'failed').length;
-    report.summary.skipped = report.results.filter(r => r.status === 'skipped').length;
+    report.summary.passed = report.results.filter(r => r.status === "passed").length;
+    report.summary.failed = report.results.filter(r => r.status === "failed").length;
+    report.summary.skipped = report.results.filter(r => r.status === "skipped").length;
 
     console.log(`Validation completed for ${mode} mode:`, report.summary);
     return report;
@@ -106,33 +116,29 @@ export class StorageValidation {
   /**
    * Test CRUD operations for a specific provider
    */
-  private async testCRUDOperations(
-    provider: any,
-    entityType: EntityType,
-    report: ValidationReport
-  ): Promise<void> {
+  private async testCRUDOperations(provider: any, entityType: EntityType, report: ValidationReport): Promise<void> {
     const testData = this.getTestData(entityType);
     if (!testData) {
       this.addResult(report, {
         testName: `CRUD Operations - ${entityType}`,
         entityType,
-        operation: 'create',
-        status: 'skipped',
+        operation: "create",
+        status: "skipped",
         duration: 0,
-        details: 'No test data available'
+        details: "No test data available",
       });
       return;
     }
 
     // Test CREATE operation
     await this.testCreateOperation(provider, entityType, testData.create, report);
-    
+
     // Test READ operations
     await this.testReadOperations(provider, entityType, report);
-    
+
     // Test UPDATE operation
     await this.testUpdateOperation(provider, entityType, testData.update, report);
-    
+
     // Test DELETE operation
     await this.testDeleteOperation(provider, entityType, report);
   }
@@ -144,40 +150,40 @@ export class StorageValidation {
     provider: any,
     entityType: EntityType,
     testData: any,
-    report: ValidationReport
+    report: ValidationReport,
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // Prepare test data with tenant ID
       const createData = {
         ...testData,
         tenantid: this.testTenantId,
-        id: `test-${entityType}-${Date.now()}`
+        id: `test-${entityType}-${Date.now()}`,
       };
 
       // Call the appropriate create method
       let result;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           result = await provider.createAccount(createData);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           result = await provider.createAccountCategory(createData);
           break;
-        case 'transactions':
+        case "transactions":
           result = await provider.createTransaction(createData);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           result = await provider.createTransactionCategory(createData);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           result = await provider.createTransactionGroup(createData);
           break;
-        case 'configurations':
+        case "configurations":
           result = await provider.createConfiguration(createData);
           break;
-        case 'recurrings':
+        case "recurrings":
           result = await provider.createRecurring(createData, this.testTenantId);
           break;
         default:
@@ -186,33 +192,32 @@ export class StorageValidation {
 
       // Validate result
       if (!result || !result.id) {
-        throw new Error('Create operation did not return valid result with ID');
+        throw new Error("Create operation did not return valid result with ID");
       }
 
       this.addResult(report, {
         testName: `Create ${entityType}`,
         entityType,
-        operation: 'create',
-        status: 'passed',
+        operation: "create",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: `Successfully created ${entityType} with ID: ${result.id}`
+        details: `Successfully created ${entityType} with ID: ${result.id}`,
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Create ${entityType}`,
         entityType,
-        operation: 'create',
-        status: 'failed',
+        operation: "create",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Create ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'create', testData }
+        context: { operation: "create", testData },
       });
     }
   }
@@ -220,39 +225,35 @@ export class StorageValidation {
   /**
    * Test READ operations
    */
-  private async testReadOperations(
-    provider: any,
-    entityType: EntityType,
-    report: ValidationReport
-  ): Promise<void> {
+  private async testReadOperations(provider: any, entityType: EntityType, report: ValidationReport): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // Test getAll method
       let allRecords;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           allRecords = await provider.getAllAccounts(this.testTenantId);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           allRecords = await provider.getAllAccountCategories(this.testTenantId);
           break;
-        case 'transactions':
+        case "transactions":
           allRecords = await provider.getAllTransactions(this.testTenantId);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           allRecords = await provider.getAllTransactionCategories(this.testTenantId);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           allRecords = await provider.getAllTransactionGroups(this.testTenantId);
           break;
-        case 'configurations':
+        case "configurations":
           allRecords = await provider.getAllConfigurations(this.testTenantId);
           break;
-        case 'recurrings':
+        case "recurrings":
           allRecords = await provider.listRecurrings({ tenantId: this.testTenantId });
           break;
-        case 'stats':
+        case "stats":
           // Stats don't have a getAll method, test specific stats methods
           allRecords = await provider.getStatsDailyTransactions(this.testTenantId);
           break;
@@ -268,27 +269,26 @@ export class StorageValidation {
       this.addResult(report, {
         testName: `Read All ${entityType}`,
         entityType,
-        operation: 'read',
-        status: 'passed',
+        operation: "read",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: `Successfully retrieved ${allRecords.length} ${entityType} records`
+        details: `Successfully retrieved ${allRecords.length} ${entityType} records`,
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Read All ${entityType}`,
         entityType,
-        operation: 'read',
-        status: 'failed',
+        operation: "read",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Read All ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'read' }
+        context: { operation: "read" },
       });
     }
   }
@@ -300,33 +300,33 @@ export class StorageValidation {
     provider: any,
     entityType: EntityType,
     updateData: any,
-    report: ValidationReport
+    report: ValidationReport,
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // First, get an existing record to update
       let existingRecords;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           existingRecords = await provider.getAllAccounts(this.testTenantId);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           existingRecords = await provider.getAllAccountCategories(this.testTenantId);
           break;
-        case 'transactions':
+        case "transactions":
           existingRecords = await provider.getAllTransactions(this.testTenantId);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           existingRecords = await provider.getAllTransactionCategories(this.testTenantId);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           existingRecords = await provider.getAllTransactionGroups(this.testTenantId);
           break;
-        case 'configurations':
+        case "configurations":
           existingRecords = await provider.getAllConfigurations(this.testTenantId);
           break;
-        case 'recurrings':
+        case "recurrings":
           existingRecords = await provider.listRecurrings({ tenantId: this.testTenantId });
           break;
         default:
@@ -337,10 +337,10 @@ export class StorageValidation {
         this.addResult(report, {
           testName: `Update ${entityType}`,
           entityType,
-          operation: 'update',
-          status: 'skipped',
+          operation: "update",
+          status: "skipped",
           duration: Date.now() - startTime,
-          details: 'No existing records to update'
+          details: "No existing records to update",
         });
         return;
       }
@@ -349,31 +349,31 @@ export class StorageValidation {
       const updatePayload = {
         ...updateData,
         id: recordToUpdate.id,
-        tenantid: this.testTenantId
+        tenantid: this.testTenantId,
       };
 
       // Call the appropriate update method
       let result;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           result = await provider.updateAccount(updatePayload);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           result = await provider.updateAccountCategory(updatePayload);
           break;
-        case 'transactions':
+        case "transactions":
           result = await provider.updateTransaction(updatePayload);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           result = await provider.updateTransactionCategory(updatePayload);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           result = await provider.updateTransactionGroup(updatePayload);
           break;
-        case 'configurations':
+        case "configurations":
           result = await provider.updateConfiguration(updatePayload);
           break;
-        case 'recurrings':
+        case "recurrings":
           result = await provider.updateRecurring(recordToUpdate.id, updateData, this.testTenantId);
           break;
         default:
@@ -383,27 +383,26 @@ export class StorageValidation {
       this.addResult(report, {
         testName: `Update ${entityType}`,
         entityType,
-        operation: 'update',
-        status: 'passed',
+        operation: "update",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: `Successfully updated ${entityType} with ID: ${recordToUpdate.id}`
+        details: `Successfully updated ${entityType} with ID: ${recordToUpdate.id}`,
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Update ${entityType}`,
         entityType,
-        operation: 'update',
-        status: 'failed',
+        operation: "update",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Update ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'update', updateData }
+        context: { operation: "update", updateData },
       });
     }
   }
@@ -411,23 +410,19 @@ export class StorageValidation {
   /**
    * Test DELETE operation
    */
-  private async testDeleteOperation(
-    provider: any,
-    entityType: EntityType,
-    report: ValidationReport
-  ): Promise<void> {
+  private async testDeleteOperation(provider: any, entityType: EntityType, report: ValidationReport): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // Skip delete test for stats as they don't support delete operations
-      if (entityType === 'stats') {
+      if (entityType === "stats") {
         this.addResult(report, {
           testName: `Delete ${entityType}`,
           entityType,
-          operation: 'delete',
-          status: 'skipped',
+          operation: "delete",
+          status: "skipped",
           duration: Date.now() - startTime,
-          details: 'Stats entity does not support delete operations'
+          details: "Stats entity does not support delete operations",
         });
         return;
       }
@@ -435,25 +430,25 @@ export class StorageValidation {
       // Get existing records to delete
       let existingRecords;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           existingRecords = await provider.getAllAccounts(this.testTenantId);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           existingRecords = await provider.getAllAccountCategories(this.testTenantId);
           break;
-        case 'transactions':
+        case "transactions":
           existingRecords = await provider.getAllTransactions(this.testTenantId);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           existingRecords = await provider.getAllTransactionCategories(this.testTenantId);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           existingRecords = await provider.getAllTransactionGroups(this.testTenantId);
           break;
-        case 'configurations':
+        case "configurations":
           existingRecords = await provider.getAllConfigurations(this.testTenantId);
           break;
-        case 'recurrings':
+        case "recurrings":
           existingRecords = await provider.listRecurrings({ tenantId: this.testTenantId });
           break;
         default:
@@ -464,10 +459,10 @@ export class StorageValidation {
         this.addResult(report, {
           testName: `Delete ${entityType}`,
           entityType,
-          operation: 'delete',
-          status: 'skipped',
+          operation: "delete",
+          status: "skipped",
           duration: Date.now() - startTime,
-          details: 'No existing records to delete'
+          details: "No existing records to delete",
         });
         return;
       }
@@ -477,25 +472,25 @@ export class StorageValidation {
       // Call the appropriate delete method
       let result;
       switch (entityType) {
-        case 'accounts':
+        case "accounts":
           result = await provider.deleteAccount(recordToDelete.id, this.testTenantId);
           break;
-        case 'accountCategories':
+        case "accountCategories":
           result = await provider.deleteAccountCategory(recordToDelete.id, this.testTenantId);
           break;
-        case 'transactions':
+        case "transactions":
           result = await provider.deleteTransaction(recordToDelete.id, this.testTenantId);
           break;
-        case 'transactionCategories':
+        case "transactionCategories":
           result = await provider.deleteTransactionCategory(recordToDelete.id, this.testTenantId);
           break;
-        case 'transactionGroups':
+        case "transactionGroups":
           result = await provider.deleteTransactionGroup(recordToDelete.id, this.testTenantId);
           break;
-        case 'configurations':
+        case "configurations":
           result = await provider.deleteConfiguration(recordToDelete.id, this.testTenantId);
           break;
-        case 'recurrings':
+        case "recurrings":
           result = await provider.deleteRecurring(recordToDelete.id, this.testTenantId, this.testTenantId);
           break;
         default:
@@ -505,27 +500,26 @@ export class StorageValidation {
       this.addResult(report, {
         testName: `Delete ${entityType}`,
         entityType,
-        operation: 'delete',
-        status: 'passed',
+        operation: "delete",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: `Successfully deleted ${entityType} with ID: ${recordToDelete.id}`
+        details: `Successfully deleted ${entityType} with ID: ${recordToDelete.id}`,
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Delete ${entityType}`,
         entityType,
-        operation: 'delete',
-        status: 'failed',
+        operation: "delete",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Delete ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'delete' }
+        context: { operation: "delete" },
       });
     }
   }
@@ -536,48 +530,47 @@ export class StorageValidation {
   private async testInterfaceCompliance(
     provider: any,
     entityType: EntityType,
-    report: ValidationReport
+    report: ValidationReport,
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       const requiredMethods = this.getRequiredMethods(entityType);
       const missingMethods: string[] = [];
 
       for (const method of requiredMethods) {
-        if (typeof provider[method] !== 'function') {
+        if (typeof provider[method] !== "function") {
           missingMethods.push(method);
         }
       }
 
       if (missingMethods.length > 0) {
-        throw new Error(`Missing required methods: ${missingMethods.join(', ')}`);
+        throw new Error(`Missing required methods: ${missingMethods.join(", ")}`);
       }
 
       this.addResult(report, {
         testName: `Interface Compliance - ${entityType}`,
         entityType,
-        operation: 'interface',
-        status: 'passed',
+        operation: "interface",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: `All ${requiredMethods.length} required methods are present`
+        details: `All ${requiredMethods.length} required methods are present`,
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Interface Compliance - ${entityType}`,
         entityType,
-        operation: 'interface',
-        status: 'failed',
+        operation: "interface",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Interface Compliance - ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'interface' }
+        context: { operation: "interface" },
       });
     }
   }
@@ -588,37 +581,36 @@ export class StorageValidation {
   private async testReferentialIntegrity(
     provider: any,
     entityType: EntityType,
-    report: ValidationReport
+    report: ValidationReport,
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // This would test referential integrity constraints
       // For now, we'll mark as passed if the provider exists
       this.addResult(report, {
         testName: `Referential Integrity - ${entityType}`,
         entityType,
-        operation: 'integrity',
-        status: 'passed',
+        operation: "integrity",
+        status: "passed",
         duration: Date.now() - startTime,
-        details: 'Referential integrity validation passed'
+        details: "Referential integrity validation passed",
       });
-
     } catch (error) {
       this.addResult(report, {
         testName: `Referential Integrity - ${entityType}`,
         entityType,
-        operation: 'integrity',
-        status: 'failed',
+        operation: "integrity",
+        status: "failed",
         duration: Date.now() - startTime,
-        error: error as Error
+        error: error as Error,
       });
 
       this.addError(report, {
         testName: `Referential Integrity - ${entityType}`,
         entityType,
         error: error as Error,
-        context: { operation: 'integrity' }
+        context: { operation: "integrity" },
       });
     }
   }
@@ -630,100 +622,100 @@ export class StorageValidation {
     const testDataMap: Record<EntityType, CRUDTestData> = {
       accounts: {
         create: {
-          name: 'Test Account',
+          name: "Test Account",
           balance: 1000,
-          categoryid: 'test-category-id',
-          currency: 'USD',
-          description: 'Test account for validation'
+          categoryid: "test-category-id",
+          currency: "USD",
+          description: "Test account for validation",
         },
         update: {
-          name: 'Updated Test Account',
-          description: 'Updated test account'
+          name: "Updated Test Account",
+          description: "Updated test account",
         },
-        searchCriteria: { name: 'Test Account' }
+        searchCriteria: { name: "Test Account" },
       },
       accountCategories: {
         create: {
-          name: 'Test Category',
-          type: 'Asset',
-          color: '#000000',
-          icon: 'test'
+          name: "Test Category",
+          type: "Asset",
+          color: "#000000",
+          icon: "test",
         },
         update: {
-          name: 'Updated Test Category'
+          name: "Updated Test Category",
         },
-        searchCriteria: { name: 'Test Category' }
+        searchCriteria: { name: "Test Category" },
       },
       transactions: {
         create: {
-          name: 'Test Transaction',
+          name: "Test Transaction",
           amount: 100,
-          type: 'Expense',
-          date: new Date().toISOString().split('T')[0],
-          accountid: 'test-account-id',
-          categoryid: 'test-category-id'
+          type: "Expense",
+          date: new Date().toISOString().split("T")[0],
+          accountid: "test-account-id",
+          categoryid: "test-category-id",
         },
         update: {
-          name: 'Updated Test Transaction',
-          amount: 150
+          name: "Updated Test Transaction",
+          amount: 150,
         },
-        searchCriteria: { name: 'Test Transaction' }
+        searchCriteria: { name: "Test Transaction" },
       },
       transactionCategories: {
         create: {
-          name: 'Test Transaction Category',
-          type: 'Expense',
-          groupid: 'test-group-id',
-          color: '#000000',
-          icon: 'test'
+          name: "Test Transaction Category",
+          type: "Expense",
+          groupid: "test-group-id",
+          color: "#000000",
+          icon: "test",
         },
         update: {
-          name: 'Updated Test Transaction Category'
+          name: "Updated Test Transaction Category",
         },
-        searchCriteria: { name: 'Test Transaction Category' }
+        searchCriteria: { name: "Test Transaction Category" },
       },
       transactionGroups: {
         create: {
-          name: 'Test Transaction Group',
-          type: 'Expense',
-          color: '#000000',
-          icon: 'test'
+          name: "Test Transaction Group",
+          type: "Expense",
+          color: "#000000",
+          icon: "test",
         },
         update: {
-          name: 'Updated Test Transaction Group'
+          name: "Updated Test Transaction Group",
         },
-        searchCriteria: { name: 'Test Transaction Group' }
+        searchCriteria: { name: "Test Transaction Group" },
       },
       configurations: {
         create: {
-          key: 'test-key',
-          table: 'test-table',
-          value: 'test-value'
+          key: "test-key",
+          table: "test-table",
+          value: "test-value",
         },
         update: {
-          value: 'updated-test-value'
+          value: "updated-test-value",
         },
-        searchCriteria: { key: 'test-key' }
+        searchCriteria: { key: "test-key" },
       },
       recurrings: {
         create: {
-          name: 'Test Recurring',
-          sourceaccountid: 'test-account-id',
-          categoryid: 'test-category-id',
+          name: "Test Recurring",
+          sourceaccountid: "test-account-id",
+          categoryid: "test-category-id",
           amount: 100,
-          frequency: 'Monthly'
+          frequency: "Monthly",
         },
         update: {
-          name: 'Updated Test Recurring',
-          amount: 150
+          name: "Updated Test Recurring",
+          amount: 150,
         },
-        searchCriteria: { name: 'Test Recurring' }
+        searchCriteria: { name: "Test Recurring" },
       },
       stats: {
         create: {}, // Stats don't support create
         update: {}, // Stats don't support update
-        searchCriteria: {}
-      }
+        searchCriteria: {},
+      },
     };
 
     return testDataMap[entityType] || null;
@@ -735,41 +727,72 @@ export class StorageValidation {
   private getRequiredMethods(entityType: EntityType): string[] {
     const methodMap: Record<EntityType, string[]> = {
       accounts: [
-        'getAllAccounts', 'getAccountById', 'createAccount', 'updateAccount', 
-        'deleteAccount', 'restoreAccount', 'updateAccountBalance', 
-        'getAccountOpenedTransaction', 'getTotalAccountBalance'
+        "getAllAccounts",
+        "getAccountById",
+        "createAccount",
+        "updateAccount",
+        "deleteAccount",
+        "restoreAccount",
+        "updateAccountBalance",
+        "getAccountOpenedTransaction",
+        "getTotalAccountBalance",
       ],
       accountCategories: [
-        'getAllAccountCategories', 'getAccountCategoryById', 'createAccountCategory', 
-        'updateAccountCategory', 'deleteAccountCategory', 'restoreAccountCategory'
+        "getAllAccountCategories",
+        "getAccountCategoryById",
+        "createAccountCategory",
+        "updateAccountCategory",
+        "deleteAccountCategory",
+        "restoreAccountCategory",
       ],
       transactions: [
-        'getAllTransactions', 'getTransactions', 'getTransactionFullyById', 
-        'getTransactionById', 'getTransactionByTransferId', 'getTransactionsByName',
-        'createTransaction', 'createTransactions', 'createMultipleTransactions',
-        'updateTransaction', 'updateTransferTransaction', 'deleteTransaction', 'restoreTransaction'
+        "getAllTransactions",
+        "getTransactions",
+        "getTransactionFullyById",
+        "getTransactionById",
+        "getTransactionByTransferId",
+        "getTransactionsByName",
+        "createTransaction",
+        "createTransactions",
+        "createMultipleTransactions",
+        "updateTransaction",
+        "updateTransferTransaction",
+        "deleteTransaction",
+        "restoreTransaction",
       ],
       transactionCategories: [
-        'getAllTransactionCategories', 'getTransactionCategoryById', 'createTransactionCategory',
-        'updateTransactionCategory', 'deleteTransactionCategory', 'restoreTransactionCategory'
+        "getAllTransactionCategories",
+        "getTransactionCategoryById",
+        "createTransactionCategory",
+        "updateTransactionCategory",
+        "deleteTransactionCategory",
+        "restoreTransactionCategory",
       ],
       transactionGroups: [
-        'getAllTransactionGroups', 'getTransactionGroupById', 'createTransactionGroup',
-        'updateTransactionGroup', 'deleteTransactionGroup', 'restoreTransactionGroup'
+        "getAllTransactionGroups",
+        "getTransactionGroupById",
+        "createTransactionGroup",
+        "updateTransactionGroup",
+        "deleteTransactionGroup",
+        "restoreTransactionGroup",
       ],
       configurations: [
-        'getAllConfigurations', 'getConfigurationById', 'getConfiguration',
-        'createConfiguration', 'updateConfiguration', 'deleteConfiguration', 'restoreConfiguration'
+        "getAllConfigurations",
+        "getConfigurationById",
+        "getConfiguration",
+        "createConfiguration",
+        "updateConfiguration",
+        "deleteConfiguration",
+        "restoreConfiguration",
       ],
-      recurrings: [
-        'listRecurrings', 'getRecurringById', 'createRecurring',
-        'updateRecurring', 'deleteRecurring'
-      ],
+      recurrings: ["listRecurrings", "getRecurringById", "createRecurring", "updateRecurring", "deleteRecurring"],
       stats: [
-        'getStatsDailyTransactions', 'getStatsMonthlyTransactionsTypes',
-        'getStatsMonthlyCategoriesTransactions', 'getStatsMonthlyAccountsTransactions',
-        'getStatsNetWorthGrowth'
-      ]
+        "getStatsDailyTransactions",
+        "getStatsMonthlyTransactionsTypes",
+        "getStatsMonthlyCategoriesTransactions",
+        "getStatsMonthlyAccountsTransactions",
+        "getStatsNetWorthGrowth",
+      ],
     };
 
     return methodMap[entityType] || [];
@@ -779,9 +802,7 @@ export class StorageValidation {
    * Check if entity type has referential constraints
    */
   private hasReferentialConstraints(entityType: EntityType): boolean {
-    const constrainedEntities: EntityType[] = [
-      'accounts', 'transactions', 'transactionCategories', 'recurrings'
-    ];
+    const constrainedEntities: EntityType[] = ["accounts", "transactions", "transactionCategories", "recurrings"];
     return constrainedEntities.includes(entityType);
   }
 
@@ -803,11 +824,11 @@ export class StorageValidation {
    * Generate a summary report comparing multiple storage modes
    */
   async generateComparisonReport(reports: ValidationReport[]): Promise<string> {
-    let summary = '# Storage Implementation Validation Report\n\n';
+    let summary = "# Storage Implementation Validation Report\n\n";
     summary += `Generated: ${new Date().toISOString()}\n\n`;
 
     // Overall summary
-    summary += '## Summary\n\n';
+    summary += "## Summary\n\n";
     for (const report of reports) {
       summary += `### ${report.mode.toUpperCase()} Mode\n`;
       summary += `- Total Tests: ${report.summary.totalTests}\n`;
@@ -818,38 +839,40 @@ export class StorageValidation {
     }
 
     // Detailed results by entity
-    summary += '## Detailed Results by Entity\n\n';
-    const entityTypes = Object.keys(reports[0]?.results.reduce((acc, r) => ({ ...acc, [r.entityType]: true }), {}) || {});
-    
+    summary += "## Detailed Results by Entity\n\n";
+    const entityTypes = Object.keys(
+      reports[0]?.results.reduce((acc, r) => ({ ...acc, [r.entityType]: true }), {}) || {},
+    );
+
     for (const entityType of entityTypes) {
       summary += `### ${entityType}\n\n`;
-      summary += '| Mode | Create | Read | Update | Delete | Interface | Integrity |\n';
-      summary += '|------|--------|------|--------|--------|-----------|----------|\n';
-      
+      summary += "| Mode | Create | Read | Update | Delete | Interface | Integrity |\n";
+      summary += "|------|--------|------|--------|--------|-----------|----------|\n";
+
       for (const report of reports) {
         const entityResults = report.results.filter(r => r.entityType === entityType);
-        const createResult = entityResults.find(r => r.operation === 'create')?.status || 'N/A';
-        const readResult = entityResults.find(r => r.operation === 'read')?.status || 'N/A';
-        const updateResult = entityResults.find(r => r.operation === 'update')?.status || 'N/A';
-        const deleteResult = entityResults.find(r => r.operation === 'delete')?.status || 'N/A';
-        const interfaceResult = entityResults.find(r => r.operation === 'interface')?.status || 'N/A';
-        const integrityResult = entityResults.find(r => r.operation === 'integrity')?.status || 'N/A';
-        
+        const createResult = entityResults.find(r => r.operation === "create")?.status || "N/A";
+        const readResult = entityResults.find(r => r.operation === "read")?.status || "N/A";
+        const updateResult = entityResults.find(r => r.operation === "update")?.status || "N/A";
+        const deleteResult = entityResults.find(r => r.operation === "delete")?.status || "N/A";
+        const interfaceResult = entityResults.find(r => r.operation === "interface")?.status || "N/A";
+        const integrityResult = entityResults.find(r => r.operation === "integrity")?.status || "N/A";
+
         summary += `| ${report.mode} | ${createResult} | ${readResult} | ${updateResult} | ${deleteResult} | ${interfaceResult} | ${integrityResult} |\n`;
       }
-      summary += '\n';
+      summary += "\n";
     }
 
     // Errors section
     if (reports.some(r => r.errors.length > 0)) {
-      summary += '## Errors\n\n';
+      summary += "## Errors\n\n";
       for (const report of reports) {
         if (report.errors.length > 0) {
           summary += `### ${report.mode.toUpperCase()} Mode Errors\n\n`;
           for (const error of report.errors) {
             summary += `- **${error.testName}** (${error.entityType}): ${error.error.message}\n`;
           }
-          summary += '\n';
+          summary += "\n";
         }
       }
     }
