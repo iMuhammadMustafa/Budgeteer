@@ -7,72 +7,104 @@ import {
   validateReferentialIntegrity,
   mockDatabaseFunctions 
 } from "./mockDataStore";
+import { withStorageErrorHandling } from "../../storage/errors";
 
 export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
-  return accounts
-    .filter(acc => (acc.tenantid === tenantId || tenantId === "demo") && !acc.isdeleted)
-    .sort((a, b) => {
-      // Sort by category display order (descending), then by account display order (descending), then by name
-      const catA = accountCategories.find(cat => cat.id === a.categoryid);
-      const catB = accountCategories.find(cat => cat.id === b.categoryid);
-      
-      if (catA && catB && catA.displayorder !== catB.displayorder) {
-        return catB.displayorder - catA.displayorder;
-      }
-      if (a.displayorder !== b.displayorder) {
-        return b.displayorder - a.displayorder;
-      }
-      if (a.name !== b.name) {
-        return a.name.localeCompare(b.name);
-      }
-      return (a.owner || '').localeCompare(b.owner || '');
-    })
-    .map(acc => ({
-      ...acc,
-      category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
-    }));
+  return withStorageErrorHandling(
+    async () => {
+      return accounts
+        .filter(acc => (acc.tenantid === tenantId || tenantId === "demo") && !acc.isdeleted)
+        .sort((a, b) => {
+          // Sort by category display order (descending), then by account display order (descending), then by name
+          const catA = accountCategories.find(cat => cat.id === a.categoryid);
+          const catB = accountCategories.find(cat => cat.id === b.categoryid);
+          
+          if (catA && catB && catA.displayorder !== catB.displayorder) {
+            return catB.displayorder - catA.displayorder;
+          }
+          if (a.displayorder !== b.displayorder) {
+            return b.displayorder - a.displayorder;
+          }
+          if (a.name !== b.name) {
+            return a.name.localeCompare(b.name);
+          }
+          return (a.owner || '').localeCompare(b.owner || '');
+        })
+        .map(acc => ({
+          ...acc,
+          category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
+        }));
+    },
+    {
+      storageMode: 'demo',
+      operation: 'getAllAccounts',
+      table: 'accounts',
+      tenantId
+    }
+  );
 };
 
 export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
-  const acc = accounts.find(acc => 
-    acc.id === id && 
-    (acc.tenantid === tenantId || tenantId === "demo") && 
-    !acc.isdeleted
+  return withStorageErrorHandling(
+    async () => {
+      const acc = accounts.find(acc => 
+        acc.id === id && 
+        (acc.tenantid === tenantId || tenantId === "demo") && 
+        !acc.isdeleted
+      );
+      if (!acc) return null;
+      
+      return {
+        ...acc,
+        category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
+      };
+    },
+    {
+      storageMode: 'demo',
+      operation: 'getAccountById',
+      table: 'accounts',
+      recordId: id,
+      tenantId
+    }
   );
-  if (!acc) return null;
-  
-  return {
-    ...acc,
-    category: accountCategories.find(cat => cat.id === acc.categoryid) ?? null,
-  };
 };
 
 export const createAccount = async (account: Inserts<TableNames.Accounts>) => {
-  // Validate referential integrity
-  validateReferentialIntegrity.validateAccountCategory(account.categoryid);
-  validateReferentialIntegrity.validateUniqueAccountName(
-    account.name, 
-    account.tenantid || "demo"
-  );
+  return withStorageErrorHandling(
+    async () => {
+      // Validate referential integrity
+      validateReferentialIntegrity.validateAccountCategory(account.categoryid);
+      validateReferentialIntegrity.validateUniqueAccountName(
+        account.name, 
+        account.tenantid || "demo"
+      );
 
-  const newAccount = {
-    ...account,
-    id: `acc-${Date.now()}`,
-    balance: account.balance || 0,
-    color: account.color || "#4CAF50",
-    currency: account.currency || "USD",
-    displayorder: account.displayorder || 0,
-    icon: account.icon || "account-balance-wallet",
-    isdeleted: false,
-    createdat: new Date().toISOString(),
-    createdby: account.createdby || "demo",
-    updatedat: null,
-    updatedby: null,
-    tenantid: account.tenantid || "demo",
-  };
-  
-  accounts.push(newAccount);
-  return newAccount;
+      const newAccount = {
+        ...account,
+        id: `acc-${Date.now()}`,
+        balance: account.balance || 0,
+        color: account.color || "#4CAF50",
+        currency: account.currency || "USD",
+        displayorder: account.displayorder || 0,
+        icon: account.icon || "account-balance-wallet",
+        isdeleted: false,
+        createdat: new Date().toISOString(),
+        createdby: account.createdby || "demo",
+        updatedat: null,
+        updatedby: null,
+        tenantid: account.tenantid || "demo",
+      };
+      
+      accounts.push(newAccount);
+      return newAccount;
+    },
+    {
+      storageMode: 'demo',
+      operation: 'createAccount',
+      table: 'accounts',
+      tenantId: account.tenantid
+    }
+  );
 };
 
 export const updateAccount = async (account: Updates<TableNames.Accounts>) => {

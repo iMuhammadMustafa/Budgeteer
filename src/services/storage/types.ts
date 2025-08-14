@@ -8,26 +8,19 @@ export interface IStorageProvider {
   cleanup(): Promise<void>;
 }
 
-export class StorageError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public details?: any
-  ) {
-    super(message);
-    this.name = 'StorageError';
-  }
-}
-
-export class ReferentialIntegrityError extends StorageError {
-  constructor(table: string, field: string, value: string) {
-    super(
-      `Referenced record not found: ${table}.${field} = ${value}`,
-      'REFERENTIAL_INTEGRITY_ERROR',
-      { table, field, value }
-    );
-  }
-}
+// Import error types from the comprehensive error handling system
+export {
+  StorageError,
+  ReferentialIntegrityError,
+  StorageErrorCode,
+  UniqueConstraintError,
+  RecordNotFoundError,
+  ValidationError,
+  NetworkError,
+  TimeoutError,
+  QuotaExceededError,
+  UnauthorizedError
+} from './errors';
 
 // Provider interfaces for each entity type
 export interface IAccountProvider {

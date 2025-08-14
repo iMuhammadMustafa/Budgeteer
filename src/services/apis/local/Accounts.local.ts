@@ -2,48 +2,55 @@ import { db, LocalAccount } from './BudgeteerDatabase';
 import { ReferentialIntegrityError } from '../../storage/types';
 import { Account, Inserts, Updates } from '@/src/types/db/Tables.Types';
 import { TableNames } from '@/src/types/db/TableNames';
+import { withStorageErrorHandling } from '../../storage/errors';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 
 export const getAllAccounts = async (tenantId: string): Promise<Account[]> => {
-  try {
-    const accounts = await db.accounts
-      .where('tenantid')
-      .equals(tenantId)
-      .and(account => !account.isdeleted)
-      .toArray();
+  return withStorageErrorHandling(
+    async () => {
+      const accounts = await db.accounts
+        .where('tenantid')
+        .equals(tenantId)
+        .and(account => !account.isdeleted)
+        .toArray();
 
-    // Fetch categories for each account
-    const accountsWithCategories = await Promise.all(
-      accounts.map(async (account) => {
-        const category = await db.accountcategories
-          .where('id')
-          .equals(account.categoryid)
-          .first();
-        
-        return {
-          ...account,
-          category
-        } as Account;
-      })
-    );
+      // Fetch categories for each account
+      const accountsWithCategories = await Promise.all(
+        accounts.map(async (account) => {
+          const category = await db.accountcategories
+            .where('id')
+            .equals(account.categoryid)
+            .first();
+          
+          return {
+            ...account,
+            category
+          } as Account;
+        })
+      );
 
-    // Sort by category display order, then account display order, then name, then owner
-    return accountsWithCategories.sort((a, b) => {
-      if (a.category?.displayorder !== b.category?.displayorder) {
-        return (b.category?.displayorder || 0) - (a.category?.displayorder || 0);
-      }
-      if (a.displayorder !== b.displayorder) {
-        return b.displayorder - a.displayorder;
-      }
-      if (a.name !== b.name) {
-        return a.name.localeCompare(b.name);
-      }
-      return (a.owner || '').localeCompare(b.owner || '');
-    });
-  } catch (error) {
-    throw new Error(`Failed to get accounts: ${error}`);
-  }
+      // Sort by category display order, then account display order, then name, then owner
+      return accountsWithCategories.sort((a, b) => {
+        if (a.category?.displayorder !== b.category?.displayorder) {
+          return (b.category?.displayorder || 0) - (a.category?.displayorder || 0);
+        }
+        if (a.displayorder !== b.displayorder) {
+          return b.displayorder - a.displayorder;
+        }
+        if (a.name !== b.name) {
+          return a.name.localeCompare(b.name);
+        }
+        return (a.owner || '').localeCompare(b.owner || '');
+      });
+    },
+    {
+      storageMode: 'local',
+      operation: 'getAllAccounts',
+      table: 'accounts',
+      tenantId
+    }
+  );
 };
 
 export const getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
