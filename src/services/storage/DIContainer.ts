@@ -2,6 +2,7 @@
 
 import { StorageMode, EntityType, ProviderRegistry } from './types';
 import { ProviderFactory } from './ProviderFactory';
+import { Platform } from 'react-native';
 
 export class DIContainer {
   private static instance: DIContainer;
@@ -97,7 +98,7 @@ export class DIContainer {
   }
 
   private async initializeLocalStorage(): Promise<void> {
-    const { Platform } = require('react-native');
+    
     
     if (Platform.OS === 'web') {
       // Initialize IndexedDB
@@ -113,7 +114,7 @@ export class DIContainer {
   }
 
   private async cleanupLocalStorage(): Promise<void> {
-    const { Platform } = require('react-native');
+    
     
     if (Platform.OS === 'web') {
       // Cleanup IndexedDB
@@ -159,7 +160,7 @@ export class DIContainer {
     try {
       switch (this.currentMode) {
         case 'local':
-          const { Platform } = require('react-native');
+          
           if (Platform.OS === 'web') {
             const { localStorageProvider } = require('../apis/local/LocalStorageProvider');
             info.storage = await localStorageProvider.getDatabaseInfo();

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const getAllTransactionCategories = async (tenantId: string): Promise<TransactionCategory[]> => {
   try {
+    console.log("here?")
     const categories = await db.transactioncategories
       .where('tenantid')
       .equals(tenantId)
