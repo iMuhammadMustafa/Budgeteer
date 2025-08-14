@@ -75,7 +75,9 @@ export default function Login() {
     setLoading(true);
     
     try {
-      // Set the storage mode
+      console.log(`Initializing ${mode} mode...`);
+      
+      // Set the storage mode with proper error handling
       await setStorageMode(mode);
       
       if (mode === 'demo') {
@@ -124,9 +126,28 @@ export default function Login() {
         }
       }
       
+      console.log(`Successfully initialized ${mode} mode`);
       router.replace("/(drawer)/(tabs)/Dashboard");
+      
     } catch (error) {
-      Alert.alert("Error", `Failed to initialize ${mode} mode: ${error}`);
+      console.error(`Failed to initialize ${mode} mode:`, error);
+      
+      let errorMessage = `Failed to initialize ${mode} mode`;
+      
+      // Provide more specific error messages based on error type
+      if (error instanceof Error) {
+        if (error.message.includes('IndexedDB')) {
+          errorMessage = 'Local storage is not supported in this browser. Please try a different browser or use demo mode.';
+        } else if (error.message.includes('SQLite')) {
+          errorMessage = 'Local storage is not available on this device. Please try demo mode instead.';
+        } else if (error.message.includes('Network')) {
+          errorMessage = 'Network connection required for cloud mode. Please check your connection or try local/demo mode.';
+        } else {
+          errorMessage = `${errorMessage}: ${error.message}`;
+        }
+      }
+      
+      Alert.alert("Storage Initialization Error", errorMessage);
     } finally {
       setLoading(false);
     }
