@@ -1095,8 +1095,9 @@ export const validateReferentialIntegrity = {
     if (referencedByTransfers) {
       throw new ConstraintViolationError('Cannot delete: Transaction is referenced by transfer transactions');
     }
-  }
-};sactionGroup: (groupId: string): void => {
+  },
+
+  canDeleteTransactionGroup: (groupId: string): void => {
     const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
     if (referencedByCategories) {
       throw new ConstraintViolationError('Cannot delete: Transaction group is referenced by transaction categories');
@@ -1112,7 +1113,7 @@ export const validateReferentialIntegrity = {
     if (referencedByRecurrings) {
       throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by recurring transactions');
     }
-  },
+  }
 };
 
 // Mock Database Functions

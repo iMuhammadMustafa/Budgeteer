@@ -53,14 +53,18 @@ export interface IAccountCategoryProvider {
 
 export interface ITransactionProvider {
   getAllTransactions(tenantId: string): Promise<any[]>;
-  getTransactionById(id: string, tenantId: string): Promise<any | null>;
+  getTransactions(searchFilters: any, tenantId: string): Promise<any[]>;
+  getTransactionFullyById(transactionid: string, tenantId: string): Promise<any | null>;
+  getTransactionById(transactionid: string, tenantId: string): Promise<any | null>;
+  getTransactionByTransferId(id: string, tenantId: string): Promise<any | null>;
+  getTransactionsByName(text: string, tenantId: string): Promise<any[]>;
   createTransaction(transaction: any): Promise<any>;
+  createTransactions(transactions: any[]): Promise<any[]>;
+  createMultipleTransactions(transactions: any[]): Promise<any[]>;
   updateTransaction(transaction: any): Promise<any>;
-  deleteTransaction(id: string, userId?: string): Promise<any>;
-  restoreTransaction(id: string, userId?: string): Promise<any>;
-  getTransactionsByAccount(accountId: string, tenantId: string): Promise<any[]>;
-  getTransactionsByCategory(categoryId: string, tenantId: string): Promise<any[]>;
-  getTransactionsByDateRange(startDate: string, endDate: string, tenantId: string): Promise<any[]>;
+  updateTransferTransaction(transaction: any): Promise<any>;
+  deleteTransaction(id: string, userId: string): Promise<any>;
+  restoreTransaction(id: string, userId: string): Promise<any>;
 }
 
 export interface ITransactionCategoryProvider {
@@ -84,6 +88,7 @@ export interface ITransactionGroupProvider {
 export interface IConfigurationProvider {
   getAllConfigurations(tenantId: string): Promise<any[]>;
   getConfigurationById(id: string, tenantId: string): Promise<any | null>;
+  getConfiguration(table: string, type: string, key: string, tenantId: string): Promise<any | null>;
   createConfiguration(config: any): Promise<any>;
   updateConfiguration(config: any): Promise<any>;
   deleteConfiguration(id: string, userId?: string): Promise<any>;
@@ -91,18 +96,19 @@ export interface IConfigurationProvider {
 }
 
 export interface IRecurringProvider {
-  getAllRecurrings(tenantId: string): Promise<any[]>;
+  listRecurrings(params: { tenantId: string; filters?: any }): Promise<any[]>;
   getRecurringById(id: string, tenantId: string): Promise<any | null>;
-  createRecurring(recurring: any): Promise<any>;
-  updateRecurring(recurring: any): Promise<any>;
-  deleteRecurring(id: string, userId?: string): Promise<any>;
-  restoreRecurring(id: string, userId?: string): Promise<any>;
+  createRecurring(recurringData: any, tenantId: string): Promise<any>;
+  updateRecurring(id: string, recurringData: any, tenantId: string): Promise<any>;
+  deleteRecurring(id: string, tenantId: string, userId?: string): Promise<any>;
 }
 
 export interface IStatsProvider {
-  getStats(tenantId: string): Promise<any>;
-  getAccountStats(accountId: string, tenantId: string): Promise<any>;
-  getCategoryStats(categoryId: string, tenantId: string): Promise<any>;
+  getStatsDailyTransactions(tenantId: string, startDate?: string, endDate?: string, type?: any): Promise<any>;
+  getStatsMonthlyTransactionsTypes(tenantId: string, startDate?: string, endDate?: string): Promise<any>;
+  getStatsMonthlyCategoriesTransactions(tenantId: string, startDate?: string, endDate?: string): Promise<any>;
+  getStatsMonthlyAccountsTransactions(tenantId: string, startDate?: string, endDate?: string): Promise<any>;
+  getStatsNetWorthGrowth(tenantId: string, startDate?: string, endDate?: string): Promise<any>;
 }
 
 // Provider registry type

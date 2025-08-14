@@ -7,6 +7,7 @@ export class StorageModeManager implements IStorageProvider {
   private static instance: StorageModeManager;
   private container: DIContainer;
   public mode: StorageMode;
+  private onModeChange?: () => void;
   
   private constructor() {
     this.container = DIContainer.getInstance();
@@ -28,6 +29,12 @@ export class StorageModeManager implements IStorageProvider {
       // Set new mode
       this.mode = mode;
       this.container.setMode(mode);
+      
+      // Clear repository instances to force recreation with new providers
+      // Note: We'll handle repository clearing through a callback to avoid circular imports
+      if (this.onModeChange) {
+        this.onModeChange();
+      }
       
       // Initialize new mode
       await this.initialize();
@@ -83,5 +90,9 @@ export class StorageModeManager implements IStorageProvider {
   
   public getStatsProvider() {
     return this.getProvider('stats');
+  }
+  
+  public setModeChangeCallback(callback: () => void) {
+    this.onModeChange = callback;
   }
 }
