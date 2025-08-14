@@ -935,7 +935,9 @@ export const recurrings: Recurring[] = [
   },
 ];
 
-// Referential Integrity Validation Utilities
+// Legacy validation utilities - kept for backward compatibility
+// New validation system is in src/services/apis/validation/
+
 export class ReferentialIntegrityError extends Error {
   constructor(table: string, field: string, value: string) {
     super(`Referenced record not found: ${table}.${field} = ${value}`);
@@ -950,6 +952,7 @@ export class ConstraintViolationError extends Error {
   }
 }
 
+// Legacy validation object - use ValidationService for new implementations
 export const validateReferentialIntegrity = {
   // Validate account category exists
   validateAccountCategory: (categoryId: string): void => {
@@ -1070,6 +1073,30 @@ export const validateReferentialIntegrity = {
   },
 
   canDeleteTransactionGroup: (groupId: string): void => {
+    const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
+    if (referencedByCategories) {
+      throw new ConstraintViolationError('Cannot delete: Transaction group is referenced by transaction categories');
+    }
+  },
+
+  canDeleteTransactionCategory: (categoryId: string): void => {
+    const referencedByTransactions = transactions.some(tr => tr.categoryid === categoryId && !tr.isdeleted);
+    const referencedByRecurrings = recurrings.some(rec => rec.categoryid === categoryId && !rec.isdeleted);
+    if (referencedByTransactions) {
+      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by transactions');
+    }
+    if (referencedByRecurrings) {
+      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by recurring transactions');
+    }
+  },
+
+  canDeleteTransaction: (transactionId: string): void => {
+    const referencedByTransfers = transactions.some(tr => tr.transferid === transactionId && !tr.isdeleted);
+    if (referencedByTransfers) {
+      throw new ConstraintViolationError('Cannot delete: Transaction is referenced by transfer transactions');
+    }
+  }
+};sactionGroup: (groupId: string): void => {
     const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
     if (referencedByCategories) {
       throw new ConstraintViolationError('Cannot delete: Transaction group is referenced by transaction categories');
