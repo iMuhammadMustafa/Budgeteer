@@ -2,6 +2,7 @@
 
 import { StorageError, StorageErrorCode } from "./StorageErrors";
 import { ErrorLogger } from "./ErrorLogger";
+import { ErrorMapper } from "./ErrorMapper";
 
 export interface RetryOptions {
   maxAttempts: number;
@@ -57,10 +58,8 @@ export class ErrorRecovery {
         if (error instanceof StorageError) {
           lastError = error;
         } else {
-          // Only convert non-StorageError types to generic StorageError
-          const errorMessage = error instanceof Error ? error.message : (error as any)?.message || "Unknown error";
-          const originalError = error instanceof Error ? error : undefined;
-          lastError = new StorageError(errorMessage, StorageErrorCode.UNKNOWN_ERROR, { originalError });
+          // Map the error properly instead of converting to generic StorageError
+          lastError = ErrorMapper.mapError(error, context);
         }
 
         // Log the error attempt
@@ -118,14 +117,7 @@ export class ErrorRecovery {
       return await primaryOperation();
     } catch (error) {
       // Preserve specific StorageError types (ReferentialIntegrityError, etc.)
-      const storageError =
-        error instanceof StorageError
-          ? error
-          : new StorageError(
-              error instanceof Error ? error.message : (error as any)?.message || "Unknown error",
-              StorageErrorCode.UNKNOWN_ERROR,
-              { originalError: error instanceof Error ? error : undefined },
-            );
+      const storageError = error instanceof StorageError ? error : ErrorMapper.mapError(error, context);
 
       this.logger.logFallbackAttempt(context, storageError);
 

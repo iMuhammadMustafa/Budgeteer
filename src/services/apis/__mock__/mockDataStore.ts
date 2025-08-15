@@ -8,7 +8,7 @@ import {
   TransactionCategory,
   TransactionGroup,
 } from "@/src/types/db/Tables.Types";
-import { ReferentialIntegrityError } from "@/src/services/storage/errors";
+import { ReferentialIntegrityError, UniqueConstraintError } from "@/src/services/storage/errors";
 
 // Account Categories
 export const accountCategories: AccountCategory[] = [
@@ -939,13 +939,6 @@ export const recurrings: Recurring[] = [
 // Legacy validation utilities - kept for backward compatibility
 // New validation system is in src/services/apis/validation/
 
-export class ConstraintViolationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConstraintViolationError";
-  }
-}
-
 // Legacy validation object - use ValidationService for new implementations
 export const validateReferentialIntegrity = {
   // Validate account category exists
@@ -989,7 +982,7 @@ export const validateReferentialIntegrity = {
       acc => acc.name === name && acc.tenantid === tenantId && !acc.isdeleted && acc.id !== excludeId,
     );
     if (existing) {
-      throw new ConstraintViolationError(`Account name '${name}' already exists`);
+      throw new UniqueConstraintError("accounts", "name", name);
     }
   },
 
@@ -998,7 +991,7 @@ export const validateReferentialIntegrity = {
       cat => cat.name === name && cat.tenantid === tenantId && !cat.isdeleted && cat.id !== excludeId,
     );
     if (existing) {
-      throw new ConstraintViolationError(`Account category name '${name}' already exists`);
+      throw new UniqueConstraintError("accountcategories", "name", name);
     }
   },
 
@@ -1007,7 +1000,7 @@ export const validateReferentialIntegrity = {
       cat => cat.name === name && cat.tenantid === tenantId && !cat.isdeleted && cat.id !== excludeId,
     );
     if (existing) {
-      throw new ConstraintViolationError(`Transaction category name '${name}' already exists`);
+      throw new UniqueConstraintError("transactioncategories", "name", name);
     }
   },
 
@@ -1016,7 +1009,7 @@ export const validateReferentialIntegrity = {
       group => group.name === name && group.tenantid === tenantId && !group.isdeleted && group.id !== excludeId,
     );
     if (existing) {
-      throw new ConstraintViolationError(`Transaction group name '${name}' already exists`);
+      throw new UniqueConstraintError("transactiongroups", "name", name);
     }
   },
 
@@ -1030,7 +1023,7 @@ export const validateReferentialIntegrity = {
         conf.id !== excludeId,
     );
     if (existing) {
-      throw new ConstraintViolationError(`Configuration key '${key}' already exists for table '${table}'`);
+      throw new UniqueConstraintError("configurations", "key", key);
     }
   },
 
@@ -1038,7 +1031,7 @@ export const validateReferentialIntegrity = {
   canDeleteAccountCategory: (categoryId: string): void => {
     const referencedByAccounts = accounts.some(acc => acc.categoryid === categoryId && !acc.isdeleted);
     if (referencedByAccounts) {
-      throw new ConstraintViolationError("Cannot delete: Account category is referenced by accounts");
+      throw new ReferentialIntegrityError("accountcategories", "id", categoryId);
     }
   },
 
@@ -1048,17 +1041,17 @@ export const validateReferentialIntegrity = {
     );
     const referencedByRecurrings = recurrings.some(rec => rec.sourceaccountid === accountId && !rec.isdeleted);
     if (referencedByTransactions) {
-      throw new ConstraintViolationError("Cannot delete: Account is referenced by transactions");
+      throw new ReferentialIntegrityError("accounts", "id", accountId);
     }
     if (referencedByRecurrings) {
-      throw new ConstraintViolationError("Cannot delete: Account is referenced by recurring transactions");
+      throw new ReferentialIntegrityError("accounts", "id", accountId);
     }
   },
 
   canDeleteTransactionGroup: (groupId: string): void => {
     const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
     if (referencedByCategories) {
-      throw new ConstraintViolationError("Cannot delete: Transaction group is referenced by transaction categories");
+      throw new ReferentialIntegrityError("transactiongroups", "id", groupId);
     }
   },
 
@@ -1066,17 +1059,17 @@ export const validateReferentialIntegrity = {
     const referencedByTransactions = transactions.some(tr => tr.categoryid === categoryId && !tr.isdeleted);
     const referencedByRecurrings = recurrings.some(rec => rec.categoryid === categoryId && !rec.isdeleted);
     if (referencedByTransactions) {
-      throw new ConstraintViolationError("Cannot delete: Transaction category is referenced by transactions");
+      throw new ReferentialIntegrityError("transactioncategories", "id", categoryId);
     }
     if (referencedByRecurrings) {
-      throw new ConstraintViolationError("Cannot delete: Transaction category is referenced by recurring transactions");
+      throw new ReferentialIntegrityError("transactioncategories", "id", categoryId);
     }
   },
 
   canDeleteTransaction: (transactionId: string): void => {
     const referencedByTransfers = transactions.some(tr => tr.transferid === transactionId && !tr.isdeleted);
     if (referencedByTransfers) {
-      throw new ConstraintViolationError("Cannot delete: Transaction is referenced by transfer transactions");
+      throw new ReferentialIntegrityError("transactions", "id", transactionId);
     }
   },
 };
