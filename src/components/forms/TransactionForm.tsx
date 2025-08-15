@@ -25,9 +25,13 @@ import DropdownField, {
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
 } from "../DropDownField";
-import { getTransactionsByName } from "@/src/services/apis/Transactions.repository";
+import { RepositoryManager } from "@/src/services/apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+import { useAuth } from "@/src/providers/AuthProvider";
+
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -58,6 +62,19 @@ export const initialTransactionState: TransactionFormType = {
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+
+  // Create a function to search transactions by name using the repository
+  const searchTransactionsByName = useCallback(
+    async (text: string): Promise<SearchableDropdownItem[]> => {
+      if (!tenantId) return [];
+      const transactionRepository = repositoryManager.getTransactionRepository();
+      return transactionRepository.getTransactionsByName(text, tenantId);
+    },
+    [tenantId],
+  );
+
   const {
     formData,
     setFormData,
@@ -104,7 +121,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
         <SearchableDropdown
           label="Name"
-          searchAction={getTransactionsByName}
+          searchAction={searchTransactionsByName}
           // searchSetter={setSearchText}
           // result={searchResults}
           initalValue={transaction.name}

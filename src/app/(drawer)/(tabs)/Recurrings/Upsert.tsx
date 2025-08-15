@@ -15,7 +15,7 @@ import {
   useCreateRecurring,
   useUpdateRecurring,
 } from "@/src/services/repositories/Recurrings.Service";
-import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.repository";
+import { RepositoryManager } from "@/src/services/apis/repositories/RepositoryManager";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
@@ -25,6 +25,9 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
 // import { Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings> } from "@/src/services/apis/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
+
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -86,6 +89,19 @@ export const initialRecurringState: RecurringFormType = {
 
 export default function RecurringUpsertScreen() {
   const { id: recurringIdToEdit } = useLocalSearchParams<{ id?: string }>();
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+
+  // Create a function to search transactions by name using the repository
+  const searchTransactionsByName = useCallback(
+    async (text: string): Promise<SearchableDropdownItem[]> => {
+      if (!tenantId) return [];
+      const transactionRepository = repositoryManager.getTransactionRepository();
+      return transactionRepository.getTransactionsByName(text, tenantId);
+    },
+    [tenantId],
+  );
+
   const {
     formData,
     setFormData,
@@ -115,7 +131,7 @@ export default function RecurringUpsertScreen() {
           <SearchableDropdown
             label="Blueprint Transaction (Optional)"
             placeholder="Search transaction by name..."
-            searchAction={getTransactionsByName}
+            searchAction={searchTransactionsByName}
             onSelectItem={handleBlueprintTransactionSelect}
             onChange={() => {}} // Required, but selection handles logic
           />
@@ -394,7 +410,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
     const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>  = {
+    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
       ...restOfFormData,
       recurrencerule: recurrenceRule,
     };
@@ -408,7 +424,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { id: recurringIdToEdit, recurringData: dataToSubmitApi as Updates<TableNames.Recurrings>  },
+        { id: recurringIdToEdit, recurringData: dataToSubmitApi as Updates<TableNames.Recurrings> },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });

@@ -2,15 +2,22 @@ import { Session } from "@supabase/supabase-js";
 import { updateTransactionHelper } from "../Transactions.Service";
 import { Transaction, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { updateTransaction } from "../../apis/Transactions.repository";
-import { updateAccountBalance } from "../../apis/Accounts.repository";
+import { RepositoryManager } from "../../apis/repositories/RepositoryManager";
 
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
-jest.mock("../../apis/Transactions.repository", () => ({
-  updateTransaction: jest.fn(),
-}));
-jest.mock("../../apis/Accounts.repository", () => ({
-  updateAccountBalance: jest.fn(),
+
+// Mock the repository manager and its methods
+jest.mock("../../apis/repositories/RepositoryManager", () => ({
+  RepositoryManager: {
+    getInstance: jest.fn(() => ({
+      getTransactionRepository: jest.fn(() => ({
+        updateTransaction: jest.fn(),
+      })),
+      getAccountRepository: jest.fn(() => ({
+        updateAccountBalance: jest.fn(),
+      })),
+    })),
+  },
 }));
 
 const mockSession: Session = {
@@ -61,6 +68,13 @@ const originalTransferTransaction = {
   transferaccountid: "transferAccount123",
   transferid: "transferTransaction123",
 };
+
+// Get the mocked repository manager and methods
+const mockRepositoryManager = RepositoryManager.getInstance() as jest.Mocked<any>;
+const mockTransactionRepository = mockRepositoryManager.getTransactionRepository();
+const mockAccountRepository = mockRepositoryManager.getAccountRepository();
+const mockUpdateTransaction = mockTransactionRepository.updateTransaction;
+const mockUpdateAccountBalance = mockAccountRepository.updateAccountBalance;
 
 beforeEach(() => {
   jest.clearAllMocks();

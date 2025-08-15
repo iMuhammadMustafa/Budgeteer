@@ -6,13 +6,13 @@ import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
-import { createTransaction, updateTransaction } from "../apis/Transactions.repository";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
 
 // Get repository manager instance
 const repositoryManager = RepositoryManager.getInstance();
 const accountRepository = repositoryManager.getAccountRepository();
 const configurationRepository = repositoryManager.getConfigurationRepository();
+const transactionRepository = repositoryManager.getTransactionRepository();
 
 export const useGetAccounts = () => {
   const { session } = useAuth();
@@ -179,7 +179,7 @@ export const useUpdateAccountOpenedTransaction = () => {
         updatedby: userId,
         updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       };
-      return await updateTransaction(transaction);
+      return await transactionRepository.updateTransaction(transaction);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -208,7 +208,7 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
     if (!config) {
       throw new Error("Account Operations Category not found");
     }
-    await createTransaction({
+    await transactionRepository.createTransaction({
       name: TransactionNames.AccountOpened,
       amount: formAccount.balance,
       accountid: newAcc.id,
@@ -258,7 +258,7 @@ const updateAccountHelper = async (
       throw new Error("Account Operations Category not found");
     }
 
-    await createTransaction({
+    await transactionRepository.createTransaction({
       name: TransactionNames.BalanceAdjustment,
       amount: formData.balance - originalData.balance,
       accountid: originalData.id,

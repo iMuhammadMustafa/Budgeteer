@@ -2,7 +2,7 @@
 
 import { StorageMode, EntityType, ProviderRegistry } from "./types";
 
-// Import existing implementations
+// Import provider classes and instances
 import * as AccountsSupabase from "../apis/supabase/Accounts.supa";
 import * as AccountsMock from "../apis/__mock__/Accounts.mock";
 
@@ -36,6 +36,9 @@ import * as TransactionGroupsLocal from "../apis/local/TransactionGroups.local";
 import * as ConfigurationsLocal from "../apis/local/Configurations.local";
 import * as RecurringsLocal from "../apis/local/Recurrings.local";
 import * as StatsLocal from "../apis/local/Stats.local";
+
+// Import platform detection for SQLite vs IndexedDB
+import { Platform } from "react-native";
 
 export class ProviderFactory {
   private static instance: ProviderFactory;
@@ -75,7 +78,7 @@ export class ProviderFactory {
   private createAccountProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return AccountsSupabase; // TODO: Replace with correct instance if needed
+        return AccountsSupabase.supabaseAccountProvider;
       case "demo":
         return new AccountsMock.MockAccountProvider();
       case "local":
@@ -114,7 +117,7 @@ export class ProviderFactory {
   private createTransactionCategoryProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return TransactionCategoriesSupabase;
+        return TransactionCategoriesSupabase.supabaseTransactionCategoryProvider;
       case "demo":
         return TransactionCategoriesMock;
       case "local":

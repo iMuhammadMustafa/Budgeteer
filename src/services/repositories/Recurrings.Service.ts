@@ -1,21 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  listRecurrings,
-  getRecurringById,
-  createRecurring,
-  updateRecurring,
-  deleteRecurring,
-  // applyRecurringTransaction, // Removed as logic moves to repository
-} from "../apis/Recurrings.repository";
-// Import createTransaction from Transactions.api
-import { createTransaction } from "../apis/Transactions.repository";
-import { updateAccountBalance } from "../apis/Accounts.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { Inserts as TransactionInserts } from "@/src/types/db/Tables.Types"; // For Transaction DTO
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import dayjs from "dayjs";
+
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
+const recurringRepository = repositoryManager.getRecurringRepository();
+const transactionRepository = repositoryManager.getTransactionRepository();
+const accountRepository = repositoryManager.getAccountRepository();
 
 export const useListRecurrings = (filters?: any) => {
   const { session } = useAuth();
@@ -24,7 +20,7 @@ export const useListRecurrings = (filters?: any) => {
     queryKey: [TableNames.Recurrings, tenantId, filters],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return listRecurrings({ tenantId, filters });
+      return recurringRepository.listRecurrings({ tenantId, filters });
     },
     enabled: !!tenantId,
   });
@@ -38,7 +34,7 @@ export const useGetRecurring = (id?: string) => {
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getRecurringById(id, tenantId);
+      return recurringRepository.getRecurringById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -102,7 +98,7 @@ export const useCreateRecurring = () => {
       };
       // The createRecurring API function will receive this camelCase object.
       // Its internal call to supabase.insert() will use the lowercase keys as we modified in Recurrings.api.ts
-      return createRecurring(dataToInsert, tenantId);
+      return recurringRepository.createRecurring(dataToInsert, tenantId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
@@ -163,7 +159,7 @@ export const useUpdateRecurring = () => {
 
       // The updateRecurring API function expects an Updates<TableNames.Recurrings> (likely camelCase).
       // It is responsible for any case conversion if the DB requires snake_case.
-      return updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
+      return recurringRepository.updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
     },
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
@@ -184,7 +180,7 @@ export const useDeleteRecurring = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-      return deleteRecurring(id, tenantId, userId);
+      return recurringRepository.deleteRecurring(id, tenantId, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
@@ -222,7 +218,7 @@ export const useExecuteRecurringAction = () => {
       const transactionPayload: TransactionInserts<TableNames.Transactions> = {
         name: recurring.name,
         description: recurring.description,
-        amount: typeof amount === "number" && !isNaN(amount) ? amount : recurring.amount,
+        amount: typeof amount === "number" && !isNaN(amount) ? amount : (recurring.amount ?? 0),
         date: currentNextOccurrenceDate.toISOString(),
         accountid: recurring.sourceaccountid,
         payee: recurring.payeename,
@@ -234,7 +230,7 @@ export const useExecuteRecurringAction = () => {
         categoryid: recurring.categoryid ?? " ",
       };
 
-      const newTransaction = await createTransaction(transactionPayload);
+      const newTransaction = await transactionRepository.createTransaction(transactionPayload);
       if (!newTransaction) {
         throw new Error("Failed to create transaction for recurring.");
       }
@@ -243,7 +239,7 @@ export const useExecuteRecurringAction = () => {
       if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
         throw new Error("Transaction amount is invalid for account balance update.");
       }
-      await updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount);
+      await accountRepository.updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount);
 
       // 3. Calculate the new next_occurrence_date
       let newNextOccurrenceDate: dayjs.Dayjs;
@@ -290,7 +286,7 @@ export const useExecuteRecurringAction = () => {
         (recurringUpdateData as any).isactive = false;
       }
 
-      await updateRecurring(recurring.id, recurringUpdateData, tenantId);
+      await recurringRepository.updateRecurring(recurring.id, recurringUpdateData, tenantId);
 
       return { newTransaction, updatedRecurring: recurringUpdateData };
     },

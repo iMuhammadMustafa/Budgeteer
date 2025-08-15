@@ -6,7 +6,6 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { updateAccountBalance } from "../apis/Accounts.repository";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { initialSearchFilters } from "@/src/utils/transactions.helper";
@@ -16,6 +15,7 @@ import { SearchableDropdownItem } from "@/src/types/components/DropdownField.typ
 // Get repository manager instance
 const repositoryManager = RepositoryManager.getInstance();
 const transactionRepository = repositoryManager.getTransactionRepository();
+const accountRepository = repositoryManager.getAccountRepository();
 
 export const useGetAllTransactions = () => {
   const { session } = useAuth();
@@ -168,7 +168,7 @@ export const useCreateTransactions = () => {
         await transactionRepository.deleteTransaction(transactionsGroup.originalTransactionId, userId);
       }
       if (transactionsGroup.isvoid !== false) {
-        await updateAccountBalance(transactionsGroup.accountid, totalAmount);
+        await accountRepository.updateAccountBalance(transactionsGroup.accountid, totalAmount);
       }
       if (!createdTransactions) {
         throw new Error("Transaction wasn't created");
@@ -241,9 +241,9 @@ export const useDeleteTransaction = () => {
       }
       console.log("Transaction deleted:", res);
       if (!res.isvoid) {
-        await updateAccountBalance(res.accountid, -res.amount);
+        await accountRepository.updateAccountBalance(res.accountid, -res.amount);
         if (res.transferaccountid) {
-          await updateAccountBalance(res.transferaccountid, res.amount);
+          await accountRepository.updateAccountBalance(res.transferaccountid, res.amount);
         }
       }
       return res;
@@ -266,9 +266,9 @@ export const useRestoreTransaction = (id?: string) => {
         await transactionRepository.deleteTransaction(res.transferid, userId);
       }
       if (res.isvoid !== false) {
-        await updateAccountBalance(res.accountid, res.amount);
+        await accountRepository.updateAccountBalance(res.accountid, res.amount);
         if (res.transferaccountid) {
-          await updateAccountBalance(res.transferaccountid, -res.amount);
+          await accountRepository.updateAccountBalance(res.transferaccountid, -res.amount);
         }
       }
       return res;
@@ -311,14 +311,14 @@ const createTransactionHelper = async (formTransaction: Inserts<TableNames.Trans
   const newTransactions = await transactionRepository.createMultipleTransactions(transactions);
 
   if (newTransactions) {
-    let resp = await updateAccountBalance(formTransaction.accountid, formTransaction.amount!);
+    let resp = await accountRepository.updateAccountBalance(formTransaction.accountid, formTransaction.amount!);
 
     if (resp.error) {
       throw resp.error;
     }
 
     if (formTransaction.transferaccountid) {
-      resp = await updateAccountBalance(formTransaction.transferaccountid, -formTransaction.amount!);
+      resp = await accountRepository.updateAccountBalance(formTransaction.transferaccountid, -formTransaction.amount!);
     }
     if (resp.error) {
       throw resp.error;
@@ -594,16 +594,19 @@ export const updateTransactionHelper = async (
 
   try {
     if (newAccount.id && newAccount.amount) {
-      const resp = await updateAccountBalance(newAccount.id, newAccount.amount);
+      const resp = await accountRepository.updateAccountBalance(newAccount.id, newAccount.amount);
     }
     if (newTransferAccount.id && newTransferAccount.amount) {
-      const resp = await updateAccountBalance(newTransferAccount.id, newTransferAccount.amount);
+      const resp = await accountRepository.updateAccountBalance(newTransferAccount.id, newTransferAccount.amount);
     }
     if (originalAccount.id && originalAccount.amount) {
-      const resp = await updateAccountBalance(originalAccount.id, originalAccount.amount);
+      const resp = await accountRepository.updateAccountBalance(originalAccount.id, originalAccount.amount);
     }
     if (originalTransferAccount.id && originalTransferAccount.amount) {
-      const resp = await updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount);
+      const resp = await accountRepository.updateAccountBalance(
+        originalTransferAccount.id,
+        originalTransferAccount.amount,
+      );
     }
   } catch (error) {
     // Rollback or handle the error
