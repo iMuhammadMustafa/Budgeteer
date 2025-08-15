@@ -17,7 +17,7 @@ type Props = {
     const groupedData = transformData(data)
     const dates = [...new Set(data.map(d => d.date))].sort()
   
-    const renderAmount = (current: number, previous: number) => {
+    const renderAmount = (current: number, previous?: number) => {
       const hasChanged = previous !== undefined
       const hasIncreased = hasChanged && current > previous
       const hasDecreased = hasChanged && current < previous

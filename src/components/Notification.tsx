@@ -32,7 +32,9 @@ const NotificationAlert = ({ notification }: { notification: NotificationType })
   const handleCloseClick = useCallback(() => {
     opacity.value = withTiming(0, { duration: 400 }, finished => {
       if (finished) {
-        runOnJS(removeNotification)(notification.id);
+        if(notification && notification.id){
+          runOnJS(removeNotification)(notification.id);
+        }
       }
     });
   }, [opacity, removeNotification, notification.id]);

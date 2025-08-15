@@ -196,7 +196,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           <MyDateTimePicker
             label="Date"
             date={group.date}
-            onChange={({ date }) => setGroup({ ...group, date })}
+            onChange={date => setGroup({ ...group, date })}
             isModal
           />
         </View>

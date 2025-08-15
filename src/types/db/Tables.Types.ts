@@ -32,3 +32,9 @@ export type StatsMonthlyAccountsTransactions = Views<"stats_monthlyaccountstrans
 export type AccountType = Enums<"accounttypes">;
 export type TransactionStatus = Enums<"transactionstatuses">;
 export type TransactionType = Enums<"transactiontypes">;
+
+
+// Joins
+export type TransactionCategoryAndGroup = TransactionCategory & {
+    group : TransactionGroup
+  };

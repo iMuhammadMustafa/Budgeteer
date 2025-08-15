@@ -7,8 +7,8 @@ type ListRecurringsParams = {
   filters?: any;
 };
 
-type CreateRecurringDto = Inserts<TableNames.Recurrings>;
-type UpdateRecurringDto = Updates<TableNames.Recurrings>;
+type Inserts<TableNames.Recurrings> = Inserts<TableNames.Recurrings>;
+type Updates<TableNames.Recurrings> = Updates<TableNames.Recurrings>;
 
 /**
  * Repository interface for Recurring entity operations
@@ -36,7 +36,7 @@ export interface IRecurringRepository {
    * @param tenantId - The tenant ID
    * @returns Promise resolving to the created recurring transaction data
    */
-  createRecurring(recurringData: CreateRecurringDto, tenantId: string): Promise<any>;
+  createRecurring(recurringData: Inserts<TableNames.Recurrings>, tenantId: string): Promise<any>;
 
   /**
    * Update an existing recurring transaction
@@ -45,7 +45,7 @@ export interface IRecurringRepository {
    * @param tenantId - The tenant ID for security filtering
    * @returns Promise resolving to the updated recurring transaction data
    */
-  updateRecurring(id: string, recurringData: UpdateRecurringDto, tenantId: string): Promise<any>;
+  updateRecurring(id: string, recurringData: Updates<TableNames.Recurrings>, tenantId: string): Promise<any>;
 
   /**
    * Soft delete a recurring transaction (set isdeleted = true)

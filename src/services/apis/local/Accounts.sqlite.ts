@@ -1,6 +1,7 @@
-import { IAccountProvider, ReferentialIntegrityError, StorageError } from '../../storage/types';
+import { IAccountProvider, ReferentialIntegrityError, StorageError, StorageErrorCode } from '../../storage/types';
 import { sqliteDb, LocalAccount } from './BudgeteerSQLiteDatabase';
 import { Database } from '@/src/types/db/database.types';
+import { SQLiteErrorMapper } from './SQLiteErrorMapper';
 import { v4 as uuidv4 } from 'uuid';
 
 type AccountInsert = Database['public']['Tables']['accounts']['Insert'];
@@ -21,7 +22,7 @@ export class SQLiteAccountProvider implements IAccountProvider {
       return accounts;
     } catch (error) {
       console.error('Error getting all accounts:', error);
-      throw new StorageError('Failed to get accounts', 'GET_ACCOUNTS_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getAllAccounts', 'SELECT');
     }
   }
 
@@ -35,7 +36,7 @@ export class SQLiteAccountProvider implements IAccountProvider {
       return account;
     } catch (error) {
       console.error('Error getting account by id:', error);
-      throw new StorageError('Failed to get account', 'GET_ACCOUNT_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getAccountById', 'SELECT');
     }
   }
 

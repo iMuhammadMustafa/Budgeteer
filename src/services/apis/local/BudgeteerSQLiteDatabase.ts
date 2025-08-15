@@ -55,13 +55,13 @@ export class BudgeteerSQLiteDatabase {
   private async createTables(): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
-    // Create account categories table
+    // Create account categories table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS accountcategories (
         id TEXT PRIMARY KEY,
-        tenantid TEXT NOT NULL,
+        tenantid TEXT NOT NULL DEFAULT '',
         name TEXT NOT NULL,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'asset',
         color TEXT NOT NULL DEFAULT '#000000',
         icon TEXT NOT NULL DEFAULT 'folder',
         displayorder INTEGER NOT NULL DEFAULT 0,
@@ -73,11 +73,11 @@ export class BudgeteerSQLiteDatabase {
       );
     `);
 
-    // Create accounts table
+    // Create accounts table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS accounts (
         id TEXT PRIMARY KEY,
-        tenantid TEXT NOT NULL,
+        tenantid TEXT NOT NULL DEFAULT '',
         categoryid TEXT NOT NULL,
         name TEXT NOT NULL,
         balance REAL NOT NULL DEFAULT 0,
@@ -93,17 +93,17 @@ export class BudgeteerSQLiteDatabase {
         createdby TEXT,
         updatedat TEXT,
         updatedby TEXT,
-        FOREIGN KEY (categoryid) REFERENCES accountcategories(id)
+        FOREIGN KEY (categoryid) REFERENCES accountcategories(id) ON DELETE RESTRICT ON UPDATE CASCADE
       );
     `);
 
-    // Create transaction groups table
+    // Create transaction groups table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS transactiongroups (
         id TEXT PRIMARY KEY,
-        tenantid TEXT NOT NULL,
+        tenantid TEXT NOT NULL DEFAULT '',
         name TEXT NOT NULL,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'expense',
         color TEXT NOT NULL DEFAULT '#000000',
         icon TEXT NOT NULL DEFAULT 'folder',
         description TEXT,
@@ -118,14 +118,14 @@ export class BudgeteerSQLiteDatabase {
       );
     `);
 
-    // Create transaction categories table
+    // Create transaction categories table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS transactioncategories (
         id TEXT PRIMARY KEY,
         tenantid TEXT NOT NULL,
         groupid TEXT NOT NULL,
         name TEXT,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'expense',
         color TEXT NOT NULL DEFAULT '#000000',
         icon TEXT NOT NULL DEFAULT 'tag',
         description TEXT,
@@ -137,20 +137,20 @@ export class BudgeteerSQLiteDatabase {
         createdby TEXT,
         updatedat TEXT,
         updatedby TEXT,
-        FOREIGN KEY (groupid) REFERENCES transactiongroups(id)
+        FOREIGN KEY (groupid) REFERENCES transactiongroups(id) ON DELETE RESTRICT ON UPDATE CASCADE
       );
     `);
 
-    // Create transactions table
+    // Create transactions table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS transactions (
         id TEXT PRIMARY KEY,
-        tenantid TEXT NOT NULL,
+        tenantid TEXT NOT NULL DEFAULT '',
         accountid TEXT NOT NULL,
         categoryid TEXT NOT NULL,
         date TEXT NOT NULL,
         amount REAL NOT NULL DEFAULT 0,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'expense',
         name TEXT,
         description TEXT,
         notes TEXT,
@@ -164,20 +164,20 @@ export class BudgeteerSQLiteDatabase {
         createdby TEXT,
         updatedat TEXT,
         updatedby TEXT,
-        FOREIGN KEY (accountid) REFERENCES accounts(id),
-        FOREIGN KEY (categoryid) REFERENCES transactioncategories(id),
-        FOREIGN KEY (transferaccountid) REFERENCES accounts(id),
-        FOREIGN KEY (transferid) REFERENCES transactions(id)
+        FOREIGN KEY (accountid) REFERENCES accounts(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        FOREIGN KEY (categoryid) REFERENCES transactioncategories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        FOREIGN KEY (transferaccountid) REFERENCES accounts(id) ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY (transferid) REFERENCES transactions(id) ON DELETE SET NULL ON UPDATE CASCADE
       );
     `);
 
-    // Create configurations table
+    // Create configurations table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS configurations (
         id TEXT PRIMARY KEY,
         tenantid TEXT,
         key TEXT NOT NULL,
-        table_name TEXT NOT NULL, -- 'table' is reserved keyword
+        "table" TEXT NOT NULL, -- Use quoted identifier for reserved keyword
         type TEXT NOT NULL,
         value TEXT NOT NULL,
         isdeleted BOOLEAN NOT NULL DEFAULT 0,
@@ -188,7 +188,7 @@ export class BudgeteerSQLiteDatabase {
       );
     `);
 
-    // Create recurrings table
+    // Create recurrings table - matching Supabase schema exactly
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS recurrings (
         id TEXT PRIMARY KEY,
@@ -196,7 +196,7 @@ export class BudgeteerSQLiteDatabase {
         sourceaccountid TEXT NOT NULL,
         categoryid TEXT,
         name TEXT NOT NULL,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'expense',
         amount REAL,
         currencycode TEXT NOT NULL DEFAULT 'USD',
         description TEXT,
@@ -212,8 +212,8 @@ export class BudgeteerSQLiteDatabase {
         createdby TEXT,
         updatedat TEXT,
         updatedby TEXT,
-        FOREIGN KEY (sourceaccountid) REFERENCES accounts(id),
-        FOREIGN KEY (categoryid) REFERENCES transactioncategories(id)
+        FOREIGN KEY (sourceaccountid) REFERENCES accounts(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        FOREIGN KEY (categoryid) REFERENCES transactioncategories(id) ON DELETE SET NULL ON UPDATE CASCADE
       );
     `);
 
@@ -297,7 +297,7 @@ export class BudgeteerSQLiteDatabase {
 
       // Insert test record
       await this.db.runAsync(
-        'INSERT INTO configurations (id, key, table_name, type, value, tenantid, isdeleted, createdat, createdby, updatedat, updatedby) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO configurations (id, key, "table", type, value, tenantid, isdeleted, createdat, createdby, updatedat, updatedby) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [testConfig.id, testConfig.key, testConfig.table_name, testConfig.type, testConfig.value, testConfig.tenantid, testConfig.isdeleted, testConfig.createdat, testConfig.createdby, testConfig.updatedat, testConfig.updatedby]
       );
 

@@ -406,7 +406,7 @@ export class BudgeteerDatabase extends Dexie {
       throw new StorageError(
         'Database migration failed',
         StorageErrorCode.MIGRATION_FAILED,
-        { originalError: error }
+        { originalError: error as Error }
       );
     }
   }

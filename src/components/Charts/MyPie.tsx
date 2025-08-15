@@ -145,7 +145,11 @@ export default function MyPie({
                   \n$${selectedSlice?.y}`
                     : ""
                 }
-                events={{ onPress: () => setSelectedSlice(null), onClick: () => setSelectedSlice(null) }}
+                events={{ 
+                  onClickCapture: () => setSelectedSlice(null), 
+                  onClick: () => setSelectedSlice(null), 
+                  // onPress: () => setSelectedSlice(null),  //TODO: This is probably needed
+                }}
               />
             ) : (
               <></>

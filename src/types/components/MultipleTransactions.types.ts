@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 export type MultiTransactionGroup = {
   originalTransactionId: string | null;
   payee: string;
-  date: dayjs.Dayjs;
+  date: dayjs.Dayjs | null;
   description: string;
   type: string;
   isvoid: boolean;

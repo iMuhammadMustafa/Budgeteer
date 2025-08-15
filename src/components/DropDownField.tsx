@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FlatList, Platform, Pressable, ScrollView, Text, View, Modal } from "react-native";
 
 import MyIcon from "@/src/utils/Icons.Helper";
-import { Account } from "../types/db/Tables.Types";
+import { Account, TransactionCategory, TransactionGroup } from "../types/db/Tables.Types";
 import {
   DropDownProps,
   ListContainerProps,
@@ -197,7 +197,7 @@ export const MyCategoriesDropdown = ({
   onClear, // Added
 }: {
   selectedValue: string | null | undefined; // More specific type
-  categories: import("../types/db/Tables.Types").TransactionCategory[] | undefined; // Use specific type
+  categories: TransactionCategoryAndGroup[] | undefined; // Use specific type
   onSelect: (value: OptionItem | null) => any; // onSelect provides OptionItem or null
   isModal: boolean;
   label?: string; // Added label prop

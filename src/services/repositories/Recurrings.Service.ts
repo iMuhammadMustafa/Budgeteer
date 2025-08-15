@@ -8,8 +8,8 @@ import {
   updateRecurring,
   deleteRecurring,
   // applyRecurringTransaction, // Removed as logic moves to repository
-  CreateRecurringDto,
-  UpdateRecurringDto,
+  Inserts<TableNames.Recurrings>,
+  Updates<TableNames.Recurrings>,
 } from "../apis/Recurrings.repository";
 // Import createTransaction from Transactions.api
 import { createTransaction } from "../apis/Transactions.repository";
@@ -52,9 +52,9 @@ export const useCreateRecurring = () => {
   const tenantId = session?.user?.user_metadata?.tenantid;
 
   return useMutation({
-    mutationFn: async (recurringData: CreateRecurringDto) => {
+    mutationFn: async (recurringData: Inserts<TableNames.Recurrings>) => {
       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-      // recurringData (CreateRecurringDto) should have camelCase keys from regenerated types.
+      // recurringData (Inserts<TableNames.Recurrings>) should have camelCase keys from regenerated types.
       // The createRecurring API function expects lowercase keys in its direct payload.
       const apiPayload = {
         ...recurringData, // Spread camelCase keys
@@ -63,7 +63,7 @@ export const useCreateRecurring = () => {
         createdat: dayjs().toISOString(), // API expects lowercase
       };
       // We need to ensure all keys from recurringData are also lowercase if they are part of the DB schema.
-      // This assumes CreateRecurringDto maps directly to DB columns.
+      // This assumes Inserts<TableNames.Recurrings> maps directly to DB columns.
       // A more robust way would be to explicitly map camelCase from recurringData to lowercase for apiPayload.
       // For now, let's assume the spread works and only override the specific ones.
       // However, if recurringData contains e.g. nextOccurrenceDate, it will be passed as camelCase.
@@ -79,14 +79,14 @@ export const useCreateRecurring = () => {
       explicitApiPayload.createdby = userId;
       explicitApiPayload.createdat = dayjs().toISOString();
 
-      // The DTO (CreateRecurringDto) should already have the correct (camelCase) casing from regenerated types.
+      // The DTO (Inserts<TableNames.Recurrings>) should already have the correct (camelCase) casing from regenerated types.
       // The API layer (createRecurring) is the one that transforms it to lowercase for the .insert() call.
-      // So, we should pass data structured as CreateRecurringDto expects (camelCase).
+      // So, we should pass data structured as Inserts<TableNames.Recurrings> expects (camelCase).
       // The API layer's .insert({ ...payload, tenantid: tenantId }) handles the final structure.
       // Let's revert to simpler if DTOs are camelCase and API layer handles the snake_case for DB.
       // The issue was that the API layer was expecting lowercase for its *own* added properties.
 
-      // Correct approach: CreateRecurringDto is camelCase. The API function `createRecurring`
+      // Correct approach: Inserts<TableNames.Recurrings> is camelCase. The API function `createRecurring`
       // receives this camelCase DTO and is responsible for any mapping if Supabase client needs snake_case.
       // The API function itself adds tenant_id, so that should be tenantid in its own object construction.
       // The `recurringData` itself should be passed as is.
@@ -95,10 +95,10 @@ export const useCreateRecurring = () => {
       // And recurringData itself is camelCase.
 
       // So, the dataToInsert here should be camelCase as per Inserts<TableNames.Recurrings>
-      const dataToInsert: CreateRecurringDto = {
-        // CreateRecurringDto should be camelCase now
-        ...(recurringData as any), // Cast to any if recurringData is not perfectly matching CreateRecurringDto yet
-        tenantid: tenantId, // This should be camelCase if CreateRecurringDto expects it
+      const dataToInsert: Inserts<TableNames.Recurrings> = {
+        // Inserts<TableNames.Recurrings> should be camelCase now
+        ...(recurringData as any), // Cast to any if recurringData is not perfectly matching Inserts<TableNames.Recurrings> yet
+        tenantid: tenantId, // This should be camelCase if Inserts<TableNames.Recurrings> expects it
         createdby: userId, // This should be camelCase
         createdat: dayjs().toISOString(), // This should be camelCase
       };
@@ -123,11 +123,11 @@ export const useUpdateRecurring = () => {
   const tenantId = session?.user?.user_metadata?.tenantid;
 
   return useMutation({
-    mutationFn: async ({ id, recurringData }: { id: string; recurringData: UpdateRecurringDto }) => {
+    mutationFn: async ({ id, recurringData }: { id: string; recurringData: Updates<TableNames.Recurrings> }) => {
       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
       // Destructure potential relational objects and other properties from recurringData.
-      // Casting to 'any' to handle properties not strictly defined in UpdateRecurringDto.
+      // Casting to 'any' to handle properties not strictly defined in Updates<TableNames.Recurrings>.
       const {
         category: categoryObject,
         account: accountObject, // Handles if the source account object is passed as 'account'
@@ -137,7 +137,7 @@ export const useUpdateRecurring = () => {
 
       // Initialize dataToUpdate with core properties and audit fields.
       // Properties like 'categoryid' or 'sourceaccountid' might already be in coreRecurringProps if passed directly.
-      const dataToUpdate: Partial<UpdateRecurringDto> = {
+      const dataToUpdate: Partial<Updates<TableNames.Recurrings>> = {
         ...coreRecurringProps,
         updatedby: userId, // Assuming DTO uses camelCase or API layer handles conversion
         updatedat: dayjs().toISOString(), // Assuming DTO uses camelCase or API layer handles conversion
@@ -158,14 +158,14 @@ export const useUpdateRecurring = () => {
       }
 
       // Explicitly delete the full relational objects from the payload to prevent them from being sent to the API.
-      // This is a safeguard in case they were part of coreRecurringProps or UpdateRecurringDto somehow.
+      // This is a safeguard in case they were part of coreRecurringProps or Updates<TableNames.Recurrings> somehow.
       delete (dataToUpdate as any).category;
       delete (dataToUpdate as any).account;
       delete (dataToUpdate as any).source_account;
 
-      // The updateRecurring API function expects an UpdateRecurringDto (likely camelCase).
+      // The updateRecurring API function expects an Updates<TableNames.Recurrings> (likely camelCase).
       // It is responsible for any case conversion if the DB requires snake_case.
-      return updateRecurring(id, dataToUpdate as UpdateRecurringDto, tenantId);
+      return updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
     },
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
@@ -281,7 +281,7 @@ export const useExecuteRecurringAction = () => {
       }
 
       // 4. Update the recurring
-      const recurringUpdateData: UpdateRecurringDto = {
+      const recurringUpdateData: Updates<TableNames.Recurrings> = {
         lastexecutedat: currentNextOccurrenceDate.toISOString(),
         nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
         updatedby: userId,

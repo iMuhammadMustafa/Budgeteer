@@ -4,8 +4,6 @@ import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { recurrings, accounts, transactionCategories, validateReferentialIntegrity } from "./mockDataStore";
 
-export type CreateRecurringDto = Inserts<TableNames.Recurrings>;
-export type UpdateRecurringDto = Updates<TableNames.Recurrings>;
 
 export const listRecurrings = async (params: { tenantId: string; filters?: any }): Promise<Recurring[]> => {
   let filtered = recurrings.filter(rec => 
@@ -50,7 +48,7 @@ export const getRecurringById = async (id: string, tenantId: string): Promise<Re
   } as unknown as Recurring;
 };
 
-export const createRecurring = async (recurringData: CreateRecurringDto, tenantId: string) => {
+export const createRecurring = async (recurringData: Inserts<TableNames.Recurrings>, tenantId: string) => {
   // Validate referential integrity
   validateReferentialIntegrity.validateAccount(recurringData.sourceaccountid);
   if (recurringData.categoryid) {
@@ -76,7 +74,7 @@ export const createRecurring = async (recurringData: CreateRecurringDto, tenantI
   return newRecurring;
 };
 
-export const updateRecurring = async (id: string, recurringData: UpdateRecurringDto, tenantId: string) => {
+export const updateRecurring = async (id: string, recurringData: Updates<TableNames.Recurrings>, tenantId: string) => {
   const idx = recurrings.findIndex(rec => 
     rec.id === id && 
     (rec.tenantid === tenantId || tenantId === "demo")

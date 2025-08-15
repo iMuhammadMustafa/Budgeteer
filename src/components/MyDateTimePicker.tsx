@@ -8,7 +8,7 @@ import MyIcon from "@/src/utils/Icons.Helper"; // Added MyIcon import
 type MyDateTimePickerProps = {
   label?: string;
   date: dayjs.Dayjs | null | undefined; // Allow null or undefined
-  onChange: (dateISOString: string | null) => void; // Changed to ISO string or null
+  onChange: (date: dayjs.Dayjs | null) => void; // Changed to ISO string or null
   isModal?: boolean;
   showClearButton?: boolean; // Added
   onClear?: () => void; // Added
@@ -81,7 +81,7 @@ export default function MyDateTimePicker({
               if (params.date) {
                 const newDate = dayjs(params.date);
                 setPickerDate(newDate); // Update internal picker state
-                onChange(newDate.toISOString()); // Pass ISO string back
+                onChange(newDate); // Pass ISO string back
               } else {
                 onChange(null); // Handle case where date is cleared in picker
               }

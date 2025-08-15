@@ -23,7 +23,7 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.repository";
+// import { Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings> } from "@/src/services/apis/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);
@@ -32,7 +32,7 @@ dayjs.extend(timezone);
 // Define RecurringType, assuming these are the valid types
 export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
 
-type RecurringFormType = Omit<CreateRecurringDto | UpdateRecurringDto, "recurrencerule"> & {
+type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
   type: RecurringTransactionType; // Added type field
@@ -68,7 +68,7 @@ export const initialRecurringState: RecurringFormType = {
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
-  destinationaccountid: undefined,
+  destinationaccountid: null,
   categoryid: undefined,
   payeename: undefined,
   notes: undefined,
@@ -148,7 +148,7 @@ export default function RecurringUpsertScreen() {
         <MyDateTimePicker
           label="Next Occurrence Date"
           date={dayjs(formData.nextoccurrencedate)}
-          onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
+          onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString?.toISOString())}
         />
         {/* Recurrence Rule Inputs */}
         <DropdownField
@@ -173,7 +173,7 @@ export default function RecurringUpsertScreen() {
         <MyDateTimePicker
           label="End Date (Optional)"
           date={formData.enddate ? dayjs(formData.enddate) : null}
-          onChange={isoDateString => handleDateChange("enddate", isoDateString)}
+          onChange={isoDateString => handleDateChange("enddate", isoDateString?.toISOString())}
           showClearButton={!!formData.enddate}
           onClear={() => handleDateChange("enddate", null)}
         />
@@ -340,7 +340,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
   const handleDateChange = (
     name: keyof Pick<RecurringFormType, "nextoccurrencedate" | "enddate">,
-    isoDateString: string | null,
+    isoDateString: string | null | undefined,
   ) => {
     setFormData(prev => ({ ...prev, [name]: isoDateString ? dayjs(isoDateString).format("YYYY-MM-DD") : null }));
   };
@@ -394,7 +394,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
     const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: CreateRecurringDto | UpdateRecurringDto = {
+    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>  = {
       ...restOfFormData,
       recurrencerule: recurrenceRule,
     };
@@ -408,7 +408,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { id: recurringIdToEdit, recurringData: dataToSubmitApi as UpdateRecurringDto },
+        { id: recurringIdToEdit, recurringData: dataToSubmitApi as Updates<TableNames.Recurrings>  },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
@@ -420,7 +420,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         },
       );
     } else {
-      createRecurring(dataToSubmitApi as CreateRecurringDto, {
+      createRecurring(dataToSubmitApi as Inserts<TableNames.Recurrings>, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();

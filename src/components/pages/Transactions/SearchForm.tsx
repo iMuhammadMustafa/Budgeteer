@@ -42,7 +42,7 @@ export default function TransactionSearchForm({
 }) {
   const [searchParams, setSearchParams] = useState<TransactionFilters | null>(filters ?? null);
 
-  const handleTextChange = (name: keyof TransactionFilters, text: string) => {
+  const handleTextChange = (name: keyof TransactionFilters, text?: string) => {
     setSearchParams(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
@@ -76,7 +76,7 @@ export default function TransactionSearchForm({
         <MyCategoriesDropdown
           selectedValue={searchParams?.categoryid}
           categories={categories}
-          onSelect={value => handleTextChange("categoryid", value.id)}
+          onSelect={value => handleTextChange("categoryid", value?.id)}
           isModal
         />
         <AccountSelecterDropdown

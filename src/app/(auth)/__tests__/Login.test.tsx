@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import Login from '../Login';
 import { StorageModeProvider } from '@/src/providers/StorageModeProvider';
 import { DemoModeProvider } from '@/src/providers/DemoModeProvider';
-import { AuthProvider } from '@/src/providers/AuthProvider';
+import AuthProvider  from '@/src/providers/AuthProvider';
 
 // Mock dependencies
 jest.mock('expo-router', () => ({
