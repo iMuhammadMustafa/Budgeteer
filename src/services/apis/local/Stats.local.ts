@@ -1,38 +1,34 @@
-import { db } from './BudgeteerDatabase';
+import { db } from "./BudgeteerDatabase";
 // Stats local storage provider
 
 export const getStats = async (tenantId: string) => {
   try {
     // Get basic statistics from local storage
     const accounts = await db.accounts
-      .where('tenantid')
+      .where("tenantid")
       .equals(tenantId)
       .and(account => !account.isdeleted)
       .toArray();
 
     const transactions = await db.transactions
-      .where('tenantid')
+      .where("tenantid")
       .equals(tenantId)
       .and(transaction => !transaction.isdeleted)
       .toArray();
 
     const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
     const totalTransactions = transactions.length;
-    
-    const income = transactions
-      .filter(t => t.type === 'Income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const expenses = transactions
-      .filter(t => t.type === 'Expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+
+    const income = transactions.filter(t => t.type === "Income").reduce((sum, t) => sum + t.amount, 0);
+
+    const expenses = transactions.filter(t => t.type === "Expense").reduce((sum, t) => sum + t.amount, 0);
 
     return {
       totalBalance,
       totalTransactions,
       totalIncome: income,
       totalExpenses: expenses,
-      netIncome: income - expenses
+      netIncome: income - expenses,
     };
   } catch (error) {
     throw new Error(`Failed to get stats: ${error}`);
@@ -42,7 +38,7 @@ export const getStats = async (tenantId: string) => {
 export const getAccountStats = async (accountId: string, tenantId: string) => {
   try {
     const account = await db.accounts
-      .where('id')
+      .where("id")
       .equals(accountId)
       .and(account => account.tenantid === tenantId && !account.isdeleted)
       .first();
@@ -52,21 +48,17 @@ export const getAccountStats = async (accountId: string, tenantId: string) => {
     }
 
     const transactions = await db.transactions
-      .where('accountid')
+      .where("accountid")
       .equals(accountId)
       .and(transaction => transaction.tenantid === tenantId && !transaction.isdeleted)
       .toArray();
 
     const totalTransactions = transactions.length;
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
-    
-    const income = transactions
-      .filter(t => t.type === 'Income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const expenses = transactions
-      .filter(t => t.type === 'Expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+
+    const income = transactions.filter(t => t.type === "Income").reduce((sum, t) => sum + t.amount, 0);
+
+    const expenses = transactions.filter(t => t.type === "Expense").reduce((sum, t) => sum + t.amount, 0);
 
     return {
       accountId,
@@ -75,7 +67,7 @@ export const getAccountStats = async (accountId: string, tenantId: string) => {
       totalTransactions,
       totalAmount,
       totalIncome: income,
-      totalExpenses: expenses
+      totalExpenses: expenses,
     };
   } catch (error) {
     throw new Error(`Failed to get account stats: ${error}`);
@@ -85,7 +77,7 @@ export const getAccountStats = async (accountId: string, tenantId: string) => {
 export const getCategoryStats = async (categoryId: string, tenantId: string) => {
   try {
     const category = await db.transactioncategories
-      .where('id')
+      .where("id")
       .equals(categoryId)
       .and(category => category.tenantid === tenantId && !category.isdeleted)
       .first();
@@ -95,21 +87,17 @@ export const getCategoryStats = async (categoryId: string, tenantId: string) => 
     }
 
     const transactions = await db.transactions
-      .where('categoryid')
+      .where("categoryid")
       .equals(categoryId)
       .and(transaction => transaction.tenantid === tenantId && !transaction.isdeleted)
       .toArray();
 
     const totalTransactions = transactions.length;
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
-    
-    const income = transactions
-      .filter(t => t.type === 'Income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const expenses = transactions
-      .filter(t => t.type === 'Expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+
+    const income = transactions.filter(t => t.type === "Income").reduce((sum, t) => sum + t.amount, 0);
+
+    const expenses = transactions.filter(t => t.type === "Expense").reduce((sum, t) => sum + t.amount, 0);
 
     return {
       categoryId,
@@ -119,9 +107,26 @@ export const getCategoryStats = async (categoryId: string, tenantId: string) => 
       totalIncome: income,
       totalExpenses: expenses,
       budgetAmount: category.budgetamount,
-      budgetFrequency: category.budgetfrequency
+      budgetFrequency: category.budgetfrequency,
     };
   } catch (error) {
     throw new Error(`Failed to get category stats: ${error}`);
   }
+};
+/**
+ * Create a new stats record (local implementation).
+ * No-op: stats are computed, not stored.
+ */
+export const createStats = async (tenantId: string, stats: any) => {
+  // No persistent storage for stats; return the input for test compatibility
+  return { ...stats, tenantid: tenantId, id: `local-stats-${Date.now()}` };
+};
+
+/**
+ * Update an existing stats record (local implementation).
+ * No-op: stats are computed, not stored.
+ */
+export const updateStats = async (tenantId: string, id: string, updates: any) => {
+  // No persistent storage for stats; return the updates for test compatibility
+  return { ...updates, tenantid: tenantId, id };
 };

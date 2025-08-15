@@ -2,12 +2,12 @@
  * Test utilities for TanStack Query integration tests
  */
 
-import { QueryClient } from '@tanstack/react-query';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, createElement } from 'react';
-import { Session } from '@supabase/supabase-js';
-import { Account, AccountCategory, Transaction, Inserts } from '@/src/types/db/Tables.Types';
-import { TableNames } from '@/src/types/db/TableNames';
+import { QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactNode, createElement } from "react";
+import { Session } from "@supabase/supabase-js";
+import { Account, AccountCategory, Transaction, Inserts } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
 
 /**
  * Creates a test QueryClient with appropriate settings for testing
@@ -36,7 +36,7 @@ export function createTestQueryClient(): QueryClient {
  * Creates a wrapper component for React Query testing
  */
 export function createWrapper(queryClient: QueryClient) {
-  return ({ children }: { children: ReactNode }) => 
+  return ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
@@ -45,40 +45,40 @@ export function createWrapper(queryClient: QueryClient) {
  */
 export const mockSession: Session = {
   user: {
-    id: 'test-user-id',
-    aud: 'supabase',
-    role: 'authenticated',
-    created_at: '2023-10-01T00:00:00Z',
+    id: "test-user-id",
+    aud: "supabase",
+    role: "authenticated",
+    created_at: "2023-10-01T00:00:00Z",
     app_metadata: {
-      provider: 'email',
-      roles: ['user'],
+      provider: "email",
+      roles: ["user"],
     },
     user_metadata: {
-      full_name: 'Test User',
-      tenantid: 'test-tenant-id',
+      full_name: "Test User",
+      tenantid: "test-tenant-id",
     },
   },
-  access_token: 'test-access-token',
-  refresh_token: 'test-refresh-token',
+  access_token: "test-access-token",
+  refresh_token: "test-refresh-token",
   expires_in: 3600,
-  token_type: 'Bearer',
+  token_type: "Bearer",
 };
 
 /**
  * Creates a mock account for testing
  */
-export function createMockAccount(overrides?: Partial<Inserts<TableNames.Accounts>>): Inserts<TableNames.Accounts> {
+export function createMockAccount(overrides?: Partial<Inserts<TableNames.Accounts>>): Account {
   return {
-    id: 'test-account-id',
-    tenantid: 'test-tenant-id',
-    name: 'Test Account',
+    id: "test-account-id",
+    tenantid: "test-tenant-id",
+    name: "Test Account",
     balance: 1000,
-    categoryid: 'test-category-id',
+    categoryid: "test-category-id",
     isdeleted: false,
     createdat: new Date().toISOString(),
-    createdby: 'test-user-id',
+    createdby: "test-user-id",
     updatedat: new Date().toISOString(),
-    updatedby: 'test-user-id',
+    updatedby: "test-user-id",
     ...overrides,
   };
 }
@@ -86,17 +86,19 @@ export function createMockAccount(overrides?: Partial<Inserts<TableNames.Account
 /**
  * Creates a mock account category for testing
  */
-export function createMockAccountCategory(overrides?: Partial<Inserts<TableNames.AccountCategories>>): Inserts<TableNames.AccountCategories> {
+export function createMockAccountCategory(
+  overrides?: Partial<Inserts<TableNames.AccountCategories>>,
+): Inserts<TableNames.AccountCategories> {
   return {
-    id: 'test-category-id',
-    tenantid: 'test-tenant-id',
-    name: 'Test Category',
-    type: 'Asset',
+    id: "test-category-id",
+    tenantid: "test-tenant-id",
+    name: "Test Category",
+    type: "Asset",
     isdeleted: false,
     createdat: new Date().toISOString(),
-    createdby: 'test-user-id',
+    createdby: "test-user-id",
     updatedat: new Date().toISOString(),
-    updatedby: 'test-user-id',
+    updatedby: "test-user-id",
     ...overrides,
   };
 }
@@ -104,26 +106,28 @@ export function createMockAccountCategory(overrides?: Partial<Inserts<TableNames
 /**
  * Creates a mock transaction for testing
  */
-export function createMockTransaction(overrides?: Partial<Inserts<TableNames.Transactions>>): Inserts<TableNames.Transactions> {
+export function createMockTransaction(
+  overrides?: Partial<Inserts<TableNames.Transactions>>,
+): Inserts<TableNames.Transactions> {
   return {
-    id: 'test-transaction-id',
-    tenantid: 'test-tenant-id',
-    name: 'Test Transaction',
-    date: new Date().toISOString().split('T')[0],
-    payee: 'Test Payee',
-    description: 'Test Description',
-    tags: ['test'],
-    notes: 'Test Notes',
-    type: 'Expense',
-    categoryid: 'test-transaction-category-id',
+    id: "test-transaction-id",
+    tenantid: "test-tenant-id",
+    name: "Test Transaction",
+    date: new Date().toISOString().split("T")[0],
+    payee: "Test Payee",
+    description: "Test Description",
+    tags: ["test"],
+    notes: "Test Notes",
+    type: "Expense",
+    categoryid: "test-transaction-category-id",
     isvoid: false,
     amount: -100,
-    accountid: 'test-account-id',
+    accountid: "test-account-id",
     isdeleted: false,
     createdat: new Date().toISOString(),
-    createdby: 'test-user-id',
+    createdby: "test-user-id",
     updatedat: new Date().toISOString(),
-    updatedby: 'test-user-id',
+    updatedby: "test-user-id",
     transferaccountid: null,
     transferid: null,
     ...overrides,
@@ -152,10 +156,10 @@ export function createMockError(message: string, code?: string): Error {
  * Utility to check if an object has the expected shape
  */
 export function hasExpectedShape<T>(obj: any, expectedKeys: (keyof T)[]): obj is T {
-  if (!obj || typeof obj !== 'object') {
+  if (!obj || typeof obj !== "object") {
     return false;
   }
-  
+
   return expectedKeys.every(key => key in obj);
 }
 
@@ -174,7 +178,7 @@ export const mockUseAuth = () => ({
  */
 export function createTestEnvironment() {
   // Mock the useAuth hook
-  jest.mock('@/src/providers/AuthProvider', () => ({
+  jest.mock("@/src/providers/AuthProvider", () => ({
     useAuth: mockUseAuth,
   }));
 
@@ -187,7 +191,7 @@ export function createTestEnvironment() {
     getAllKeys: jest.fn(() => Promise.resolve([])),
   };
 
-  jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
+  jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
   return {
     mockAsyncStorage,
@@ -206,24 +210,24 @@ export function cleanupTestEnvironment() {
  * Validates that a query result has the expected structure
  */
 export function validateQueryResult(result: any) {
-  expect(result).toHaveProperty('data');
-  expect(result).toHaveProperty('isLoading');
-  expect(result).toHaveProperty('isError');
-  expect(result).toHaveProperty('isSuccess');
-  expect(result).toHaveProperty('error');
+  expect(result).toHaveProperty("data");
+  expect(result).toHaveProperty("isLoading");
+  expect(result).toHaveProperty("isError");
+  expect(result).toHaveProperty("isSuccess");
+  expect(result).toHaveProperty("error");
 }
 
 /**
  * Validates that a mutation result has the expected structure
  */
 export function validateMutationResult(result: any) {
-  expect(result).toHaveProperty('mutate');
-  expect(result).toHaveProperty('mutateAsync');
-  expect(result).toHaveProperty('isLoading');
-  expect(result).toHaveProperty('isError');
-  expect(result).toHaveProperty('isSuccess');
-  expect(result).toHaveProperty('error');
-  expect(result).toHaveProperty('data');
+  expect(result).toHaveProperty("mutate");
+  expect(result).toHaveProperty("mutateAsync");
+  expect(result).toHaveProperty("isLoading");
+  expect(result).toHaveProperty("isError");
+  expect(result).toHaveProperty("isSuccess");
+  expect(result).toHaveProperty("error");
+  expect(result).toHaveProperty("data");
 }
 
 /**
@@ -231,7 +235,7 @@ export function validateMutationResult(result: any) {
  */
 export function suppressConsoleLogs() {
   const originalConsole = { ...console };
-  
+
   beforeAll(() => {
     console.log = jest.fn();
     console.warn = jest.fn();

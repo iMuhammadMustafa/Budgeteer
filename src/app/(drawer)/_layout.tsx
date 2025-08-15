@@ -130,8 +130,9 @@ const Footer = () => {
 
   const handleLogout = () => {
     setDemo(false);
-    supabase.auth.signOut();
-    router.navigate("/(auth)/Login");
+    supabase.auth.signOut().then(() => {
+      router.navigate("/(auth)/Login");
+    });
   };
 
   const handleResetDemoData = () => {

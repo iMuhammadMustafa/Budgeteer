@@ -1,19 +1,18 @@
-import { db, LocalAccountCategory } from './BudgeteerDatabase';
+import { db, LocalAccountCategory } from "./BudgeteerDatabase";
 // Account Categories local storage provider
-import { AccountCategory, Inserts, Updates } from '@/src/types/db/Tables.Types';
-import { TableNames } from '@/src/types/db/TableNames';
-import dayjs from 'dayjs';
-import { v4 as uuidv4 } from 'uuid';
+import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
+import dayjs from "dayjs";
+import { v4 as uuidv4 } from "uuid";
 
 export const getAllAccountCategories = async (tenantId: string): Promise<AccountCategory[]> => {
   try {
     const categories = await db.accountcategories
-      .where('tenantid')
+      .where("tenantid")
       .equals(tenantId)
       .and(category => !category.isdeleted)
-      .orderBy('displayorder')
       .reverse()
-      .toArray();
+      .sortBy("displayorder");
 
     return categories as AccountCategory[];
   } catch (error) {
@@ -24,12 +23,12 @@ export const getAllAccountCategories = async (tenantId: string): Promise<Account
 export const getAccountCategoryById = async (id: string, tenantId: string): Promise<AccountCategory | null> => {
   try {
     const category = await db.accountcategories
-      .where('id')
+      .where("id")
       .equals(id)
       .and(category => category.tenantid === tenantId && !category.isdeleted)
       .first();
 
-    return category as AccountCategory || null;
+    return (category as AccountCategory) || null;
   } catch (error) {
     throw new Error(`Failed to get account category by id: ${error}`);
   }
@@ -39,17 +38,17 @@ export const createAccountCategory = async (category: Inserts<TableNames.Account
   try {
     const newCategory: LocalAccountCategory = {
       id: category.id || uuidv4(),
-      tenantid: category.tenantid || '',
+      tenantid: category.tenantid || "",
       name: category.name,
-      type: category.type || 'Asset',
-      color: category.color || '#000000',
-      icon: category.icon || 'folder',
+      type: category.type || "Asset",
+      color: category.color || "#000000",
+      icon: category.icon || "folder",
       displayorder: category.displayorder || 0,
       isdeleted: category.isdeleted || false,
       createdat: category.createdat || new Date().toISOString(),
       createdby: category.createdby || null,
       updatedat: category.updatedat || new Date().toISOString(),
-      updatedby: category.updatedby || null
+      updatedby: category.updatedby || null,
     };
 
     await db.accountcategories.add(newCategory);
@@ -62,16 +61,16 @@ export const createAccountCategory = async (category: Inserts<TableNames.Account
 export const updateAccountCategory = async (category: Updates<TableNames.AccountCategories>) => {
   try {
     if (!category.id) {
-      throw new Error('Account category ID is required for update');
+      throw new Error("Account category ID is required for update");
     }
 
     const updateData = {
       ...category,
-      updatedat: new Date().toISOString()
+      updatedat: new Date().toISOString(),
     };
 
     await db.accountcategories.update(category.id, updateData);
-    
+
     const updatedCategory = await db.accountcategories.get(category.id);
     return updatedCategory;
   } catch (error) {
@@ -84,11 +83,11 @@ export const deleteAccountCategory = async (id: string, userId?: string) => {
     const updateData = {
       isdeleted: true,
       updatedby: userId || null,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ")
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     };
 
     await db.accountcategories.update(id, updateData);
-    
+
     const deletedCategory = await db.accountcategories.get(id);
     return deletedCategory;
   } catch (error) {
@@ -101,11 +100,11 @@ export const restoreAccountCategory = async (id: string, userId?: string) => {
     const updateData = {
       isdeleted: false,
       updatedby: userId || null,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ")
+      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     };
 
     await db.accountcategories.update(id, updateData);
-    
+
     const restoredCategory = await db.accountcategories.get(id);
     return restoredCategory;
   } catch (error) {

@@ -10,8 +10,8 @@ export const getStatsDailyTransactions = async (
   type?: TransactionType,
 ) => {
   // Default to current week if no dates provided
-  const defaultStartDate = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const defaultEndDate = endDate || new Date().toISOString().split('T')[0];
+  const defaultStartDate = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultEndDate = endDate || new Date().toISOString().split("T")[0];
   const filterType = type || "Expense";
 
   const filtered = transactions.filter(
@@ -20,7 +20,7 @@ export const getStatsDailyTransactions = async (
       !tr.isdeleted &&
       tr.type === filterType &&
       tr.date >= defaultStartDate &&
-      tr.date <= defaultEndDate
+      tr.date <= defaultEndDate,
   );
 
   const grouped: { [date: string]: number } = {};
@@ -39,15 +39,15 @@ export const getStatsDailyTransactions = async (
 
 export const getStatsMonthlyTransactionsTypes = async (tenantId: string, startDate?: string, endDate?: string) => {
   // Default to current week if no dates provided
-  const defaultStartDate = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const defaultEndDate = endDate || new Date().toISOString().split('T')[0];
+  const defaultStartDate = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultEndDate = endDate || new Date().toISOString().split("T")[0];
 
   const filtered = transactions.filter(
     tr =>
       (tr.tenantid === tenantId || tenantId === "demo") &&
       !tr.isdeleted &&
       tr.date >= defaultStartDate &&
-      tr.date <= defaultEndDate
+      tr.date <= defaultEndDate,
   );
 
   const grouped: { [type: string]: number } = {};
@@ -70,8 +70,8 @@ export const getStatsMonthlyCategoriesTransactions = async (
 ): Promise<StatsMonthlyCategoriesTransactions[]> => {
   // Default to current month if no dates provided
   const now = new Date();
-  const defaultStartDate = startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const defaultEndDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const defaultStartDate = startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const defaultEndDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
   const filtered = transactions.filter(
     tr =>
@@ -79,7 +79,7 @@ export const getStatsMonthlyCategoriesTransactions = async (
       !tr.isdeleted &&
       (tr.type === "Expense" || tr.type === "Adjustment") &&
       tr.date >= defaultStartDate &&
-      tr.date <= defaultEndDate
+      tr.date <= defaultEndDate,
   );
 
   const grouped: { [catId: string]: number } = {};
@@ -90,7 +90,7 @@ export const getStatsMonthlyCategoriesTransactions = async (
   return Object.entries(grouped).map(([categoryid, sum]) => {
     const cat = transactionCategories.find(c => c.id === categoryid);
     const group = cat ? transactionGroups.find(g => g.id === cat.groupid) : undefined;
-    
+
     return {
       groupid: group?.id ?? "unknown",
       categoryid,
@@ -117,15 +117,15 @@ export const getStatsMonthlyCategoriesTransactions = async (
 export const getStatsMonthlyAccountsTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
   // Default to current month if no dates provided
   const now = new Date();
-  const defaultStartDate = startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const defaultEndDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const defaultStartDate = startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const defaultEndDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
   const filtered = transactions.filter(
     tr =>
       (tr.tenantid === tenantId || tenantId === "demo") &&
       !tr.isdeleted &&
       tr.date >= defaultStartDate &&
-      tr.date <= defaultEndDate
+      tr.date <= defaultEndDate,
   );
 
   const grouped: { [accId: string]: number } = {};
@@ -148,27 +148,46 @@ export const getStatsMonthlyAccountsTransactions = async (tenantId: string, star
 export const getStatsNetWorthGrowth = async (tenantId: string, startDate?: string, endDate?: string) => {
   // Default to current year if no dates provided
   const now = new Date();
-  const defaultStartDate = startDate || new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-  const defaultEndDate = endDate || new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+  const defaultStartDate = startDate || new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+  const defaultEndDate = endDate || new Date(now.getFullYear(), 11, 31).toISOString().split("T")[0];
 
-  const filtered = accounts.filter(acc => 
-    (acc.tenantid === tenantId || tenantId === "demo") && !acc.isdeleted
-  );
-  
+  const filtered = accounts.filter(acc => (acc.tenantid === tenantId || tenantId === "demo") && !acc.isdeleted);
+
   const total = filtered.reduce((sum, acc) => sum + acc.balance, 0);
-  
+
   // Generate monthly data points (simplified - in real implementation would calculate historical balances)
   const months = [];
   const start = new Date(defaultStartDate);
   const end = new Date(defaultEndDate);
-  
+
   for (let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
     months.push({
-      month: d.toISOString().split('T')[0],
+      month: d.toISOString().split("T")[0],
       networth: total, // Simplified - would calculate actual historical net worth
       tenantid: tenantId,
     });
   }
-  
+
   return months.sort((a, b) => a.month.localeCompare(b.month));
+};
+/**
+ * Create a new stats record (mock implementation).
+ * For demo purposes, this just pushes to an in-memory array.
+ */
+let statsStore: any[] = [];
+export const createStats = async (tenantId: string, stats: any) => {
+  const newStats = { ...stats, tenantid: tenantId, id: `mock-stats-${Date.now()}` };
+  statsStore.push(newStats);
+  return newStats;
+};
+
+/**
+ * Update an existing stats record (mock implementation).
+ * Finds by id and updates the object.
+ */
+export const updateStats = async (tenantId: string, id: string, updates: any) => {
+  const idx = statsStore.findIndex(s => s.id === id && s.tenantid === tenantId);
+  if (idx === -1) throw new Error("Stats record not found");
+  statsStore[idx] = { ...statsStore[idx], ...updates };
+  return statsStore[idx];
 };
