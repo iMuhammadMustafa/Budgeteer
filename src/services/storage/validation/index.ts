@@ -13,10 +13,15 @@ export { AutomatedTestSuite } from './AutomatedTestSuite';
 // Types and interfaces
 export type {
   ValidationReport,
-  ValidationResult,
-  ValidationError,
   CRUDTestData
 } from './StorageValidation';
+
+export type {
+  ForeignKeyDataProvider,
+  ValidationOptions,
+  ValidationResult,
+  ValidationError
+} from './types';
 
 export type {
   InterfaceComplianceReport,
@@ -40,6 +45,7 @@ export const ValidationUtils = {
    * Quick validation of a single storage mode
    */
   async quickValidate(mode: 'cloud' | 'demo' | 'local'): Promise<boolean> {
+    const { AutomatedTestSuite } = require('./AutomatedTestSuite');
     const testSuite = new AutomatedTestSuite();
     return await testSuite.quickValidation(mode);
   },
@@ -48,6 +54,7 @@ export const ValidationUtils = {
    * Run interface compliance tests for all modes
    */
   async testAllModeCompliance(): Promise<InterfaceComplianceReport[]> {
+    const { AutomatedTestSuite } = require('./AutomatedTestSuite');
     const testSuite = new AutomatedTestSuite();
     return await testSuite.testInterfaceCompliance(['cloud', 'demo', 'local']);
   },
@@ -56,6 +63,7 @@ export const ValidationUtils = {
    * Run full validation suite with default configuration
    */
   async runFullValidation(): Promise<TestSuiteReport> {
+    const { AutomatedTestSuite } = require('./AutomatedTestSuite');
     const testSuite = new AutomatedTestSuite();
     return await testSuite.runTestSuite({
       modes: ['cloud', 'demo', 'local'],
@@ -67,6 +75,7 @@ export const ValidationUtils = {
    * Run validation for development (skip slow tests)
    */
   async runDevValidation(): Promise<TestSuiteReport> {
+    const { AutomatedTestSuite } = require('./AutomatedTestSuite');
     const testSuite = new AutomatedTestSuite();
     return await testSuite.runTestSuite({
       modes: ['demo', 'local'], // Skip cloud for faster dev testing
@@ -76,13 +85,4 @@ export const ValidationUtils = {
   }
 };
 
-// Re-export validation classes for direct instantiation
-import { StorageValidation } from './StorageValidation';
-import { InterfaceComplianceTests } from './InterfaceComplianceTests';
-import { AutomatedTestSuite } from './AutomatedTestSuite';
-
-export {
-  StorageValidation,
-  InterfaceComplianceTests,
-  AutomatedTestSuite
-};
+// Note: Classes are already exported above, no need to re-export

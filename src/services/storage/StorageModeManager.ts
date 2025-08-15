@@ -1,6 +1,7 @@
 // Storage mode manager for handling mode selection and provider instantiation
 
 import { StorageMode, EntityType, ProviderRegistry, IStorageProvider, StorageError } from "./types";
+import { StorageErrorCode } from "./errors/StorageErrors";
 import { DIContainer } from "./DIContainer";
 import { Platform } from "react-native";
 
@@ -89,12 +90,12 @@ export class StorageModeManager implements IStorageProvider {
         console.error(`Failed to rollback to ${previousMode} mode:`, rollbackError);
         throw new StorageError(
           `Mode switch failed and rollback failed. Application may be in an inconsistent state.`,
-          "MODE_SWITCH_ROLLBACK_FAILED",
-          { originalError: error, rollbackError },
+          StorageErrorCode.MODE_SWITCH_ROLLBACK_FAILED,
+          { originalError: error as Error, rollbackError },
         );
       }
 
-      throw new StorageError(`Failed to switch to ${mode} mode: ${error}`, "MODE_SWITCH_FAILED", {
+      throw new StorageError(`Failed to switch to ${mode} mode: ${error}`, StorageErrorCode.MODE_SWITCH_FAILED, {
         mode,
         previousMode,
         error,
@@ -109,7 +110,7 @@ export class StorageModeManager implements IStorageProvider {
         if (Platform.OS === "web") {
           // Web should use IndexedDB
           if (!window.indexedDB) {
-            throw new StorageError("IndexedDB is not supported in this browser", "INDEXEDDB_NOT_SUPPORTED");
+            throw new StorageError("IndexedDB is not supported in this browser", StorageErrorCode.INDEXEDDB_NOT_SUPPORTED);
           }
         } else {
           // Native should use SQLite
@@ -117,7 +118,7 @@ export class StorageModeManager implements IStorageProvider {
             // Try to require expo-sqlite to check if it's available
             require("expo-sqlite");
           } catch (error) {
-            throw new StorageError("SQLite is not available on this platform", "SQLITE_NOT_AVAILABLE", { error });
+            throw new StorageError("SQLite is not available on this platform", StorageErrorCode.SQLITE_NOT_AVAILABLE, { error });
           }
         }
         break;
@@ -135,7 +136,7 @@ export class StorageModeManager implements IStorageProvider {
         break;
 
       default:
-        throw new StorageError(`Unknown storage mode: ${mode}`, "UNKNOWN_STORAGE_MODE", { mode });
+        throw new StorageError(`Unknown storage mode: ${mode}`, StorageErrorCode.UNKNOWN_STORAGE_MODE, { mode });
     }
   }
 
@@ -155,7 +156,7 @@ export class StorageModeManager implements IStorageProvider {
       console.error(`Failed to initialize storage mode ${this.mode}:`, error);
       throw new StorageError(
         `Storage initialization failed for mode ${this.mode}: ${error}`,
-        "STORAGE_INITIALIZATION_FAILED",
+        StorageErrorCode.STORAGE_INITIALIZATION_FAILED,
         { mode: this.mode, error },
       );
     }
@@ -203,16 +204,22 @@ export class StorageModeManager implements IStorageProvider {
       // 4. Validating data integrity
     } catch (error) {
       console.error(`Data migration failed from ${fromMode} to ${toMode}:`, error);
-      throw new StorageError(`Data migration failed: ${error}`, "DATA_MIGRATION_FAILED", { fromMode, toMode, error });
+      throw new StorageError(`Data migration failed: ${error}`, StorageErrorCode.DATA_MIGRATION_FAILED, { fromMode, toMode, error });
     }
   }
 
-  public async getStorageInfo(): Promise<any> {
+  public async getStorageInfo(): Promise<{
+    currentMode: StorageMode;
+    isInitializing: boolean;
+    mode: StorageMode;
+    [key: string]: any;
+  }> {
     try {
       const info = await this.container.getStorageInfo();
       return {
         currentMode: this.mode,
         isInitializing: this.isInitializing,
+        mode: this.mode,
         ...info,
       };
     } catch (error) {
@@ -220,6 +227,7 @@ export class StorageModeManager implements IStorageProvider {
       return {
         currentMode: this.mode,
         isInitializing: this.isInitializing,
+        mode: this.mode,
         error: (error as Error).message,
       };
     }

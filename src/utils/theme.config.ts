@@ -385,8 +385,8 @@ export const convertThemeToReactNativeColors = (mode: ThemeMode) => {
 export const convertThemeToRgb = (mode: ThemeMode) => {
   const styles = mode === "dark" ? darkVars : lightVars;
   const rgb = (color: string) => `rgb(${color.replace(/ /g, ",")})`;
-  return Object.keys(styles).reduce((acc, key) => {
-    acc[key] = rgb(styles[key]);
+  return Object.keys(styles).reduce((acc: Record<string, string>, key) => {
+    acc[key] = rgb(styles[key as keyof typeof styles]);
     return acc;
   }, {});
 };
@@ -397,7 +397,7 @@ export const applyRootVariables = (mode: ThemeMode) => {
 
   if (typeof document !== "undefined") {
     Object.keys(themeVars).forEach(key => {
-      document.documentElement.style.setProperty(key, themeVars[key]);
+      document.documentElement.style.setProperty(key, themeVars[key as keyof typeof themeVars]);
     });
   }
 };

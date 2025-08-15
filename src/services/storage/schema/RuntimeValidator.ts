@@ -5,23 +5,13 @@
  * across different storage implementations to ensure data integrity.
  */
 
-import { schemaValidator, ForeignKeyDataProvider, SchemaValidationError } from './SchemaValidator';
+import { schemaValidator, ForeignKeyDataProvider, SchemaValidationError, TableName } from './SchemaValidator';
 import { TableNames } from '@/src/types/db/TableNames';
 import { Tables, Inserts, Updates } from '@/src/types/db/Tables.Types';
+import { ValidationResult, ValidationOptions } from '../validation/types';
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: SchemaValidationError[];
-  warnings: string[];
-}
-
-export interface ValidationOptions {
-  skipForeignKeyValidation?: boolean;
-  skipTypeValidation?: boolean;
-  skipRequiredFieldValidation?: boolean;
-  skipEnumValidation?: boolean;
-  allowPartialUpdates?: boolean;
-}
+// Re-export types for backward compatibility
+export type { ValidationResult, ValidationOptions } from '../validation/types';
 
 /**
  * Runtime validator that can be used by all storage implementations
@@ -41,9 +31,9 @@ export class RuntimeValidator {
   /**
    * Validate data before CREATE operation
    */
-  public async validateCreate<T extends keyof typeof TableNames>(
+  public async validateCreate<T extends TableName>(
     tableName: T,
-    data: Inserts<TableNames[T]>,
+    data: Inserts<T>,
     dataProvider?: ForeignKeyDataProvider,
     options: ValidationOptions = {}
   ): Promise<ValidationResult> {
@@ -56,16 +46,16 @@ export class RuntimeValidator {
     try {
       // Basic schema validation
       if (!options.skipRequiredFieldValidation || !options.skipTypeValidation || !options.skipEnumValidation) {
-        schemaValidator.validateInsert(TableNames[tableName] as any, data);
+        schemaValidator.validateInsert(tableName, data);
       }
 
       // Foreign key validation
       if (!options.skipForeignKeyValidation && dataProvider) {
-        await schemaValidator.validateForeignKeys(TableNames[tableName] as any, data, dataProvider);
+        await schemaValidator.validateForeignKeys(tableName, data, dataProvider);
       }
 
       // Additional business logic validation
-      this.validateBusinessRules(TableNames[tableName], data, 'create', result);
+      this.validateBusinessRules(tableName, data, 'create', result);
 
     } catch (error) {
       result.isValid = false;
@@ -74,7 +64,7 @@ export class RuntimeValidator {
       } else {
         result.errors.push(new SchemaValidationError(
           error instanceof Error ? error.message : 'Unknown validation error',
-          TableNames[tableName]
+          tableName
         ));
       }
     }
@@ -85,9 +75,9 @@ export class RuntimeValidator {
   /**
    * Validate data before UPDATE operation
    */
-  public async validateUpdate<T extends keyof typeof TableNames>(
+  public async validateUpdate<T extends TableName>(
     tableName: T,
-    data: Updates<TableNames[T]>,
+    data: Updates<T>,
     dataProvider?: ForeignKeyDataProvider,
     options: ValidationOptions = {}
   ): Promise<ValidationResult> {
@@ -100,16 +90,16 @@ export class RuntimeValidator {
     try {
       // Basic schema validation
       if (!options.skipTypeValidation || !options.skipEnumValidation) {
-        schemaValidator.validateUpdate(TableNames[tableName] as any, data);
+        schemaValidator.validateUpdate(tableName, data);
       }
 
       // Foreign key validation
       if (!options.skipForeignKeyValidation && dataProvider) {
-        await schemaValidator.validateForeignKeys(TableNames[tableName] as any, data, dataProvider);
+        await schemaValidator.validateForeignKeys(tableName, data, dataProvider);
       }
 
       // Additional business logic validation
-      this.validateBusinessRules(TableNames[tableName], data, 'update', result);
+      this.validateBusinessRules(tableName, data, 'update', result);
 
     } catch (error) {
       result.isValid = false;
@@ -118,7 +108,7 @@ export class RuntimeValidator {
       } else {
         result.errors.push(new SchemaValidationError(
           error instanceof Error ? error.message : 'Unknown validation error',
-          TableNames[tableName]
+          tableName
         ));
       }
     }
@@ -381,15 +371,15 @@ export class RuntimeValidator {
    */
   private isValidDateString(dateString: string): boolean {
     const date = new Date(dateString);
-    return date instanceof Date && !isNaN(date.getTime()) && dateString.match(/^\d{4}-\d{2}-\d{2}/);
+    return date instanceof Date && !isNaN(date.getTime()) && !!dateString.match(/^\d{4}-\d{2}-\d{2}/);
   }
 
   /**
    * Batch validation for multiple records
    */
-  public async validateBatch<T extends keyof typeof TableNames>(
+  public async validateBatch<T extends TableName>(
     tableName: T,
-    records: Array<Inserts<TableNames[T]> | Updates<TableNames[T]>>,
+    records: Array<Inserts<T> | Updates<T>>,
     operation: 'create' | 'update',
     dataProvider?: ForeignKeyDataProvider,
     options: ValidationOptions = {}
@@ -398,10 +388,10 @@ export class RuntimeValidator {
 
     for (const record of records) {
       if (operation === 'create') {
-        const result = await this.validateCreate(tableName, record as Inserts<TableNames[T]>, dataProvider, options);
+        const result = await this.validateCreate(tableName, record as Inserts<T>, dataProvider, options);
         results.push(result);
       } else {
-        const result = await this.validateUpdate(tableName, record as Updates<TableNames[T]>, dataProvider, options);
+        const result = await this.validateUpdate(tableName, record as Updates<T>, dataProvider, options);
         results.push(result);
       }
     }

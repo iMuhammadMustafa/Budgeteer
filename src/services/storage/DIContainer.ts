@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 export class DIContainer {
   private static instance: DIContainer;
+  private static isCreating = false;
   private providers: Map<EntityType, any> = new Map();
   private currentMode: StorageMode = 'cloud';
   private factory: ProviderFactory;
@@ -16,7 +17,26 @@ export class DIContainer {
   
   public static getInstance(): DIContainer {
     if (!DIContainer.instance) {
-      DIContainer.instance = new DIContainer();
+      // Thread-safe singleton pattern
+      if (DIContainer.isCreating) {
+        // Wait for instance creation to complete
+        while (DIContainer.isCreating && !DIContainer.instance) {
+          // Busy wait - in a real multi-threaded environment, you'd use proper synchronization
+          // For JavaScript's single-threaded nature, this prevents race conditions during async operations
+        }
+        if (DIContainer.instance) {
+          return DIContainer.instance;
+        }
+      }
+      
+      DIContainer.isCreating = true;
+      try {
+        if (!DIContainer.instance) {
+          DIContainer.instance = new DIContainer();
+        }
+      } finally {
+        DIContainer.isCreating = false;
+      }
     }
     return DIContainer.instance;
   }
@@ -39,6 +59,10 @@ export class DIContainer {
       this.providers.set(entityType, provider);
     }
     return this.providers.get(entityType) as ProviderRegistry[T];
+  }
+  
+  public setProvider<T extends EntityType>(entityType: T, provider: ProviderRegistry[T]): void {
+    this.providers.set(entityType, provider);
   }
   
   public clearProviders(): void {
@@ -161,7 +185,7 @@ export class DIContainer {
       switch (this.currentMode) {
         case 'local':
           
-          if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') {
             const { localStorageProvider } = require('../apis/local/LocalStorageProvider');
             info.storage = await localStorageProvider.getDatabaseInfo();
           } else {

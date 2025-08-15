@@ -5,6 +5,9 @@
  * and migration utilities for all storage implementations.
  */
 
+import { ForeignKeyDataProvider, ValidationOptions, ValidationResult } from '../validation/types';
+import { TableName } from './SchemaValidator';
+
 // Core schema validation
 export {
   SchemaValidator,
@@ -14,7 +17,6 @@ export {
   TypeValidationError,
   EnumValidationError,
   ForeignKeyValidationError,
-  ForeignKeyDataProvider,
   type TableName,
   type ViewName,
   type EnumName,
@@ -27,10 +29,15 @@ export {
 // Runtime validation for CRUD operations
 export {
   RuntimeValidator,
-  runtimeValidator,
-  type ValidationResult,
-  type ValidationOptions
+  runtimeValidator
 } from './RuntimeValidator';
+
+// Validation types
+export type {
+  ValidationResult,
+  ValidationOptions,
+  ForeignKeyDataProvider
+} from '../validation/types';
 
 // Schema migration utilities
 export {
@@ -46,7 +53,7 @@ export {
 /**
  * Utility function to validate data before any CRUD operation
  */
-export async function validateCRUDOperation<T extends keyof typeof TableNames>(
+export async function validateCRUDOperation<T extends TableName>(
   operation: 'create' | 'update' | 'delete',
   tableName: T,
   data: any,
@@ -70,18 +77,17 @@ export async function validateCRUDOperation<T extends keyof typeof TableNames>(
 /**
  * Utility function to validate schema compliance
  */
-export function validateSchemaCompliance<T extends keyof typeof TableNames>(
+export function validateSchemaCompliance<T extends TableName>(
   tableName: T,
   data: any,
   operation: 'insert' | 'update'
 ): void {
   const { schemaValidator: validator } = require('./SchemaValidator');
-  const { TableNames: tableNames } = require('@/src/types/db/TableNames');
   
   if (operation === 'insert') {
-    validator.validateInsert(tableNames[tableName] as any, data);
+    validator.validateInsert(tableName, data);
   } else {
-    validator.validateUpdate(tableNames[tableName] as any, data);
+    validator.validateUpdate(tableName, data);
   }
 }
 

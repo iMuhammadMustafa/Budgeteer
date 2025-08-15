@@ -1,3 +1,6 @@
+// Unmock StorageModeManager for this test file to test the actual implementation
+jest.unmock('../StorageModeManager');
+
 import { StorageModeManager } from '../StorageModeManager';
 import { StorageMode, StorageError } from '../types';
 
@@ -7,6 +10,15 @@ jest.mock('react-native', () => ({
     OS: 'web'
   }
 }));
+
+// Mock window.indexedDB for local mode tests
+Object.defineProperty(window, 'indexedDB', {
+  value: {
+    open: jest.fn(),
+    deleteDatabase: jest.fn(),
+  },
+  writable: true
+});
 
 jest.mock('../../apis/local/LocalStorageProvider', () => ({
   localStorageProvider: {
@@ -21,6 +33,22 @@ jest.mock('../../apis/local/SQLiteStorageProvider', () => ({
     initialize: jest.fn().mockResolvedValue(undefined),
     cleanup: jest.fn().mockResolvedValue(undefined),
     getDatabaseInfo: jest.fn().mockResolvedValue({ name: 'test.db' })
+  }
+}));
+
+jest.mock('../DIContainer', () => ({
+  DIContainer: {
+    getInstance: jest.fn(() => ({
+      setMode: jest.fn(),
+      getProvider: jest.fn(() => ({})),
+      initializeProviders: jest.fn().mockResolvedValue(undefined),
+      cleanupProviders: jest.fn().mockResolvedValue(undefined),
+      getStorageInfo: jest.fn().mockResolvedValue({ 
+        mode: 'demo',
+        providerCount: 0,
+        providers: []
+      })
+    }))
   }
 }));
 
@@ -82,17 +110,20 @@ describe('StorageModeManager', () => {
     it('should rollback to previous mode on initialization failure', async () => {
       // Mock initialization failure for local mode
       const mockError = new Error('Initialization failed');
-      jest.doMock('../../apis/local/LocalStorageProvider', () => ({
-        localStorageProvider: {
-          initialize: jest.fn().mockRejectedValue(mockError),
-          cleanup: jest.fn().mockResolvedValue(undefined)
-        }
-      }));
-
       const originalMode = storageManager.getMode();
+      
+      // Mock the container's initializeProviders to fail once
+      const mockContainer = storageManager['container'];
+      const originalInitialize = mockContainer.initializeProviders;
+      mockContainer.initializeProviders = jest.fn()
+        .mockRejectedValueOnce(mockError)
+        .mockResolvedValue(undefined);
       
       await expect(storageManager.setMode('local')).rejects.toThrow(StorageError);
       expect(storageManager.getMode()).toBe(originalMode);
+      
+      // Restore the original mock
+      mockContainer.initializeProviders = originalInitialize;
     });
   });
 

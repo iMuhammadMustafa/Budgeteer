@@ -245,8 +245,25 @@ jest.mock("../../services/storage/StorageModeManager", () => {
   const instance = {
     setMode: jest.fn(() => Promise.resolve()),
     getCurrentMode: jest.fn(() => "demo"),
+    getMode: jest.fn(() => "demo"),
     cleanup: jest.fn(() => Promise.resolve()),
-    getStorageInfo: jest.fn(() => Promise.resolve({ mode: "demo" })),
+    initialize: jest.fn(() => Promise.resolve()),
+    getStorageInfo: jest.fn(() => Promise.resolve({ 
+      mode: "demo", 
+      currentMode: "demo", 
+      isInitializing: false 
+    })),
+    migrateData: jest.fn(() => Promise.resolve()),
+    setModeChangeCallback: jest.fn(),
+    getProvider: jest.fn(),
+    getAccountProvider: jest.fn(),
+    getAccountCategoryProvider: jest.fn(),
+    getTransactionProvider: jest.fn(),
+    getTransactionCategoryProvider: jest.fn(),
+    getTransactionGroupProvider: jest.fn(),
+    getConfigurationProvider: jest.fn(),
+    getRecurringProvider: jest.fn(),
+    getStatsProvider: jest.fn(),
   };
   return {
     StorageModeManager: {
