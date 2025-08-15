@@ -93,7 +93,7 @@ export class ProviderFactory {
       case "cloud":
         return AccountCategoriesSupabase.supabaseAccountCategoryProvider;
       case "demo":
-        return AccountCategoriesMock;
+        return AccountCategoriesMock.mockAccountCategoryProvider;
       case "local":
         return AccountCategoriesLocal;
       default:
@@ -119,7 +119,7 @@ export class ProviderFactory {
       case "cloud":
         return TransactionCategoriesSupabase.supabaseTransactionCategoryProvider;
       case "demo":
-        return TransactionCategoriesMock;
+        return TransactionCategoriesMock.mockTransactionCategoryProvider;
       case "local":
         return TransactionCategoriesLocal;
       default:
@@ -132,7 +132,7 @@ export class ProviderFactory {
       case "cloud":
         return TransactionGroupsSupabase.supabaseTransactionGroupProvider;
       case "demo":
-        return TransactionGroupsMock;
+        return TransactionGroupsMock.mockTransactionGroupProvider;
       case "local":
         return TransactionGroupsLocal;
       default:

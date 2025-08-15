@@ -8,6 +8,7 @@ import {
   TransactionCategory,
   TransactionGroup,
 } from "@/src/types/db/Tables.Types";
+import { ReferentialIntegrityError } from "@/src/services/storage/errors";
 
 // Account Categories
 export const accountCategories: AccountCategory[] = [
@@ -575,7 +576,7 @@ export const transactions: Transaction[] = [
   {
     id: "tr-1",
     accountid: "acc-1",
-    amount: 85.50,
+    amount: 85.5,
     categoryid: "tc-1",
     createdat: "2025-01-15T10:00:00Z",
     createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
@@ -641,7 +642,7 @@ export const transactions: Transaction[] = [
   {
     id: "tr-4",
     accountid: "acc-1",
-    amount: 120.00,
+    amount: 120.0,
     categoryid: "tc-4",
     createdat: "2025-01-10T14:00:00Z",
     createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
@@ -663,7 +664,7 @@ export const transactions: Transaction[] = [
   {
     id: "tr-5",
     accountid: "acc-1",
-    amount: 65.00,
+    amount: 65.0,
     categoryid: "tc-6",
     createdat: "2025-01-08T12:00:00Z",
     createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
@@ -729,7 +730,7 @@ export const transactions: Transaction[] = [
   {
     id: "tr-8",
     accountid: "acc-1",
-    amount: 35.00,
+    amount: 35.0,
     categoryid: "tc-8",
     createdat: "2025-01-11T11:00:00Z",
     createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
@@ -751,7 +752,7 @@ export const transactions: Transaction[] = [
   {
     id: "tr-9",
     accountid: "acc-1",
-    amount: 25.50,
+    amount: 25.5,
     categoryid: "tc-9",
     createdat: "2025-01-13T15:30:00Z",
     createdby: "0742f34e-7c12-408a-91a2-ed95d355bc87",
@@ -938,17 +939,10 @@ export const recurrings: Recurring[] = [
 // Legacy validation utilities - kept for backward compatibility
 // New validation system is in src/services/apis/validation/
 
-export class ReferentialIntegrityError extends Error {
-  constructor(table: string, field: string, value: string) {
-    super(`Referenced record not found: ${table}.${field} = ${value}`);
-    this.name = 'ReferentialIntegrityError';
-  }
-}
-
 export class ConstraintViolationError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ConstraintViolationError';
+    this.name = "ConstraintViolationError";
   }
 }
 
@@ -957,45 +951,42 @@ export const validateReferentialIntegrity = {
   // Validate account category exists
   validateAccountCategory: (categoryId: string): void => {
     if (!accountCategories.find(cat => cat.id === categoryId && !cat.isdeleted)) {
-      throw new ReferentialIntegrityError('accountcategories', 'id', categoryId);
+      throw new ReferentialIntegrityError("accountcategories", "id", categoryId);
     }
   },
 
   // Validate account exists
   validateAccount: (accountId: string): void => {
     if (!accounts.find(acc => acc.id === accountId && !acc.isdeleted)) {
-      throw new ReferentialIntegrityError('accounts', 'id', accountId);
+      throw new ReferentialIntegrityError("accounts", "id", accountId);
     }
   },
 
   // Validate transaction category exists
   validateTransactionCategory: (categoryId: string): void => {
     if (!transactionCategories.find(cat => cat.id === categoryId && !cat.isdeleted)) {
-      throw new ReferentialIntegrityError('transactioncategories', 'id', categoryId);
+      throw new ReferentialIntegrityError("transactioncategories", "id", categoryId);
     }
   },
 
   // Validate transaction group exists
   validateTransactionGroup: (groupId: string): void => {
     if (!transactionGroups.find(group => group.id === groupId && !group.isdeleted)) {
-      throw new ReferentialIntegrityError('transactiongroups', 'id', groupId);
+      throw new ReferentialIntegrityError("transactiongroups", "id", groupId);
     }
   },
 
   // Validate transaction exists
   validateTransaction: (transactionId: string): void => {
     if (!transactions.find(tr => tr.id === transactionId && !tr.isdeleted)) {
-      throw new ReferentialIntegrityError('transactions', 'id', transactionId);
+      throw new ReferentialIntegrityError("transactions", "id", transactionId);
     }
   },
 
   // Validate unique constraints
   validateUniqueAccountName: (name: string, tenantId: string, excludeId?: string): void => {
-    const existing = accounts.find(acc => 
-      acc.name === name && 
-      acc.tenantid === tenantId && 
-      !acc.isdeleted && 
-      acc.id !== excludeId
+    const existing = accounts.find(
+      acc => acc.name === name && acc.tenantid === tenantId && !acc.isdeleted && acc.id !== excludeId,
     );
     if (existing) {
       throw new ConstraintViolationError(`Account name '${name}' already exists`);
@@ -1003,11 +994,8 @@ export const validateReferentialIntegrity = {
   },
 
   validateUniqueAccountCategoryName: (name: string, tenantId: string, excludeId?: string): void => {
-    const existing = accountCategories.find(cat => 
-      cat.name === name && 
-      cat.tenantid === tenantId && 
-      !cat.isdeleted && 
-      cat.id !== excludeId
+    const existing = accountCategories.find(
+      cat => cat.name === name && cat.tenantid === tenantId && !cat.isdeleted && cat.id !== excludeId,
     );
     if (existing) {
       throw new ConstraintViolationError(`Account category name '${name}' already exists`);
@@ -1015,11 +1003,8 @@ export const validateReferentialIntegrity = {
   },
 
   validateUniqueTransactionCategoryName: (name: string, tenantId: string, excludeId?: string): void => {
-    const existing = transactionCategories.find(cat => 
-      cat.name === name && 
-      cat.tenantid === tenantId && 
-      !cat.isdeleted && 
-      cat.id !== excludeId
+    const existing = transactionCategories.find(
+      cat => cat.name === name && cat.tenantid === tenantId && !cat.isdeleted && cat.id !== excludeId,
     );
     if (existing) {
       throw new ConstraintViolationError(`Transaction category name '${name}' already exists`);
@@ -1027,11 +1012,8 @@ export const validateReferentialIntegrity = {
   },
 
   validateUniqueTransactionGroupName: (name: string, tenantId: string, excludeId?: string): void => {
-    const existing = transactionGroups.find(group => 
-      group.name === name && 
-      group.tenantid === tenantId && 
-      !group.isdeleted && 
-      group.id !== excludeId
+    const existing = transactionGroups.find(
+      group => group.name === name && group.tenantid === tenantId && !group.isdeleted && group.id !== excludeId,
     );
     if (existing) {
       throw new ConstraintViolationError(`Transaction group name '${name}' already exists`);
@@ -1039,12 +1021,13 @@ export const validateReferentialIntegrity = {
   },
 
   validateUniqueConfigurationKey: (key: string, table: string, tenantId: string, excludeId?: string): void => {
-    const existing = configurations.find(conf => 
-      conf.key === key && 
-      conf.table === table && 
-      conf.tenantid === tenantId && 
-      !conf.isdeleted && 
-      conf.id !== excludeId
+    const existing = configurations.find(
+      conf =>
+        conf.key === key &&
+        conf.table === table &&
+        conf.tenantid === tenantId &&
+        !conf.isdeleted &&
+        conf.id !== excludeId,
     );
     if (existing) {
       throw new ConstraintViolationError(`Configuration key '${key}' already exists for table '${table}'`);
@@ -1055,27 +1038,27 @@ export const validateReferentialIntegrity = {
   canDeleteAccountCategory: (categoryId: string): void => {
     const referencedByAccounts = accounts.some(acc => acc.categoryid === categoryId && !acc.isdeleted);
     if (referencedByAccounts) {
-      throw new ConstraintViolationError('Cannot delete: Account category is referenced by accounts');
+      throw new ConstraintViolationError("Cannot delete: Account category is referenced by accounts");
     }
   },
 
   canDeleteAccount: (accountId: string): void => {
-    const referencedByTransactions = transactions.some(tr => 
-      (tr.accountid === accountId || tr.transferaccountid === accountId) && !tr.isdeleted
+    const referencedByTransactions = transactions.some(
+      tr => (tr.accountid === accountId || tr.transferaccountid === accountId) && !tr.isdeleted,
     );
     const referencedByRecurrings = recurrings.some(rec => rec.sourceaccountid === accountId && !rec.isdeleted);
     if (referencedByTransactions) {
-      throw new ConstraintViolationError('Cannot delete: Account is referenced by transactions');
+      throw new ConstraintViolationError("Cannot delete: Account is referenced by transactions");
     }
     if (referencedByRecurrings) {
-      throw new ConstraintViolationError('Cannot delete: Account is referenced by recurring transactions');
+      throw new ConstraintViolationError("Cannot delete: Account is referenced by recurring transactions");
     }
   },
 
   canDeleteTransactionGroup: (groupId: string): void => {
     const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
     if (referencedByCategories) {
-      throw new ConstraintViolationError('Cannot delete: Transaction group is referenced by transaction categories');
+      throw new ConstraintViolationError("Cannot delete: Transaction group is referenced by transaction categories");
     }
   },
 
@@ -1083,37 +1066,19 @@ export const validateReferentialIntegrity = {
     const referencedByTransactions = transactions.some(tr => tr.categoryid === categoryId && !tr.isdeleted);
     const referencedByRecurrings = recurrings.some(rec => rec.categoryid === categoryId && !rec.isdeleted);
     if (referencedByTransactions) {
-      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by transactions');
+      throw new ConstraintViolationError("Cannot delete: Transaction category is referenced by transactions");
     }
     if (referencedByRecurrings) {
-      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by recurring transactions');
+      throw new ConstraintViolationError("Cannot delete: Transaction category is referenced by recurring transactions");
     }
   },
 
   canDeleteTransaction: (transactionId: string): void => {
     const referencedByTransfers = transactions.some(tr => tr.transferid === transactionId && !tr.isdeleted);
     if (referencedByTransfers) {
-      throw new ConstraintViolationError('Cannot delete: Transaction is referenced by transfer transactions');
+      throw new ConstraintViolationError("Cannot delete: Transaction is referenced by transfer transactions");
     }
   },
-
-  canDeleteTransactionGroup: (groupId: string): void => {
-    const referencedByCategories = transactionCategories.some(cat => cat.groupid === groupId && !cat.isdeleted);
-    if (referencedByCategories) {
-      throw new ConstraintViolationError('Cannot delete: Transaction group is referenced by transaction categories');
-    }
-  },
-
-  canDeleteTransactionCategory: (categoryId: string): void => {
-    const referencedByTransactions = transactions.some(tr => tr.categoryid === categoryId && !tr.isdeleted);
-    const referencedByRecurrings = recurrings.some(rec => rec.categoryid === categoryId && !rec.isdeleted);
-    if (referencedByTransactions) {
-      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by transactions');
-    }
-    if (referencedByRecurrings) {
-      throw new ConstraintViolationError('Cannot delete: Transaction category is referenced by recurring transactions');
-    }
-  }
 };
 
 // Mock Database Functions
@@ -1122,7 +1087,7 @@ export const mockDatabaseFunctions = {
   updateAccountBalance: (accountId: string, amount: number): number => {
     const accountIndex = accounts.findIndex(acc => acc.id === accountId);
     if (accountIndex === -1) {
-      throw new Error('Account not found');
+      throw new Error("Account not found");
     }
     accounts[accountIndex].balance += amount;
     return accounts[accountIndex].balance;
@@ -1132,7 +1097,7 @@ export const mockDatabaseFunctions = {
   applyRecurringTransaction: (recurringId: string): string => {
     const recurring = recurrings.find(rec => rec.id === recurringId && rec.isactive && !rec.isdeleted);
     if (!recurring) {
-      throw new Error('Recurring transaction not found or not active');
+      throw new Error("Recurring transaction not found or not active");
     }
 
     // Create new transaction
@@ -1141,9 +1106,9 @@ export const mockDatabaseFunctions = {
       id: newTransactionId,
       accountid: recurring.sourceaccountid,
       amount: recurring.amount || 0,
-      categoryid: recurring.categoryid || '',
+      categoryid: recurring.categoryid || "",
       createdat: new Date().toISOString(),
-      createdby: recurring.createdby || 'system',
+      createdby: recurring.createdby || "system",
       date: recurring.nextoccurrencedate,
       description: recurring.description || null,
       isdeleted: false,
@@ -1168,30 +1133,27 @@ export const mockDatabaseFunctions = {
 
     // Parse recurrence rule (basic implementation)
     const rule = recurring.recurrencerule;
-    if (rule.includes('FREQ=MONTHLY')) {
-      const interval = rule.includes('INTERVAL=') ? 
-        parseInt(rule.split('INTERVAL=')[1].split(';')[0]) : 1;
+    if (rule.includes("FREQ=MONTHLY")) {
+      const interval = rule.includes("INTERVAL=") ? parseInt(rule.split("INTERVAL=")[1].split(";")[0]) : 1;
       nextDate = new Date(currentDate);
       nextDate.setMonth(nextDate.getMonth() + interval);
-    } else if (rule.includes('FREQ=WEEKLY')) {
-      const interval = rule.includes('INTERVAL=') ? 
-        parseInt(rule.split('INTERVAL=')[1].split(';')[0]) : 1;
+    } else if (rule.includes("FREQ=WEEKLY")) {
+      const interval = rule.includes("INTERVAL=") ? parseInt(rule.split("INTERVAL=")[1].split(";")[0]) : 1;
       nextDate = new Date(currentDate);
-      nextDate.setDate(nextDate.getDate() + (7 * interval));
-    } else if (rule.includes('FREQ=DAILY')) {
-      const interval = rule.includes('INTERVAL=') ? 
-        parseInt(rule.split('INTERVAL=')[1].split(';')[0]) : 1;
+      nextDate.setDate(nextDate.getDate() + 7 * interval);
+    } else if (rule.includes("FREQ=DAILY")) {
+      const interval = rule.includes("INTERVAL=") ? parseInt(rule.split("INTERVAL=")[1].split(";")[0]) : 1;
       nextDate = new Date(currentDate);
       nextDate.setDate(nextDate.getDate() + interval);
     } else {
-      throw new Error('Unsupported recurrence rule');
+      throw new Error("Unsupported recurrence rule");
     }
 
     // Update recurring
     const recurringIndex = recurrings.findIndex(rec => rec.id === recurringId);
     recurrings[recurringIndex].lastexecutedat = recurring.nextoccurrencedate;
-    recurrings[recurringIndex].nextoccurrencedate = nextDate.toISOString().split('T')[0];
-    
+    recurrings[recurringIndex].nextoccurrencedate = nextDate.toISOString().split("T")[0];
+
     // Check if recurring should be deactivated
     if (recurring.enddate && nextDate > new Date(recurring.enddate)) {
       recurrings[recurringIndex].isactive = false;
