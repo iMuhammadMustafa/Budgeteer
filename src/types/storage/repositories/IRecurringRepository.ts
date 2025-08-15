@@ -1,15 +1,11 @@
-import { Recurring, Inserts, Updates } from '@/src/types/db/Tables.Types';
-import { TableNames } from '@/src/types/db/TableNames';
+import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
 
 // Define the parameter types used in the actual implementation
 type ListRecurringsParams = {
   tenantId: string;
   filters?: any;
 };
-
-type Inserts<TableNames.Recurrings> = Inserts<TableNames.Recurrings>;
-type Updates<TableNames.Recurrings> = Updates<TableNames.Recurrings>;
-
 /**
  * Repository interface for Recurring entity operations
  * All storage implementations must implement this interface

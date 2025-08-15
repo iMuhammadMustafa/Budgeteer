@@ -49,11 +49,11 @@ const getStatsDailyTransactionsHelper = async (
     const today = dayjs().format("ddd");
     const thisWeekData = data
       .filter(
-        item =>
+        (item: any) =>
           dayjs(item.date).local() >= dayjs().startOf("week").local() &&
           dayjs(item.date).local() <= dayjs().endOf("week").local(),
       )
-      .map(item => {
+      .map((item: any) => {
         const x = dayjs(item.date).format("ddd");
         const y = Math.abs(item.sum ?? 0);
         const color = (item.sum ?? 0) > 0 ? "rgba(76, 175, 80, 0.6)" : "rgba(244, 67, 54, 0.6)";
@@ -62,7 +62,7 @@ const getStatsDailyTransactionsHelper = async (
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     barsData = daysOfWeek.map(day => {
-      const dayData = thisWeekData.find(x => x.x === day);
+      const dayData = thisWeekData.find((x: any) => x.x === day);
       const x = today === day ? "Today" : day;
       return {
         x,
@@ -72,7 +72,7 @@ const getStatsDailyTransactionsHelper = async (
     });
   }
 
-  const calendarData: MyCalendarData = data.reduce((acc: MyCalendarData, item) => {
+  const calendarData: MyCalendarData = data.reduce((acc: MyCalendarData, item: any) => {
     const day = dayjs(item.date).format("YYYY-MM-DD");
     const dots = acc[day]?.dots ?? [];
     const dotColor = item.type === "Income" ? "green" : item.type === "Expense" ? "red" : "teal";
@@ -127,7 +127,7 @@ items =
       incomeSum: number;
     };
   };
-  const items = data.reduce((acc: Item, item) => {
+  const items = data.reduce((acc: Item, item: any) => {
     let month = dayjs(item.date).format("MMM");
     let income = item.type === "Income" ? (item.sum ?? 0) : 0;
     let expense = item.type === "Expense" ? (item.sum ?? 0) : 0;
@@ -208,7 +208,7 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
   const groupsMap = new Map<string, { sum: number; name: string }>();
   const categoriesMap = new Map<string, { sum: number; name: string }>();
 
-  data.forEach(item => {
+  data.forEach((item: any) => {
     if (item.groupid && item.sum && item.groupname) {
       const currentData = groupsMap.get(item.groupid) || { sum: 0, name: item.groupname };
       groupsMap.set(item.groupid, {
@@ -281,7 +281,7 @@ const getStatsNetWorthGrowthHelper = async (
   endDate: string,
 ): Promise<LineChartPoint[]> => {
   const data = await getStatsNetWorthGrowth(tenantId, startDate, endDate);
-  return data.map(item => ({
+  return data.map((item: any) => ({
     x: dayjs(item.month).format("MMM"),
     y: item.total_net_worth ?? 0,
   }));

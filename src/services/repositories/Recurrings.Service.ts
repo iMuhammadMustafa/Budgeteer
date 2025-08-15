@@ -8,8 +8,6 @@ import {
   updateRecurring,
   deleteRecurring,
   // applyRecurringTransaction, // Removed as logic moves to repository
-  Inserts<TableNames.Recurrings>,
-  Updates<TableNames.Recurrings>,
 } from "../apis/Recurrings.repository";
 // Import createTransaction from Transactions.api
 import { createTransaction } from "../apis/Transactions.repository";

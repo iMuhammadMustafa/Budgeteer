@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FlatList, Platform, Pressable, ScrollView, Text, View, Modal } from "react-native";
 
 import MyIcon from "@/src/utils/Icons.Helper";
-import { Account, TransactionCategory, TransactionGroup } from "../types/db/Tables.Types";
+import { Account, TransactionCategory, TransactionCategoryAndGroup, TransactionGroup } from "../types/db/Tables.Types";
 import {
   DropDownProps,
   ListContainerProps,
