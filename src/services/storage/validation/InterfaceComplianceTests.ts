@@ -1,12 +1,12 @@
 /**
  * Interface Compliance Test Suite
- * 
+ *
  * This module provides comprehensive interface compliance testing to ensure
  * all storage implementations (Supabase, Mock, Local) implement the same interfaces
  * with identical method signatures and behavior.
  */
 
-import { ProviderRegistry, EntityType, StorageMode } from '../types';
+import { ProviderRegistry, EntityType, StorageMode } from "../types";
 
 export interface InterfaceComplianceReport {
   mode: StorageMode;
@@ -32,7 +32,7 @@ export interface InterfaceComplianceResult {
 export interface InterfaceViolation {
   entityType: EntityType;
   method: string;
-  violationType: 'missing' | 'extra' | 'signature_mismatch';
+  violationType: "missing" | "extra" | "signature_mismatch";
   expected?: string;
   actual?: string;
   details: string;
@@ -64,20 +64,17 @@ export class InterfaceComplianceTests {
   /**
    * Test interface compliance for all providers
    */
-  async testCompliance(
-    providers: ProviderRegistry,
-    mode: StorageMode
-  ): Promise<InterfaceComplianceReport> {
+  async testCompliance(providers: ProviderRegistry, mode: StorageMode): Promise<InterfaceComplianceReport> {
     const report: InterfaceComplianceReport = {
       mode,
       timestamp: new Date().toISOString(),
       summary: {
         totalInterfaces: 0,
         compliantInterfaces: 0,
-        nonCompliantInterfaces: 0
+        nonCompliantInterfaces: 0,
       },
       results: [],
-      violations: []
+      violations: [],
     };
 
     console.log(`Testing interface compliance for ${mode} mode...`);
@@ -86,26 +83,26 @@ export class InterfaceComplianceTests {
     for (const entityType of Object.keys(providers) as EntityType[]) {
       const provider = providers[entityType];
       const result = await this.testProviderCompliance(provider, entityType);
-      
+
       report.results.push(result);
-      
+
       if (!result.isCompliant) {
         // Add violations for this provider
         for (const missingMethod of result.missingMethods) {
           report.violations.push({
             entityType,
             method: missingMethod,
-            violationType: 'missing',
-            details: `Required method '${missingMethod}' is not implemented`
+            violationType: "missing",
+            details: `Required method '${missingMethod}' is not implemented`,
           });
         }
-        
+
         for (const extraMethod of result.extraMethods) {
           report.violations.push({
             entityType,
             method: extraMethod,
-            violationType: 'extra',
-            details: `Unexpected method '${extraMethod}' found in implementation`
+            violationType: "extra",
+            details: `Unexpected method '${extraMethod}' found in implementation`,
           });
         }
       }
@@ -123,23 +120,18 @@ export class InterfaceComplianceTests {
   /**
    * Test compliance for a single provider
    */
-  private async testProviderCompliance(
-    provider: any,
-    entityType: EntityType
-  ): Promise<InterfaceComplianceResult> {
+  private async testProviderCompliance(provider: any, entityType: EntityType): Promise<InterfaceComplianceResult> {
     const expectedMethods = this.expectedInterfaces[entityType] || [];
     const requiredMethodNames = expectedMethods.map(m => m.name);
-    
+
     // Get all methods from the provider
     const implementedMethods = this.getProviderMethods(provider);
-    
+
     // Find missing and extra methods
-    const missingMethods = requiredMethodNames.filter(
-      method => !implementedMethods.includes(method)
-    );
-    
+    const missingMethods = requiredMethodNames.filter(method => !implementedMethods.includes(method));
+
     const extraMethods = implementedMethods.filter(
-      method => !requiredMethodNames.includes(method) && !this.isUtilityMethod(method)
+      method => !requiredMethodNames.includes(method) && !this.isUtilityMethod(method),
     );
 
     const isCompliant = missingMethods.length === 0 && extraMethods.length === 0;
@@ -150,7 +142,7 @@ export class InterfaceComplianceTests {
       requiredMethods: requiredMethodNames,
       implementedMethods,
       missingMethods,
-      extraMethods
+      extraMethods,
     };
   }
 
@@ -159,25 +151,25 @@ export class InterfaceComplianceTests {
    */
   private getProviderMethods(provider: any): string[] {
     const methods: string[] = [];
-    
+
     // Handle null/undefined providers
-    if (!provider || typeof provider !== 'object') {
+    if (!provider || typeof provider !== "object") {
       return methods;
     }
-    
+
     // Get methods from the provider object
     for (const prop in provider) {
-      if (typeof provider[prop] === 'function') {
+      if (typeof provider[prop] === "function") {
         methods.push(prop);
       }
     }
-    
+
     // Get methods from the prototype
     try {
       const prototype = Object.getPrototypeOf(provider);
       if (prototype && prototype !== Object.prototype) {
         for (const prop of Object.getOwnPropertyNames(prototype)) {
-          if (prop !== 'constructor' && typeof provider[prop] === 'function') {
+          if (prop !== "constructor" && typeof provider[prop] === "function") {
             methods.push(prop);
           }
         }
@@ -185,7 +177,7 @@ export class InterfaceComplianceTests {
     } catch (error) {
       // Ignore prototype access errors
     }
-    
+
     return [...new Set(methods)]; // Remove duplicates
   }
 
@@ -194,16 +186,16 @@ export class InterfaceComplianceTests {
    */
   private isUtilityMethod(methodName: string): boolean {
     const utilityMethods = [
-      'constructor',
-      'toString',
-      'valueOf',
-      'hasOwnProperty',
-      'isPrototypeOf',
-      'propertyIsEnumerable',
-      'toLocaleString'
+      "constructor",
+      "toString",
+      "valueOf",
+      "hasOwnProperty",
+      "isPrototypeOf",
+      "propertyIsEnumerable",
+      "toLocaleString",
     ];
-    
-    return utilityMethods.includes(methodName) || methodName.startsWith('_');
+
+    return utilityMethods.includes(methodName) || methodName.startsWith("_");
   }
 
   /**
@@ -213,474 +205,483 @@ export class InterfaceComplianceTests {
     return {
       accounts: [
         {
-          name: 'getAllAccounts',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllAccounts",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getAccountById',
+          name: "getAccountById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createAccount',
-          parameters: [{ name: 'account', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createAccount",
+          parameters: [{ name: "account", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateAccount',
-          parameters: [{ name: 'account', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateAccount",
+          parameters: [{ name: "account", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteAccount',
+          name: "deleteAccount",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreAccount',
+          name: "restoreAccount",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateAccountBalance',
+          name: "updateAccountBalance",
           parameters: [
-            { name: 'accountid', type: 'string', optional: false },
-            { name: 'amount', type: 'number', optional: false }
+            { name: "accountid", type: "string", optional: false },
+            { name: "amount", type: "number", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getAccountOpenedTransaction',
+          name: "getAccountOpenedTransaction",
           parameters: [
-            { name: 'accountid', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "accountid", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getTotalAccountBalance',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<{ totalbalance: number } | null>',
-          isAsync: true
-        }
+          name: "getTotalAccountBalance",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<{ totalbalance: number } | null>",
+          isAsync: true,
+        },
       ],
       accountCategories: [
         {
-          name: 'getAllAccountCategories',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllAccountCategories",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getAccountCategoryById',
+          name: "getAccountCategoryById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createAccountCategory',
-          parameters: [{ name: 'category', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createAccountCategory",
+          parameters: [{ name: "category", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateAccountCategory',
-          parameters: [{ name: 'category', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateAccountCategory",
+          parameters: [{ name: "category", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteAccountCategory',
+          name: "deleteAccountCategory",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreAccountCategory',
+          name: "restoreAccountCategory",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
       ],
       transactions: [
         {
-          name: 'getAllTransactions',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllTransactions",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getTransactions',
+          name: "getTransactions",
           parameters: [
-            { name: 'searchFilters', type: 'any', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "searchFilters", type: "any", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionFullyById',
+          name: "getTransactionFullyById",
           parameters: [
-            { name: 'transactionid', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "transactionid", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionById',
+          name: "getTransactionById",
           parameters: [
-            { name: 'transactionid', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "transactionid", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionByTransferId',
+          name: "getTransactionByTransferId",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionsByName',
+          name: "getTransactionsByName",
           parameters: [
-            { name: 'text', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "text", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'createTransaction',
-          parameters: [{ name: 'transaction', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createTransaction",
+          parameters: [{ name: "transaction", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'createTransactions',
-          parameters: [{ name: 'transactions', type: 'any[]', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "createTransactions",
+          parameters: [{ name: "transactions", type: "any[]", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'createMultipleTransactions',
-          parameters: [{ name: 'transactions', type: 'any[]', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "createMultipleTransactions",
+          parameters: [{ name: "transactions", type: "any[]", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'updateTransaction',
-          parameters: [{ name: 'transaction', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateTransaction",
+          parameters: [{ name: "transaction", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateTransferTransaction',
-          parameters: [{ name: 'transaction', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateTransferTransaction",
+          parameters: [{ name: "transaction", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteTransaction',
+          name: "deleteTransaction",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreTransaction',
+          name: "restoreTransaction",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
       ],
       transactionCategories: [
         {
-          name: 'getAllTransactionCategories',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllTransactionCategories",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionCategoryById',
+          name: "getTransactionCategoryById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createTransactionCategory',
-          parameters: [{ name: 'category', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createTransactionCategory",
+          parameters: [{ name: "category", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateTransactionCategory',
-          parameters: [{ name: 'category', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateTransactionCategory",
+          parameters: [{ name: "category", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteTransactionCategory',
+          name: "deleteTransactionCategory",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreTransactionCategory',
+          name: "restoreTransactionCategory",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
+        {
+          name: "getTransactionCategoriesByGroup",
+          parameters: [
+            { name: "tenantId", type: "string", optional: false },
+            { name: "groupId", type: "string", optional: false },
+          ],
+          returnType: "Promise<any[]>",
+          isAsync: true,
+        },
       ],
       transactionGroups: [
         {
-          name: 'getAllTransactionGroups',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllTransactionGroups",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getTransactionGroupById',
+          name: "getTransactionGroupById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createTransactionGroup',
-          parameters: [{ name: 'group', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createTransactionGroup",
+          parameters: [{ name: "group", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateTransactionGroup',
-          parameters: [{ name: 'group', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateTransactionGroup",
+          parameters: [{ name: "group", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteTransactionGroup',
+          name: "deleteTransactionGroup",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreTransactionGroup',
+          name: "restoreTransactionGroup",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
       ],
       configurations: [
         {
-          name: 'getAllConfigurations',
-          parameters: [{ name: 'tenantId', type: 'string', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "getAllConfigurations",
+          parameters: [{ name: "tenantId", type: "string", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getConfigurationById',
+          name: "getConfigurationById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'getConfiguration',
+          name: "getConfiguration",
           parameters: [
-            { name: 'table', type: 'string', optional: false },
-            { name: 'type', type: 'string', optional: false },
-            { name: 'key', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "table", type: "string", optional: false },
+            { name: "type", type: "string", optional: false },
+            { name: "key", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createConfiguration',
-          parameters: [{ name: 'config', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "createConfiguration",
+          parameters: [{ name: "config", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateConfiguration',
-          parameters: [{ name: 'config', type: 'any', optional: false }],
-          returnType: 'Promise<any>',
-          isAsync: true
+          name: "updateConfiguration",
+          parameters: [{ name: "config", type: "any", optional: false }],
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteConfiguration',
+          name: "deleteConfiguration",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'restoreConfiguration',
+          name: "restoreConfiguration",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
       ],
       recurrings: [
         {
-          name: 'listRecurrings',
-          parameters: [{ name: 'params', type: '{ tenantId: string; filters?: any }', optional: false }],
-          returnType: 'Promise<any[]>',
-          isAsync: true
+          name: "listRecurrings",
+          parameters: [{ name: "params", type: "{ tenantId: string; filters?: any }", optional: false }],
+          returnType: "Promise<any[]>",
+          isAsync: true,
         },
         {
-          name: 'getRecurringById',
+          name: "getRecurringById",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any | null>',
-          isAsync: true
+          returnType: "Promise<any | null>",
+          isAsync: true,
         },
         {
-          name: 'createRecurring',
+          name: "createRecurring",
           parameters: [
-            { name: 'recurringData', type: 'any', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "recurringData", type: "any", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'updateRecurring',
+          name: "updateRecurring",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'recurringData', type: 'any', optional: false },
-            { name: 'tenantId', type: 'string', optional: false }
+            { name: "id", type: "string", optional: false },
+            { name: "recurringData", type: "any", optional: false },
+            { name: "tenantId", type: "string", optional: false },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'deleteRecurring',
+          name: "deleteRecurring",
           parameters: [
-            { name: 'id', type: 'string', optional: false },
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'userId', type: 'string', optional: true }
+            { name: "id", type: "string", optional: false },
+            { name: "tenantId", type: "string", optional: false },
+            { name: "userId", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
       ],
       stats: [
         {
-          name: 'getStatsDailyTransactions',
+          name: "getStatsDailyTransactions",
           parameters: [
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'startDate', type: 'string', optional: true },
-            { name: 'endDate', type: 'string', optional: true },
-            { name: 'type', type: 'any', optional: true }
+            { name: "tenantId", type: "string", optional: false },
+            { name: "startDate", type: "string", optional: true },
+            { name: "endDate", type: "string", optional: true },
+            { name: "type", type: "any", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getStatsMonthlyTransactionsTypes',
+          name: "getStatsMonthlyTransactionsTypes",
           parameters: [
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'startDate', type: 'string', optional: true },
-            { name: 'endDate', type: 'string', optional: true }
+            { name: "tenantId", type: "string", optional: false },
+            { name: "startDate", type: "string", optional: true },
+            { name: "endDate", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getStatsMonthlyCategoriesTransactions',
+          name: "getStatsMonthlyCategoriesTransactions",
           parameters: [
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'startDate', type: 'string', optional: true },
-            { name: 'endDate', type: 'string', optional: true }
+            { name: "tenantId", type: "string", optional: false },
+            { name: "startDate", type: "string", optional: true },
+            { name: "endDate", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getStatsMonthlyAccountsTransactions',
+          name: "getStatsMonthlyAccountsTransactions",
           parameters: [
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'startDate', type: 'string', optional: true },
-            { name: 'endDate', type: 'string', optional: true }
+            { name: "tenantId", type: "string", optional: false },
+            { name: "startDate", type: "string", optional: true },
+            { name: "endDate", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
+          returnType: "Promise<any>",
+          isAsync: true,
         },
         {
-          name: 'getStatsNetWorthGrowth',
+          name: "getStatsNetWorthGrowth",
           parameters: [
-            { name: 'tenantId', type: 'string', optional: false },
-            { name: 'startDate', type: 'string', optional: true },
-            { name: 'endDate', type: 'string', optional: true }
+            { name: "tenantId", type: "string", optional: false },
+            { name: "startDate", type: "string", optional: true },
+            { name: "endDate", type: "string", optional: true },
           ],
-          returnType: 'Promise<any>',
-          isAsync: true
-        }
-      ]
+          returnType: "Promise<any>",
+          isAsync: true,
+        },
+      ],
     };
   }
 
@@ -688,11 +689,11 @@ export class InterfaceComplianceTests {
    * Generate a detailed compliance report
    */
   generateComplianceReport(reports: InterfaceComplianceReport[]): string {
-    let report = '# Interface Compliance Report\n\n';
+    let report = "# Interface Compliance Report\n\n";
     report += `Generated: ${new Date().toISOString()}\n\n`;
 
     // Summary section
-    report += '## Summary\n\n';
+    report += "## Summary\n\n";
     for (const modeReport of reports) {
       const complianceRate = (modeReport.summary.compliantInterfaces / modeReport.summary.totalInterfaces) * 100;
       report += `### ${modeReport.mode.toUpperCase()} Mode\n`;
@@ -703,38 +704,38 @@ export class InterfaceComplianceTests {
     }
 
     // Detailed results
-    report += '## Detailed Results\n\n';
+    report += "## Detailed Results\n\n";
     const entityTypes = Object.keys(this.expectedInterfaces) as EntityType[];
-    
+
     for (const entityType of entityTypes) {
       report += `### ${entityType}\n\n`;
-      report += '| Mode | Status | Missing Methods | Extra Methods |\n';
-      report += '|------|--------|----------------|---------------|\n';
-      
+      report += "| Mode | Status | Missing Methods | Extra Methods |\n";
+      report += "|------|--------|----------------|---------------|\n";
+
       for (const modeReport of reports) {
         const result = modeReport.results.find(r => r.entityType === entityType);
         if (result) {
-          const status = result.isCompliant ? '✅ Compliant' : '❌ Non-Compliant';
-          const missing = result.missingMethods.length > 0 ? result.missingMethods.join(', ') : 'None';
-          const extra = result.extraMethods.length > 0 ? result.extraMethods.join(', ') : 'None';
-          
+          const status = result.isCompliant ? "✅ Compliant" : "❌ Non-Compliant";
+          const missing = result.missingMethods.length > 0 ? result.missingMethods.join(", ") : "None";
+          const extra = result.extraMethods.length > 0 ? result.extraMethods.join(", ") : "None";
+
           report += `| ${modeReport.mode} | ${status} | ${missing} | ${extra} |\n`;
         }
       }
-      report += '\n';
+      report += "\n";
     }
 
     // Violations section
     const hasViolations = reports.some(r => r.violations.length > 0);
     if (hasViolations) {
-      report += '## Violations\n\n';
+      report += "## Violations\n\n";
       for (const modeReport of reports) {
         if (modeReport.violations.length > 0) {
           report += `### ${modeReport.mode.toUpperCase()} Mode Violations\n\n`;
           for (const violation of modeReport.violations) {
             report += `- **${violation.entityType}.${violation.method}** (${violation.violationType}): ${violation.details}\n`;
           }
-          report += '\n';
+          report += "\n";
         }
       }
     }

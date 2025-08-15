@@ -91,7 +91,7 @@ export class ProviderFactory {
   private createAccountCategoryProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return AccountCategoriesSupabase;
+        return AccountCategoriesSupabase.supabaseAccountCategoryProvider;
       case "demo":
         return AccountCategoriesMock;
       case "local":
@@ -104,7 +104,7 @@ export class ProviderFactory {
   private createTransactionProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return TransactionsSupabase;
+        return TransactionsSupabase.supabaseTransactionProvider;
       case "demo":
         return TransactionsMock;
       case "local":
@@ -143,7 +143,7 @@ export class ProviderFactory {
   private createConfigurationProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return ConfigurationsSupabase;
+        return ConfigurationsSupabase.supabaseConfigurationProvider;
       case "demo":
         return ConfigurationsMock;
       case "local":
@@ -156,7 +156,7 @@ export class ProviderFactory {
   private createRecurringProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return RecurringsSupabase;
+        return RecurringsSupabase.supabaseRecurringProvider;
       case "demo":
         return RecurringsMock;
       case "local":
@@ -169,7 +169,7 @@ export class ProviderFactory {
   private createStatsProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return StatsSupabase;
+        return StatsSupabase.supabaseStatsProvider;
       case "demo":
         return StatsMock;
       case "local":

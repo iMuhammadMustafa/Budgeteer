@@ -23,7 +23,6 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-// import { Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings> } from "@/src/services/apis/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 // Get repository manager instance
