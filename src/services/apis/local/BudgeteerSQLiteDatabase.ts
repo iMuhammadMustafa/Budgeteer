@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Database } from '@/src/types/db/database.types';
+import { Database } from '../../../types/db/database.types';
 
 // Type definitions for our local database tables (same as IndexedDB)
 export type LocalAccount = Database['public']['Tables']['accounts']['Row'];

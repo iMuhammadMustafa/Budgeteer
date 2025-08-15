@@ -1,6 +1,7 @@
-import { IAccountCategoryProvider, StorageError } from '../../storage/types';
+import { IAccountCategoryProvider, StorageError, StorageErrorCode } from '../../storage/types';
 import { sqliteDb, LocalAccountCategory } from './BudgeteerSQLiteDatabase';
-import { Database } from '@/src/types/db/database.types';
+import { Database } from '../../../types/db/database.types';
+import { SQLiteErrorMapper } from './SQLiteErrorMapper';
 import { v4 as uuidv4 } from 'uuid';
 
 type AccountCategoryInsert = Database['public']['Tables']['accountcategories']['Insert'];
@@ -21,7 +22,7 @@ export class SQLiteAccountCategoryProvider implements IAccountCategoryProvider {
       return categories;
     } catch (error) {
       console.error('Error getting all account categories:', error);
-      throw new StorageError('Failed to get account categories', 'GET_ACCOUNT_CATEGORIES_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getAllAccountCategories', 'SELECT');
     }
   }
 
@@ -35,12 +36,21 @@ export class SQLiteAccountCategoryProvider implements IAccountCategoryProvider {
       return category;
     } catch (error) {
       console.error('Error getting account category by id:', error);
-      throw new StorageError('Failed to get account category', 'GET_ACCOUNT_CATEGORY_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getAccountCategoryById', 'SELECT');
     }
   }
 
   async createAccountCategory(categoryData: AccountCategoryInsert): Promise<LocalAccountCategory> {
     try {
+      // Validate required fields
+      if (!categoryData.name) {
+        throw new StorageError(
+          'Account category name is required',
+          StorageErrorCode.MISSING_REQUIRED_FIELD,
+          { field: 'name', table: 'accountcategories' }
+        );
+      }
+
       const category: LocalAccountCategory = {
         id: categoryData.id || uuidv4(),
         tenantid: categoryData.tenantid || '',
@@ -72,7 +82,10 @@ export class SQLiteAccountCategoryProvider implements IAccountCategoryProvider {
       return category;
     } catch (error) {
       console.error('Error creating account category:', error);
-      throw new StorageError('Failed to create account category', 'CREATE_ACCOUNT_CATEGORY_ERROR', error);
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw SQLiteErrorMapper.mapError(error, 'createAccountCategory', 'INSERT');
     }
   }
 

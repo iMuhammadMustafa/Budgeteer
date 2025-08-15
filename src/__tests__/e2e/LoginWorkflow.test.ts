@@ -139,6 +139,15 @@ describe("Login Workflow End-to-End Tests", () => {
       const accountProvider = mockDIContainer.getProvider("accounts");
       const accountCategoryProvider = mockDIContainer.getProvider("accountCategories");
 
+
+      if(!accountProvider || !accountCategoryProvider){
+        throw Error("Mock Objects weren't created correctly");
+      }
+      if(!accountCategoryProvider.createAccountCategory){
+        throw new Error("Mock Object Weren't created Correctly ")
+      }
+
+
       // Create category
       const category = await accountCategoryProvider.createAccountCategory({
         id: "test-category",
@@ -147,6 +156,13 @@ describe("Login Workflow End-to-End Tests", () => {
         type: "asset",
       });
       expect(category).toEqual({ id: "test-category" });
+
+      if(!accountProvider || !accountCategoryProvider){
+        throw Error("Mock Objects weren't created correctly");
+      }
+      if(!accountProvider.createAccount || !accountProvider.getAllAccounts){
+        throw new Error("Mock Object Weren't created Correctly ")
+      }
 
       // Create account
       const account = await accountProvider.createAccount({
@@ -158,7 +174,7 @@ describe("Login Workflow End-to-End Tests", () => {
       expect(account).toEqual({ id: "test-account" });
 
       // Get accounts
-      const accounts = await accountProvider.getAllAccounts("test-tenant");
+      const accounts = await accountProvider.getAllAccounts();
       expect(accounts).toEqual([]);
     });
 
@@ -188,6 +204,12 @@ describe("Login Workflow End-to-End Tests", () => {
       const accountProvider = mockDIContainer.getProvider("accounts");
       const accountCategoryProvider = mockDIContainer.getProvider("accountCategories");
 
+      if(!accountProvider || !accountCategoryProvider){
+        throw Error("Mock Objects weren't created correctly");
+      }
+      if(!accountCategoryProvider.createAccountCategory || !accountProvider.getAllAccounts){
+        throw new Error("Mock Object Weren't created Correctly ")
+      }
       // Create category in local storage
       const category = await accountCategoryProvider.createAccountCategory({
         id: "local-category",
@@ -247,20 +269,28 @@ describe("Login Workflow End-to-End Tests", () => {
         }),
       };
 
+      
       // Test demo mode data
       await storageModeManager.setMode(StorageMode.Demo);
       const accountProvider = mockDIContainer.getProvider("accounts");
-      const demoAccounts = await accountProvider.getAllAccounts("test-tenant");
+
+      if(!accountProvider){
+        throw Error("Mock Objects weren't created correctly");
+      }
+      if( !accountProvider.getAllAccounts){
+        throw new Error("Mock Object Weren't created Correctly ")
+      }
+      const demoAccounts = await accountProvider.getAllAccounts();
       expect(demoAccounts).toEqual(mockDemoData);
 
       // Test local mode data
       await storageModeManager.setMode(StorageMode.Local);
-      const localAccounts = await accountProvider.getAllAccounts("test-tenant");
+      const localAccounts = await accountProvider.getAllAccounts();
       expect(localAccounts).toEqual(mockLocalData);
 
       // Switch back to demo and verify data persistence
       await storageModeManager.setMode(StorageMode.Demo);
-      const demoAccountsAgain = await accountProvider.getAllAccounts("test-tenant");
+      const demoAccountsAgain = await accountProvider.getAllAccounts();
       expect(demoAccountsAgain).toEqual(mockDemoData);
     });
   });

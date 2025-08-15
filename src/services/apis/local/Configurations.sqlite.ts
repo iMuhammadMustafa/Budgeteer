@@ -1,6 +1,7 @@
-import { IConfigurationProvider, StorageError } from '../../storage/types';
+import { IConfigurationProvider, StorageError, StorageErrorCode } from '../../storage/types';
 import { sqliteDb, LocalConfiguration } from './BudgeteerSQLiteDatabase';
-import { Database } from '@/src/types/db/database.types';
+import { Database } from '../../../types/db/database.types';
+import { SQLiteErrorMapper } from './SQLiteErrorMapper';
 import { v4 as uuidv4 } from 'uuid';
 
 type ConfigurationInsert = Database['public']['Tables']['configurations']['Insert'];
@@ -25,7 +26,7 @@ export class SQLiteConfigurationProvider implements IConfigurationProvider {
       })) as LocalConfiguration[];
     } catch (error) {
       console.error('Error getting all configurations:', error);
-      throw new StorageError('Failed to get configurations', 'GET_CONFIGURATIONS_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getAllConfigurations', 'SELECT');
     }
   }
 
@@ -44,7 +45,26 @@ export class SQLiteConfigurationProvider implements IConfigurationProvider {
       return configuration as LocalConfiguration | null;
     } catch (error) {
       console.error('Error getting configuration by id:', error);
-      throw new StorageError('Failed to get configuration', 'GET_CONFIGURATION_ERROR', error);
+      throw SQLiteErrorMapper.mapError(error, 'getConfigurationById', 'SELECT');
+    }
+  }
+
+  async getConfiguration(table: string, type: string, key: string, tenantId: string): Promise<LocalConfiguration | null> {
+    try {
+      const configuration = await this.db.getFirstAsync(
+        'SELECT * FROM configurations WHERE "table" = ? AND type = ? AND key = ? AND tenantid = ? AND isdeleted = 0',
+        [table, type, key, tenantId]
+      ) as any | null;
+      
+      if (configuration) {
+        // Map table_name back to table for compatibility
+        configuration.table = configuration.table_name;
+      }
+      
+      return configuration as LocalConfiguration | null;
+    } catch (error) {
+      console.error('Error getting configuration:', error);
+      throw SQLiteErrorMapper.mapError(error, 'getConfiguration', 'SELECT');
     }
   }
 

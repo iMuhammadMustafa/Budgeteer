@@ -1,6 +1,7 @@
-import { ITransactionGroupProvider, StorageError } from '../../storage/types';
+import { ITransactionGroupProvider, StorageError, StorageErrorCode } from '../../storage/types';
 import { sqliteDb, LocalTransactionGroup } from './BudgeteerSQLiteDatabase';
-import { Database } from '@/src/types/db/database.types';
+import { Database } from '../../../types/db/database.types';
+import { SQLiteErrorMapper } from './SQLiteErrorMapper';
 import { v4 as uuidv4 } from 'uuid';
 
 type TransactionGroupInsert = Database['public']['Tables']['transactiongroups']['Insert'];
