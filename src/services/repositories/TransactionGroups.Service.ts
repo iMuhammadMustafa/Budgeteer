@@ -2,17 +2,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createTransactionGroup,
-  deleteTransactionGroup,
-  getTransactionGroupById,
-  getAllTransactionGroups,
-  restoreTransactionGroup,
-  updateTransactionGroup,
-} from "../apis/TransactionGroups.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
+
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
+const transactionGroupRepository = repositoryManager.getTransactionGroupRepository();
 
 export const useGetTransactionGroups = () => {
   const { session } = useAuth();
@@ -21,7 +18,7 @@ export const useGetTransactionGroups = () => {
     queryKey: [TableNames.TransactionGroups, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactionGroups(tenantId);
+      return transactionGroupRepository.getAllTransactionGroups(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -30,12 +27,12 @@ export const useGetTransactionGroups = () => {
 export const useGetTransactionGroupById = (id?: string) => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionGroup>({
+  return useQuery<TransactionGroup | null>({
     queryKey: [TableNames.TransactionGroups, id, tenantId],
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionGroupById(id, tenantId);
+      return transactionGroupRepository.getTransactionGroupById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -108,7 +105,7 @@ export const useDeleteTransactionGroup = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await deleteTransactionGroup(id, userId);
+      return await transactionGroupRepository.deleteTransactionGroup(id, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
@@ -123,7 +120,7 @@ export const useRestoreTransactionGroup = (id?: string) => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await restoreTransactionGroup(id, userId);
+      return await transactionGroupRepository.restoreTransactionGroup(id, userId);
     },
     onSuccess: async id => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] })]);
@@ -142,7 +139,7 @@ const createTransactionGroupHelper = async (
   formTransactionGroup.createdby = userId;
   formTransactionGroup.tenantid = tenantid;
 
-  const newTransactionGroup = await createTransactionGroup(formTransactionGroup);
+  const newTransactionGroup = await transactionGroupRepository.createTransactionGroup(formTransactionGroup);
 
   return newTransactionGroup;
 };
@@ -156,7 +153,7 @@ const updateTransactionGroupHelper = async (
   formTransactionGroup.updatedby = userId;
   formTransactionGroup.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedTransactionGroup = await updateTransactionGroup(formTransactionGroup);
+  const updatedTransactionGroup = await transactionGroupRepository.updateTransactionGroup(formTransactionGroup);
 
   return updatedTransactionGroup;
 };

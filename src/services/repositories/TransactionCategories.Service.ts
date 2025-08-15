@@ -1,27 +1,24 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { TransactionCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TransactionCategory, TransactionCategoryAndGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createTransactionCategory,
-  deleteTransactionCategory,
-  getTransactionCategoryById,
-  getAllTransactionCategories,
-  restoreTransactionCategory,
-  updateTransactionCategory,
-} from "../apis/TransactionCategories.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 
+// Initialize repository manager and get transaction category repository
+const repositoryManager = RepositoryManager.getInstance();
+const transactionCategoryRepository = repositoryManager.getTransactionCategoryRepository();
+
 export const useGetTransactionCategories = () => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionCategory[]>({
+  return useQuery<TransactionCategoryAndGroup[]>({
     queryKey: [TableNames.TransactionCategories, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactionCategories(tenantId);
+      return transactionCategoryRepository.getAllTransactionCategories(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -30,12 +27,12 @@ export const useGetTransactionCategories = () => {
 export const useGetTransactionCategoryById = (id?: string) => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionCategory>({
+  return useQuery<TransactionCategory | null>({
     queryKey: [TableNames.TransactionCategories, id, tenantId],
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionCategoryById(id, tenantId);
+      return transactionCategoryRepository.getTransactionCategoryById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -108,7 +105,7 @@ export const useDeleteTransactionCategory = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await deleteTransactionCategory(id, userId);
+      return await transactionCategoryRepository.deleteTransactionCategory(id, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] });
@@ -123,7 +120,7 @@ export const useRestoreTransactionCategory = (id?: string) => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await restoreTransactionCategory(id, userId);
+      return await transactionCategoryRepository.restoreTransactionCategory(id, userId);
     },
     onSuccess: async id => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] })]);
@@ -142,7 +139,7 @@ const createTransactionCategoryHelper = async (
   formTransactionCategory.createdby = userId;
   formTransactionCategory.tenantid = tenantid;
 
-  const newTransactionCategory = await createTransactionCategory(formTransactionCategory);
+  const newTransactionCategory = await transactionCategoryRepository.createTransactionCategory(formTransactionCategory);
 
   return newTransactionCategory;
 };
@@ -156,7 +153,8 @@ const updateTransactionCategoryHelper = async (
   formTransactionCategory.updatedby = userId;
   formTransactionCategory.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedTransactionCategory = await updateTransactionCategory(formTransactionCategory);
+  const updatedTransactionCategory =
+    await transactionCategoryRepository.updateTransactionCategory(formTransactionCategory);
 
   return updatedTransactionCategory;
 };

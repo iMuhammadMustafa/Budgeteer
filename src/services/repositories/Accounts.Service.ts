@@ -2,23 +2,17 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createAccount,
-  deleteAccount,
-  getAccountById,
-  getAccountOpenedTransaction,
-  getAllAccounts,
-  getTotalAccountBalance,
-  restoreAccount,
-  updateAccount,
-} from "../apis/Accounts.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { createTransaction, updateTransaction } from "../apis/Transactions.repository";
-import { getConfiguration } from "../apis/Configurations.repository";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
-import { getDemoMode } from "@/src/providers/DemoModeGlobal";
+
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
+const accountRepository = repositoryManager.getAccountRepository();
+const configurationRepository = repositoryManager.getConfigurationRepository();
 
 export const useGetAccounts = () => {
   const { session } = useAuth();
@@ -27,7 +21,7 @@ export const useGetAccounts = () => {
     queryKey: [TableNames.Accounts, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllAccounts(tenantId);
+      return accountRepository.getAllAccounts(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -40,7 +34,8 @@ export const useGetTotalAccountBalance = () => {
     queryKey: ["Stats_TotalAccountBalance", tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTotalAccountBalance(tenantId);
+
+      return accountRepository.getTotalAccountBalance(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -54,7 +49,8 @@ export const useGetAccountById = (id?: string) => {
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAccountById(id, tenantId);
+
+      return accountRepository.getAccountById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -68,7 +64,8 @@ export const useGetAccountOpenedTransaction = (id?: string) => {
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAccountOpenedTransaction(id, tenantId);
+
+      return accountRepository.getAccountOpenedTransaction(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -141,7 +138,8 @@ export const useDeleteAccount = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       // const [_, accountRes] = await Promise.all([deleteAccount(id, userId), deleteAccountTransactions(id, userId)]);
-      return await deleteAccount(id, userId);
+
+      return await accountRepository.deleteAccount(id, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -156,7 +154,8 @@ export const useRestoreAccount = (id?: string) => {
   return useMutation({
     mutationFn: async (id: string) => {
       // const [_, accountRes] = await Promise.all([restoreAccountTransactions(id, session), restoreAccount(id, session)]);
-      return await restoreAccount(id, userId);
+
+      return await accountRepository.restoreAccount(id, userId);
       // return accountRes;
     },
     onSuccess: async id => {
@@ -197,10 +196,10 @@ const createAccountHelper = async (formAccount: Inserts<TableNames.Accounts>, se
   formAccount.createdby = userId;
   formAccount.tenantid = tenantid;
 
-  const newAcc = await createAccount(formAccount);
+  const newAcc = await accountRepository.createAccount(formAccount);
 
   if (newAcc) {
-    let config = await getConfiguration(
+    let config = await configurationRepository.getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
       "Id",
@@ -245,10 +244,10 @@ const updateAccountHelper = async (
   });
   if (isUnchanged) return; // Exit early if no changes
 
-  const updatedAccount = await updateAccount(formData);
+  const updatedAccount = await accountRepository.updateAccount(formData);
 
   if (formData.balance && formData.balance !== originalData.balance && addAdjustmentTransaction) {
-    const config = await getConfiguration(
+    const config = await configurationRepository.getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
       "Id",

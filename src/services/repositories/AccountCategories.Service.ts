@@ -2,17 +2,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createAccountCategory,
-  deleteAccountCategory,
-  getAccountCategoryById,
-  getAllAccountCategories,
-  restoreAccountCategory,
-  updateAccountCategory,
-} from "../apis/AccountCategories.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
+
+// Get the repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
 
 export const useGetAccountCategories = () => {
   const { session } = useAuth();
@@ -22,7 +18,8 @@ export const useGetAccountCategories = () => {
     queryKey: [TableNames.AccountCategories, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllAccountCategories(tenantId);
+      const repository = repositoryManager.getAccountCategoryRepository();
+      return repository.getAllAccountCategories(tenantId);
     },
     enabled: !!tenantId,
     // refetchOnMount: true,
@@ -38,7 +35,8 @@ export const useGetAccountCategoryById = (id?: string) => {
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAccountCategoryById(id, tenantId);
+      const repository = repositoryManager.getAccountCategoryRepository();
+      return repository.getAccountCategoryById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -110,7 +108,8 @@ export const useDeleteAccountCategory = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await deleteAccountCategory(id, userId);
+      const repository = repositoryManager.getAccountCategoryRepository();
+      return await repository.deleteAccountCategory(id, userId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
@@ -125,7 +124,8 @@ export const useRestoreAccountCategory = (id?: string) => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await restoreAccountCategory(id, userId);
+      const repository = repositoryManager.getAccountCategoryRepository();
+      return await repository.restoreAccountCategory(id, userId);
     },
     onSuccess: async id => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] })]);
@@ -144,7 +144,8 @@ const createAccountCategoryHelper = async (
   formAccountCategory.createdby = userId;
   formAccountCategory.tenantid = tenantid;
 
-  const newAccountCategory = await createAccountCategory(formAccountCategory);
+  const repository = repositoryManager.getAccountCategoryRepository();
+  const newAccountCategory = await repository.createAccountCategory(formAccountCategory);
 
   return newAccountCategory;
 };
@@ -158,7 +159,8 @@ const updateAccountCategoryHelper = async (
   formAccountCategory.updatedby = userId;
   formAccountCategory.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedAccountCategory = await updateAccountCategory(formAccountCategory);
+  const repository = repositoryManager.getAccountCategoryRepository();
+  const updatedAccountCategory = await repository.updateAccountCategory(formAccountCategory);
 
   return updatedAccountCategory;
 };

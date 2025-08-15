@@ -1,13 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ViewNames } from "@/src/types/db/TableNames";
 import { StatsMonthlyAccountsTransactions, StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
-import {
-  getStatsDailyTransactions,
-  getStatsMonthlyAccountsTransactions,
-  getStatsMonthlyCategoriesTransactions,
-  getStatsMonthlyTransactionsTypes,
-  getStatsNetWorthGrowth,
-} from "@/src/services/apis/Stats.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import {
   BarDataType,
   DoubleBarPoint,
@@ -17,6 +11,9 @@ import {
 } from "@/src/types/components/Charts.types";
 import dayjs from "dayjs";
 import { useAuth } from "@/src/providers/AuthProvider";
+
+// Get the repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
 
 export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
   const { session } = useAuth();
@@ -42,7 +39,8 @@ const getStatsDailyTransactionsHelper = async (
   barsData?: BarDataType[];
   calendarData: MyCalendarData;
 }> => {
-  const data = await getStatsDailyTransactions(tenantId, startDate, endDate, "Expense");
+  const repository = repositoryManager.getStatsRepository();
+  const data = await repository.getStatsDailyTransactions(tenantId, startDate, endDate, "Expense");
 
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
@@ -101,7 +99,8 @@ const getStatsMonthlyTransactionsTypesHelper = async (
   startDate: string,
   endDate: string,
 ): Promise<DoubleBarPoint[]> => {
-  const data = await getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
+  const repository = repositoryManager.getStatsRepository();
+  const data = await repository.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
 
   //   [
   //    {
@@ -147,16 +146,17 @@ items =
   }, {});
 
   const barsData: DoubleBarPoint[] = Object.entries(items).map(([month, item]) => {
+    const typedItem = item as { expensesSum: number; incomeSum: number };
     return {
       x: month,
       barOne: {
         label: "Income",
-        value: item.incomeSum,
+        value: typedItem.incomeSum,
         color: "rgba(76, 175, 80, 0.6)",
       },
       barTwo: {
         label: "Expense",
-        value: Math.abs(item.expensesSum),
+        value: Math.abs(typedItem.expensesSum),
         color: "rgba(244, 67, 54, 0.6)",
       },
     };
@@ -172,7 +172,8 @@ export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endD
     queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
+      const repository = repositoryManager.getStatsRepository();
+      return repository.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
     },
     enabled: !!tenantId,
   });
@@ -202,7 +203,8 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
   groups: (PieData & { id: string })[];
   categories: (PieData & { id: string })[];
 }> => {
-  const data = await getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
+  const repository = repositoryManager.getStatsRepository();
+  const data = await repository.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
 
   // Group data by IDs
   const groupsMap = new Map<string, { sum: number; name: string }>();
@@ -259,7 +261,8 @@ export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDat
 };
 
 const getStatsMonthlyAccountsTransactionsHelper = async (tenantId: string, startDate: string, endDate: string) => {
-  return await getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
+  const repository = repositoryManager.getStatsRepository();
+  return await repository.getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
 };
 
 export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
@@ -280,7 +283,8 @@ const getStatsNetWorthGrowthHelper = async (
   startDate: string,
   endDate: string,
 ): Promise<LineChartPoint[]> => {
-  const data = await getStatsNetWorthGrowth(tenantId, startDate, endDate);
+  const repository = repositoryManager.getStatsRepository();
+  const data = await repository.getStatsNetWorthGrowth(tenantId, startDate, endDate);
   return data.map((item: any) => ({
     x: dayjs(item.month).format("MMM"),
     y: item.total_net_worth ?? 0,

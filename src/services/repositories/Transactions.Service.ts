@@ -1,18 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { Transaction, Inserts, Updates, TransactionsView } from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import {
-  createMultipleTransactions,
-  createTransaction,
-  createTransactions,
-  deleteTransaction,
-  getAllTransactions,
-  getTransactionById,
-  getTransactions,
-  getTransactionsByName,
-  restoreTransaction,
-  updateTransaction,
-} from "../apis/Transactions.repository";
+import { RepositoryManager } from "../apis/repositories/RepositoryManager";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
@@ -24,6 +13,10 @@ import { initialSearchFilters } from "@/src/utils/transactions.helper";
 import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 
+// Get repository manager instance
+const repositoryManager = RepositoryManager.getInstance();
+const transactionRepository = repositoryManager.getTransactionRepository();
+
 export const useGetAllTransactions = () => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
@@ -31,7 +24,7 @@ export const useGetAllTransactions = () => {
     queryKey: [TableNames.Transactions, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactions(tenantId);
+      return transactionRepository.getAllTransactions(tenantId);
     },
     enabled: !!tenantId,
   });
@@ -43,7 +36,7 @@ export const useGetTransactions = (searchFilters: TransactionFilters) => {
     queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactions(searchFilters, tenantId);
+      return transactionRepository.getTransactions(searchFilters, tenantId);
     },
     enabled: !!tenantId,
   });
@@ -63,7 +56,7 @@ export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => 
       const endIndex = startIndex + pageSize - 1;
 
       // Fetch transactions for the current page
-      return getTransactions(
+      return transactionRepository.getTransactions(
         {
           ...searchParams,
           startIndex,
@@ -86,12 +79,12 @@ export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => 
 export const useGetTransactionById = (id?: string | null | undefined) => {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Transaction>({
+  return useQuery<Transaction | null>({
     queryKey: [TableNames.Transactions, id, tenantId],
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionById(id, tenantId);
+      return transactionRepository.getTransactionById(id, tenantId);
     },
     enabled: !!id && !!tenantId,
   });
@@ -103,7 +96,7 @@ export const useSearchTransactionsByName = (text: string) => {
     queryKey: [ViewNames.SearchDistinctTransactions + text, tenantId],
     queryFn: async () => {
       if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionsByName(text, tenantId);
+      return transactionRepository.getTransactionsByName(text, tenantId);
     },
     enabled: !!text && !!tenantId,
   });
@@ -167,10 +160,12 @@ export const useCreateTransactions = () => {
         return transaction;
       });
 
-      const createdTransactions = await createTransactions(transactions as Inserts<TableNames.Transactions>[]);
+      const createdTransactions = await transactionRepository.createTransactions(
+        transactions as Inserts<TableNames.Transactions>[],
+      );
 
       if (transactionsGroup.originalTransactionId) {
-        await deleteTransaction(transactionsGroup.originalTransactionId, userId);
+        await transactionRepository.deleteTransaction(transactionsGroup.originalTransactionId, userId);
       }
       if (transactionsGroup.isvoid !== false) {
         await updateAccountBalance(transactionsGroup.accountid, totalAmount);
@@ -239,13 +234,13 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await deleteTransaction(id, userId);
+      const res = await transactionRepository.deleteTransaction(id, userId);
 
       if (res.transferid) {
-        await deleteTransaction(res.transferid, userId);
+        await transactionRepository.deleteTransaction(res.transferid, userId);
       }
       console.log("Transaction deleted:", res);
-      if (!res.isvoid || res.isvoid !== false) {
+      if (!res.isvoid) {
         await updateAccountBalance(res.accountid, -res.amount);
         if (res.transferaccountid) {
           await updateAccountBalance(res.transferaccountid, res.amount);
@@ -265,10 +260,10 @@ export const useRestoreTransaction = (id?: string) => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await deleteTransaction(id, userId);
+      const res = await transactionRepository.deleteTransaction(id, userId);
 
       if (res.transferid) {
-        await deleteTransaction(res.transferid, userId);
+        await transactionRepository.deleteTransaction(res.transferid, userId);
       }
       if (res.isvoid !== false) {
         await updateAccountBalance(res.accountid, res.amount);
@@ -313,7 +308,7 @@ const createTransactionHelper = async (formTransaction: Inserts<TableNames.Trans
     transactions.push(transferTransaction);
   }
 
-  const newTransactions = await createMultipleTransactions(transactions);
+  const newTransactions = await transactionRepository.createMultipleTransactions(transactions);
 
   if (newTransactions) {
     let resp = await updateAccountBalance(formTransaction.accountid, formTransaction.amount!);
@@ -587,14 +582,14 @@ export const updateTransactionHelper = async (
     updatedTransaction.updatedat = currentTimestamp;
     updatedTransaction.updatedby = userId;
 
-    const updatedTransactionRes = await updateTransaction(updatedTransaction);
+    const updatedTransactionRes = await transactionRepository.updateTransaction(updatedTransaction);
   }
   if (originalData.transferid && Object.keys(updatedTransferTransaction).length > 0) {
     updatedTransferTransaction.id = originalData.transferid;
     updatedTransferTransaction.updatedat = currentTimestamp;
     updatedTransferTransaction.updatedby = userId;
 
-    const updatedTransferTransactionRes = await updateTransaction(updatedTransferTransaction);
+    const updatedTransferTransactionRes = await transactionRepository.updateTransaction(updatedTransferTransaction);
   }
 
   try {
