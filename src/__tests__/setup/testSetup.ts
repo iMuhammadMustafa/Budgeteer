@@ -248,11 +248,13 @@ jest.mock("../../services/storage/StorageModeManager", () => {
     getMode: jest.fn(() => "demo"),
     cleanup: jest.fn(() => Promise.resolve()),
     initialize: jest.fn(() => Promise.resolve()),
-    getStorageInfo: jest.fn(() => Promise.resolve({ 
-      mode: "demo", 
-      currentMode: "demo", 
-      isInitializing: false 
-    })),
+    getStorageInfo: jest.fn(() =>
+      Promise.resolve({
+        mode: "demo",
+        currentMode: "demo",
+        isInitializing: false,
+      }),
+    ),
     migrateData: jest.fn(() => Promise.resolve()),
     setModeChangeCallback: jest.fn(),
     getProvider: jest.fn(),
@@ -272,44 +274,97 @@ jest.mock("../../services/storage/StorageModeManager", () => {
   };
 });
 
-jest.mock("../../services/storage/DIContainer", () => ({
-  DIContainer: jest.fn().mockImplementation(() => ({
-    getProvider: jest.fn(entityType => {
-      const mockProvider = {
-        getAllAccounts: jest.fn(() => Promise.resolve([])),
-        getAccountById: jest.fn(() => Promise.resolve(null)),
-        createAccount: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
-        updateAccount: jest.fn(data => Promise.resolve({ ...data })),
-        deleteAccount: jest.fn(() => Promise.resolve()),
-        restoreAccount: jest.fn(() => Promise.resolve()),
-        updateAccountBalance: jest.fn(() => Promise.resolve()),
-        getTotalAccountBalance: jest.fn(() => Promise.resolve({ totalbalance: 0 })),
+jest.mock("../../services/storage/DIContainer", () => {
+  const mockProviders = new Map();
 
-        getAllTransactions: jest.fn(() => Promise.resolve([])),
-        getTransactionById: jest.fn(() => Promise.resolve(null)),
-        createTransaction: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
-        updateTransaction: jest.fn(data => Promise.resolve({ ...data })),
-        deleteTransaction: jest.fn(() => Promise.resolve()),
-        restoreTransaction: jest.fn(() => Promise.resolve()),
+  class MockDIContainer {
+    private static instance: MockDIContainer;
+    private currentMode = "demo";
 
-        getAllAccountCategories: jest.fn(() => Promise.resolve([])),
-        getAccountCategoryById: jest.fn(() => Promise.resolve(null)),
-        createAccountCategory: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
-        updateAccountCategory: jest.fn(data => Promise.resolve({ ...data })),
-        deleteAccountCategory: jest.fn(() => Promise.resolve()),
-        restoreAccountCategory: jest.fn(() => Promise.resolve()),
+    static getInstance(): MockDIContainer {
+      if (!MockDIContainer.instance) {
+        MockDIContainer.instance = new MockDIContainer();
+      }
+      return MockDIContainer.instance;
+    }
 
-        getAllTransactionCategories: jest.fn(() => Promise.resolve([])),
-        getTransactionCategoryById: jest.fn(() => Promise.resolve(null)),
-        createTransactionCategory: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
-        updateTransactionCategory: jest.fn(data => Promise.resolve({ ...data })),
-        deleteTransactionCategory: jest.fn(() => Promise.resolve()),
-        restoreTransactionCategory: jest.fn(() => Promise.resolve()),
-      };
-      return mockProvider;
-    }),
-  })),
-}));
+    getProvider(entityType: string) {
+      if (!mockProviders.has(entityType)) {
+        const mockProvider = {
+          getAllAccounts: jest.fn(() => Promise.resolve([])),
+          getAccountById: jest.fn(() => Promise.resolve(null)),
+          createAccount: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
+          updateAccount: jest.fn(data => Promise.resolve({ ...data })),
+          deleteAccount: jest.fn(() => Promise.resolve()),
+          restoreAccount: jest.fn(() => Promise.resolve()),
+          updateAccountBalance: jest.fn(() => Promise.resolve()),
+          getTotalAccountBalance: jest.fn(() => Promise.resolve({ totalbalance: 0 })),
+
+          getAllTransactions: jest.fn(() => Promise.resolve([])),
+          getTransactionById: jest.fn(() => Promise.resolve(null)),
+          createTransaction: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
+          updateTransaction: jest.fn(data => Promise.resolve({ ...data })),
+          deleteTransaction: jest.fn(() => Promise.resolve()),
+          restoreTransaction: jest.fn(() => Promise.resolve()),
+
+          getAllAccountCategories: jest.fn(() => Promise.resolve([])),
+          getAccountCategoryById: jest.fn(() => Promise.resolve(null)),
+          createAccountCategory: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
+          updateAccountCategory: jest.fn(data => Promise.resolve({ ...data })),
+          deleteAccountCategory: jest.fn(() => Promise.resolve()),
+          restoreAccountCategory: jest.fn(() => Promise.resolve()),
+
+          getAllTransactionCategories: jest.fn(() => Promise.resolve([])),
+          getTransactionCategoryById: jest.fn(() => Promise.resolve(null)),
+          createTransactionCategory: jest.fn(data => Promise.resolve({ ...data, id: data.id || "mock-id" })),
+          updateTransactionCategory: jest.fn(data => Promise.resolve({ ...data })),
+          deleteTransactionCategory: jest.fn(() => Promise.resolve()),
+          restoreTransactionCategory: jest.fn(() => Promise.resolve()),
+        };
+        mockProviders.set(entityType, mockProvider);
+      }
+      return mockProviders.get(entityType);
+    }
+
+    setMode(mode: string) {
+      this.currentMode = mode;
+      mockProviders.clear(); // Clear providers when mode changes
+    }
+
+    getMode() {
+      return this.currentMode;
+    }
+
+    clearProviders() {
+      mockProviders.clear();
+    }
+
+    setProvider(entityType: string, provider: any) {
+      mockProviders.set(entityType, provider);
+    }
+
+    async initializeProviders() {
+      return Promise.resolve();
+    }
+
+    async cleanupProviders() {
+      mockProviders.clear();
+      return Promise.resolve();
+    }
+
+    async getStorageInfo() {
+      return Promise.resolve({
+        mode: this.currentMode,
+        providerCount: mockProviders.size,
+        providers: Array.from(mockProviders.keys()),
+      });
+    }
+  }
+
+  return {
+    DIContainer: MockDIContainer,
+  };
+});
 
 // Mock the local storage providers
 jest.mock("../../services/apis/local/Accounts.local", () => ({

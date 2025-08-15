@@ -130,7 +130,7 @@ export class ProviderFactory {
   private createTransactionGroupProvider(mode: StorageMode) {
     switch (mode) {
       case "cloud":
-        return TransactionGroupsSupabase;
+        return TransactionGroupsSupabase.supabaseTransactionGroupProvider;
       case "demo":
         return TransactionGroupsMock;
       case "local":
