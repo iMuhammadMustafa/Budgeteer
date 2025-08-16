@@ -10,12 +10,13 @@ import { DemoModeProvider } from "@/src/providers/DemoModeProvider";
 import { Suspense } from "react";
 import { ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StorageModeProvider } from "../providers/StorageModeProvider";
 
 export default function RootLayout() {
   return (
     <Suspense fallback={<ActivityIndicator />}>
       <ThemeProvider>
-        <DemoModeProvider>
+        <StorageModeProvider>
           <AuthProvider>
             <QueryProvider>
               {/* <SafeAreaProvider> */}
@@ -29,7 +30,7 @@ export default function RootLayout() {
               {/* </SafeAreaProvider> */}
             </QueryProvider>
           </AuthProvider>
-        </DemoModeProvider>
+        </StorageModeProvider>
       </ThemeProvider>
     </Suspense>
   );
