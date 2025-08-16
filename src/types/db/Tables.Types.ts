@@ -27,6 +27,8 @@ export type StatsDailyTransactions = Views<"stats_dailytransactions">;
 export type StatsMonthlyTransactionsTypes = Views<"stats_monthlytransactionstypes">;
 export type StatsMonthlyCategoriesTransactions = Views<"stats_monthlycategoriestransactions">;
 export type StatsMonthlyAccountsTransactions = Views<"stats_monthlyaccountstransactions">;
+export type StatsNetWorthGrowth = Views<"stats_networthgrowth">;
+export type StatsTotalAccountBalance = Views<"stats_totalaccountbalance">;
 
 // Enums
 export type AccountType = Enums<"accounttypes">;
