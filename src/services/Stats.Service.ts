@@ -19,7 +19,40 @@ import dayjs from "dayjs";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 
-export function useStatsService() {
+export interface IStatsService {
+  getStatsDailyTransactions: (
+    startDate: string,
+    endDate: string,
+    week?: boolean,
+    type?: TransactionType,
+  ) => ReturnType<
+    typeof useQuery<{
+      barsData?: BarDataType[];
+      calendarData: MyCalendarData;
+    }>
+  >;
+  getStatsMonthlyTransactionsTypes: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<typeof useQuery<DoubleBarPoint[]>>;
+  getStatsMonthlyCategoriesTransactions: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<
+    typeof useQuery<{
+      groups: (PieData & { id: string })[];
+      categories: (PieData & { id: string })[];
+    }>
+  >;
+  getStatsMonthlyAccountsTransactions: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<typeof useQuery<StatsMonthlyAccountsTransactions[]>>;
+  getStatsNetWorthGrowth: (startDate?: string, endDate?: string) => ReturnType<typeof useQuery<LineChartPoint[]>>;
+  statsRepo: any;
+}
+
+export function useStatsService(): IStatsService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const { dbContext } = useStorageMode();

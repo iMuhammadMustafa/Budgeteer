@@ -58,7 +58,7 @@ const AccountsRoute = () => {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.getTotalAccountsBalance();
-  const { data: accounts, isLoading: isLoadingAccounts } = accountService.findAllAccounts();
+  const { data: accounts, isLoading: isLoadingAccounts } = accountService.findAll();
   const { mutate: createTransaction, isPending: isCreating } = transactionService.createTransactionRepo();
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
@@ -146,7 +146,7 @@ const AccountsRoute = () => {
       <Tab
         title="Accounts"
         queryKey={[TableNames.Accounts]}
-        useGet={accountService.findAllAccounts}
+        useGet={accountService.findAll}
         customMapping={(item: any) => ({
           ...item,
           details: item.balance.toLocaleString("en-US", {
@@ -160,7 +160,7 @@ const AccountsRoute = () => {
             currency: "USD", // TODO: Make currency dynamic
           })}`
         }
-        useDelete={accountService.deleteAccount}
+        useDelete={accountService.deleteObj}
         upsertUrl={"/Accounts/Upsert?accountId="}
         groupedBy={"category.name"}
         Footer={<FooterContent />}

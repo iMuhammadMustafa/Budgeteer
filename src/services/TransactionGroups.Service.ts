@@ -14,8 +14,12 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { Session } from "@supabase/supabase-js";
+import { IService } from "./IService";
 
-export function useTransactionGroupService() {
+export interface ITransactionGroupService
+  extends IService<TransactionGroup, Inserts<TableNames.TransactionGroups>, Updates<TableNames.TransactionGroups>> {}
+
+export function useTransactionGroupService(): ITransactionGroupService {
   const { session } = useAuth();
 
   if (!session) throw new Error("Session not found");
@@ -52,8 +56,8 @@ export function useTransactionGroupService() {
   const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async (data: Inserts<TableNames.TransactionGroups>) => {
-        return await createRepoHelper(data, session, transactionGroupRepo);
+      mutationFn: async (form: Inserts<TableNames.TransactionGroups>) => {
+        return await createRepoHelper(form, session, transactionGroupRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
@@ -65,13 +69,13 @@ export function useTransactionGroupService() {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        data,
-        originalData,
+        form,
+        original,
       }: {
-        data: Updates<TableNames.TransactionGroups>;
-        originalData: TransactionGroup;
+        form: Updates<TableNames.TransactionGroups>;
+        original: TransactionGroup;
       }) => {
-        return await updateRepoHelper(data, session, transactionGroupRepo);
+        return await updateRepoHelper(form, session, transactionGroupRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
@@ -82,16 +86,16 @@ export function useTransactionGroupService() {
   const upsert = () => {
     return useMutation({
       mutationFn: async ({
-        formData,
-        originalData,
+        form,
+        original,
       }: {
-        formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
-        originalData?: TransactionGroup;
+        form: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+        original?: TransactionGroup;
       }) => {
-        if (formData.id && originalData) {
-          return await updateRepoHelper(formData, session, transactionGroupRepo);
+        if (form.id && original) {
+          return await updateRepoHelper(form, session, transactionGroupRepo);
         }
-        return await createRepoHelper(formData as Inserts<TableNames.TransactionGroups>, session, transactionGroupRepo);
+        return await createRepoHelper(form as Inserts<TableNames.TransactionGroups>, session, transactionGroupRepo);
       },
       onSuccess: async (_, data) => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
@@ -145,6 +149,7 @@ export function useTransactionGroupService() {
     create,
     update,
     softDelete,
+    delete: softDelete,
     restore,
     upsert,
 
@@ -158,7 +163,7 @@ export function useTransactionGroupService() {
     // useRestoreTransactionGroup,
 
     // Direct repository access
-    transactionGroupRepo,
+    repo: transactionGroupRepo,
   };
 }
 

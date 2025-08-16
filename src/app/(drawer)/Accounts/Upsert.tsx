@@ -9,7 +9,7 @@ export default function Upsert() {
   const [initialValues, setInitialValues] = useState<AccountFormType>(initialState);
 
   const accountService = useAccountService();
-  const { data, isLoading, error } = accountService.findAccountById(accountId);
+  const { data, isLoading, error } = accountService.findById(accountId);
 
   const navigation = useNavigation();
 

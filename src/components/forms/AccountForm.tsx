@@ -51,7 +51,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [openBalance, openTransaction]);
 
-  const { mutate: updateAccount } = accountService.upsertAccount();
+  const { mutate: updateAccount } = accountService.upsert();
   const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
 
   const handleFieldChange = (field: string, value: any) => {
