@@ -1,14 +1,15 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetAccountById } from "@/src/services//Accounts.Service";
 import AccountForm, { AccountFormType, initialState } from "@/src/components/forms/AccountForm";
+import { useAccountService } from "@/src/services/Accounts.Service";
 
 export default function Upsert() {
   const { accountId } = useLocalSearchParams<{ accountId?: string }>();
   const [initialValues, setInitialValues] = useState<AccountFormType>(initialState);
 
-  const { data, isLoading, error } = useGetAccountById(accountId);
+  const accountService = useAccountService();
+  const { data, isLoading, error } = accountService.findAccountById(accountId);
 
   const navigation = useNavigation();
 

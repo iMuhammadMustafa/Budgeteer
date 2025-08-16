@@ -4,24 +4,22 @@ import { router } from "expo-router";
 
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetAccountCategories } from "@/src/services//AccountCategories.Service";
-import {
-  useGetAccountOpenedTransaction,
-  useUpdateAccountOpenedTransaction,
-  useUpsertAccount,
-} from "@/src/services//Accounts.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import { queryClient } from "@/src/providers/QueryProvider";
 import Button from "../Button";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export default function AccountForm({ account }: { account: AccountFormType }) {
+  const accountService = useAccountService();
+  const accountCategoryService = useAccountCategoryService();
   const [formData, setFormData] = useState<AccountFormType>(account);
   const [isLoading, setIsLoading] = useState(false);
-  const { data: accountCategories } = useGetAccountCategories();
+  const { data: accountCategories } = accountCategoryService.getAccountCategories();
   // const [isOpen, setIsOpen] = useState(false);
-  const { data: openTransaction } = useGetAccountOpenedTransaction(account.id);
+  const { data: openTransaction } = accountService.getAccountOpenedTransaction(account.id);
   const [openBalance, setOpenBalance] = useState<number | null>(null);
   const [addAdjustmentTransaction, setAddAdjustmentTransaction] = useState(true);
 
@@ -53,8 +51,8 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [openBalance, openTransaction]);
 
-  const { mutate: updateAccount } = useUpsertAccount();
-  const { mutate: updateOpenBalance } = useUpdateAccountOpenedTransaction();
+  const { mutate: updateAccount } = accountService.upsertAccount();
+  const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prevData => ({ ...prevData, [field]: value }));
@@ -77,6 +75,10 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
           router.navigate("/Accounts");
+        },
+        onError: error => {
+          setIsLoading(false);
+          console.error("Error updating account:", error);
         },
       },
     );

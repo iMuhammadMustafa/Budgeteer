@@ -4,11 +4,11 @@ import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertAccountCategory } from "@/src/services//AccountCategories.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import Button from "../Button";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 export const initialState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
@@ -26,8 +26,9 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
   useEffect(() => {
     setFormData(category);
   }, [category]);
+  const accountCategoryService = useAccountCategoryService();
 
-  const { mutate } = useUpsertAccountCategory();
+  const { mutate } = accountCategoryService.upsertAccountCategory();
 
   const handleTextChange = (name: keyof AccountCategoryFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
