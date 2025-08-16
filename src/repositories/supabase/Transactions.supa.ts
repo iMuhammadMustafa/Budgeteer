@@ -13,7 +13,7 @@ import {
 } from "@/src/types/db/Tables.Types";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
 
-export class TransactionRepository implements ITransactionRepository {
+export class TransactionSupaRepository implements ITransactionRepository {
   async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
     let query = this.buildQuery(searchFilters, tenantId);
     const { data, error } = await query;
@@ -204,17 +204,17 @@ export const getAllTransactions = async (tenantId: string) => {
 };
 
 export const getTransactions = async (searchFilters: TransactionFilters, tenantId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.findAll(searchFilters, tenantId);
 };
 
 const buildQuery = (searchFilters: TransactionFilters, tenantId: string, isCount = false) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository["buildQuery"](searchFilters, tenantId, isCount);
 };
 
 export const getTransactionFullyById = async (transactionid: string, tenantId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.findById(transactionid, tenantId);
 };
 
@@ -231,46 +231,46 @@ export const getTransactionById = async (transactionid: string, tenantId: string
 };
 
 export const getTransactionByTransferId = async (id: string, tenantId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.getTransactionByTransferId(id, tenantId);
 };
 
 export const getTransactionsByName = async (text: string, tenantId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.findByName(text, tenantId);
 };
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.create(transaction);
 };
 
 export const createTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.createMultipleTransactions(transactions);
 };
 
 export const createMultipleTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.createMultipleTransactions(transactions);
 };
 
 export const updateTransaction = async (transaction: Updates<TableNames.Transactions>) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.update(transaction.id!, transaction);
 };
 
 export const updateTransferTransaction = async (transaction: Updates<TableNames.Transactions>) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.updateTransferTransaction(transaction);
 };
 
 export const deleteTransaction = async (id: string, userId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.softDelete(id);
 };
 
 export const restoreTransaction = async (id: string, userId: string) => {
-  const repository = new TransactionRepository();
+  const repository = new TransactionSupaRepository();
   return repository.restore(id);
 };

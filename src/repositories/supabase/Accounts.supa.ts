@@ -4,7 +4,7 @@ import supabase from "@/src/providers/Supabase";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
 
-export class AccountRepository implements IAccountRepository {
+export class AccountSupaRepository implements IAccountRepository {
   async findAll(filters?: any, tenantId?: string): Promise<Account[]> {
     if (!tenantId) throw new Error("Tenant ID is required");
 

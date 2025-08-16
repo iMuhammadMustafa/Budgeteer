@@ -4,7 +4,7 @@ import supabase from "@/src/providers/Supabase";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { ITransactionGroupRepository } from "../interfaces/ITransactionGroupRepository";
 
-export class TransactionGroupRepository implements ITransactionGroupRepository {
+export class TransactionGroupSupaRepository implements ITransactionGroupRepository {
   async findAll(filters?: any, tenantId?: string): Promise<TransactionGroup[]> {
     if (!tenantId) throw new Error("Tenant ID is required");
 
@@ -92,31 +92,31 @@ export class TransactionGroupRepository implements ITransactionGroupRepository {
 
 // Legacy functions for backward compatibility (can be removed after migration)
 export const getAllTransactionGroups = async (tenantId: string) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.findAll(undefined, tenantId);
 };
 
 export const getTransactionGroupById = async (id: string, tenantId: string) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.findById(id, tenantId);
 };
 
 export const createTransactionGroup = async (transactionGroup: Inserts<TableNames.TransactionGroups>) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.create(transactionGroup);
 };
 
 export const updateTransactionGroup = async (transactionGroup: Updates<TableNames.TransactionGroups>) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.update(transactionGroup.id!, transactionGroup);
 };
 
 export const deleteTransactionGroup = async (id: string, userId: string) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.softDelete(id);
 };
 
 export const restoreTransactionGroup = async (id: string, userId: string) => {
-  const repository = new TransactionGroupRepository();
+  const repository = new TransactionGroupSupaRepository();
   return repository.restore(id);
 };

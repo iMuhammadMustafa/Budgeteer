@@ -4,7 +4,7 @@ import supabase from "@/src/providers/Supabase";
 import { TransactionCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { ITransactionCategoryRepository } from "../interfaces/ITransactionCategoryRepository";
 
-export class TransactionCategoryRepository implements ITransactionCategoryRepository {
+export class TransactionCategorySupaRepository implements ITransactionCategoryRepository {
   async findAll(filters?: any, tenantId?: string): Promise<TransactionCategory[]> {
     if (!tenantId) throw new Error("Tenant ID is required");
 
@@ -97,31 +97,31 @@ export class TransactionCategoryRepository implements ITransactionCategoryReposi
 
 // Legacy functions for backward compatibility (can be removed after migration)
 export const getAllTransactionCategories = async (tenantId: string) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.findAll(undefined, tenantId);
 };
 
 export const getTransactionCategoryById = async (id: string, tenantId: string) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.findById(id, tenantId);
 };
 
 export const createTransactionCategory = async (transactionCategory: Inserts<TableNames.TransactionCategories>) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.create(transactionCategory);
 };
 
 export const updateTransactionCategory = async (transactionCategory: Updates<TableNames.TransactionCategories>) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.update(transactionCategory.id!, transactionCategory);
 };
 
 export const deleteTransactionCategory = async (id: string, userId: string) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.softDelete(id);
 };
 
 export const restoreTransactionCategory = async (id: string, userId: string) => {
-  const repository = new TransactionCategoryRepository();
+  const repository = new TransactionCategorySupaRepository();
   return repository.restore(id);
 };
