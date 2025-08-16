@@ -2,6 +2,8 @@ import {
   StatsDailyTransactions,
   StatsMonthlyTransactionsTypes,
   StatsMonthlyCategoriesTransactions,
+  StatsMonthlyAccountsTransactions,
+  StatsNetWorthGrowth,
   TransactionType,
 } from "@/src/types/db/Tables.Types";
 
@@ -25,7 +27,11 @@ export interface IStatsRepository {
     endDate?: string,
   ): Promise<StatsMonthlyCategoriesTransactions[]>;
 
-  getStatsMonthlyAccountsTransactions(tenantId: string, startDate?: string, endDate?: string): Promise<any[]>;
+  getStatsMonthlyAccountsTransactions(
+    tenantId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<StatsMonthlyAccountsTransactions[]>;
 
-  getStatsNetWorthGrowth(tenantId: string, startDate?: string, endDate?: string): Promise<any[]>;
+  getStatsNetWorthGrowth(tenantId: string, startDate?: string, endDate?: string): Promise<StatsNetWorthGrowth[]>;
 }
