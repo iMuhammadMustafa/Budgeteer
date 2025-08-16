@@ -87,7 +87,7 @@ export class TransactionSupaRepository implements ITransactionRepository {
     if (error) throw error;
   }
 
-  async getTransactionByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
+  async getByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
     const { data, error } = await supabase
       .from(ViewNames.TransactionsView)
       .select()
@@ -232,7 +232,7 @@ export const getTransactionById = async (transactionid: string, tenantId: string
 
 export const getTransactionByTransferId = async (id: string, tenantId: string) => {
   const repository = new TransactionSupaRepository();
-  return repository.getTransactionByTransferId(id, tenantId);
+  return repository.getByTransferId(id, tenantId);
 };
 
 export const getTransactionsByName = async (text: string, tenantId: string) => {

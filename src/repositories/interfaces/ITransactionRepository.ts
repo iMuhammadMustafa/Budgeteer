@@ -16,7 +16,7 @@ export interface ITransactionRepository
     Updates<TableNames.Transactions>
   > {
   findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]>;
-  getTransactionByTransferId(id: string, tenantId: string): Promise<TransactionsView>;
+  getByTransferId(id: string, tenantId: string): Promise<TransactionsView>;
   findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]>;
   updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>;
