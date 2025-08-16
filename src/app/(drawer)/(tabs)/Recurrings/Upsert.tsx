@@ -11,7 +11,6 @@ import { TableNames } from "@/src/types/db/TableNames";
 import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
 import { useGetAccounts } from "@/src/services//Accounts.Service";
 import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/Recurrings.Service";
-import { getTransactionById, getTransactionsByName } from "@/src/repositories/Transactions.repository";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
@@ -20,6 +19,7 @@ import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
 import { useAuth } from "@/src/providers/AuthProvider";
+import { getTransactionsByName } from "@/src/repositories";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
