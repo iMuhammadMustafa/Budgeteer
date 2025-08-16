@@ -1,6 +1,17 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { Transaction, Inserts, Updates, TransactionsView } from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
+import { queryClient } from "@/src/providers/QueryProvider";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { Session } from "@supabase/supabase-js";
+import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import GenerateUuid from "@/src/utils/UUID.Helper";
+import dayjs from "dayjs";
+import { initialSearchFilters } from "@/src/utils/transactions.helper";
+import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
+import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+import { useStorageMode } from "../providers/StorageModeProvider";
+// Legacy imports - these need to be updated to use repositories
 import {
   createMultipleTransactions,
   createTransaction,
@@ -12,17 +23,185 @@ import {
   getTransactionsByName,
   restoreTransaction,
   updateTransaction,
-} from "@/src/repositories/Transactions.repository";
-import { queryClient } from "@/src/providers/QueryProvider";
-import { useAuth } from "@/src/providers/AuthProvider";
-import { Session } from "@supabase/supabase-js";
-import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { updateAccountBalance } from "@/src/repositories/Accounts.repository";
-import GenerateUuid from "@/src/utils/UUID.Helper";
-import dayjs from "dayjs";
-import { initialSearchFilters } from "@/src/utils/transactions.helper";
-import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+} from "@/src/repositories";
+
+export function useTransactionService() {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+  const userId = session?.user?.id;
+  const { dbContext } = useStorageMode();
+  const transactionRepo = dbContext.TransactionRepository();
+
+  // Repository-based Transaction hooks
+  const findAllTransactions = (searchFilters: TransactionFilters) => {
+    return useQuery<TransactionsView[]>({
+      queryKey: [ViewNames.TransactionsView, searchFilters, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findAll(searchFilters, tenantId);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const findTransactionById = (id?: string) => {
+    return useQuery<TransactionsView | Transaction | null>({
+      queryKey: [TableNames.Transactions, id, tenantId, "repo"],
+      queryFn: async () => {
+        if (!id) throw new Error("ID is required");
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findById(id, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
+
+  const findTransactionsByName = (text: string) => {
+    return useQuery<{ label: string; item: any }[]>({
+      queryKey: [TableNames.Transactions, "search", text, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findByName(text, tenantId);
+      },
+      enabled: !!tenantId && !!text,
+    });
+  };
+
+  const getByTransferId = (id?: string) => {
+    return useQuery<TransactionsView>({
+      queryKey: [TableNames.Transactions, "transfer", id, tenantId, "repo"],
+      queryFn: async () => {
+        if (!id) throw new Error("ID is required");
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.getByTransferId(id, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
+
+  const createTransactionRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (transaction: Inserts<TableNames.Transactions>) => {
+        return await createTransactionRepoHelper(transaction, session, transactionRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const updateTransactionRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async ({
+        transaction,
+        originalData,
+      }: {
+        transaction: Updates<TableNames.Transactions>;
+        originalData: Transaction;
+      }) => {
+        return await updateTransactionRepoHelper(transaction, session, originalData, transactionRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const createMultipleTransactionsRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (transactions: Inserts<TableNames.Transactions>[]) => {
+        return await transactionRepo.createMultipleTransactions(transactions);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const updateTransferTransactionRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (transaction: Updates<TableNames.Transactions>) => {
+        return await transactionRepo.updateTransferTransaction(transaction);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const deleteTransactionRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (id: string) => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return await transactionRepo.softDelete(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const restoreTransactionRepo = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (id: string) => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return await transactionRepo.restore(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  // Legacy hooks for backward compatibility
+  const getAllTransactions = useGetAllTransactions();
+  const getTransactions = (searchFilters: TransactionFilters) => useGetTransactions(searchFilters);
+  const getTransactionById = (id?: string) => useGetTransactionById(id);
+  const getTransactionsByName = (text: string) => useGetTransactionsByName(text);
+  const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
+  const deleteTransaction = useDeleteTransaction();
+  const restoreTransaction = useRestoreTransaction();
+
+  return {
+    // Repository-based methods (new)
+    findAllTransactions,
+    findTransactionById,
+    findTransactionsByName,
+    getByTransferId,
+    createTransactionRepo,
+    updateTransactionRepo,
+    createMultipleTransactionsRepo,
+    updateTransferTransactionRepo,
+    deleteTransactionRepo,
+    restoreTransactionRepo,
+
+    // Legacy methods (backward compatibility)
+    getAllTransactions,
+    getTransactions,
+    getTransactionById,
+    getTransactionsByName,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    restoreTransaction,
+
+    // Direct repository access
+    transactionRepo,
+  };
+}
 
 export const useGetAllTransactions = () => {
   const { session } = useAuth();
