@@ -15,8 +15,14 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { useStorageMode } from "../providers/StorageModeProvider";
+import { IService } from "./IService";
 
-export function useConfigurationService() {
+export interface IConfigurationService
+  extends IService<Configuration, Inserts<TableNames.Configurations>, Updates<TableNames.Configurations>> {
+  getConfiguration: (table: string, type: string, key: string) => ReturnType<typeof useQuery<Configuration>>;
+}
+
+export function useConfigurationService(): IConfigurationService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
@@ -24,7 +30,7 @@ export function useConfigurationService() {
   const configurationRepo = dbContext.ConfigurationRepository();
 
   // Repository-based Configuration hooks
-  const findAllConfigurations = () => {
+  const findAll = () => {
     return useQuery<Configuration[]>({
       queryKey: [TableNames.Configurations, tenantId, "repo"],
       queryFn: async () => {
@@ -35,7 +41,7 @@ export function useConfigurationService() {
     });
   };
 
-  const findConfigurationById = (id?: string) => {
+  const findById = (id?: string) => {
     return useQuery<Configuration | null>({
       queryKey: [TableNames.Configurations, id, tenantId, "repo"],
       queryFn: async () => {
@@ -47,7 +53,7 @@ export function useConfigurationService() {
     });
   };
 
-  const getConfigurationRepo = (table: string, type: string, key: string) => {
+  const getConfiguration = (table: string, type: string, key: string) => {
     return useQuery<Configuration>({
       queryKey: [TableNames.Configurations, table, type, key, tenantId, "repo"],
       queryFn: async () => {
@@ -58,7 +64,7 @@ export function useConfigurationService() {
     });
   };
 
-  const createConfigurationRepo = () => {
+  const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (configuration: Inserts<TableNames.Configurations>) => {
@@ -70,17 +76,11 @@ export function useConfigurationService() {
     });
   };
 
-  const updateConfigurationRepo = () => {
+  const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async ({
-        configuration,
-        originalData,
-      }: {
-        configuration: Updates<TableNames.Configurations>;
-        originalData: Configuration;
-      }) => {
-        return await updateConfigurationRepoHelper(configuration, session, configurationRepo);
+      mutationFn: async ({ form, original }: { form: Updates<TableNames.Configurations>; original: Configuration }) => {
+        return await updateConfigurationRepoHelper(form, session, configurationRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
@@ -88,21 +88,21 @@ export function useConfigurationService() {
     });
   };
 
-  const upsertConfigurationRepo = () => {
+  const upsert = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        formConfiguration,
-        originalData,
+        form,
+        original,
       }: {
-        formConfiguration: Inserts<TableNames.Configurations> | Updates<TableNames.Configurations>;
-        originalData?: Configuration;
+        form: Inserts<TableNames.Configurations> | Updates<TableNames.Configurations>;
+        original?: Configuration;
       }) => {
-        if (formConfiguration.id && originalData) {
-          return await updateConfigurationRepoHelper(formConfiguration, session, configurationRepo);
+        if (form.id && original) {
+          return await updateConfigurationRepoHelper(form, session, configurationRepo);
         }
         return await createConfigurationRepoHelper(
-          formConfiguration as Inserts<TableNames.Configurations>,
+          form as Inserts<TableNames.Configurations>,
           session,
           configurationRepo,
         );
@@ -117,7 +117,7 @@ export function useConfigurationService() {
     });
   };
 
-  const deleteConfigurationRepo = () => {
+  const deleteObj = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -130,7 +130,7 @@ export function useConfigurationService() {
     });
   };
 
-  const restoreConfigurationRepo = () => {
+  const restore = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -154,14 +154,15 @@ export function useConfigurationService() {
 
   return {
     // Repository-based methods (new)
-    findAllConfigurations,
-    findConfigurationById,
-    getConfigurationRepo,
-    createConfigurationRepo,
-    updateConfigurationRepo,
-    upsertConfigurationRepo,
-    deleteConfigurationRepo,
-    restoreConfigurationRepo,
+    findAll,
+    findById,
+    getConfiguration,
+    create,
+    update,
+    upsert,
+    delete: deleteObj,
+    softDelete: deleteObj,
+    restore: restore,
 
     // Legacy methods (backward compatibility)
     // getConfigurations,
@@ -173,7 +174,7 @@ export function useConfigurationService() {
     // restoreConfiguration,
 
     // Direct repository access
-    configurationRepo,
+    repo: configurationRepo,
   };
 }
 

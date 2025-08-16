@@ -14,8 +14,16 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { useStorageMode } from "../providers/StorageModeProvider";
+import { IService } from "./IService";
 
-export function useTransactionCategoryService() {
+export interface ITransactionCategoryService
+  extends IService<
+    TransactionCategory,
+    Inserts<TableNames.TransactionCategories>,
+    Updates<TableNames.TransactionCategories>
+  > {}
+
+export function useTransactionCategoryService(): ITransactionCategoryService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
@@ -23,7 +31,7 @@ export function useTransactionCategoryService() {
   const transactionCategoryRepo = dbContext.TransactionCategoryRepository();
 
   // Repository-based TransactionCategory hooks
-  const findAllTransactionCategories = () => {
+  const findAll = () => {
     return useQuery<TransactionCategory[]>({
       queryKey: [TableNames.TransactionCategories, tenantId, "repo"],
       queryFn: async () => {
@@ -34,7 +42,7 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const findTransactionCategoryById = (id?: string) => {
+  const findById = (id?: string) => {
     return useQuery<TransactionCategory | null>({
       queryKey: [TableNames.TransactionCategories, id, tenantId, "repo"],
       queryFn: async () => {
@@ -46,7 +54,7 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const createTransactionCategoryRepo = () => {
+  const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (transactionCategory: Inserts<TableNames.TransactionCategories>) => {
@@ -58,17 +66,17 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const updateTransactionCategoryRepo = () => {
+  const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        transactionCategory,
-        originalData,
+        form,
+        original,
       }: {
-        transactionCategory: Updates<TableNames.TransactionCategories>;
-        originalData: TransactionCategory;
+        form: Updates<TableNames.TransactionCategories>;
+        original: TransactionCategory;
       }) => {
-        return await updateTransactionCategoryRepoHelper(transactionCategory, session, transactionCategoryRepo);
+        return await updateTransactionCategoryRepoHelper(form, session, transactionCategoryRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] });
@@ -76,21 +84,21 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const upsertTransactionCategoryRepo = () => {
+  const upsert = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        formData,
-        originalData,
+        form,
+        original,
       }: {
-        formData: Inserts<TableNames.TransactionCategories> | Updates<TableNames.TransactionCategories>;
-        originalData?: TransactionCategory;
+        form: Inserts<TableNames.TransactionCategories> | Updates<TableNames.TransactionCategories>;
+        original?: TransactionCategory;
       }) => {
-        if (formData.id && originalData) {
-          return await updateTransactionCategoryRepoHelper(formData, session, transactionCategoryRepo);
+        if (form.id && original) {
+          return await updateTransactionCategoryRepoHelper(form, session, transactionCategoryRepo);
         }
         return await createTransactionCategoryRepoHelper(
-          formData as Inserts<TableNames.TransactionCategories>,
+          form as Inserts<TableNames.TransactionCategories>,
           session,
           transactionCategoryRepo,
         );
@@ -105,7 +113,7 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const deleteTransactionCategoryRepo = () => {
+  const deleteObj = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -118,7 +126,7 @@ export function useTransactionCategoryService() {
     });
   };
 
-  const restoreTransactionCategoryRepo = () => {
+  const restore = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -142,13 +150,14 @@ export function useTransactionCategoryService() {
 
   return {
     // Repository-based methods (new)
-    findAllTransactionCategories,
-    findTransactionCategoryById,
-    createTransactionCategoryRepo,
-    updateTransactionCategoryRepo,
-    upsertTransactionCategoryRepo,
-    deleteTransactionCategoryRepo,
-    restoreTransactionCategoryRepo,
+    findAll,
+    findById,
+    create,
+    update,
+    upsert,
+    delete: deleteObj,
+    softDelete: deleteObj,
+    restore,
 
     // Legacy methods (backward compatibility)
     // getTransactionCategories,
@@ -160,7 +169,7 @@ export function useTransactionCategoryService() {
     // restoreTransactionCategory,
 
     // Direct repository access
-    transactionCategoryRepo,
+    repo: transactionCategoryRepo,
   };
 }
 

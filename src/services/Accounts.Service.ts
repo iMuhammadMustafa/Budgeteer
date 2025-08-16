@@ -9,8 +9,16 @@ import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Type
 import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 import { useStorageMode } from "../providers/StorageModeProvider";
 import { IAccountRepository, IConfigurationRepository, ITransactionRepository } from "../repositories";
+import { IService } from "./IService";
 
-export function useAccountService() {
+export interface IAccountService extends IService<Account, Inserts<TableNames.Accounts>, Updates<TableNames.Accounts>> {
+  getTotalAccountsBalance: () => ReturnType<typeof useQuery<{ totalbalance: number } | null>>;
+  getAccountOpenedTransaction: (id?: string) => ReturnType<typeof useQuery<any>>;
+  updateAccountBalance: () => ReturnType<typeof useMutation<number, Error, { accountId: string; amount: number }>>;
+  updateAccountOpenedTransaction: () => ReturnType<typeof useMutation<any, Error, { id: string; amount: number }>>;
+}
+
+export function useAccountService(): IAccountService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
@@ -20,7 +28,7 @@ export function useAccountService() {
   const configRepo = dbContext.ConfigurationRepository();
 
   // Repository-based Account hooks
-  const findAllAccounts = () => {
+  const findAll = () => {
     return useQuery<Account[]>({
       queryKey: [TableNames.Accounts, tenantId, "repo"],
       queryFn: async () => {
@@ -31,7 +39,7 @@ export function useAccountService() {
     });
   };
 
-  const findAccountById = (id?: string) => {
+  const findById = (id?: string) => {
     return useQuery<Account | null>({
       queryKey: [TableNames.Accounts, id, tenantId, "repo"],
       queryFn: async () => {
@@ -66,11 +74,11 @@ export function useAccountService() {
     });
   };
 
-  const createAccount = () => {
+  const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async (account: Inserts<TableNames.Accounts>) => {
-        return await createAccountRepoHelper(account, session, accountRepo, transactionRepo, configRepo);
+      mutationFn: async (form: Inserts<TableNames.Accounts>) => {
+        return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -78,17 +86,11 @@ export function useAccountService() {
     });
   };
 
-  const updateAccount = () => {
+  const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async ({
-        account,
-        originalData,
-      }: {
-        account: Updates<TableNames.Accounts>;
-        originalData: Account;
-      }) => {
-        return await updateAccountRepoHelper(account, session, originalData, accountRepo, transactionRepo, configRepo);
+      mutationFn: async ({ form, original }: { form: Updates<TableNames.Accounts>; original: Account }) => {
+        return await updateAccountRepoHelper(form, session, original, accountRepo, transactionRepo, configRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -96,35 +98,35 @@ export function useAccountService() {
     });
   };
 
-  const upsertAccount = () => {
+  const upsert = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        formAccount,
-        originalData,
-        addAdjustmentTransaction = false,
+        form,
+        original,
+        addAdjustmentTransaction: props = false,
       }: {
-        formAccount: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
-        originalData?: Account;
+        form: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
+        original?: Account;
         addAdjustmentTransaction?: boolean;
       }) => {
         // Clean up properties that shouldn't be sent to database
-        (formAccount as any).category = undefined;
-        (formAccount as any).running_balance = undefined;
+        (form as any).category = undefined;
+        (form as any).running_balance = undefined;
 
-        if (formAccount.id && originalData) {
+        if (form.id && original) {
           return await updateAccountRepoHelper(
-            formAccount,
+            form,
             session,
-            originalData,
+            original,
             accountRepo,
             transactionRepo,
             configRepo,
-            addAdjustmentTransaction,
+            props,
           );
         }
         return await createAccountRepoHelper(
-          formAccount as Inserts<TableNames.Accounts>,
+          form as Inserts<TableNames.Accounts>,
           session,
           accountRepo,
           transactionRepo,
@@ -141,7 +143,7 @@ export function useAccountService() {
     });
   };
 
-  const deleteAccount = () => {
+  const deleteObj = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -154,7 +156,7 @@ export function useAccountService() {
     });
   };
 
-  const restoreAccount = () => {
+  const restore = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -219,15 +221,16 @@ export function useAccountService() {
 
   return {
     // Repository-based methods (new)
-    findAllAccounts,
-    findAccountById,
+    findAll,
+    findById,
     getTotalAccountsBalance,
     getAccountOpenedTransaction,
-    createAccount,
-    updateAccount,
-    upsertAccount,
-    deleteAccount,
-    restoreAccount,
+    create,
+    update,
+    upsert,
+    delete: deleteObj,
+    softDelete: deleteObj,
+    restore,
     updateAccountBalance,
     updateAccountOpenedTransaction,
 
@@ -244,7 +247,7 @@ export function useAccountService() {
     // updateAccountOpenedTransaction,
 
     // Direct repository access
-    accountRepo,
+    repo: accountRepo,
   };
 }
 

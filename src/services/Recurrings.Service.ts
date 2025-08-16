@@ -16,8 +16,12 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { Session } from "@supabase/supabase-js";
 import dayjs from "dayjs";
+import { IService } from "./IService";
 
-export function useRecurringService() {
+export interface IRecurringService
+  extends IService<Recurring, Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings>> {}
+
+export function useRecurringService(): IRecurringService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
@@ -63,8 +67,8 @@ export function useRecurringService() {
   const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async ({ data, originalData }: { data: Updates<TableNames.Recurrings>; originalData: Recurring }) => {
-        return await updateRepoHelper(data, session, recurringRepo);
+      mutationFn: async ({ form, original }: { form: Updates<TableNames.Recurrings>; original: Recurring }) => {
+        return await updateRepoHelper(form, session, recurringRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
@@ -113,6 +117,7 @@ export function useRecurringService() {
     create,
     update,
     softDelete,
+    delete: softDelete,
     restore,
 
     // Legacy methods (backward compatibility)
@@ -124,7 +129,7 @@ export function useRecurringService() {
     // useExecuteRecurringAction,
 
     // Direct repository access
-    recurringRepo,
+    repo: recurringRepo,
   };
 }
 

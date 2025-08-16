@@ -7,25 +7,26 @@ import { Session } from "@supabase/supabase-js";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
-import { initialSearchFilters } from "@/src/utils/transactions.helper";
-import { MultiTransactionGroup } from "@/src/types/components/MultipleTransactions.types";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 import { useStorageMode } from "../providers/StorageModeProvider";
 // Legacy imports - these need to be updated to use repositories
-import {
-  createMultipleTransactions,
-  createTransaction,
-  createTransactions,
-  deleteTransaction,
-  getAllTransactions,
-  getTransactionById,
-  getTransactions,
-  getTransactionsByName,
-  restoreTransaction,
-  updateTransaction,
-} from "@/src/repositories";
+import { createMultipleTransactions, updateTransaction } from "@/src/repositories";
+import { IService } from "./IService";
 
-export function useTransactionService() {
+export interface ITransactionService
+  extends IService<TransactionsView, Inserts<TableNames.Transactions>, Updates<TableNames.Transactions>> {
+  findTransactionsByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: any }[]>>;
+  getByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
+  createMultipleTransactionsRepo: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
+  updateTransferTransactionRepo: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
+  findTransactionsByDate: (date: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
+  findTransactionsByCategory: (
+    categoryId: string,
+    type: "category" | "group",
+  ) => ReturnType<typeof useQuery<TransactionsView[]>>;
+  findTransactionsByMonth: (month: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
+}
+
+export function useTransactionService(): ITransactionService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
@@ -33,7 +34,7 @@ export function useTransactionService() {
   const transactionRepo = dbContext.TransactionRepository();
 
   // Repository-based Transaction hooks
-  const findAllTransactions = (searchFilters: TransactionFilters) => {
+  const findAll = (searchFilters: TransactionFilters) => {
     return useQuery<TransactionsView[]>({
       queryKey: [ViewNames.TransactionsView, searchFilters, tenantId, "repo"],
       queryFn: async () => {
@@ -44,7 +45,7 @@ export function useTransactionService() {
     });
   };
 
-  const findTransactionById = (id?: string) => {
+  const findById = (id?: string) => {
     return useQuery<TransactionsView | Transaction | null>({
       queryKey: [TableNames.Transactions, id, tenantId, "repo"],
       queryFn: async () => {
@@ -56,7 +57,7 @@ export function useTransactionService() {
     });
   };
 
-  const findTransactionsByName = (text: string) => {
+  const findByName = (text: string) => {
     return useQuery<{ label: string; item: any }[]>({
       queryKey: [TableNames.Transactions, "search", text, tenantId, "repo"],
       queryFn: async () => {
@@ -79,11 +80,11 @@ export function useTransactionService() {
     });
   };
 
-  const createTransactionRepo = () => {
+  const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async (transaction: Inserts<TableNames.Transactions>) => {
-        return await createTransactionRepoHelper(transaction, session, transactionRepo);
+      mutationFn: async (form: Inserts<TableNames.Transactions>) => {
+        return await createTransactionRepoHelper(form, session, transactionRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -92,17 +93,17 @@ export function useTransactionService() {
     });
   };
 
-  const updateTransactionRepo = () => {
+  const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        transaction,
-        originalData,
+        form: form,
+        original: original,
       }: {
-        transaction: Updates<TableNames.Transactions>;
-        originalData: Transaction;
+        form: Updates<TableNames.Transactions>;
+        original: Transaction;
       }) => {
-        return await updateTransactionRepoHelper(transaction, session, originalData, transactionRepo);
+        return await updateTransactionRepoHelper(form, session, original, transactionRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -137,7 +138,7 @@ export function useTransactionService() {
     });
   };
 
-  const deleteTransactionRepo = () => {
+  const deleteObj = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -151,7 +152,7 @@ export function useTransactionService() {
     });
   };
 
-  const restoreTransactionRepo = () => {
+  const restore = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -165,7 +166,7 @@ export function useTransactionService() {
     });
   };
 
-  const findTransactionsByDate = (date: string) => {
+  const findByDate = (date: string) => {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byDate", date, tenantId, "repo"],
       queryFn: async () => {
@@ -176,7 +177,7 @@ export function useTransactionService() {
     });
   };
 
-  const findTransactionsByCategory = (categoryId: string, type: "category" | "group") => {
+  const findByCategory = (categoryId: string, type: "category" | "group") => {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byCategory", categoryId, type, tenantId, "repo"],
       queryFn: async () => {
@@ -187,7 +188,7 @@ export function useTransactionService() {
     });
   };
 
-  const findTransactionsByMonth = (month: string) => {
+  const findByMonth = (month: string) => {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byMonth", month, tenantId, "repo"],
       queryFn: async () => {
@@ -210,19 +211,19 @@ export function useTransactionService() {
 
   return {
     // Repository-based methods (new)
-    findAllTransactions,
-    findTransactionById,
-    findTransactionsByName,
+    findAll,
+    findById,
+    findByName,
     getByTransferId,
-    createTransactionRepo,
-    updateTransactionRepo,
+    create,
+    update,
     createMultipleTransactionsRepo,
     updateTransferTransactionRepo,
-    deleteTransactionRepo,
-    restoreTransactionRepo,
-    findTransactionsByDate,
-    findTransactionsByCategory,
-    findTransactionsByMonth,
+    deleteObj,
+    restore,
+    findByDate,
+    findByCategory,
+    findByMonth,
 
     // Legacy methods (backward compatibility) - commented out since the functions don't exist
     // getAllTransactions,
