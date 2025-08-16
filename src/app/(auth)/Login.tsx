@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Alert, SafeAreaView, Text, TextInput, Pressable } from "react-native";
 import { Link, router } from "expo-router";
 import supabase from "@/src/providers/Supabase";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
+// import { useDemoMode } from "@/src/providers/DemoModeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initialUserState);
-  const { setDemo } = useDemoMode();
+  // const { setDemo } = useDemoMode();
   const { setSession } = useAuth?.() || {};
 
   const signInWithEmail = async () => {
@@ -23,7 +23,7 @@ export default function Login() {
   };
 
   const handleDemo = () => {
-    setDemo(true);
+    // setDemo(true);
     if (setSession) {
       setSession({
         user: {
