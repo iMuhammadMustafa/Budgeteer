@@ -14,9 +14,9 @@ import {
   useCreateTransaction,
   useDeleteTransaction,
   useGetTransactionsInfinite,
-} from "@/src/services/repositories/Transactions.Service";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Service";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
+} from "@/src/services//Transactions.Service";
+import { useGetAccounts } from "@/src/services//Accounts.Service";
+import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
 
 export default function useTransactions() {
   const router = useRouter();

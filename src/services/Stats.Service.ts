@@ -7,7 +7,7 @@ import {
   getStatsMonthlyCategoriesTransactions,
   getStatsMonthlyTransactionsTypes,
   getStatsNetWorthGrowth,
-} from "@/src/services/apis/Stats.repository";
+} from "@/src/repositories/Stats.repository";
 import {
   BarDataType,
   DoubleBarPoint,

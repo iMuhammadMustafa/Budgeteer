@@ -9,7 +9,7 @@ import {
   getAllConfigurations,
   restoreConfiguration,
   updateConfiguration,
-} from "../apis/Configurations.repository";
+} from "@/src/repositories/Configurations.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";

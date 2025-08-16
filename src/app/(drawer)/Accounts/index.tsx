@@ -1,14 +1,7 @@
 import { useCallback, useState } from "react";
 import { TabView } from "react-native-tab-view";
-import {
-  useDeleteAccountCategory,
-  useGetAccountCategories,
-} from "@/src/services/repositories/AccountCategories.Service";
-import {
-  useDeleteAccount,
-  useGetAccounts,
-  useGetTotalAccountBalance,
-} from "@/src/services/repositories/Accounts.Service";
+import { useDeleteAccountCategory, useGetAccountCategories } from "@/src/services//AccountCategories.Service";
+import { useDeleteAccount, useGetAccounts, useGetTotalAccountBalance } from "@/src/services//Accounts.Service";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
 import { Text, View, ActivityIndicator, Pressable } from "react-native";
@@ -17,7 +10,7 @@ import MyModal from "@/src/components/MyModal";
 import TextInputField from "@/src/components/TextInputField";
 import { AccountSelecterDropdown } from "@/src/components/DropDownField";
 import MyIcon from "@/src/utils/Icons.Helper";
-import { useCreateTransaction } from "@/src/services/repositories/Transactions.Service";
+import { useCreateTransaction } from "@/src/services//Transactions.Service";
 
 export default function Accounts() {
   const [index, setIndex] = useState(0);

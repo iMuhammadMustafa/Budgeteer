@@ -9,7 +9,7 @@ import {
   getAllTransactionGroups,
   restoreTransactionGroup,
   updateTransactionGroup,
-} from "../apis/TransactionGroups.repository";
+} from "@/src/repositories/TransactionGroups.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";

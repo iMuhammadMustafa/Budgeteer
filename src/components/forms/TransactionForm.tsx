@@ -8,13 +8,13 @@ import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Transaction, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Service";
+import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
+import { useGetAccounts } from "@/src/services//Accounts.Service";
 import {
   useGetTransactionById,
   useSearchTransactionsByName,
   useUpsertTransaction,
-} from "@/src/services/repositories/Transactions.Service";
+} from "@/src/services//Transactions.Service";
 import SearchableDropdown from "../SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "../MyDateTimePicker";
@@ -25,7 +25,7 @@ import DropdownField, {
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
 } from "../DropDownField";
-import { getTransactionsByName } from "@/src/services/apis/Transactions.repository";
+import { getTransactionsByName } from "@/src/repositories/Transactions.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 

@@ -8,14 +8,10 @@ import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Service";
-import {
-  useGetRecurring,
-  useCreateRecurring,
-  useUpdateRecurring,
-} from "@/src/services/repositories/Recurrings.Service";
-import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.repository";
+import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
+import { useGetAccounts } from "@/src/services//Accounts.Service";
+import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/Recurrings.Service";
+import { getTransactionById, getTransactionsByName } from "@/src/repositories/Transactions.repository";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
@@ -23,7 +19,7 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.repository";
+import { CreateRecurringDto, UpdateRecurringDto } from "@/src/repositories/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);

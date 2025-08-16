@@ -9,7 +9,7 @@ import {
   getAllAccountCategories,
   restoreAccountCategory,
   updateAccountCategory,
-} from "../apis/AccountCategories.repository";
+} from "@/src/repositories/AccountCategories.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";

@@ -11,12 +11,12 @@ import {
   getTotalAccountBalance,
   restoreAccount,
   updateAccount,
-} from "../apis/Accounts.repository";
+} from "@/src/repositories/Accounts.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
-import { createTransaction, updateTransaction } from "../apis/Transactions.repository";
-import { getConfiguration } from "../apis/Configurations.repository";
+import { createTransaction, updateTransaction } from "@/src/repositories/Transactions.repository";
+import { getConfiguration } from "@/src/repositories/Configurations.repository";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
 import { getDemoMode } from "@/src/providers/DemoModeGlobal";
 

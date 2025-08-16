@@ -7,8 +7,8 @@ import {
   useGetStatsMonthlyCategoriesTransactionsForDashboard,
   useGetStatsYearTransactionsTypes,
   useGetStatsNetWorthGrowth,
-} from "@/src/services/repositories/Stats.Service";
-import { useGetTransactions } from "@/src/services/repositories/Transactions.Service";
+} from "@/src/services//Stats.Service";
+import { useGetTransactions } from "@/src/services//Transactions.Service";
 import supabase from "@/src/providers/Supabase";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
