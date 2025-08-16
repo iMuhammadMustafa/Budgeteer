@@ -5,7 +5,9 @@ import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
 
 export class AccountRepository implements IAccountRepository {
-  getAllAccounts = async (tenantId: string): Promise<Account[]> => {
+  async findAll(filters?: any, tenantId?: string): Promise<Account[]> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+
     const { data, error } = await supabase
       .from(TableNames.Accounts)
       .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
@@ -17,9 +19,11 @@ export class AccountRepository implements IAccountRepository {
       .order("owner");
     if (error) throw new Error(error.message);
     return data as unknown as Account[];
-  };
+  }
 
-  getAccountById = async (id: string, tenantId: string): Promise<Account | null> => {
+  async findById(id: string, tenantId?: string): Promise<Account | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+
     const { data, error } = await supabase
       .from(ViewNames.ViewAccountsWithRunningBalance)
       .select(`*`)
@@ -43,62 +47,69 @@ export class AccountRepository implements IAccountRepository {
       ...data,
       category,
     } as unknown as Account | null;
-  };
+  }
 
-  createAccount = async (account: Inserts<TableNames.Accounts>) => {
-    const { data, error } = await supabase.from(TableNames.Accounts).insert(account).select().single();
+  async create(data: Inserts<TableNames.Accounts>, tenantId?: string): Promise<Account> {
+    const { data: result, error } = await supabase.from(TableNames.Accounts).insert(data).select().single();
 
     if (error) throw error;
-    return data;
-  };
+    return result;
+  }
 
-  updateAccount = async (account: Updates<TableNames.Accounts>) => {
-    const { data, error } = await supabase
+  async update(id: string, data: Updates<TableNames.Accounts>, tenantId?: string): Promise<Account | null> {
+    const { data: result, error } = await supabase
       .from(TableNames.Accounts)
-      .update({ ...account })
-      .eq("id", account.id!)
+      .update({ ...data })
+      .eq("id", id)
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
-  };
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw error;
+    }
+    return result;
+  }
 
-  deleteAccount = async (id: string, userId?: string) => {
-    const { data, error } = await supabase
+  async delete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase.from(TableNames.Accounts).delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async softDelete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
       .from(TableNames.Accounts)
       .update({
         isdeleted: true,
-        updatedby: userId ?? undefined,
         updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       })
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", id);
     if (error) throw error;
-    return data;
-  };
-  restoreAccount = async (id: string, userId?: string) => {
-    const { data, error } = await supabase
-      .from(TableNames.Accounts)
-      .update({ isdeleted: false, updatedby: userId ?? undefined, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  };
+  }
 
-  updateAccountBalance = async (accountid: string, amount: number) => {
+  async restore(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.Accounts)
+      .update({
+        isdeleted: false,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+
+  async updateAccountBalance(accountid: string, amount: number, tenantId?: string): Promise<number> {
     const { data, error } = await supabase.rpc(FunctionNames.UpdateAccountBalance, {
       accountid,
       amount,
     });
     if (error) throw error;
     return data;
-  };
+  }
 
-  getAccountOpenedTransaction = async (accountid: string, tenantId: string) => {
+  async getAccountOpenedTransaction(accountid: string, tenantId?: string): Promise<{ id: string; amount: number }> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+
     const { data, error } = await supabase
       .from(TableNames.Transactions)
       .select("id, amount")
@@ -110,9 +121,11 @@ export class AccountRepository implements IAccountRepository {
 
     if (error) throw new Error(error.message);
     return data;
-  };
+  }
 
-  getTotalAccountBalance = async (tenantId: string): Promise<{ totalbalance: number } | null> => {
+  async getTotalAccountBalance(tenantId?: string): Promise<{ totalbalance: number } | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+
     const { data, error } = await supabase
       .from(ViewNames.StatsTotalAccountBalance)
       .select("totalbalance")
@@ -127,5 +140,13 @@ export class AccountRepository implements IAccountRepository {
       throw new Error(error.message);
     }
     return data as { totalbalance: number } | null;
-  };
+  }
+
+  // Legacy methods for backward compatibility
+  getAllAccounts = this.findAll;
+  getAccountById = this.findById;
+  createAccount = this.create;
+  updateAccount = (account: Updates<TableNames.Accounts>) => this.update(account.id!, account);
+  deleteAccount = this.softDelete;
+  restoreAccount = this.restore;
 }
