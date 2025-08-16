@@ -14,15 +14,19 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { useStorageMode } from "../providers/StorageModeProvider";
+import { IService } from "./IService";
 
-export function useAccountCategoryService() {
+export interface IAccountCategoryService
+  extends IService<AccountCategory, Inserts<TableNames.AccountCategories>, Updates<TableNames.AccountCategories>> {}
+
+export function useAccountCategoryService(): IAccountCategoryService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
   const { dbContext } = useStorageMode();
   const accountCategoryRepo = dbContext.AccountCategoryRepository();
 
-  const getAccountCategories = () => {
+  const findAll = () => {
     return useQuery<AccountCategory[]>({
       queryKey: [TableNames.AccountCategories, tenantId, "repo"],
       queryFn: async () => {
@@ -33,7 +37,7 @@ export function useAccountCategoryService() {
     });
   };
 
-  const getAccountCategoryById = (id?: string) => {
+  const findById = (id?: string) => {
     return useQuery<AccountCategory | null>({
       queryKey: [TableNames.AccountCategories, id, tenantId, "repo"],
       queryFn: async () => {
@@ -45,7 +49,7 @@ export function useAccountCategoryService() {
     });
   };
 
-  const createAccountCategory = () => {
+  const create = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (accountCategory: Inserts<TableNames.AccountCategories>) => {
@@ -57,17 +61,17 @@ export function useAccountCategoryService() {
     });
   };
 
-  const updateAccountCategory = () => {
+  const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        accountCategory,
-        originalData,
+        form,
+        original,
       }: {
-        accountCategory: Updates<TableNames.AccountCategories>;
-        originalData: AccountCategory;
+        form: Updates<TableNames.AccountCategories>;
+        original: AccountCategory;
       }) => {
-        return await updateAccountCategoryRepoHelper(accountCategory, session, accountCategoryRepo);
+        return await updateAccountCategoryRepoHelper(form, session, accountCategoryRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
@@ -75,21 +79,21 @@ export function useAccountCategoryService() {
     });
   };
 
-  const upsertAccountCategory = () => {
+  const upsert = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
-        formData,
-        originalData,
+        form,
+        original,
       }: {
-        formData: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
-        originalData?: AccountCategory;
+        form: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
+        original?: AccountCategory;
       }) => {
-        if (formData.id && originalData) {
-          return await updateAccountCategoryRepoHelper(formData, session, accountCategoryRepo);
+        if (form.id && original) {
+          return await updateAccountCategoryRepoHelper(form, session, accountCategoryRepo);
         }
         return await createAccountCategoryRepoHelper(
-          formData as Inserts<TableNames.AccountCategories>,
+          form as Inserts<TableNames.AccountCategories>,
           session,
           accountCategoryRepo,
         );
@@ -103,7 +107,7 @@ export function useAccountCategoryService() {
     });
   };
 
-  const deleteAccountCategory = () => {
+  const deleteObj = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -116,7 +120,7 @@ export function useAccountCategoryService() {
     });
   };
 
-  const softDeleteAccountCategory = () => {
+  const softDelete = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -129,7 +133,7 @@ export function useAccountCategoryService() {
     });
   };
 
-  const restoreAccountCategory = () => {
+  const restore = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
@@ -153,14 +157,14 @@ export function useAccountCategoryService() {
 
   return {
     // Repository-based Account Categories (new methods)
-    getAccountCategories,
-    getAccountCategoryById,
-    createAccountCategory,
-    updateAccountCategory,
-    upsertAccountCategory,
-    deleteAccountCategory,
-    softDeleteAccountCategory,
-    restoreAccountCategory,
+    findAll,
+    findById,
+    create,
+    update,
+    upsert,
+    delete: deleteObj,
+    softDelete,
+    restore,
 
     // // Legacy Account Categories (for backward compatibility)
     // getAccountCategoriesLegacy,
@@ -172,7 +176,7 @@ export function useAccountCategoryService() {
     // restoreAccountCategoryLegacy,
 
     // Direct repository access
-    accountCategoryRepo,
+    repo: accountCategoryRepo,
   };
 }
 
