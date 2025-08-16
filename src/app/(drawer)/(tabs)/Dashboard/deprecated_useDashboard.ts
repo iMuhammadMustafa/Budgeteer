@@ -5,7 +5,7 @@ import {
   useGetStatsDailyTransactions,
   useGetStatsMonthlyCategoriesTransactionsForDashboard,
   useGetStatsYearTransactionsTypes,
-} from "@/src/services/repositories/Stats.Service";
+} from "@/src/services//Stats.Service";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
 import supabase from "@/src/providers/Supabase";
 import { ViewNames, TableNames } from "@/src/types/db/TableNames";

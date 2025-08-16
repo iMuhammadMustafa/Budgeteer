@@ -4,7 +4,7 @@ import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertAccountCategory } from "@/src/services/repositories/AccountCategories.Service";
+import { useUpsertAccountCategory } from "@/src/services//AccountCategories.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";

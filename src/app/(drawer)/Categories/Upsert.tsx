@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetTransactionCategoryById } from "@/src/services/repositories/TransactionCategories.Service";
+import { useGetTransactionCategoryById } from "@/src/services//TransactionCategories.Service";
 import TransactionCategoryForm, {
   TransactionCategoryFormType,
   initialState,

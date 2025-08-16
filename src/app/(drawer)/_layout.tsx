@@ -15,7 +15,7 @@ import { useDemoMode } from "@/src/providers/DemoModeProvider";
 import {
   initializeMockDataInLocalStorage,
   resetMockDataInLocalStorage,
-} from "@/src/services/apis/__mock__/mockDataLocalStorage";
+} from "@/src/repositories/__mock__/mockDataLocalStorage";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();

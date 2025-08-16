@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetTransactionGroupById } from "@/src/services/repositories/TransactionGroups.Service";
+import { useGetTransactionGroupById } from "@/src/services//TransactionGroups.Service";
 import TransactionGroupForm, {
   TransactionGroupFormType,
   initialState,

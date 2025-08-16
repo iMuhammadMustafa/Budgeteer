@@ -3,8 +3,8 @@ import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react
 import { router } from "expo-router";
 import { Inserts, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertTransactionCategory } from "@/src/services/repositories/TransactionCategories.Service";
-import { useGetTransactionGroups } from "@/src/services/repositories/TransactionGroups.Service";
+import { useUpsertTransactionCategory } from "@/src/services//TransactionCategories.Service";
+import { useGetTransactionGroups } from "@/src/services//TransactionGroups.Service";
 import DropdownField, { ColorsPickerDropdown, MyTransactionTypesDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";

@@ -10,10 +10,10 @@ import {
   // applyRecurringTransaction, // Removed as logic moves to repository
   CreateRecurringDto,
   UpdateRecurringDto,
-} from "../apis/Recurrings.repository";
+} from "@/src/repositories/Recurrings.repository";
 // Import createTransaction from Transactions.api
-import { createTransaction } from "../apis/Transactions.repository";
-import { updateAccountBalance } from "../apis/Accounts.repository";
+import { createTransaction } from "@/src/repositories/Transactions.repository";
+import { updateAccountBalance } from "@/src/repositories/Accounts.repository";
 import { Inserts as TransactionInserts } from "@/src/types/db/Tables.Types"; // For Transaction DTO
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";

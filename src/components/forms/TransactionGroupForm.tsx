@@ -3,7 +3,7 @@ import { Platform, SafeAreaView, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertTransactionGroup } from "@/src/services/repositories/TransactionGroups.Service";
+import { useUpsertTransactionGroup } from "@/src/services//TransactionGroups.Service";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
