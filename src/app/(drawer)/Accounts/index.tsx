@@ -1,7 +1,5 @@
 import { useCallback, useState } from "react";
 import { TabView } from "react-native-tab-view";
-import { useDeleteAccountCategory, useGetAccountCategories } from "@/src/services//AccountCategories.Service";
-import { useDeleteAccount, useGetAccounts, useGetTotalAccountBalance } from "@/src/services//Accounts.Service";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
 import { Text, View, ActivityIndicator, Pressable } from "react-native";
@@ -10,7 +8,9 @@ import MyModal from "@/src/components/MyModal";
 import TextInputField from "@/src/components/TextInputField";
 import { AccountSelecterDropdown } from "@/src/components/DropDownField";
 import MyIcon from "@/src/utils/Icons.Helper";
-import { useCreateTransaction } from "@/src/services//Transactions.Service";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export default function Accounts() {
   const [index, setIndex] = useState(0);
@@ -55,9 +55,11 @@ const Bar = (props: any) => (
 );
 
 const AccountsRoute = () => {
-  const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = useGetTotalAccountBalance();
-  const { data: accounts, isLoading: isLoadingAccounts } = useGetAccounts();
-  const { mutate: createTransaction, isPending: isCreating } = useCreateTransaction();
+  const accountService = useAccountService();
+  const transactionService = useTransactionService();
+  const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.getTotalAccountsBalance();
+  const { data: accounts, isLoading: isLoadingAccounts } = accountService.findAllAccounts();
+  const { mutate: createTransaction, isPending: isCreating } = transactionService.createTransactionRepo();
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
@@ -144,7 +146,7 @@ const AccountsRoute = () => {
       <Tab
         title="Accounts"
         queryKey={[TableNames.Accounts]}
-        useGet={useGetAccounts}
+        useGet={accountService.findAllAccounts}
         customMapping={(item: any) => ({
           ...item,
           details: item.balance.toLocaleString("en-US", {
@@ -158,7 +160,7 @@ const AccountsRoute = () => {
             currency: "USD", // TODO: Make currency dynamic
           })}`
         }
-        useDelete={useDeleteAccount}
+        useDelete={accountService.deleteAccount}
         upsertUrl={"/Accounts/Upsert?accountId="}
         groupedBy={"category.name"}
         Footer={<FooterContent />}
@@ -190,12 +192,16 @@ const AccountsRoute = () => {
   );
 };
 
-const AccountsCategoriesRoute = () => (
-  <Tab
-    title="Categories"
-    queryKey={[TableNames.AccountCategories]}
-    useGet={useGetAccountCategories}
-    useDelete={useDeleteAccountCategory}
-    upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
-  />
-);
+const AccountsCategoriesRoute = () => {
+  const accountCategoryService = useAccountCategoryService();
+
+  return (
+    <Tab
+      title="Categories"
+      queryKey={[TableNames.AccountCategories]}
+      useGet={accountCategoryService.getAccountCategories}
+      useDelete={accountCategoryService.deleteAccountCategory}
+      upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
+    />
+  );
+};
