@@ -2,18 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createAccountCategory,
-  deleteAccountCategory,
-  getAccountCategoryById,
-  getAllAccountCategories,
-  restoreAccountCategory,
-  updateAccountCategory,
-} from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
-import { useStorageMode } from "../providers/StorageModeProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { IService } from "./IService";
 
 export interface IAccountCategoryService
