@@ -20,4 +20,7 @@ export interface ITransactionRepository
   findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]>;
   updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>;
+  findByDate(date: string, tenantId: string): Promise<TransactionsView[]>;
+  findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]>;
+  findByMonth(month: string, tenantId: string): Promise<TransactionsView[]>;
 }

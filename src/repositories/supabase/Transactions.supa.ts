@@ -136,6 +136,61 @@ export class TransactionSupaRepository implements ITransactionRepository {
     return data;
   }
 
+  async findByDate(date: string, tenantId: string): Promise<TransactionsView[]> {
+    // Convert the date to local timezone for the start and end of the day
+    const startOfDay = dayjs(date).startOf("day").toISOString();
+    const endOfDay = dayjs(date).endOf("day").toISOString();
+
+    const { data, error } = await supabase
+      .from(ViewNames.TransactionsView)
+      .select("*")
+      .eq("tenantid", tenantId)
+      // .eq("isdeleted", false)
+      .gte("date", startOfDay)
+      .lte("date", endOfDay)
+      .order("date", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  async findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]> {
+    // Get the start and end of the current month in local timezone
+    const startOfMonth = dayjs().startOf("month").toISOString();
+    const endOfMonth = dayjs().endOf("month").toISOString();
+
+    const { data, error } = await supabase
+      .from(ViewNames.TransactionsView)
+      .select("*")
+      .eq("tenantid", tenantId)
+      // .eq("isdeleted", false)
+      .gte("date", startOfMonth)
+      .lte("date", endOfMonth)
+      .eq(type === "category" ? "categoryid" : "groupid", categoryId)
+      .order("date", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  async findByMonth(month: string, tenantId: string): Promise<TransactionsView[]> {
+    // Convert the month to local timezone for the start and end of the month
+    const startOfMonth = dayjs(month).startOf("month").toISOString();
+    const endOfMonth = dayjs(month).endOf("month").toISOString();
+
+    const { data, error } = await supabase
+      .from(ViewNames.TransactionsView)
+      .select("*")
+      .eq("tenantid", tenantId)
+      // .eq("isdeleted", false)
+      .gte("date", startOfMonth)
+      .lte("date", endOfMonth)
+      .order("date", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
   private buildQuery = (searchFilters: TransactionFilters, tenantId: string, isCount = false) => {
     let query = supabase.from(ViewNames.TransactionsView).select().eq("tenantid", tenantId);
 

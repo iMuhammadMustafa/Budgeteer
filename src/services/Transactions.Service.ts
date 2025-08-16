@@ -165,15 +165,48 @@ export function useTransactionService() {
     });
   };
 
-  // Legacy hooks for backward compatibility
-  const getAllTransactions = useGetAllTransactions();
-  const getTransactions = (searchFilters: TransactionFilters) => useGetTransactions(searchFilters);
-  const getTransactionById = (id?: string) => useGetTransactionById(id);
-  const getTransactionsByName = (text: string) => useSearchTransactionsByName(text);
-  const createTransaction = useCreateTransaction();
-  const updateTransaction = useUpdateTransaction();
-  const deleteTransaction = useDeleteTransaction();
-  const restoreTransaction = useRestoreTransaction();
+  const findTransactionsByDate = (date: string) => {
+    return useQuery<TransactionsView[]>({
+      queryKey: [TableNames.Transactions, "byDate", date, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findByDate(date, tenantId);
+      },
+      enabled: !!tenantId && !!date,
+    });
+  };
+
+  const findTransactionsByCategory = (categoryId: string, type: "category" | "group") => {
+    return useQuery<TransactionsView[]>({
+      queryKey: [TableNames.Transactions, "byCategory", categoryId, type, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findByCategory(categoryId, type, tenantId);
+      },
+      enabled: !!tenantId && !!categoryId,
+    });
+  };
+
+  const findTransactionsByMonth = (month: string) => {
+    return useQuery<TransactionsView[]>({
+      queryKey: [TableNames.Transactions, "byMonth", month, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return transactionRepo.findByMonth(month, tenantId);
+      },
+      enabled: !!tenantId && !!month,
+    });
+  };
+
+  // Legacy hooks for backward compatibility - commented out since functions don't exist
+  // const getAllTransactions = useGetAllTransactions();
+  // const getTransactions = (searchFilters: TransactionFilters) => useGetTransactions(searchFilters);
+  // const getTransactionById = (id?: string) => useGetTransactionById(id);
+  // const getTransactionsByName = (text: string) => useSearchTransactionsByName(text);
+  // const createTransaction = useCreateTransaction();
+  // const updateTransaction = useUpdateTransaction();
+  // const deleteTransaction = useDeleteTransaction();
+  // const restoreTransaction = useRestoreTransaction();
 
   return {
     // Repository-based methods (new)
@@ -187,16 +220,19 @@ export function useTransactionService() {
     updateTransferTransactionRepo,
     deleteTransactionRepo,
     restoreTransactionRepo,
+    findTransactionsByDate,
+    findTransactionsByCategory,
+    findTransactionsByMonth,
 
-    // Legacy methods (backward compatibility)
-    getAllTransactions,
-    getTransactions,
-    getTransactionById,
-    getTransactionsByName,
-    createTransaction,
-    updateTransaction,
-    deleteTransaction,
-    restoreTransaction,
+    // Legacy methods (backward compatibility) - commented out since the functions don't exist
+    // getAllTransactions,
+    // getTransactions,
+    // getTransactionById,
+    // getTransactionsByName,
+    // createTransaction,
+    // updateTransaction,
+    // deleteTransaction,
+    // restoreTransaction,
 
     // Direct repository access
     transactionRepo,

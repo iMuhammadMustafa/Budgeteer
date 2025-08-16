@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import supabase from "@/src/providers/Supabase";
-import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { useStatsService } from "@/src/services/Stats.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
+import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,6 +20,9 @@ const endOfCurrentYear = dayjs().endOf("year").toISOString();
 
 export default function useDashboard() {
   const statsService = useStatsService();
+  const transactionService = useTransactionService();
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
 
   const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.getStatsDailyTransactions(
     startOfCurrentMonth,
@@ -52,70 +55,34 @@ export default function useDashboard() {
     return monthlyTransactionsGroupsAndCategories.groups;
   }, [monthlyTransactionsGroupsAndCategories]);
 
-  // Function to fetch transactions for a specific date
+  // Helper functions to fetch data directly from repository
   const fetchTransactionsForDate = async (date: string): Promise<TransactionsView[]> => {
     try {
-      // Convert the date to local timezone for the start and end of the day
-      const startOfDay = dayjs(date).startOf("day").toISOString();
-      const endOfDay = dayjs(date).endOf("day").toISOString();
-
-      const { data, error } = await supabase
-        .from("transactionsview")
-        .select("*")
-        .gte("date", startOfDay)
-        .lte("date", endOfDay)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      if (!tenantId) throw new Error("Tenant ID not found");
+      return await transactionService.transactionRepo.findByDate(date, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
       return [];
     }
   };
 
-  // Function to fetch transactions for a specific category or group
   const fetchTransactionsForCategory = async (
     categoryId: string,
     type: "category" | "group",
   ): Promise<TransactionsView[]> => {
     try {
-      // Get the start and end of the current month in local timezone
-      const startOfMonth = dayjs().startOf("month").toISOString();
-      const endOfMonth = dayjs().endOf("month").toISOString();
-
-      const { data, error } = await supabase
-        .from("transactionsview")
-        .select("*")
-        .gte("date", startOfMonth)
-        .lte("date", endOfMonth)
-        .eq(type === "category" ? "categoryid" : "groupid", categoryId)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      if (!tenantId) throw new Error("Tenant ID not found");
+      return await transactionService.transactionRepo.findByCategory(categoryId, type, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for category:", error);
       return [];
     }
   };
 
-  // Function to fetch transactions for a specific month
   const fetchTransactionsForMonthAndType = async (month: string): Promise<TransactionsView[]> => {
     try {
-      // Convert the month to local timezone for the start and end of the month
-      const startOfMonth = dayjs(month).startOf("month").toISOString();
-      const endOfMonth = dayjs(month).endOf("month").toISOString();
-
-      const { data, error } = await supabase
-        .from("transactionsview")
-        .select("*")
-        .gte("date", startOfMonth)
-        .lte("date", endOfMonth)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      if (!tenantId) throw new Error("Tenant ID not found");
+      return await transactionService.transactionRepo.findByMonth(month, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for month:", error);
       return [];
