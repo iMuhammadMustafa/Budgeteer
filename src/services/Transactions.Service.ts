@@ -1,5 +1,11 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { Transaction, Inserts, Updates, TransactionsView } from "@/src/types/db/Tables.Types";
+import {
+  Transaction,
+  Inserts,
+  Updates,
+  TransactionsView,
+  SearchDistinctTransactions,
+} from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
@@ -9,21 +15,23 @@ import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { useStorageMode } from "../providers/StorageModeProvider";
 // Legacy imports - these need to be updated to use repositories
-import { createMultipleTransactions, updateTransaction } from "@/src/repositories";
-import { IService } from "./IService";
+import { ITransactionRepository } from "@/src/repositories";
+import { IServiceWithView } from "./IService";
 
 export interface ITransactionService
-  extends IService<TransactionsView, Inserts<TableNames.Transactions>, Updates<TableNames.Transactions>> {
-  findTransactionsByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: any }[]>>;
+  extends IServiceWithView<
+    Transaction,
+    Inserts<TableNames.Transactions>,
+    Updates<TableNames.Transactions>,
+    TransactionsView
+  > {
+  findByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: SearchDistinctTransactions }[]>>;
   getByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   createMultipleTransactionsRepo: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   updateTransferTransactionRepo: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
-  findTransactionsByDate: (date: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
-  findTransactionsByCategory: (
-    categoryId: string,
-    type: "category" | "group",
-  ) => ReturnType<typeof useQuery<TransactionsView[]>>;
-  findTransactionsByMonth: (month: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
+  findByDate: (date: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
+  findByCategory: (categoryId: string, type: "category" | "group") => ReturnType<typeof useQuery<TransactionsView[]>>;
+  findByMonth: (month: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -84,7 +92,7 @@ export function useTransactionService(): ITransactionService {
     if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (form: Inserts<TableNames.Transactions>) => {
-        return await createTransactionRepoHelper(form, session, transactionRepo);
+        return await createTransactionHelper(form, session, transactionRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -96,14 +104,9 @@ export function useTransactionService(): ITransactionService {
   const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async ({
-        form: form,
-        original: original,
-      }: {
-        form: Updates<TableNames.Transactions>;
-        original: Transaction;
-      }) => {
-        return await updateTransactionRepoHelper(form, session, original, transactionRepo);
+      mutationFn: async ({ form, original }: { form: Updates<TableNames.Transactions>; original: Transaction }) => {
+        await updateTransactionHelper(form, original, session, transactionRepo);
+        return original;
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -219,7 +222,8 @@ export function useTransactionService(): ITransactionService {
     update,
     createMultipleTransactionsRepo,
     updateTransferTransactionRepo,
-    deleteObj,
+    delete: deleteObj,
+    softDelete: deleteObj,
     restore,
     findByDate,
     findByCategory,
@@ -236,42 +240,42 @@ export function useTransactionService(): ITransactionService {
     // restoreTransaction,
 
     // Direct repository access
-    transactionRepo,
+    repo: transactionRepo,
   };
 }
 
-// Repository-based helper functions
-const createTransactionRepoHelper = async (
-  formData: Inserts<TableNames.Transactions>,
-  session: Session,
-  repository: any,
-) => {
-  let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+// // Repository-based helper functions
+// const createTransactionRepoHelper = async (
+//   formData: Inserts<TableNames.Transactions>,
+//   session: Session,
+//   repository: any,
+// ) => {
+//   let userId = session.user.id;
+//   let tenantid = session.user.user_metadata.tenantid;
 
-  formData.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
-  formData.createdby = userId;
-  formData.tenantid = tenantid;
+//   formData.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+//   formData.createdby = userId;
+//   formData.tenantid = tenantid;
 
-  const newEntity = await repository.create(formData, tenantid);
-  return newEntity;
-};
+//   const newEntity = await repository.create(formData, tenantid);
+//   return newEntity;
+// };
 
-const updateTransactionRepoHelper = async (
-  formData: Updates<TableNames.Transactions>,
-  session: Session,
-  originalData: Transaction,
-  repository: any,
-) => {
-  let userId = session.user.id;
+// const updateTransactionRepoHelper = async (
+//   formData: Updates<TableNames.Transactions>,
+//   session: Session,
+//   originalData: Transaction,
+//   repository: any,
+// ) => {
+//   let userId = session.user.id;
 
-  formData.updatedby = userId;
-  formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+//   formData.updatedby = userId;
+//   formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  if (!formData.id) throw new Error("ID is required for update");
-  const updatedEntity = await repository.update(formData.id, formData);
-  return updatedEntity;
-};
+//   if (!formData.id) throw new Error("ID is required for update");
+//   const updatedEntity = await repository.update(formData.id, formData);
+//   return updatedEntity;
+// };
 
 // export const useGetAllTransactions = () => {
 //   const { session } = useAuth();
@@ -514,7 +518,11 @@ const updateTransactionRepoHelper = async (
 //   });
 // };
 
-const createTransactionHelper = async (formTransaction: Inserts<TableNames.Transactions>, session: Session) => {
+const createTransactionHelper = async (
+  formTransaction: Inserts<TableNames.Transactions>,
+  session: Session,
+  repo: ITransactionRepository,
+) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
   const transactions: Inserts<TableNames.Transactions>[] = [];
@@ -543,7 +551,7 @@ const createTransactionHelper = async (formTransaction: Inserts<TableNames.Trans
     transactions.push(transferTransaction);
   }
 
-  const newTransactions = await createMultipleTransactions(transactions);
+  const newTransactions = await repo.createMultipleTransactions(transactions);
 
   if (newTransactions) {
     // Account balance updates would need to be handled by the repository or calling code
@@ -560,8 +568,10 @@ export const updateTransactionHelper = async (
   formTransaction: Updates<TableNames.Transactions>,
   originalData: Transaction,
   session: Session,
+  transactionRepo: ITransactionRepository,
 ) => {
   let userId = session.user.id;
+  let tenantId = session.user.user_metadata.tenantid;
 
   const currentTimestamp = new Date().toISOString();
 
@@ -810,14 +820,18 @@ export const updateTransactionHelper = async (
     updatedTransaction.updatedat = currentTimestamp;
     updatedTransaction.updatedby = userId;
 
-    const updatedTransactionRes = await updateTransaction(updatedTransaction);
+    const updatedTransactionRes = await transactionRepo.update(updatedTransaction.id, updatedTransaction, tenantId);
   }
   if (originalData.transferid && Object.keys(updatedTransferTransaction).length > 0) {
     updatedTransferTransaction.id = originalData.transferid;
     updatedTransferTransaction.updatedat = currentTimestamp;
     updatedTransferTransaction.updatedby = userId;
 
-    const updatedTransferTransactionRes = await updateTransaction(updatedTransferTransaction);
+    const updatedTransferTransactionRes = await transactionRepo.update(
+      updatedTransferTransaction.id,
+      updatedTransferTransaction,
+      tenantId,
+    );
   }
 
   try {
