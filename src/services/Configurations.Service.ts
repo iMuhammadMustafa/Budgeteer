@@ -9,6 +9,7 @@ import {
   getAllConfigurations,
   restoreConfiguration,
   updateConfiguration,
+  IConfigurationRepository,
 } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
@@ -143,13 +144,13 @@ export function useConfigurationService() {
   };
 
   // Legacy hooks for backward compatibility
-  const getConfigurations = useGetConfigurations();
-  const getConfigurationById = (id?: string) => useGetConfigurationById(id);
-  const createConfiguration = useCreateConfiguration();
-  const updateConfiguration = useUpdateConfiguration();
-  const upsertConfiguration = useUpsertConfiguration();
-  const deleteConfiguration = useDeleteConfiguration();
-  const restoreConfiguration = useRestoreConfiguration();
+  // const getConfigurations = useGetConfigurations();
+  // const getConfigurationById = (id?: string) => useGetConfigurationById(id);
+  // const createConfiguration = useCreateConfiguration();
+  // const updateConfiguration = useUpdateConfiguration();
+  // const upsertConfiguration = useUpsertConfiguration();
+  // const deleteConfiguration = useDeleteConfiguration();
+  // const restoreConfiguration = useRestoreConfiguration();
 
   return {
     // Repository-based methods (new)
@@ -163,165 +164,165 @@ export function useConfigurationService() {
     restoreConfigurationRepo,
 
     // Legacy methods (backward compatibility)
-    getConfigurations,
-    getConfigurationById,
-    createConfiguration,
-    updateConfiguration,
-    upsertConfiguration,
-    deleteConfiguration,
-    restoreConfiguration,
+    // getConfigurations,
+    // getConfigurationById,
+    // createConfiguration,
+    // updateConfiguration,
+    // upsertConfiguration,
+    // deleteConfiguration,
+    // restoreConfiguration,
 
     // Direct repository access
     configurationRepo,
   };
 }
 
-export const useGetConfigurations = () => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Configuration[]>({
-    queryKey: [TableNames.Configurations, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllConfigurations(tenantId);
-    },
-    enabled: !!tenantId,
-  });
-};
+// export const useGetConfigurations = () => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Configuration[]>({
+//     queryKey: [TableNames.Configurations, tenantId],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getAllConfigurations(tenantId);
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
 
-export const useGetConfigurationById = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Configuration | null>({
-    queryKey: [TableNames.Configurations, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getConfigurationById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
+// export const useGetConfigurationById = (id?: string) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Configuration | null>({
+//     queryKey: [TableNames.Configurations, id, tenantId],
+//     queryFn: async () => {
+//       if (!id) throw new Error("ID is required");
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getConfigurationById(id, tenantId);
+//     },
+//     enabled: !!id && !!tenantId,
+//   });
+// };
 
-export const useCreateConfiguration = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  return useMutation({
-    mutationFn: async (accountGroup: Inserts<TableNames.Configurations>) => {
-      return await createConfigurationHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
-    },
-  });
-};
-export const useUpdateConfiguration = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useCreateConfiguration = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   return useMutation({
+//     mutationFn: async (accountGroup: Inserts<TableNames.Configurations>) => {
+//       return await createConfigurationHelper(accountGroup, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+//     },
+//   });
+// };
+// export const useUpdateConfiguration = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      accountGroup,
-      originalData,
-    }: {
-      accountGroup: Updates<TableNames.Configurations>;
-      originalData: Configuration;
-    }) => {
-      return await updateConfigurationHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async ({
+//       accountGroup,
+//       originalData,
+//     }: {
+//       accountGroup: Updates<TableNames.Configurations>;
+//       originalData: Configuration;
+//     }) => {
+//       return await updateConfigurationHelper(accountGroup, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+//     },
+//   });
+// };
 
-export const useUpsertConfiguration = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useUpsertConfiguration = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      formConfiguration,
-      originalData,
-    }: {
-      formConfiguration: Inserts<TableNames.Configurations> | Updates<TableNames.Configurations>;
-      originalData?: Configuration;
-    }) => {
-      if (formConfiguration.id && originalData) {
-        return await updateConfigurationHelper(formConfiguration, session);
-      }
-      return await createConfigurationHelper(formConfiguration as Inserts<TableNames.Configurations>, session);
-    },
-    onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    },
-    onError: (error, variables, context) => {
-      throw new Error(JSON.stringify(error));
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async ({
+//       formConfiguration,
+//       originalData,
+//     }: {
+//       formConfiguration: Inserts<TableNames.Configurations> | Updates<TableNames.Configurations>;
+//       originalData?: Configuration;
+//     }) => {
+//       if (formConfiguration.id && originalData) {
+//         return await updateConfigurationHelper(formConfiguration, session);
+//       }
+//       return await createConfigurationHelper(formConfiguration as Inserts<TableNames.Configurations>, session);
+//     },
+//     onSuccess: async (_, data) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+//     },
+//     onError: (error, variables, context) => {
+//       throw new Error(JSON.stringify(error));
+//     },
+//   });
+// };
 
-export const useDeleteConfiguration = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useDeleteConfiguration = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  const userId = session.user.id;
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await deleteConfiguration(id, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       return await deleteConfiguration(id, userId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] });
+//     },
+//   });
+// };
 
-export const useRestoreConfiguration = (id?: string) => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  const userId = session.user.id;
+// export const useRestoreConfiguration = (id?: string) => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await restoreConfiguration(id, userId);
-    },
-    onSuccess: async id => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] })]);
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       return await restoreConfiguration(id, userId);
+//     },
+//     onSuccess: async id => {
+//       await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.Configurations] })]);
+//     },
+//   });
+// };
 
-const createConfigurationHelper = async (formConfiguration: Inserts<TableNames.Configurations>, session: Session) => {
-  let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+// const createConfigurationHelper = async (formConfiguration: Inserts<TableNames.Configurations>, session: Session) => {
+//   let userId = session.user.id;
+//   let tenantid = session.user.user_metadata.tenantid;
 
-  formConfiguration.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
-  formConfiguration.createdby = userId;
-  formConfiguration.tenantid = tenantid;
+//   formConfiguration.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+//   formConfiguration.createdby = userId;
+//   formConfiguration.tenantid = tenantid;
 
-  const newConfiguration = await createConfiguration(formConfiguration);
+//   const newConfiguration = await createConfiguration(formConfiguration);
 
-  return newConfiguration;
-};
+//   return newConfiguration;
+// };
 
-const updateConfigurationHelper = async (formConfiguration: Updates<TableNames.Configurations>, session: Session) => {
-  let userId = session.user.id;
+// const updateConfigurationHelper = async (formConfiguration: Updates<TableNames.Configurations>, session: Session) => {
+//   let userId = session.user.id;
 
-  formConfiguration.updatedby = userId;
-  formConfiguration.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+//   formConfiguration.updatedby = userId;
+//   formConfiguration.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedConfiguration = await updateConfiguration(formConfiguration);
+//   const updatedConfiguration = await updateConfiguration(formConfiguration);
 
-  return updatedConfiguration;
-};
+//   return updatedConfiguration;
+// };
 
 // Repository-based helper functions
 const createConfigurationRepoHelper = async (
   formConfiguration: Inserts<TableNames.Configurations>,
   session: Session,
-  repository: any,
+  repository: IConfigurationRepository,
 ) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
@@ -338,7 +339,7 @@ const createConfigurationRepoHelper = async (
 const updateConfigurationRepoHelper = async (
   formConfiguration: Updates<TableNames.Configurations>,
   session: Session,
-  repository: any,
+  repository: IConfigurationRepository,
 ) => {
   let userId = session.user.id;
 

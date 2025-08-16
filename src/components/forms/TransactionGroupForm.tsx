@@ -3,11 +3,11 @@ import { Platform, SafeAreaView, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertTransactionGroup } from "@/src/services//TransactionGroups.Service";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
 import Button from "../Button";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 
 export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 
@@ -30,7 +30,9 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
     setFormData(group);
   }, [group]);
 
-  const { mutate } = useUpsertTransactionGroup();
+  const transactionGroupService = useTransactionGroupService();
+
+  const { mutate } = transactionGroupService.upsert();
 
   const handleTextChange = (name: keyof TransactionGroupFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));

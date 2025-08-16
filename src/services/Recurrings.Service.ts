@@ -99,12 +99,12 @@ export function useRecurringService() {
   };
 
   // Legacy hooks for backward compatibility
-  const useListRecurrings = (filters?: any) => useListRecurringsLegacy(filters);
-  const useGetRecurring = (id?: string) => useGetRecurringLegacy(id);
-  const useCreateRecurring = () => useCreateRecurringLegacy();
-  const useUpdateRecurring = () => useUpdateRecurringLegacy();
-  const useDeleteRecurring = () => useDeleteRecurringLegacy();
-  const useExecuteRecurringAction = () => useExecuteRecurringActionLegacy();
+  // const useListRecurrings = (filters?: any) => useListRecurringsLegacy(filters);
+  // const useGetRecurring = (id?: string) => useGetRecurringLegacy(id);
+  // const useCreateRecurring = () => useCreateRecurringLegacy();
+  // const useUpdateRecurring = () => useUpdateRecurringLegacy();
+  // const useDeleteRecurring = () => useDeleteRecurringLegacy();
+  // const useExecuteRecurringAction = () => useExecuteRecurringActionLegacy();
 
   return {
     // Repository-based methods (new) - using simple method names
@@ -116,12 +116,12 @@ export function useRecurringService() {
     restore,
 
     // Legacy methods (backward compatibility)
-    useListRecurrings,
-    useGetRecurring,
-    useCreateRecurring,
-    useUpdateRecurring,
-    useDeleteRecurring,
-    useExecuteRecurringAction,
+    // useListRecurrings,
+    // useGetRecurring,
+    // useCreateRecurring,
+    // useUpdateRecurring,
+    // useDeleteRecurring,
+    // useExecuteRecurringAction,
 
     // Direct repository access
     recurringRepo,
@@ -153,238 +153,238 @@ const updateRepoHelper = async (formData: Updates<TableNames.Recurrings>, sessio
 };
 
 // Legacy functions for backward compatibility
-export const useListRecurringsLegacy = (filters?: any) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Recurring[]>({
-    queryKey: [TableNames.Recurrings, tenantId, filters],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return listRecurrings({ tenantId, filters });
-    },
-    enabled: !!tenantId,
-  });
-};
+// export const useListRecurringsLegacy = (filters?: any) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Recurring[]>({
+//     queryKey: [TableNames.Recurrings, tenantId, filters],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return listRecurrings({ tenantId, filters });
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
 
-export const useGetRecurringLegacy = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Recurring | null>({
-    queryKey: [TableNames.Recurrings, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getRecurringById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
+// export const useGetRecurringLegacy = (id?: string) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Recurring | null>({
+//     queryKey: [TableNames.Recurrings, id, tenantId],
+//     queryFn: async () => {
+//       if (!id) throw new Error("ID is required");
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getRecurringById(id, tenantId);
+//     },
+//     enabled: !!id && !!tenantId,
+//   });
+// };
 
-export const useCreateRecurringLegacy = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
+// export const useCreateRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
 
-  return useMutation({
-    mutationFn: async (recurringData: Inserts<TableNames.Recurrings>) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+//   return useMutation({
+//     mutationFn: async (recurringData: Inserts<TableNames.Recurrings>) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
-      const dataToInsert: Inserts<TableNames.Recurrings> = {
-        ...(recurringData as any),
-        tenantid: tenantId,
-        createdby: userId,
-        createdat: dayjs().toISOString(),
-      };
+//       const dataToInsert: Inserts<TableNames.Recurrings> = {
+//         ...(recurringData as any),
+//         tenantid: tenantId,
+//         createdby: userId,
+//         createdat: dayjs().toISOString(),
+//       };
 
-      return createRecurring(dataToInsert, tenantId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-    },
-    onError: error => {
-      console.error("Error creating recurring:", error);
-      throw error;
-    },
-  });
-};
+//       return createRecurring(dataToInsert, tenantId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//     },
+//     onError: error => {
+//       console.error("Error creating recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
 
-export const useUpdateRecurringLegacy = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
+// export const useUpdateRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
 
-  return useMutation({
-    mutationFn: async ({ id, recurringData }: { id: string; recurringData: Updates<TableNames.Recurrings> }) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+//   return useMutation({
+//     mutationFn: async ({ id, recurringData }: { id: string; recurringData: Updates<TableNames.Recurrings> }) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
-      const {
-        category: categoryObject,
-        account: accountObject,
-        source_account: sourceAccountObject,
-        ...coreRecurringProps
-      } = recurringData as any;
+//       const {
+//         category: categoryObject,
+//         account: accountObject,
+//         source_account: sourceAccountObject,
+//         ...coreRecurringProps
+//       } = recurringData as any;
 
-      const dataToUpdate: Partial<Updates<TableNames.Recurrings>> = {
-        ...coreRecurringProps,
-        updatedby: userId,
-        updatedat: dayjs().toISOString(),
-      };
+//       const dataToUpdate: Partial<Updates<TableNames.Recurrings>> = {
+//         ...coreRecurringProps,
+//         updatedby: userId,
+//         updatedat: dayjs().toISOString(),
+//       };
 
-      if (categoryObject && typeof categoryObject === "object" && "id" in categoryObject) {
-        dataToUpdate.categoryid = (categoryObject as { id: string }).id;
-      }
+//       if (categoryObject && typeof categoryObject === "object" && "id" in categoryObject) {
+//         dataToUpdate.categoryid = (categoryObject as { id: string }).id;
+//       }
 
-      if (sourceAccountObject && typeof sourceAccountObject === "object" && "id" in sourceAccountObject) {
-        dataToUpdate.sourceaccountid = (sourceAccountObject as { id: string }).id;
-      } else if (accountObject && typeof accountObject === "object" && "id" in accountObject) {
-        dataToUpdate.sourceaccountid = (accountObject as { id: string }).id;
-      }
+//       if (sourceAccountObject && typeof sourceAccountObject === "object" && "id" in sourceAccountObject) {
+//         dataToUpdate.sourceaccountid = (sourceAccountObject as { id: string }).id;
+//       } else if (accountObject && typeof accountObject === "object" && "id" in accountObject) {
+//         dataToUpdate.sourceaccountid = (accountObject as { id: string }).id;
+//       }
 
-      delete (dataToUpdate as any).category;
-      delete (dataToUpdate as any).account;
-      delete (dataToUpdate as any).source_account;
+//       delete (dataToUpdate as any).category;
+//       delete (dataToUpdate as any).account;
+//       delete (dataToUpdate as any).source_account;
 
-      return updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
-    },
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.id, tenantId] });
-    },
-    onError: error => {
-      console.error("Error updating recurring:", error);
-      throw error;
-    },
-  });
-};
+//       return updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
+//     },
+//     onSuccess: async (_, variables) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.id, tenantId] });
+//     },
+//     onError: error => {
+//       console.error("Error updating recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
 
-export const useDeleteRecurringLegacy = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
+// export const useDeleteRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-      return deleteRecurring(id, tenantId, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-    },
-    onError: error => {
-      console.error("Error deleting recurring:", error);
-      throw error;
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+//       return deleteRecurring(id, tenantId, userId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//     },
+//     onError: error => {
+//       console.error("Error deleting recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
 
-export const useExecuteRecurringActionLegacy = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  const { dbContext } = useStorageMode();
-  const accountRepo = dbContext.AccountRepository();
+// export const useExecuteRecurringActionLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   const { dbContext } = useStorageMode();
+//   const accountRepo = dbContext.AccountRepository();
 
-  return useMutation({
-    mutationFn: async (params: { item: Recurring; amount?: number }) => {
-      const { item: recurring, amount } = params;
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+//   return useMutation({
+//     mutationFn: async (params: { item: Recurring; amount?: number }) => {
+//       const { item: recurring, amount } = params;
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
 
-      if (!recurring || !recurring.isactive) {
-        throw new Error("Recurring not found, not active, or does not belong to tenant.");
-      }
+//       if (!recurring || !recurring.isactive) {
+//         throw new Error("Recurring not found, not active, or does not belong to tenant.");
+//       }
 
-      const currentNextOccurrenceDate = dayjs(recurring.nextoccurrencedate);
+//       const currentNextOccurrenceDate = dayjs(recurring.nextoccurrencedate);
 
-      const transactionPayload: TransactionInserts<TableNames.Transactions> = {
-        name: recurring.name,
-        description: recurring.description,
-        amount: typeof amount === "number" && !isNaN(amount) ? amount : (recurring.amount ?? 0),
-        date: currentNextOccurrenceDate.toISOString(),
-        accountid: recurring.sourceaccountid,
-        payee: recurring.payeename,
-        notes: recurring.notes,
-        type: recurring.type,
-        tenantid: tenantId,
-        createdby: userId,
-        createdat: dayjs().toISOString(),
-        categoryid: recurring.categoryid ?? " ",
-      };
+//       const transactionPayload: TransactionInserts<TableNames.Transactions> = {
+//         name: recurring.name,
+//         description: recurring.description,
+//         amount: typeof amount === "number" && !isNaN(amount) ? amount : (recurring.amount ?? 0),
+//         date: currentNextOccurrenceDate.toISOString(),
+//         accountid: recurring.sourceaccountid,
+//         payee: recurring.payeename,
+//         notes: recurring.notes,
+//         type: recurring.type,
+//         tenantid: tenantId,
+//         createdby: userId,
+//         createdat: dayjs().toISOString(),
+//         categoryid: recurring.categoryid ?? " ",
+//       };
 
-      const newTransaction = await createTransaction(transactionPayload);
-      if (!newTransaction) {
-        throw new Error("Failed to create transaction for recurring.");
-      }
+//       const newTransaction = await createTransaction(transactionPayload);
+//       if (!newTransaction) {
+//         throw new Error("Failed to create transaction for recurring.");
+//       }
 
-      if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
-        throw new Error("Transaction amount is invalid for account balance update.");
-      }
-      await accountRepo.updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount, tenantId);
+//       if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
+//         throw new Error("Transaction amount is invalid for account balance update.");
+//       }
+//       await accountRepo.updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount, tenantId);
 
-      let newNextOccurrenceDate: dayjs.Dayjs;
-      const rrule = recurring.recurrencerule;
-      let freq = "MONTHLY";
-      let interval = 1;
+//       let newNextOccurrenceDate: dayjs.Dayjs;
+//       const rrule = recurring.recurrencerule;
+//       let freq = "MONTHLY";
+//       let interval = 1;
 
-      if (rrule) {
-        const freqMatch = rrule.match(/FREQ=([^;]+)/);
-        const intervalMatch = rrule.match(/INTERVAL=(\d+)/);
-        if (freqMatch && freqMatch[1]) freq = freqMatch[1];
-        if (intervalMatch && intervalMatch[1]) interval = parseInt(intervalMatch[1], 10);
-      }
+//       if (rrule) {
+//         const freqMatch = rrule.match(/FREQ=([^;]+)/);
+//         const intervalMatch = rrule.match(/INTERVAL=(\d+)/);
+//         if (freqMatch && freqMatch[1]) freq = freqMatch[1];
+//         if (intervalMatch && intervalMatch[1]) interval = parseInt(intervalMatch[1], 10);
+//       }
 
-      if (interval <= 0) interval = 1;
+//       if (interval <= 0) interval = 1;
 
-      switch (freq.toUpperCase()) {
-        case "DAILY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "day");
-          break;
-        case "WEEKLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "week");
-          break;
-        case "MONTHLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "month");
-          break;
-        case "YEARLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "year");
-          break;
-        default:
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(1, "month");
-          console.warn(`Unsupported frequency: ${freq}. Defaulting to monthly.`);
-      }
+//       switch (freq.toUpperCase()) {
+//         case "DAILY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "day");
+//           break;
+//         case "WEEKLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "week");
+//           break;
+//         case "MONTHLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "month");
+//           break;
+//         case "YEARLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "year");
+//           break;
+//         default:
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(1, "month");
+//           console.warn(`Unsupported frequency: ${freq}. Defaulting to monthly.`);
+//       }
 
-      const recurringUpdateData: Updates<TableNames.Recurrings> = {
-        lastexecutedat: currentNextOccurrenceDate.toISOString(),
-        nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
-        updatedby: userId,
-        updatedat: dayjs().toISOString(),
-      };
+//       const recurringUpdateData: Updates<TableNames.Recurrings> = {
+//         lastexecutedat: currentNextOccurrenceDate.toISOString(),
+//         nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
+//         updatedby: userId,
+//         updatedat: dayjs().toISOString(),
+//       };
 
-      if (recurring.enddate && newNextOccurrenceDate.isAfter(dayjs(recurring.enddate))) {
-        (recurringUpdateData as any).isactive = false;
-      }
+//       if (recurring.enddate && newNextOccurrenceDate.isAfter(dayjs(recurring.enddate))) {
+//         (recurringUpdateData as any).isactive = false;
+//       }
 
-      await updateRecurring(recurring.id, recurringUpdateData, tenantId);
+//       await updateRecurring(recurring.id, recurringUpdateData, tenantId);
 
-      return { newTransaction, updatedRecurring: recurringUpdateData };
-    },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.item.id, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-      await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-    },
-    onError: error => {
-      console.error("Error executing recurring action:", error);
-      throw error;
-    },
-  });
-};
+//       return { newTransaction, updatedRecurring: recurringUpdateData };
+//     },
+//     onSuccess: async (data, variables) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.item.id, tenantId] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+//       await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+//     },
+//     onError: error => {
+//       console.error("Error executing recurring action:", error);
+//       throw error;
+//     },
+//   });
+// };
 
 // Maintain legacy exports for backward compatibility
-export const useListRecurrings = useListRecurringsLegacy;
-export const useGetRecurring = useGetRecurringLegacy;
-export const useCreateRecurring = useCreateRecurringLegacy;
-export const useUpdateRecurring = useUpdateRecurringLegacy;
-export const useDeleteRecurring = useDeleteRecurringLegacy;
-export const useExecuteRecurringAction = useExecuteRecurringActionLegacy;
+// export const useListRecurrings = useListRecurringsLegacy;
+// export const useGetRecurring = useGetRecurringLegacy;
+// export const useCreateRecurring = useCreateRecurringLegacy;
+// export const useUpdateRecurring = useUpdateRecurringLegacy;
+// export const useDeleteRecurring = useDeleteRecurringLegacy;
+// export const useExecuteRecurringAction = useExecuteRecurringActionLegacy;
