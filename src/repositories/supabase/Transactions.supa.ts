@@ -12,6 +12,7 @@ import {
   Updates,
 } from "@/src/types/db/Tables.Types";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
+import { Database } from "@/src/types/db/database.types";
 
 export class TransactionSupaRepository implements ITransactionRepository {
   async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
@@ -85,6 +86,10 @@ export class TransactionSupaRepository implements ITransactionRepository {
       })
       .eq("id", id);
     if (error) throw error;
+  }
+
+  async upsert(data: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>): Promise<Transaction> {
+    throw new Error("Not implemented");
   }
 
   async getByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
