@@ -12,7 +12,7 @@ import {
 } from "@/src/types/db/Tables.Types";
 import { IStatsRepository } from "../interfaces/IStatsRepository";
 
-export class StatsRepository implements IStatsRepository {
+export class StatsSupaRepository implements IStatsRepository {
   async getStatsDailyTransactions(
     tenantId: string,
     startDate?: string,
@@ -139,12 +139,12 @@ export const getStatsDailyTransactions = async (
   endDate?: string,
   type?: TransactionType,
 ) => {
-  const repository = new StatsRepository();
+  const repository = new StatsSupaRepository();
   return repository.getStatsDailyTransactions(tenantId, startDate, endDate, type);
 };
 
 export const getStatsMonthlyTransactionsTypes = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsRepository();
+  const repository = new StatsSupaRepository();
   return repository.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
 };
 
@@ -153,16 +153,16 @@ export const getStatsMonthlyCategoriesTransactions = async (
   startDate?: string,
   endDate?: string,
 ): Promise<StatsMonthlyCategoriesTransactions[]> => {
-  const repository = new StatsRepository();
+  const repository = new StatsSupaRepository();
   return repository.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
 };
 
 export const getStatsMonthlyAccountsTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsRepository();
+  const repository = new StatsSupaRepository();
   return repository.getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
 };
 
 export const getStatsNetWorthGrowth = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsRepository();
+  const repository = new StatsSupaRepository();
   return repository.getStatsNetWorthGrowth(tenantId, startDate, endDate);
 };

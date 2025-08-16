@@ -1,6 +1,20 @@
 # Repository Pattern Implementation
 
-This folder contains the repository pattern implementation for the Budgeteer application. All Supabase functions have been wrapped in repository classes that implement their corresponding interfaces.
+Thi### Using Repository Classes (Recommended)
+
+````typescript
+import { AccountCategorySupaRepository } from '@/src/repositories';
+
+// Create an instance
+const accountCategoryRepo = new AccountCategorySupaRepository();
+
+// Use the repository methods
+const categories = await accountCategoryRepo.findAll(undefined, tenantId);
+const category = await accountCategoryRepo.findById(id, tenantId);
+const newCategory = await accountCategoryRepo.create(categoryData, tenantId);
+const updatedCategory = await accountCategoryRepo.update(id, updateData, tenantId);
+await accountCategoryRepo.softDelete(id, tenantId);
+```ns the repository pattern implementation for the Budgeteer application. All Supabase functions have been wrapped in repository classes that implement their corresponding interfaces.
 
 ## Repository Classes
 
@@ -8,14 +22,14 @@ Each repository class implements the base `IRepository` interface and may includ
 
 ### Available Repository Classes
 
-1. **AccountCategoryRepository** - Implements `IAccountCategoryRepository`
-2. **AccountRepository** - Implements `IAccountRepository`
-3. **ConfigurationRepository** - Implements `IConfigurationRepository`
-4. **RecurringRepository** - Implements `IRecurringRepository`
-5. **StatsRepository** - Implements `IStatsRepository`
-6. **TransactionCategoryRepository** - Implements `ITransactionCategoryRepository`
-7. **TransactionGroupRepository** - Implements `ITransactionGroupRepository`
-8. **TransactionRepository** - Implements `ITransactionRepository`
+1. **AccountCategorySupaRepository** - Implements `IAccountCategoryRepository`
+2. **AccountSupaRepository** - Implements `IAccountRepository`
+3. **ConfigurationSupaRepository** - Implements `IConfigurationRepository`
+4. **RecurringSupaRepository** - Implements `IRecurringRepository`
+5. **StatsSupaRepository** - Implements `IStatsRepository`
+6. **TransactionCategorySupaRepository** - Implements `ITransactionCategoryRepository`
+7. **TransactionGroupSupaRepository** - Implements `ITransactionGroupRepository`
+8. **TransactionSupaRepository** - Implements `ITransactionRepository`
 
 ## Base Repository Interface
 
@@ -36,7 +50,7 @@ interface IRepository<T, InsertType, UpdateType> {
   softDelete(id: string, tenantId?: string): Promise<void>;
   restore(id: string, tenantId?: string): Promise<void>;
 }
-```
+````
 
 ## Usage Examples
 
@@ -77,24 +91,24 @@ const category = await getAccountCategoryById(id, tenantId);
 
 Some repositories have additional methods beyond the base interface:
 
-### AccountRepository
+### AccountSupaRepository
 
 - `updateAccountBalance(accountid: string, amount: number, tenantId?: string): Promise<number>`
 - `getAccountOpenedTransaction(accountid: string, tenantId?: string): Promise<{id: string, amount: number}>`
 - `getTotalAccountBalance(tenantId?: string): Promise<{totalbalance: number} | null>`
 
-### TransactionRepository
+### TransactionSupaRepository
 
 - `getTransactionByTransferId(id: string, tenantId: string): Promise<TransactionsView>`
 - `findByName(text: string, tenantId: string): Promise<{label: string, item: SearchDistinctTransactions}[]>`
 - `createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]>`
 - `updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>`
 
-### ConfigurationRepository
+### ConfigurationSupaRepository
 
 - `getConfiguration(table: string, type: string, key: string, tenantId?: string): Promise<Configuration>`
 
-### StatsRepository
+### StatsSupaRepository
 
 - `getStatsDailyTransactions(tenantId: string, startDate?: string, endDate?: string, type?: TransactionType): Promise<StatsDailyTransactions[]>`
 - `getStatsMonthlyTransactionsTypes(tenantId: string, startDate?: string, endDate?: string): Promise<StatsMonthlyTransactionsTypes[]>`

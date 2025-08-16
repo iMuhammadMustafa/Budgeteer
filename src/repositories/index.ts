@@ -1,12 +1,12 @@
 // Repository classes implementing the repository interfaces
-export { AccountCategoryRepository } from "./supabase/AccountCategories.supa";
-export { AccountRepository } from "./supabase/Accounts.supa";
-export { ConfigurationRepository } from "./supabase/Configurations.supa";
-export { RecurringRepository } from "./supabase/Recurrings.api.supa";
-export { StatsRepository } from "./supabase/Stats.supa";
-export { TransactionCategoryRepository } from "./supabase/TransactionCategories.supa";
-export { TransactionGroupRepository } from "./supabase/TransactionGroups.supa";
-export { TransactionRepository } from "./supabase/Transactions.supa";
+export { AccountCategorySupaRepository } from "./supabase/AccountCategories.supa";
+export { AccountSupaRepository } from "./supabase/Accounts.supa";
+export { ConfigurationSupaRepository } from "./supabase/Configurations.supa";
+export { RecurringSupaRepository } from "./supabase/Recurrings.api.supa";
+export { StatsSupaRepository } from "./supabase/Stats.supa";
+export { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
+export { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
+export { TransactionSupaRepository } from "./supabase/Transactions.supa";
 
 // Repository interfaces
 export * from "./interfaces/IRepository";
