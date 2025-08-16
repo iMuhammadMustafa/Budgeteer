@@ -12,7 +12,7 @@ const asyncStoragePersister = createAsyncStoragePersister({
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       refetchOnReconnect: false,
       // refetchOnMount: false,
       gcTime: 1000 * 60 * 60 * 24, // 24 hours

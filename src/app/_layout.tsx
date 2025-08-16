@@ -28,6 +28,7 @@ export default function RootLayout() {
                 </Stack>
               </GestureHandlerRootView>
               {/* </SafeAreaProvider> */}
+              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
             </QueryProvider>
           </AuthProvider>
         </StorageModeProvider>

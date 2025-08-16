@@ -2,16 +2,10 @@ import { useMemo } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {
-  useGetStatsDailyTransactions,
-  useGetStatsMonthlyCategoriesTransactionsForDashboard,
-  useGetStatsYearTransactionsTypes,
-  useGetStatsNetWorthGrowth,
-} from "@/src/services//Stats.Service";
-import { useGetTransactions } from "@/src/services//Transactions.Service";
 import supabase from "@/src/providers/Supabase";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
+import { useStatsService } from "@/src/services/Stats.Service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -25,19 +19,19 @@ const startOfCurrentYear = dayjs().startOf("year").toISOString();
 const endOfCurrentYear = dayjs().endOf("year").toISOString();
 
 export default function useDashboard() {
-  const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = useGetStatsDailyTransactions(
+  const statsService = useStatsService();
+
+  const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.getStatsDailyTransactions(
     startOfCurrentMonth,
     endOfCurrentMonth,
     true,
   );
   const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
-    useGetStatsMonthlyCategoriesTransactionsForDashboard(startOfCurrentMonth, endOfCurrentMonth);
-  const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } = useGetStatsYearTransactionsTypes(
-    startOfCurrentYear,
-    endOfCurrentYear,
-  );
+    statsService.getStatsMonthlyCategoriesTransactions(startOfCurrentMonth, endOfCurrentMonth);
+  const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } =
+    statsService.getStatsMonthlyTransactionsTypes(startOfCurrentYear, endOfCurrentYear);
 
-  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = useGetStatsNetWorthGrowth(
+  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.getStatsNetWorthGrowth(
     startOfCurrentYear,
     endOfCurrentYear,
   );

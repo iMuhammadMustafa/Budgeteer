@@ -236,246 +236,246 @@ const updateTransactionRepoHelper = async (
   return updatedEntity;
 };
 
-export const useGetAllTransactions = () => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionsView[]>({
-    queryKey: [TableNames.Transactions, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactions(tenantId);
-    },
-    enabled: !!tenantId,
-  });
-};
-export const useGetTransactions = (searchFilters: TransactionFilters) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactions(searchFilters, tenantId);
-    },
-    enabled: !!tenantId,
-  });
-};
-export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  searchParams = Object.keys(searchParams).length !== 0 ? searchParams : initialSearchFilters;
-  return useInfiniteQuery<TransactionsView[]>({
-    queryKey: [ViewNames.TransactionsView, searchParams, tenantId], // Include searchParams and tenantId in the query key
-    initialPageParam: 0, // Start with page 0
-    queryFn: async ({ pageParam = 0 }) => {
-      if (!tenantId) throw new Error("Tenant ID not found in session for infinite query");
-      // Calculate the range for the current page
-      const pageSize = 10; // Number of items per page
-      const startIndex = (pageParam as number) * pageSize;
-      const endIndex = startIndex + pageSize - 1;
+// export const useGetAllTransactions = () => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<TransactionsView[]>({
+//     queryKey: [TableNames.Transactions, tenantId],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getAllTransactions(tenantId);
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
+// export const useGetTransactions = (searchFilters: TransactionFilters) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<TransactionsView[]>({
+//     queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getTransactions(searchFilters, tenantId);
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
+// export const useGetTransactionsInfinite = (searchParams: TransactionFilters) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   searchParams = Object.keys(searchParams).length !== 0 ? searchParams : initialSearchFilters;
+//   return useInfiniteQuery<TransactionsView[]>({
+//     queryKey: [ViewNames.TransactionsView, searchParams, tenantId], // Include searchParams and tenantId in the query key
+//     initialPageParam: 0, // Start with page 0
+//     queryFn: async ({ pageParam = 0 }) => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session for infinite query");
+//       // Calculate the range for the current page
+//       const pageSize = 10; // Number of items per page
+//       const startIndex = (pageParam as number) * pageSize;
+//       const endIndex = startIndex + pageSize - 1;
 
-      // Fetch transactions for the current page
-      return getTransactions(
-        {
-          ...searchParams,
-          startIndex,
-          endIndex,
-        },
-        tenantId,
-      );
-    },
-    enabled: !!tenantId, // Ensure tenantId is available before enabling the query
-    getNextPageParam: (lastPage, allPages) => {
-      // If the last page is empty, there are no more pages
-      if (lastPage.length === 0) return undefined;
+//       // Fetch transactions for the current page
+//       return getTransactions(
+//         {
+//           ...searchParams,
+//           startIndex,
+//           endIndex,
+//         },
+//         tenantId,
+//       );
+//     },
+//     enabled: !!tenantId, // Ensure tenantId is available before enabling the query
+//     getNextPageParam: (lastPage, allPages) => {
+//       // If the last page is empty, there are no more pages
+//       if (lastPage.length === 0) return undefined;
 
-      // Return the next page number
-      return allPages.length;
-    },
-  });
-};
+//       // Return the next page number
+//       return allPages.length;
+//     },
+//   });
+// };
 
-export const useGetTransactionById = (id?: string | null | undefined) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Transaction>({
-    queryKey: [TableNames.Transactions, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
-export const useSearchTransactionsByName = (text: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<SearchableDropdownItem[]>({
-    queryKey: [ViewNames.SearchDistinctTransactions + text, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionsByName(text, tenantId);
-    },
-    enabled: !!text && !!tenantId,
-  });
-};
+// export const useGetTransactionById = (id?: string | null | undefined) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Transaction>({
+//     queryKey: [TableNames.Transactions, id, tenantId],
+//     queryFn: async () => {
+//       if (!id) throw new Error("ID is required");
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getTransactionById(id, tenantId);
+//     },
+//     enabled: !!id && !!tenantId,
+//   });
+// };
+// export const useSearchTransactionsByName = (text: string) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<SearchableDropdownItem[]>({
+//     queryKey: [ViewNames.SearchDistinctTransactions + text, tenantId],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getTransactionsByName(text, tenantId);
+//     },
+//     enabled: !!text && !!tenantId,
+//   });
+// };
 
-export const useCreateTransaction = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  return useMutation({
-    mutationFn: async (transaction: Inserts<TableNames.Transactions>) => {
-      return await createTransactionHelper(transaction, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-    },
-  });
-};
+// export const useCreateTransaction = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   return useMutation({
+//     mutationFn: async (transaction: Inserts<TableNames.Transactions>) => {
+//       return await createTransactionHelper(transaction, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+//     },
+//   });
+// };
 
-export const useCreateTransactions = () => {
-  const { session, isSessionLoading } = useAuth();
-  const { dbContext } = useStorageMode();
-  const accountRepo = dbContext.AccountRepository();
+// export const useCreateTransactions = () => {
+//   const { session, isSessionLoading } = useAuth();
+//   const { dbContext } = useStorageMode();
+//   const accountRepo = dbContext.AccountRepository();
 
-  if (!isSessionLoading && (!session || !session.user)) {
-    throw new Error("User is not logged in");
-  }
+//   if (!isSessionLoading && (!session || !session.user)) {
+//     throw new Error("User is not logged in");
+//   }
 
-  return useMutation({
-    mutationFn: async ({
-      transactionsGroup,
-      totalAmount,
-    }: {
-      transactionsGroup: MultiTransactionGroup;
-      totalAmount: number;
-    }) => {
-      const userId = session!.user.id;
-      const tenantId = session!.user.user_metadata.tenantid;
-      const createdat = new Date().toISOString();
+//   return useMutation({
+//     mutationFn: async ({
+//       transactionsGroup,
+//       totalAmount,
+//     }: {
+//       transactionsGroup: MultiTransactionGroup;
+//       totalAmount: number;
+//     }) => {
+//       const userId = session!.user.id;
+//       const tenantId = session!.user.user_metadata.tenantid;
+//       const createdat = new Date().toISOString();
 
-      const transactions = Object.keys(transactionsGroup.transactions).map((key, index) => {
-        if (!key) return;
-        const transaction: Inserts<TableNames.Transactions> = {
-          id: GenerateUuid(),
-          date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
-          type: transactionsGroup.type as any,
-          isvoid: transactionsGroup.isvoid,
+//       const transactions = Object.keys(transactionsGroup.transactions).map((key, index) => {
+//         if (!key) return;
+//         const transaction: Inserts<TableNames.Transactions> = {
+//           id: GenerateUuid(),
+//           date: dayjs(transactionsGroup.date).add(index, "millisecond").toISOString(),
+//           type: transactionsGroup.type as any,
+//           isvoid: transactionsGroup.isvoid,
 
-          description: transactionsGroup.description,
-          accountid: transactionsGroup.accountid,
-          payee: transactionsGroup.payee,
+//           description: transactionsGroup.description,
+//           accountid: transactionsGroup.accountid,
+//           payee: transactionsGroup.payee,
 
-          name: transactionsGroup.transactions[key].name,
-          amount: transactionsGroup.transactions[key].amount,
-          categoryid: transactionsGroup.transactions[key].categoryid,
-          notes: transactionsGroup.transactions[key].notes,
-          tags: transactionsGroup.transactions[key].tags,
+//           name: transactionsGroup.transactions[key].name,
+//           amount: transactionsGroup.transactions[key].amount,
+//           categoryid: transactionsGroup.transactions[key].categoryid,
+//           notes: transactionsGroup.transactions[key].notes,
+//           tags: transactionsGroup.transactions[key].tags,
 
-          createdby: userId,
-          createdat: dayjs().local().add(index, "millisecond").toISOString(),
-          tenantid: tenantId,
-        };
+//           createdby: userId,
+//           createdat: dayjs().local().add(index, "millisecond").toISOString(),
+//           tenantid: tenantId,
+//         };
 
-        return transaction;
-      });
+//         return transaction;
+//       });
 
-      const createdTransactions = await createTransactions(transactions as Inserts<TableNames.Transactions>[]);
+//       const createdTransactions = await createTransactions(transactions as Inserts<TableNames.Transactions>[]);
 
-      if (transactionsGroup.originalTransactionId) {
-        await deleteTransaction(transactionsGroup.originalTransactionId, userId);
-      }
-      if (transactionsGroup.isvoid !== false) {
-        await accountRepo.updateAccountBalance(transactionsGroup.accountid, totalAmount, tenantId);
-      }
-      if (!createdTransactions) {
-        throw new Error("Transaction wasn't created");
-      }
+//       if (transactionsGroup.originalTransactionId) {
+//         await deleteTransaction(transactionsGroup.originalTransactionId, userId);
+//       }
+//       if (transactionsGroup.isvoid !== false) {
+//         await accountRepo.updateAccountBalance(transactionsGroup.accountid, totalAmount, tenantId);
+//       }
+//       if (!createdTransactions) {
+//         throw new Error("Transaction wasn't created");
+//       }
 
-      return createdTransactions;
-    },
-  });
-};
+//       return createdTransactions;
+//     },
+//   });
+// };
 
-export const useUpdateTransaction = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useUpdateTransaction = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      accountGroup,
-      originalData,
-    }: {
-      accountGroup: Updates<TableNames.Transactions>;
-      originalData: Transaction;
-    }) => {
-      return await updateTransactionHelper(accountGroup, originalData, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async ({
+//       accountGroup,
+//       originalData,
+//     }: {
+//       accountGroup: Updates<TableNames.Transactions>;
+//       originalData: Transaction;
+//     }) => {
+//       return await updateTransactionHelper(accountGroup, originalData, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+//     },
+//   });
+// };
 
-export const useUpsertTransaction = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useUpsertTransaction = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      formData,
-      originalData,
-    }: {
-      formData: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
-      originalData?: Transaction;
-    }) => {
-      if (formData.id && originalData) {
-        return await updateTransactionHelper(formData, originalData, session);
-      }
-      return await createTransactionHelper(formData as Inserts<TableNames.Transactions>, session);
-    },
-    onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-    },
-    onError: (error, variables, context) => {
-      throw new Error(JSON.stringify(error));
-    },
-  });
-};
-export const useDeleteTransaction = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+//   return useMutation({
+//     mutationFn: async ({
+//       formData,
+//       originalData,
+//     }: {
+//       formData: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+//       originalData?: Transaction;
+//     }) => {
+//       if (formData.id && originalData) {
+//         return await updateTransactionHelper(formData, originalData, session);
+//       }
+//       return await createTransactionHelper(formData as Inserts<TableNames.Transactions>, session);
+//     },
+//     onSuccess: async (_, data) => {
+//       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+//       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+//     },
+//     onError: (error, variables, context) => {
+//       throw new Error(JSON.stringify(error));
+//     },
+//   });
+// };
+// export const useDeleteTransaction = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  const userId = session.user.id;
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await deleteTransaction(id, userId);
-      return id;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       await deleteTransaction(id, userId);
+//       return id;
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+//     },
+//   });
+// };
 
-export const useRestoreTransaction = (id?: string) => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  const userId = session.user.id;
+// export const useRestoreTransaction = (id?: string) => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await restoreTransaction(id, userId);
-      return id;
-    },
-    onSuccess: async id => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] })]);
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       await restoreTransaction(id, userId);
+//       return id;
+//     },
+//     onSuccess: async id => {
+//       await Promise.all([queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] })]);
+//     },
+//   });
+// };
 
 const createTransactionHelper = async (formTransaction: Inserts<TableNames.Transactions>, session: Session) => {
   let userId = session.user.id;
