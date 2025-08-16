@@ -91,7 +91,7 @@ export class MockConfigurationProvider implements IConfigurationProvider {
 
         const newConfiguration = {
           ...configuration,
-          id: `conf-${Date.now()}`,
+          id: configuration.id || `conf-${Date.now()}`, // Use provided ID or generate one
           isdeleted: false,
           createdat: new Date().toISOString(),
           createdby: configuration.createdby || "demo",

@@ -94,7 +94,7 @@ export class MockAccountProvider implements IAccountProvider {
 
         const newAccount: Account = {
           ...account,
-          id: `acc-${Date.now()}`,
+          id: account.id || `acc-${Date.now()}`, // Use provided ID or generate one
           balance: account.balance || 0,
           color: account.color || "#4CAF50",
           currency: account.currency || "USD",

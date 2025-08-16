@@ -90,7 +90,7 @@ export class MockTransactionCategoryProvider implements ITransactionCategoryProv
 
         const newCategory = {
           ...transactionCategory,
-          id: `tc-${Date.now()}`,
+          id: transactionCategory.id || `tc-${Date.now()}`, // Use provided ID or generate one
           budgetamount: transactionCategory.budgetamount || 0,
           budgetfrequency: transactionCategory.budgetfrequency || "Monthly",
           color: transactionCategory.color || "#4CAF50",

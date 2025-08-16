@@ -233,7 +233,7 @@ export class MockTransactionProvider implements ITransactionProvider {
 
         const newTransaction = {
           ...transaction,
-          id: `tr-${Date.now()}`,
+          id: transaction.id || `tr-${Date.now()}`, // Use provided ID or generate one
           amount: transaction.amount || 0,
           isdeleted: false,
           isvoid: false,

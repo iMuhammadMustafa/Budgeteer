@@ -75,7 +75,7 @@ export class MockAccountCategoryProvider implements IAccountCategoryProvider {
 
         const newCategory = {
           ...accountCategory,
-          id: `cat-${Date.now()}`,
+          id: accountCategory.id || `cat-${Date.now()}`, // Use provided ID or generate one
           color: accountCategory.color || "#4CAF50",
           displayorder: accountCategory.displayorder || 0,
           icon: accountCategory.icon || "account-balance-wallet",

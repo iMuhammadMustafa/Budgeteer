@@ -74,7 +74,7 @@ export class MockTransactionGroupProvider implements ITransactionGroupProvider {
 
         const newGroup = {
           ...transactionGroup,
-          id: `tg-${Date.now()}`,
+          id: transactionGroup.id || `tg-${Date.now()}`, // Use provided ID or generate one
           budgetamount: transactionGroup.budgetamount || 0,
           budgetfrequency: transactionGroup.budgetfrequency || "Monthly",
           color: transactionGroup.color || "#4CAF50",
