@@ -1,17 +1,19 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetTransactionCategoryById } from "@/src/services//TransactionCategories.Service";
 import TransactionCategoryForm, {
   TransactionCategoryFormType,
   initialState,
 } from "@/src/components/forms/TransactionCategoryForm";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 
 export default function Upsert() {
   const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
   const [initialValues, setInitialValues] = useState<TransactionCategoryFormType>(initialState);
 
-  const { data, isLoading, error } = useGetTransactionCategoryById(categoryId);
+  const transactionCategoryService = useTransactionCategoryService();
+
+  const { data, isLoading, error } = transactionCategoryService.findTransactionCategoryById(categoryId);
 
   const navigation = useNavigation();
 

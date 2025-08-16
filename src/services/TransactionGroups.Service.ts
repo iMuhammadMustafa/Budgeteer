@@ -17,6 +17,9 @@ import { Session } from "@supabase/supabase-js";
 
 export function useTransactionGroupService() {
   const { session } = useAuth();
+
+  if (!session) throw new Error("Session not found");
+
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
   const { dbContext } = useStorageMode();
@@ -76,6 +79,30 @@ export function useTransactionGroupService() {
     });
   };
 
+  const upsert = () => {
+    return useMutation({
+      mutationFn: async ({
+        formData,
+        originalData,
+      }: {
+        formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+        originalData?: TransactionGroup;
+      }) => {
+        if (formData.id && originalData) {
+          return await updateRepoHelper(formData, session, transactionGroupRepo);
+        }
+        return await createRepoHelper(formData as Inserts<TableNames.TransactionGroups>, session, transactionGroupRepo);
+      },
+      onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      },
+      onError: (error, variables, context) => {
+        throw new Error(JSON.stringify(error));
+      },
+    });
+  };
+
   const softDelete = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
@@ -103,13 +130,13 @@ export function useTransactionGroupService() {
   };
 
   // Legacy hooks for backward compatibility
-  const useGetTransactionGroups = () => useGetTransactionGroupsLegacy();
-  const useGetTransactionGroupById = (id?: string) => useGetTransactionGroupByIdLegacy(id);
-  const useCreateTransactionGroup = () => useCreateTransactionGroupLegacy();
-  const useUpdateTransactionGroup = () => useUpdateTransactionGroupLegacy();
-  const useUpsertTransactionGroup = () => useUpsertTransactionGroupLegacy();
-  const useDeleteTransactionGroup = () => useDeleteTransactionGroupLegacy();
-  const useRestoreTransactionGroup = (id?: string) => useRestoreTransactionGroupLegacy(id);
+  // const useGetTransactionGroups = () => useGetTransactionGroupsLegacy();
+  // const useGetTransactionGroupById = (id?: string) => useGetTransactionGroupByIdLegacy(id);
+  // const useCreateTransactionGroup = () => useCreateTransactionGroupLegacy();
+  // const useUpdateTransactionGroup = () => useUpdateTransactionGroupLegacy();
+  // const useUpsertTransactionGroup = () => useUpsertTransactionGroupLegacy();
+  // const useDeleteTransactionGroup = () => useDeleteTransactionGroupLegacy();
+  // const useRestoreTransactionGroup = (id?: string) => useRestoreTransactionGroupLegacy(id);
 
   return {
     // Repository-based methods (new) - using simple method names
@@ -119,15 +146,16 @@ export function useTransactionGroupService() {
     update,
     softDelete,
     restore,
+    upsert,
 
     // Legacy methods (backward compatibility)
-    useGetTransactionGroups,
-    useGetTransactionGroupById,
-    useCreateTransactionGroup,
-    useUpdateTransactionGroup,
-    useUpsertTransactionGroup,
-    useDeleteTransactionGroup,
-    useRestoreTransactionGroup,
+    // useGetTransactionGroups,
+    // useGetTransactionGroupById,
+    // useCreateTransactionGroup,
+    // useUpdateTransactionGroup,
+    // useUpsertTransactionGroup,
+    // useDeleteTransactionGroup,
+    // useRestoreTransactionGroup,
 
     // Direct repository access
     transactionGroupRepo,
@@ -159,123 +187,123 @@ const updateRepoHelper = async (formData: Updates<TableNames.TransactionGroups>,
 };
 
 // Legacy functions for backward compatibility
-export const useGetTransactionGroupsLegacy = () => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionGroup[]>({
-    queryKey: [TableNames.TransactionGroups, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactionGroups(tenantId);
-    },
-    enabled: !!tenantId,
-  });
-};
+// export const useGetTransactionGroupsLegacy = () => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<TransactionGroup[]>({
+//     queryKey: [TableNames.TransactionGroups, tenantId],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getAllTransactionGroups(tenantId);
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
 
-export const useGetTransactionGroupByIdLegacy = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionGroup | null>({
-    queryKey: [TableNames.TransactionGroups, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionGroupById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
+// export const useGetTransactionGroupByIdLegacy = (id?: string) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<TransactionGroup | null>({
+//     queryKey: [TableNames.TransactionGroups, id, tenantId],
+//     queryFn: async () => {
+//       if (!id) throw new Error("ID is required");
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getTransactionGroupById(id, tenantId);
+//     },
+//     enabled: !!id && !!tenantId,
+//   });
+// };
 
-export const useCreateTransactionGroupLegacy = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  return useMutation({
-    mutationFn: async (accountGroup: Inserts<TableNames.TransactionGroups>) => {
-      return await createTransactionGroupHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
+// export const useCreateTransactionGroupLegacy = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   return useMutation({
+//     mutationFn: async (accountGroup: Inserts<TableNames.TransactionGroups>) => {
+//       return await createTransactionGroupHelper(accountGroup, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+//     },
+//   });
+// };
 
-export const useUpdateTransactionGroupLegacy = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useUpdateTransactionGroupLegacy = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      accountGroup,
-      originalData,
-    }: {
-      accountGroup: Updates<TableNames.TransactionGroups>;
-      originalData: TransactionGroup;
-    }) => {
-      return await updateTransactionGroupHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async ({
+//       accountGroup,
+//       originalData,
+//     }: {
+//       accountGroup: Updates<TableNames.TransactionGroups>;
+//       originalData: TransactionGroup;
+//     }) => {
+//       return await updateTransactionGroupHelper(accountGroup, session);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+//     },
+//   });
+// };
 
-export const useUpsertTransactionGroupLegacy = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useUpsertTransactionGroupLegacy = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  return useMutation({
-    mutationFn: async ({
-      formData,
-      originalData,
-    }: {
-      formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
-      originalData?: TransactionGroup;
-    }) => {
-      if (formData.id && originalData) {
-        return await updateTransactionGroupHelper(formData, session);
-      }
-      return await createTransactionGroupHelper(formData as Inserts<TableNames.TransactionGroups>, session);
-    },
-    onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    },
-    onError: (error, variables, context) => {
-      throw new Error(JSON.stringify(error));
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async ({
+//       formData,
+//       originalData,
+//     }: {
+//       formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+//       originalData?: TransactionGroup;
+//     }) => {
+//       if (formData.id && originalData) {
+//         return await updateTransactionGroupHelper(formData, session);
+//       }
+//       return await createTransactionGroupHelper(formData as Inserts<TableNames.TransactionGroups>, session);
+//     },
+//     onSuccess: async (_, data) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+//     },
+//     onError: (error, variables, context) => {
+//       throw new Error(JSON.stringify(error));
+//     },
+//   });
+// };
 
-export const useDeleteTransactionGroupLegacy = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+// export const useDeleteTransactionGroupLegacy = () => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
 
-  const userId = session.user.id;
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await deleteTransactionGroup(id, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       return await deleteTransactionGroup(id, userId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+//     },
+//   });
+// };
 
-export const useRestoreTransactionGroupLegacy = (id?: string) => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  const userId = session.user.id;
+// export const useRestoreTransactionGroupLegacy = (id?: string) => {
+//   const { session } = useAuth();
+//   if (!session) throw new Error("Session not found");
+//   const userId = session.user.id;
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await restoreTransactionGroup(id, userId);
-    },
-    onSuccess: async id => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] })]);
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       return await restoreTransactionGroup(id, userId);
+//     },
+//     onSuccess: async id => {
+//       await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] })]);
+//     },
+//   });
+// };
 
 const createTransactionGroupHelper = async (
   formTransactionGroup: Inserts<TableNames.TransactionGroups>,
@@ -308,10 +336,10 @@ const updateTransactionGroupHelper = async (
 };
 
 // Maintain legacy exports for backward compatibility
-export const useGetTransactionGroups = useGetTransactionGroupsLegacy;
-export const useGetTransactionGroupById = useGetTransactionGroupByIdLegacy;
-export const useCreateTransactionGroup = useCreateTransactionGroupLegacy;
-export const useUpdateTransactionGroup = useUpdateTransactionGroupLegacy;
-export const useUpsertTransactionGroup = useUpsertTransactionGroupLegacy;
-export const useDeleteTransactionGroup = useDeleteTransactionGroupLegacy;
-export const useRestoreTransactionGroup = useRestoreTransactionGroupLegacy;
+// export const useGetTransactionGroups = useGetTransactionGroupsLegacy;
+// export const useGetTransactionGroupById = useGetTransactionGroupByIdLegacy;
+// export const useCreateTransactionGroup = useCreateTransactionGroupLegacy;
+// export const useUpdateTransactionGroup = useUpdateTransactionGroupLegacy;
+// export const useUpsertTransactionGroup = useUpsertTransactionGroupLegacy;
+// export const useDeleteTransactionGroup = useDeleteTransactionGroupLegacy;
+// export const useRestoreTransactionGroup = useRestoreTransactionGroupLegacy;
