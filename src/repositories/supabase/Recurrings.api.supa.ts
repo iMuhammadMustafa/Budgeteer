@@ -4,8 +4,8 @@ import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
 
-export type CreateRecurringDto = Inserts<TableNames.Recurrings>;
-export type UpdateRecurringDto = Updates<TableNames.Recurrings>;
+export type Inserts<TableNames.Recurrings> = Inserts<TableNames.Recurrings>;
+export type Updates<TableNames.Recurrings> = Updates<TableNames.Recurrings>;
 
 export const listRecurrings = async (params: { tenantId: string; filters?: any }): Promise<Recurring[]> => {
   let query = supabase
@@ -54,7 +54,7 @@ export const getRecurringById = async (id: string, tenantId: string): Promise<Re
   return data as unknown as Recurring | null;
 };
 
-export const createRecurring = async (recurringData: CreateRecurringDto, tenantId: string) => {
+export const createRecurring = async (recurringData: Inserts<TableNames.Recurrings>, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Recurrings)
     .insert({ ...recurringData, tenantid: tenantId })
@@ -65,7 +65,7 @@ export const createRecurring = async (recurringData: CreateRecurringDto, tenantI
   return data;
 };
 
-export const updateRecurring = async (id: string, recurringData: UpdateRecurringDto, tenantId: string) => {
+export const updateRecurring = async (id: string, recurringData: Updates<TableNames.Recurrings>, tenantId: string) => {
   const { data, error } = await supabase
     .from(TableNames.Recurrings)
     .update({ ...recurringData, updatedat: dayjs().toISOString() })

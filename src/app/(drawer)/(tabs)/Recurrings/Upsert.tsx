@@ -19,7 +19,6 @@ import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateRecurringDto, UpdateRecurringDto } from "@/src/repositories/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
 
 dayjs.extend(utc);
@@ -28,7 +27,7 @@ dayjs.extend(timezone);
 // Define RecurringType, assuming these are the valid types
 export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
 
-type RecurringFormType = Omit<CreateRecurringDto | UpdateRecurringDto, "recurrencerule"> & {
+type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
   type: RecurringTransactionType; // Added type field
@@ -390,7 +389,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
     const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: CreateRecurringDto | UpdateRecurringDto = {
+    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
       ...restOfFormData,
       recurrencerule: recurrenceRule,
     };
@@ -404,7 +403,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { id: recurringIdToEdit, recurringData: dataToSubmitApi as UpdateRecurringDto },
+        { id: recurringIdToEdit, recurringData: dataToSubmitApi as Updates<TableNames.Recurrings> },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
@@ -416,7 +415,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         },
       );
     } else {
-      createRecurring(dataToSubmitApi as CreateRecurringDto, {
+      createRecurring(dataToSubmitApi as Inserts<TableNames.Recurrings>, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();
