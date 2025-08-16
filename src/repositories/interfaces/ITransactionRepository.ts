@@ -11,7 +11,7 @@ import { IRepository } from "./IRepository";
 
 export interface ITransactionRepository
   extends IRepository<
-    TransactionsView | Transaction,
+    Transaction | TransactionsView,
     Inserts<TableNames.Transactions>,
     Updates<TableNames.Transactions>
   > {
