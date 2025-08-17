@@ -7,15 +7,15 @@ type AuthType = {
   session: Session | null;
   user?: Session["user"];
   isSessionLoading: boolean;
-  setSession?: (session: Session | null) => void;
-  logout?: () => Promise<void>;
+  setSession: (session: Session | null) => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthType>({
   session: null,
   isSessionLoading: true,
-  setSession: undefined,
-  logout: undefined,
+  setSession: () => {},
+  logout: () => Promise.resolve(),
 });
 
 export default function AuthProvider({ children }: PropsWithChildren) {
@@ -30,6 +30,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
     if (storageMode === "local" || storageMode === "demo") {
       if (newSession) {
+        console.log("setting", newSession);
         await storage.setItem(STORAGE_KEYS.LOCAL_SESSION, JSON.stringify(newSession));
       }
     }
