@@ -1,7 +1,7 @@
 import { drizzle, ExpoSQLiteDatabase } from "drizzle-orm/expo-sqlite";
 import { openDatabaseAsync, openDatabaseSync } from "expo-sqlite";
 import { migrate } from "drizzle-orm/expo-sqlite/migrator";
-import * as schema from "../../sqllite/schema";
+import * as schema from "../types/db/sqllite/schema";
 import migrations from "../../drizzle/migrations";
 
 // Global state variables

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert } from "react-native";
-import { tasks, Task } from "@/sqllite/schema";
+import { tasks, Task } from "@/src/types/db/sqllite/schema";
 import { eq } from "drizzle-orm";
 import { getSQLiteDB, isSQLiteReady, initializeSQLite } from "@/src/providers/SQLite";
 
