@@ -10,7 +10,7 @@ export interface IWritableService<T, TInsert, TUpdate> {
   update: () => ReturnType<
     typeof useMutation<T | null | undefined, unknown, { form: TUpdate; original: T; props?: any }>
   >;
-  upsert?: () => ReturnType<
+  upsert: () => ReturnType<
     typeof useMutation<T | null | undefined, unknown, { form: TInsert | TUpdate; original?: T; props?: any }>
   >;
 }

@@ -37,7 +37,7 @@ export default function CategoryForm({ category }: { category: TransactionCatego
     setFormData(category);
   }, [category]);
 
-  const { mutate } = transactionCategoryService.upsertTransactionCategoryRepo();
+  const { mutate } = transactionCategoryService.upsert();
 
   const { data: categoryGroups, isLoading: iscategoryGroupLoading } = transactionGroupService.findAll();
 

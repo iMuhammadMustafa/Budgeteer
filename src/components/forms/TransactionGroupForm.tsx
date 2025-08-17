@@ -41,8 +41,8 @@ export default function TransactionGroupForm({ group }: { group: TransactionGrou
   const handleSubmit = () => {
     mutate(
       {
-        formData,
-        originalData: group as TransactionGroup,
+        form: formData,
+        original: group as TransactionGroup,
       },
       {
         onSuccess: () => {

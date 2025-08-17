@@ -13,7 +13,7 @@ export default function Upsert() {
 
   const transactionCategoryService = useTransactionCategoryService();
 
-  const { data, isLoading, error } = transactionCategoryService.findTransactionCategoryById(categoryId);
+  const { data, isLoading, error } = transactionCategoryService.findById(categoryId);
 
   const navigation = useNavigation();
 
