@@ -1,6 +1,7 @@
-import { DrizzleD1Database } from "drizzle-orm/d1";
+import { ExpoSQLiteDatabase } from "drizzle-orm/expo-sqlite";
 import { accounts, profiles, recurrings } from "./schema";
 import { eq, sql } from "drizzle-orm";
+import * as schema from "./schema";
 
 /**
  * Updates an account balance by adding the specified amount
@@ -12,7 +13,7 @@ import { eq, sql } from "drizzle-orm";
  * @returns The new account balance
  */
 export async function updateAccountBalance(
-  db: DrizzleD1Database, 
+  db: ExpoSQLiteDatabase<typeof schema>, 
   accountId: string, 
   amount: number
 ): Promise<number> {
@@ -40,7 +41,7 @@ export async function updateAccountBalance(
  * @param userData - User data from authentication
  */
 export async function handleNewUser(
-  db: DrizzleD1Database,
+  db: ExpoSQLiteDatabase<typeof schema>,
   userData: {
     id: string;
     email: string;
@@ -69,7 +70,7 @@ export async function handleNewUser(
  * @param recurringId - ID of the recurring transaction to apply
  */
 export async function applyRecurringTransaction(
-  db: DrizzleD1Database,
+  db: ExpoSQLiteDatabase<typeof schema>,
   recurringId: string
 ): Promise<void> {
   // This is a stub implementation as specified in the task

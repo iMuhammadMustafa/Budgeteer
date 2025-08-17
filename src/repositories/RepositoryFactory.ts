@@ -15,6 +15,14 @@ import { StatsSupaRepository } from "./supabase/Stats.supa";
 import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
+import { AccountCategorySQLiteRepository } from "./sqlite/AccountCategories.sqlite";
+import { AccountSQLiteRepository } from "./sqlite/Accounts.sqlite";
+import { ConfigurationSQLiteRepository } from "./sqlite/Configurations.sqlite";
+import { RecurringSQLiteRepository } from "./sqlite/Recurrings.sqlite";
+import { StatsSQLiteRepository } from "./sqlite/Stats.sqlite";
+import { TransactionCategorySQLiteRepository } from "./sqlite/TransactionCategories.sqlite";
+import { TransactionGroupSQLiteRepository } from "./sqlite/TransactionGroups.sqlite";
+import { TransactionSQLiteRepository } from "./sqlite/Transactions.sqlite";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -28,7 +36,17 @@ export interface IRepositoryFactory {
 }
 
 export function createRepositoryFactory(storageMode: StorageMode): IRepositoryFactory {
-  if (storageMode == StorageMode.Local) {
+  if (storageMode === StorageMode.Local) {
+    return {
+      AccountCategoryRepository: () => new AccountCategorySQLiteRepository(),
+      AccountRepository: () => new AccountSQLiteRepository(),
+      ConfigurationRepository: () => new ConfigurationSQLiteRepository(),
+      RecurringRepository: () => new RecurringSQLiteRepository(),
+      StatsRepository: () => new StatsSQLiteRepository(),
+      TransactionCategoryRepository: () => new TransactionCategorySQLiteRepository(),
+      TransactionGroupRepository: () => new TransactionGroupSQLiteRepository(),
+      TransactionRepository: () => new TransactionSQLiteRepository(),
+    };
   }
 
   return {

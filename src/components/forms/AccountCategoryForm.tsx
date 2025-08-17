@@ -28,7 +28,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
   }, [category]);
   const accountCategoryService = useAccountCategoryService();
 
-  const { mutate } = accountCategoryService.upsertAccountCategory();
+  const { mutate } = accountCategoryService.upsert();
 
   const handleTextChange = (name: keyof AccountCategoryFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
