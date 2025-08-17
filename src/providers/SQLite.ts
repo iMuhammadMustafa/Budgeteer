@@ -80,9 +80,14 @@ export const initializeSQLite = async (databaseName: string = "budgeteerdb"): Pr
 };
 
 // Public function to get the database instance
-export const getSQLiteDB = (): ExpoSQLiteDatabase<typeof schema> | null => {
+export const getSQLiteDB = async (): Promise<ExpoSQLiteDatabase<typeof schema> | null> => {
   if (!isInitialized || !db) {
-    return null;
+    try {
+      await initializeSQLite();
+    } catch (error) {
+      console.error("Failed to auto-initialize database:", error);
+      return null;
+    }
   }
   return db;
 };

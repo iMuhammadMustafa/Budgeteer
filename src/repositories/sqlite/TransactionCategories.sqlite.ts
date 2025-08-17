@@ -70,7 +70,8 @@ export class TransactionCategorySQLiteRepository
 
       // Match Supabase ordering: displayorder desc, group displayorder desc, then name asc
       // Note: For SQLite, we'll do the join and ordering in a simpler way
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           // Select all transaction category fields
           id: this.table.id,
