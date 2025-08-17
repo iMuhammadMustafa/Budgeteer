@@ -14,4 +14,7 @@ config.server.enhanceMiddleware = middleware => {
 };
 config.resolver.sourceExts.push("sql"); // <--- add this
 
+// Workaround for ESM babel/runtime resolving issue with expo-drizzle-studio-plugin
+// config.resolver.unstable_enablePackageExports = false;
+
 module.exports = withNativeWind(config, { input: "./global.css", configPath: "./tailwind.config.js" });

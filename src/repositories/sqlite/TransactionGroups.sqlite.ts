@@ -1,14 +1,14 @@
 import { BaseSQLiteRepository } from "./BaseSQLiteRepository";
 import { transactionGroups } from "../../types/db/sqllite/schema";
 import { ITransactionGroupRepository } from "../interfaces/ITransactionGroupRepository";
-import { 
-  TransactionGroup, 
-  TransactionGroupInsert, 
-  TransactionGroupUpdate 
+import {
+  TransactionGroup,
+  TransactionGroupInsert,
+  TransactionGroupUpdate
 } from "../../types/db/sqllite/schema";
 import { asc, desc, eq, and } from "drizzle-orm";
 
-export class TransactionGroupSQLiteRepository 
+export class TransactionGroupSQLiteRepository
   extends BaseSQLiteRepository<TransactionGroup, TransactionGroupInsert, TransactionGroupUpdate>
   implements ITransactionGroupRepository {
 
@@ -66,7 +66,8 @@ export class TransactionGroupSQLiteRepository
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
       // Match Supabase ordering: displayorder desc, then name asc
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select()
         .from(this.table)
         .where(whereClause)
