@@ -10,7 +10,7 @@ export default function Upsert() {
 
   const accountCategoryService = useAccountCategoryService();
 
-  const { data, isLoading, error } = accountCategoryService.getAccountCategoryById(categoryId);
+  const { data, isLoading, error } = accountCategoryService.findById(categoryId);
 
   const navigation = useNavigation();
 
