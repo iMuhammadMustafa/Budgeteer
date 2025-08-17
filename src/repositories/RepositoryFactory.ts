@@ -28,6 +28,9 @@ export interface IRepositoryFactory {
 }
 
 export function createRepositoryFactory(storageMode: StorageMode): IRepositoryFactory {
+  if (storageMode == StorageMode.Local) {
+  }
+
   return {
     AccountCategoryRepository: () => new AccountCategorySupaRepository(),
     AccountRepository: () => new AccountSupaRepository(),
