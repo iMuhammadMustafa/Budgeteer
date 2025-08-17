@@ -1,9 +1,10 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
+import { useStorageMode } from "./StorageModeProvider";
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -31,6 +32,12 @@ export const queryClient = new QueryClient({
 });
 
 export default function QueryProvider({ children }: PropsWithChildren) {
+  const { storageMode } = useStorageMode();
+
+  useEffect(() => {
+    queryClient.invalidateQueries();
+  }, [storageMode]);
+
   return (
     <PersistQueryClientProvider
       client={queryClient}

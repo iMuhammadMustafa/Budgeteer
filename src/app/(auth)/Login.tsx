@@ -43,7 +43,7 @@ export default function Login() {
   const [user, setUser] = useState(initialUserState);
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(null);
   // const { setDemo } = useDemoMode();
-  const { setSession } = useAuth?.() || {};
+  const { setSession } = useAuth();
   const { setStorageMode } = useStorageMode();
 
   const signInWithEmail = async () => {
@@ -103,25 +103,23 @@ export default function Login() {
         }
       } else if (mode === StorageMode.Local) {
         // Create local session
-        if (setSession) {
-          await setSession({
-            user: {
-              id: "local-user-id",
-              email: "local@local.com",
-              user_metadata: {
-                tenantid: "b3edc1ef-e280-46ba-848e-67042826e126",
-                full_name: "Local User",
-              },
-              app_metadata: {},
-              aud: "authenticated",
-              created_at: new Date().toISOString(),
+        await setSession({
+          user: {
+            id: "local-user-id",
+            email: "local@local.com",
+            user_metadata: {
+              tenantid: "b3edc1ef-e280-46ba-848e-67042826e126",
+              full_name: "Local User",
             },
-            access_token: "local-access-token",
-            refresh_token: "local-refresh-token",
-            expires_in: 3600,
-            token_type: "bearer",
-          });
-        }
+            app_metadata: {},
+            aud: "authenticated",
+            created_at: new Date().toISOString(),
+          },
+          access_token: "local-access-token",
+          refresh_token: "local-refresh-token",
+          expires_in: 3600,
+          token_type: "bearer",
+        });
       }
 
       console.log(`Successfully initialized ${mode} mode`);
