@@ -89,8 +89,26 @@ export function useAccountService(): IAccountService {
   const update = () => {
     if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async ({ form, original }: { form: Updates<TableNames.Accounts>; original: Account }) => {
-        return await updateAccountRepoHelper(form, session, original, accountRepo, transactionRepo, configRepo);
+      mutationFn: async ({
+        form,
+        original,
+        props: { addAdjustmentTransaction = false },
+      }: {
+        form: Updates<TableNames.Accounts>;
+        original: Account;
+        props: {
+          addAdjustmentTransaction?: boolean;
+        };
+      }) => {
+        return await updateAccountRepoHelper(
+          form,
+          session,
+          original,
+          accountRepo,
+          transactionRepo,
+          configRepo,
+          addAdjustmentTransaction,
+        );
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
@@ -104,11 +122,13 @@ export function useAccountService(): IAccountService {
       mutationFn: async ({
         form,
         original,
-        addAdjustmentTransaction: props = false,
+        props: { addAdjustmentTransaction = false } = {},
       }: {
         form: Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>;
         original?: Account;
-        addAdjustmentTransaction?: boolean;
+        props?: {
+          addAdjustmentTransaction?: boolean;
+        };
       }) => {
         // Clean up properties that shouldn't be sent to database
         (form as any).category = undefined;
@@ -122,7 +142,7 @@ export function useAccountService(): IAccountService {
             accountRepo,
             transactionRepo,
             configRepo,
-            props,
+            addAdjustmentTransaction,
           );
         }
         return await createAccountRepoHelper(

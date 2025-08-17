@@ -55,8 +55,8 @@ export default function CategoryForm({ category }: { category: TransactionCatego
   const handleSubmit = () => {
     mutate(
       {
-        formData,
-        originalData: category as TransactionCategory,
+        form: formData,
+        original: category as TransactionCategory,
       },
       {
         onSuccess: () => {

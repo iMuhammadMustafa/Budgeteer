@@ -17,7 +17,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const accountCategoryService = useAccountCategoryService();
   const [formData, setFormData] = useState<AccountFormType>(account);
   const [isLoading, setIsLoading] = useState(false);
-  const { data: accountCategories } = accountCategoryService.getAccountCategories();
+  const { data: accountCategories } = accountCategoryService.findAll();
   // const [isOpen, setIsOpen] = useState(false);
   const { data: openTransaction } = accountService.getAccountOpenedTransaction(account.id);
   const [openBalance, setOpenBalance] = useState<number | null>(null);
@@ -68,7 +68,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
 
     updateAccount(
-      { formAccount: { ...formData }, originalData: account as Account, addAdjustmentTransaction },
+      { form: { ...formData }, original: account as Account, props: { addAdjustmentTransaction } },
       {
         onSuccess: () => {
           setIsLoading(false);
@@ -90,7 +90,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
         id: account.id,
         balance: account.running_balance,
       };
-      updateAccount({ formAccount: updatedAccount, originalData: account as Account, addAdjustmentTransaction: false });
+      updateAccount({ form: updatedAccount, original: account as Account, props: { addAdjustmentTransaction: false } });
     }
   };
 

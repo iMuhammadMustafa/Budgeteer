@@ -38,8 +38,8 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
   const handleSubmit = () => {
     mutate(
       {
-        formData,
-        originalData: category as AccountCategory,
+        form: formData,
+        original: category as AccountCategory,
       },
       {
         onSuccess: () => {
