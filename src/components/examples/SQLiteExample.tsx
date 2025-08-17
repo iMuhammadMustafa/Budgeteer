@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert } from "react-native";
-import { tasks, lists, Task } from "@/sqllite/schema";
+import { tasks, Task } from "@/sqllite/schema";
 import { eq } from "drizzle-orm";
 import { getSQLiteDB, isSQLiteReady, initializeSQLite } from "@/src/providers/SQLite";
 
@@ -15,6 +15,7 @@ export const SQLiteExample: React.FC = () => {
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
   const [availableLists, setAvailableLists] = useState<any[]>([]);
 
+  useDrizzleStudio(db);
   // Initialize SQLite database
   useEffect(() => {
     const initDatabase = async () => {
@@ -44,25 +45,9 @@ export const SQLiteExample: React.FC = () => {
   // Load initial data
   useEffect(() => {
     if (isReady && db) {
-      loadLists();
       loadTasks();
     }
   }, [isReady, db]);
-
-  const loadLists = async () => {
-    if (!db) return;
-
-    try {
-      const listsData = await db.select().from(lists);
-      setAvailableLists(listsData);
-      if (listsData.length > 0 && !selectedListId) {
-        setSelectedListId(listsData[0].id);
-      }
-    } catch (err) {
-      console.error("Error loading lists:", err);
-      Alert.alert("Error", "Failed to load lists");
-    }
-  };
 
   const loadTasks = async () => {
     if (!db) return;
@@ -76,37 +61,19 @@ export const SQLiteExample: React.FC = () => {
     }
   };
 
-  const createList = async () => {
-    if (!db || !listName.trim()) return;
-
-    try {
-      await db.insert(lists).values({
-        name: listName.trim(),
-      });
-
-      setListName("");
-      await loadLists();
-      Alert.alert("Success", "List created successfully!");
-    } catch (err) {
-      console.error("Error creating list:", err);
-      Alert.alert("Error", "Failed to create list");
-    }
-  };
-
   const createTask = async () => {
-    if (!db || !taskName.trim() || !selectedListId) return;
+    if (!db || !taskName.trim()) return;
 
     try {
       await db.insert(tasks).values({
         name: taskName.trim(),
-        list_id: selectedListId,
       });
 
       setTaskName("");
       await loadTasks();
       Alert.alert("Success", "Task created successfully!");
     } catch (err) {
-      console.error("Error creating task:", err);
+      console.error("Error creating task:", JSON.stringify(err));
       Alert.alert("Error", "Failed to create task");
     }
   };
@@ -162,10 +129,7 @@ export const SQLiteExample: React.FC = () => {
             placeholder="Enter list name"
             value={listName}
             onChangeText={setListName}
-          />
-          <TouchableOpacity className="bg-blue-500 rounded-lg px-4 py-2 justify-center" onPress={createList}>
-            <Text className="text-white font-medium">Add List</Text>
-          </TouchableOpacity>
+          />{" "}
         </View>
       </View>
 
@@ -200,11 +164,7 @@ export const SQLiteExample: React.FC = () => {
             value={taskName}
             onChangeText={setTaskName}
           />
-          <TouchableOpacity
-            className="bg-green-500 rounded-lg px-4 py-2 justify-center"
-            onPress={createTask}
-            disabled={!selectedListId}
-          >
+          <TouchableOpacity className="bg-green-500 rounded-lg px-4 py-2 justify-center" onPress={createTask}>
             <Text className="text-white font-medium">Add Task</Text>
           </TouchableOpacity>
         </View>
@@ -217,12 +177,10 @@ export const SQLiteExample: React.FC = () => {
           data={tasksList}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => {
-            const taskList = availableLists.find(list => list.id === item.list_id);
             return (
               <View className="flex-row justify-between items-center p-3 border-b border-gray-200">
                 <View className="flex-1">
                   <Text className="text-base font-medium">{item.name}</Text>
-                  <Text className="text-sm text-gray-500">List: {taskList?.name || "Unknown"}</Text>
                 </View>
                 <TouchableOpacity className="bg-red-500 rounded-lg px-3 py-1" onPress={() => deleteTask(item.id)}>
                   <Text className="text-white text-sm">Delete</Text>
@@ -242,3 +200,6 @@ export const SQLiteExample: React.FC = () => {
 };
 
 export default SQLiteExample;
+function useDrizzleStudio(db: any) {
+  throw new Error("Function not implemented.");
+}
