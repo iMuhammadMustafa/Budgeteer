@@ -12,5 +12,6 @@ config.server.enhanceMiddleware = middleware => {
     middleware(req, res, next);
   };
 };
+config.resolver.sourceExts.push("sql"); // <--- add this
 
 module.exports = withNativeWind(config, { input: "./global.css", configPath: "./tailwind.config.js" });
