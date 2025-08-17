@@ -81,10 +81,9 @@ export default function Login() {
       await setStorageMode(mode);
 
       if (mode === StorageMode.Demo) {
-        // setDemo(true);
         // Create demo session
         if (setSession) {
-          setSession({
+          await setSession({
             user: {
               id: "0742f34e-7c12-408a-91a2-ed95d355bc87",
               email: "demo@demo.com",
@@ -103,10 +102,9 @@ export default function Login() {
           });
         }
       } else if (mode === StorageMode.Local) {
-        // setDemo(false);
         // Create local session
         if (setSession) {
-          setSession({
+          await setSession({
             user: {
               id: "local-user-id",
               email: "local@local.com",

@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { initializeSQLite, isSQLiteReady } from "./SQLite";
+import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
 
 export enum StorageMode {
   Cloud = "cloud",
@@ -35,6 +36,9 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
       }
 
       setStorageModeState(mode);
+      
+      // Store the storage mode preference
+      await storage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
     } catch (error) {
       console.error("Failed to set storage mode:", error);
       throw error;
@@ -44,23 +48,30 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Initialize with current global mode
+    // Initialize with saved storage mode or default to Cloud
     const initializeCurrentMode = async () => {
-      if (storageMode === StorageMode.Local && !isSQLiteReady()) {
-        try {
-          setIsInitializing(true);
-          await initializeSQLite();
-          console.log("SQLite initialized on startup");
-        } catch (error) {
-          console.error("Failed to initialize SQLite on startup:", error);
-        } finally {
-          setIsInitializing(false);
+      try {
+        // Load saved storage mode
+        const savedMode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE) as StorageMode;
+        if (savedMode && Object.values(StorageMode).includes(savedMode)) {
+          setStorageModeState(savedMode);
+          
+          // Initialize SQLite if needed
+          if (savedMode === StorageMode.Local && !isSQLiteReady()) {
+            setIsInitializing(true);
+            await initializeSQLite();
+            console.log("SQLite initialized on startup");
+          }
         }
+      } catch (error) {
+        console.error("Failed to initialize storage mode:", error);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
     initializeCurrentMode();
-  }, [storageMode]);
+  }, []);
 
   return (
     <StorageModeContext.Provider value={{ storageMode, setStorageMode, isInitializing, dbContext, isDatabaseReady }}>
