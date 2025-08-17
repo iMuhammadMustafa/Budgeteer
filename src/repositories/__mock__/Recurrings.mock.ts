@@ -1,6 +1,7 @@
 // Mock implementation for Recurrings API
 
-import { Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings> } from "../supabase/Recurrings.api.supa";
+import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
 import { recurrings, accounts, transactionCategories } from "./mockDataStore";
 
 export const listRecurrings = async (params: { tenantId: string; filters?: any }) => {
