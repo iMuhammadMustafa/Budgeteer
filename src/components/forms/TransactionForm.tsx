@@ -8,26 +8,18 @@ import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Transaction, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services//Accounts.Service";
-import {
-  useGetTransactionById,
-  useSearchTransactionsByName,
-  useUpsertTransaction,
-} from "@/src/services//Transactions.Service";
 import SearchableDropdown from "../SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "../MyDateTimePicker";
 import TextInputField from "../TextInputField";
 import CalculatorComponent from "../Calculator";
-import DropdownField, {
-  AccountSelecterDropdown,
-  MyCategoriesDropdown,
-  MyTransactionTypesDropdown,
-} from "../DropDownField";
+import { AccountSelecterDropdown, MyCategoriesDropdown, MyTransactionTypesDropdown } from "../DropDownField";
 import { getTransactionsByName } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -302,10 +294,14 @@ const useTransactionForm = ({ transaction }: any) => {
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<"plus" | "minus">("plus");
 
-  const { data: categories, isLoading: isCategoriesLoading } = useGetTransactionCategories();
-  const { data: accounts, isLoading: isAccountLoading } = useGetAccounts();
+  const transactionCategoryService = useTransactionCategoryService();
+  const accountService = useAccountService();
+  const transactionService = useTransactionService();
 
-  const { mutate } = useUpsertTransaction();
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.findAll();
+  const { data: accounts, isLoading: isAccountLoading } = accountService.findAll();
+
+  const { mutate } = transactionService.upsert();
 
   const isEdit = !!transaction.id;
 
@@ -385,11 +381,11 @@ const useTransactionForm = ({ transaction }: any) => {
 
     mutate(
       {
-        formData: {
+        form: {
           ...formData,
           amount: amount,
         },
-        originalData: transaction as Transaction,
+        original: transaction as Transaction,
       },
       {
         onSuccess: async () => {
@@ -408,7 +404,7 @@ const useTransactionForm = ({ transaction }: any) => {
         },
         onError: error => {
           console.log({
-            message: error.message,
+            message: JSON.stringify(error),
             type: "error",
           });
           setIsLoading(false);

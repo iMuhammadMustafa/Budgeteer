@@ -4,7 +4,7 @@ import { View, Text } from "react-native";
 import TextInputField from "../TextInputField";
 import Button from "../Button";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { useUpsertConfiguration } from "@/src/services//Configurations.Service";
+import { useConfigurationService } from "@/src/services/Configurations.Service";
 
 export type ConfigurationFormType = {
   id?: string;
@@ -29,7 +29,8 @@ export default function ConfigurationForm({
   onSuccess?: () => void;
 }) {
   const [formData, setFormData] = useState<ConfigurationFormType>(configuration || initialState);
-  const { mutate, isPending } = useUpsertConfiguration();
+  const configService = useConfigurationService();
+  const { mutate, isPending } = configService.upsert();
 
   useEffect(() => {
     if (configuration) setFormData(configuration);
@@ -41,7 +42,7 @@ export default function ConfigurationForm({
 
   const handleSubmit = () => {
     mutate(
-      { formConfiguration: formData },
+      { form: formData },
       {
         onSuccess: () => {
           onSuccess && onSuccess();
