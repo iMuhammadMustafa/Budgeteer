@@ -2,14 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createTransactionGroup,
-  deleteTransactionGroup,
-  getTransactionGroupById,
-  getAllTransactionGroups,
-  restoreTransactionGroup,
-  updateTransactionGroup,
-} from "@/src/repositories";
+import { createTransactionGroup, updateTransactionGroup } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -92,6 +85,7 @@ export function useTransactionGroupService(): ITransactionGroupService {
         form: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
         original?: TransactionGroup;
       }) => {
+        console.log(form);
         if (form.id && original) {
           return await updateRepoHelper(form, session, transactionGroupRepo);
         }
@@ -175,6 +169,8 @@ const createRepoHelper = async (formData: Inserts<TableNames.TransactionGroups>,
   formData.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formData.createdby = userId;
   formData.tenantid = tenantid;
+
+  console.log(formData);
 
   const newEntity = await repository.create(formData, tenantid);
   return newEntity;

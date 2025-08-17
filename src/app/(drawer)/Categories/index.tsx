@@ -53,8 +53,8 @@ const FirstRoute = () => {
     <Tab
       title="Categories"
       queryKey={[TableNames.TransactionCategories]}
-      useGet={transactionCategoryService.findAllTransactionCategories}
-      useDelete={transactionCategoryService.deleteTransactionCategoryRepo}
+      useGet={transactionCategoryService.findAll}
+      useDelete={transactionCategoryService.delete}
       upsertUrl={"/Categories/Upsert?categoryId="}
       groupedBy="group.name"
     />
