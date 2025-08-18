@@ -4,7 +4,8 @@ import { Link, router } from "expo-router";
 import supabase from "@/src/providers/Supabase";
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { StorageMode, useStorageMode } from "@/src/providers/StorageModeProvider";
+import {  useStorageMode } from "@/src/providers/StorageModeProvider";
+import { StorageMode } from "@/src/types/StorageMode";
 
 type LoginMode = {
   id: StorageMode;

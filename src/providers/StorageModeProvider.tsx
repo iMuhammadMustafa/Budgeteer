@@ -2,12 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { initializeSQLite, isSQLiteReady } from "./SQLite";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
-
-export enum StorageMode {
-  Cloud = "cloud",
-  Demo = "demo",
-  Local = "local",
-}
+import { StorageMode } from "@/src/types/StorageMode";
 type StorageModeContextType = {
   storageMode: StorageMode;
   setStorageMode: (mode: StorageMode) => Promise<void>;
