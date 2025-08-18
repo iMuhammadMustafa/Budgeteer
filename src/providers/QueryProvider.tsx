@@ -35,7 +35,9 @@ export default function QueryProvider({ children }: PropsWithChildren) {
   const { storageMode } = useStorageMode();
 
   useEffect(() => {
-    queryClient.invalidateQueries();
+    // Clear cache when switching storage modes to prevent stale data
+    // This ensures fresh data is loaded from the new storage source
+    queryClient.clear();
   }, [storageMode]);
 
   return (
