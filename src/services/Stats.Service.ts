@@ -563,3 +563,28 @@ const getStatsNetWorthGrowthHelper = async (data: StatsNetWorthGrowth[]): Promis
 //   useGetStatsMonthlyCategoriesTransactionsForDashboardLegacy;
 // export const useGetStatsMonthlyAccountsTransactions = useGetStatsMonthlyAccountsTransactionsLegacy;
 // export const useGetStatsNetWorthGrowth = useGetStatsNetWorthGrowthLegacy;
+// Individual hook exports for backward compatibility
+export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyCategoriesTransactions(startDate, endDate);
+};
+
+export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
+  const service = useStatsService();
+  return service.getStatsDailyTransactions(startDate, endDate, week);
+};
+
+export const useGetStatsYearTransactionsTypes = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyTransactionsTypes(startDate, endDate);
+};
+
+export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyAccountsTransactions(startDate, endDate);
+};
+
+export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsNetWorthGrowth(startDate, endDate);
+};

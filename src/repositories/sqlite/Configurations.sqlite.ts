@@ -28,7 +28,8 @@ export class ConfigurationSQLiteRepository
         conditions.push(eq(this.table.tenantid, tenantId));
       }
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select()
         .from(this.table)
         .where(and(...conditions))

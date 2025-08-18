@@ -102,6 +102,21 @@ export function useRecurringService(): IRecurringService {
     });
   };
 
+  const executeRecurringAction = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (params: { item: Recurring; amount?: number }) => {
+        // This is a simplified implementation - in production you'd want to implement
+        // the full recurring transaction logic here
+        throw new Error("Execute recurring action not yet implemented in repository layer");
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      },
+    });
+  };
+
   // Legacy hooks for backward compatibility
   // const useListRecurrings = (filters?: any) => useListRecurringsLegacy(filters);
   // const useGetRecurring = (id?: string) => useGetRecurringLegacy(id);
@@ -119,6 +134,7 @@ export function useRecurringService(): IRecurringService {
     softDelete,
     delete: softDelete,
     restore,
+    executeRecurringAction,
 
     // Legacy methods (backward compatibility)
     // useListRecurrings,
@@ -393,3 +409,32 @@ const updateRepoHelper = async (formData: Updates<TableNames.Recurrings>, sessio
 // export const useUpdateRecurring = useUpdateRecurringLegacy;
 // export const useDeleteRecurring = useDeleteRecurringLegacy;
 // export const useExecuteRecurringAction = useExecuteRecurringActionLegacy;
+// Individual hook exports for backward compatibility
+export const useExecuteRecurringAction = () => {
+  const service = useRecurringService();
+  return service.executeRecurringAction();
+};
+
+export const useListRecurrings = (filters?: any) => {
+  const service = useRecurringService();
+  return service.findAll(filters);
+};
+
+export const useDeleteRecurring = () => {
+  const service = useRecurringService();
+  return service.softDelete();
+};export
+ const useGetRecurring = (id?: string) => {
+  const service = useRecurringService();
+  return service.findById(id);
+};
+
+export const useCreateRecurring = () => {
+  const service = useRecurringService();
+  return service.create();
+};
+
+export const useUpdateRecurring = () => {
+  const service = useRecurringService();
+  return service.update();
+};

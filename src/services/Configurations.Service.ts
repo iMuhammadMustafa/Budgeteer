@@ -353,3 +353,13 @@ const updateConfigurationRepoHelper = async (
 
   return updatedConfiguration;
 };
+// Individual hook exports for backward compatibility
+export const useGetConfigurations = () => {
+  const service = useConfigurationService();
+  return service.findAll();
+};
+
+export const useDeleteConfiguration = () => {
+  const service = useConfigurationService();
+  return service.softDelete();
+};

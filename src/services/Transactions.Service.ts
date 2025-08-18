@@ -11,6 +11,7 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { initialSearchFilters } from "@/src/utils/transactions.helper";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { useStorageMode } from "../providers/StorageModeProvider";
@@ -25,6 +26,7 @@ export interface ITransactionService
     Updates<TableNames.Transactions>,
     TransactionsView
   > {
+  findAllInfinite: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<TransactionsView[]>>;
   findByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: SearchDistinctTransactions }[]>>;
   getByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   createMultipleTransactionsRepo: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
@@ -202,6 +204,34 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
+  const findAllInfinite = (searchFilters: TransactionFilters) => {
+    const normalizedFilters = Object.keys(searchFilters).length !== 0 ? searchFilters : initialSearchFilters;
+    return useInfiniteQuery<TransactionsView[]>({
+      queryKey: [ViewNames.TransactionsView, normalizedFilters, tenantId, "repo", "infinite"],
+      initialPageParam: 0,
+      queryFn: async ({ pageParam = 0 }) => {
+        if (!tenantId) throw new Error("Tenant ID not found in session for infinite query");
+        
+        // For now, we'll use the regular findAll method and implement pagination later
+        // This is a simplified implementation - in production you'd want proper pagination
+        const allResults = await transactionRepo.findAll(normalizedFilters, tenantId);
+        
+        // Simple pagination simulation
+        const pageSize = 10;
+        const startIndex = (pageParam as number) * pageSize;
+        const endIndex = startIndex + pageSize;
+        
+        return allResults.slice(startIndex, endIndex);
+      },
+      enabled: !!tenantId,
+      getNextPageParam: (lastPage, allPages) => {
+        // If the last page is empty or has fewer items than pageSize, no more pages
+        if (lastPage.length === 0 || lastPage.length < 10) return undefined;
+        return allPages.length;
+      },
+    });
+  };
+
   // Legacy hooks for backward compatibility - commented out since functions don't exist
   // const getAllTransactions = useGetAllTransactions();
   // const getTransactions = (searchFilters: TransactionFilters) => useGetTransactions(searchFilters);
@@ -215,11 +245,13 @@ export function useTransactionService(): ITransactionService {
   return {
     // Repository-based methods (new)
     findAll,
+    findAllInfinite,
     findById,
     findByName,
     getByTransferId,
     create,
     update,
+    upsert,
     createMultipleTransactionsRepo,
     updateTransferTransactionRepo,
     delete: deleteObj,
@@ -853,4 +885,28 @@ export const updateTransactionHelper = async (
     // Rollback or handle the error
     throw new Error("Failed to update account balances");
   }
+};
+// Individual hook exports for backward compatibility
+export const useGetTransactionsInfinite = (searchFilters: TransactionFilters) => {
+  const service = useTransactionService();
+  return service.findAllInfinite(searchFilters);
+};
+
+export const useCreateTransaction = () => {
+  const service = useTransactionService();
+  return service.create();
+};
+
+export const useDeleteTransaction = () => {
+  const service = useTransactionService();
+  return service.delete();
+};exp
+ort const useGetTransactionById = (id?: string) => {
+  const service = useTransactionService();
+  return service.findById(id);
+};
+
+export const useCreateTransactions = () => {
+  const service = useTransactionService();
+  return service.createMultipleTransactionsRepo();
 };
