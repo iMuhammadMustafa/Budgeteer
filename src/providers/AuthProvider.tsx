@@ -2,6 +2,8 @@ import { PropsWithChildren, createContext, useContext, useEffect, useState } fro
 import { Session } from "@supabase/supabase-js";
 import supabase from "./Supabase";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
+import { useStorageMode } from "./StorageModeProvider";
+import { StorageMode } from "@/src/types/StorageMode";
 
 type AuthType = {
   session: Session | null;
@@ -20,7 +22,7 @@ const AuthContext = createContext<AuthType>({
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
-  const [storageMode, setStorageModeState] = useState<string>("cloud");
+  const { storageMode, setStorageMode } = useStorageMode();
   const user = session?.user;
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
@@ -28,7 +30,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   const handleSessionChange = async (newSession: Session | null) => {
     setSession(newSession);
 
-    if (storageMode === "local" || storageMode === "demo") {
+    if (storageMode === StorageMode.Local || storageMode === StorageMode.Demo) {
       if (newSession) {
         console.log("setting", newSession);
         await storage.setItem(STORAGE_KEYS.LOCAL_SESSION, JSON.stringify(newSession));
@@ -40,7 +42,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   const logout = async () => {
     try {
       // Sign out from Supabase if in cloud mode
-      if (storageMode === "cloud") {
+      if (storageMode === StorageMode.Cloud) {
         await supabase.auth.signOut();
       }
 
@@ -57,20 +59,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Load storage mode from storage
-        const savedStorageMode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
-        if (savedStorageMode) {
-          setStorageModeState(savedStorageMode);
-        }
-
         // Check for Supabase session first (Cloud mode)
         const { data } = await supabase.auth.getSession();
 
         if (data.session) {
           // We have a valid Supabase session
           setSession(data.session);
-          setStorageModeState("cloud");
-          await storage.setItem(STORAGE_KEYS.STORAGE_MODE, "cloud");
+          await setStorageMode(StorageMode.Cloud);
         } else {
           // No Supabase session, check for local session
           const localSessionData = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
@@ -78,7 +73,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
             try {
               const localSession = JSON.parse(localSessionData);
               setSession(localSession);
-              // Keep the saved storage mode (Demo or Local)
+              // Keep the current storage mode from StorageModeProvider
             } catch (error) {
               console.error("Failed to parse local session:", error);
               await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
@@ -99,11 +94,10 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       if (supabaseSession) {
         // Supabase session available - switch to cloud mode
         setSession(supabaseSession);
-        setStorageModeState("cloud");
-        await storage.setItem(STORAGE_KEYS.STORAGE_MODE, "cloud");
+        await setStorageMode(StorageMode.Cloud);
         // Clear any local session when switching to cloud
         await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
-      } else if (storageMode === "cloud") {
+      } else if (storageMode === StorageMode.Cloud) {
         // Supabase session lost and we were in cloud mode
         setSession(null);
       }
@@ -114,15 +108,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
-
-  // Update storage mode when it changes
-  useEffect(() => {
-    const updateStorageMode = async () => {
-      await storage.setItem(STORAGE_KEYS.STORAGE_MODE, storageMode);
-    };
-    updateStorageMode();
-  }, [storageMode]);
+  }, [setStorageMode, storageMode]);
 
   return (
     <AuthContext.Provider value={{ session, user, isSessionLoading, setSession: handleSessionChange, logout }}>

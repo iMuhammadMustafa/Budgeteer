@@ -18,36 +18,6 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
     return db;
   }
 
-  /**
-   * Wraps a database operation with a timeout to prevent hanging
-   */
-  async withTimeout<T>(
-    operation: Promise<T>,
-    timeoutMs: number = this.DEFAULT_TIMEOUT,
-    operationName: string = "Database operation",
-  ): Promise<T> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(
-          new Error(
-            `${operationName} timed out after ${timeoutMs}ms. This may indicate a deadlock or connection issue.`,
-          ),
-        );
-      }, timeoutMs);
-    });
-
-    try {
-      return await Promise.race([operation, timeoutPromise]);
-    } catch (error) {
-      // If it's our timeout error, throw it as-is
-      if (error instanceof Error && error.message.includes("timed out")) {
-        throw error;
-      }
-      // For other errors, wrap them with context
-      throw new Error(`${operationName} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
   // Abstract property that concrete repositories must define
   protected abstract table: any;
 
@@ -66,13 +36,12 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
       }
 
       const db = await this.getDb();
-      const operation = db
+      const result = await db
         .select()
         .from(this.table)
         .where(and(...conditions))
         .limit(1);
 
-      const result = await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Find by ID");
       return (result as T[])[0] || null;
     } catch (error) {
       throw new Error(`Failed to find record by ID: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -106,7 +75,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
 
       const db = await this.getDb();
       const operation = db.select().from(this.table).where(whereClause);
-      const result = await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Find all records");
+      const result = await operation;
 
       return result as T[];
     } catch (error) {
@@ -115,41 +84,37 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
   }
 
   async create(data: InsertType, tenantId?: string): Promise<T> {
-    try {
-      // Add tenant ID to data if provided and table has tenantid column
-      const insertData = { ...data } as any;
+    // Add tenant ID to data if provided and table has tenantid column
+    const insertData = { ...data } as any;
 
-      // Generate ID if not provided
-      if (!insertData.id) {
-        insertData.id = crypto.randomUUID();
-      }
-
-      if (tenantId && "tenantid" in this.table) {
-        insertData.tenantid = tenantId;
-      }
-
-      // Add timestamps if table has these columns
-      const now = new Date().toISOString();
-      if ("createdat" in this.table) {
-        insertData.createdat = now;
-      }
-      if ("updatedat" in this.table) {
-        insertData.updatedat = now;
-      }
-
-      const db = await this.getDb();
-      const operation = db.insert(this.table).values(insertData).returning();
-      const result = await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Create record");
-
-      const resultArray = result as T[];
-      if (!resultArray[0]) {
-        throw new Error("Failed to create record - no data returned");
-      }
-
-      return resultArray[0];
-    } catch (error) {
-      throw new Error(`Failed to create record: ${error instanceof Error ? error.message : "Unknown error"}`);
+    // Generate ID if not provided
+    if (!insertData.id) {
+      insertData.id = crypto.randomUUID();
     }
+
+    if (tenantId && "tenantid" in this.table) {
+      insertData.tenantid = tenantId;
+    }
+
+    // Add timestamps if table has these columns
+    const now = new Date().toISOString();
+    if ("createdat" in this.table) {
+      insertData.createdat = now;
+    }
+    if ("updatedat" in this.table) {
+      insertData.updatedat = now;
+    }
+
+    const db = await this.getDb();
+    const operation = db.insert(this.table).values(insertData).returning();
+    const result = await operation;
+
+    const resultArray = result as T[];
+    if (!resultArray[0]) {
+      throw new Error("Failed to create record - no data returned");
+    }
+
+    return resultArray[0];
   }
 
   async update(id: string, data: UpdateType, tenantId?: string): Promise<T | null> {
@@ -179,7 +144,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
         .where(and(...conditions))
         .returning();
 
-      const result = await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Update record");
+      const result = await operation;
       return (result as T[])[0] || null;
     } catch (error) {
       throw new Error(`Failed to update record: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -197,7 +162,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
 
       const db = await this.getDb();
       const operation = db.delete(this.table).where(and(...conditions));
-      await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Delete record");
+      await operation;
     } catch (error) {
       throw new Error(`Failed to delete record: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
@@ -228,7 +193,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
         .set(updateData)
         .where(and(...conditions));
 
-      await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Soft delete record");
+      await operation;
     } catch (error) {
       throw new Error(`Failed to soft delete record: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
@@ -259,7 +224,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
         .set(updateData)
         .where(and(...conditions));
 
-      await this.withTimeout(operation, this.DEFAULT_TIMEOUT, "Restore record");
+      await operation;
     } catch (error) {
       throw new Error(`Failed to restore record: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
