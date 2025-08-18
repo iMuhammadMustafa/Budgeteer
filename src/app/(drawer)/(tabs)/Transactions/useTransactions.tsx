@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { BackHandler, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -10,16 +10,8 @@ import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@/src/utils/transactions.helper";
 
-import {
-  useCreateTransaction,
-  useDeleteTransaction,
-  useGetTransactionsInfinite,
-  useTransactionService,
-} from "@/src/services//Transactions.Service";
-import {
-  useGetTransactionCategories,
-  useTransactionCategoryService,
-} from "@/src/services//TransactionCategories.Service";
+import { useTransactionService } from "@/src/services//Transactions.Service";
+import { useTransactionCategoryService } from "@/src/services//TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 
 export default function useTransactions() {
@@ -28,12 +20,12 @@ export default function useTransactions() {
 
   const params = useLocalSearchParams() as TransactionFilters;
 
+  const transactionService = useTransactionService();
   // const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
-    useGetTransactionsInfinite(params);
+    transactionService.findAllInfinite(params);
   const transactions = data?.pages.flatMap(page => page);
 
-  const transactionService = useTransactionService();
   const transactionCategoriesService = useTransactionCategoryService();
   const accountsService = useAccountService();
   const { data: accounts } = accountsService.findAll();
