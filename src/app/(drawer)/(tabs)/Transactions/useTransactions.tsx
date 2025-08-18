@@ -14,9 +14,13 @@ import {
   useCreateTransaction,
   useDeleteTransaction,
   useGetTransactionsInfinite,
+  useTransactionService,
 } from "@/src/services//Transactions.Service";
-import { useGetAccounts } from "@/src/services//Accounts.Service";
-import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
+import {
+  useGetTransactionCategories,
+  useTransactionCategoryService,
+} from "@/src/services//TransactionCategories.Service";
+import { useAccountService } from "@/src/services/Accounts.Service";
 
 export default function useTransactions() {
   const router = useRouter();
@@ -29,10 +33,13 @@ export default function useTransactions() {
     useGetTransactionsInfinite(params);
   const transactions = data?.pages.flatMap(page => page);
 
-  const { data: accounts } = useGetAccounts();
-  const { data: categories } = useGetTransactionCategories();
-  const addMutation = useCreateTransaction();
-  const deleteMutation = useDeleteTransaction();
+  const transactionService = useTransactionService();
+  const transactionCategoriesService = useTransactionCategoryService();
+  const accountsService = useAccountService();
+  const { data: accounts } = accountsService.findAll();
+  const { data: categories } = transactionCategoriesService.findAll();
+  const addMutation = transactionService.create();
+  const deleteMutation = transactionService.delete();
 
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);

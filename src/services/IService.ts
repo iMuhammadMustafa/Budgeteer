@@ -8,7 +8,7 @@ export interface IReadableService<T> {
 export interface IWritableService<T, TInsert, TUpdate> {
   create: () => ReturnType<typeof useMutation<T, unknown, TInsert>>;
   update: () => ReturnType<
-    typeof useMutation<T | null | undefined, unknown, { form: TUpdate; original: T; props?: any }>
+    typeof useMutation<T | null | undefined, unknown, { form: TUpdate; original?: T; props?: any }>
   >;
   upsert: () => ReturnType<
     typeof useMutation<T | null | undefined, unknown, { form: TInsert | TUpdate; original?: T; props?: any }>
