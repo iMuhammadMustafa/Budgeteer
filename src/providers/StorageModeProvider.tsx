@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState, useMemo } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { initializeSQLite, isSQLiteReady } from "./SQLite";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
@@ -16,10 +16,14 @@ const StorageModeContext = createContext<StorageModeContextType | undefined>(und
 export function StorageModeProvider({ children }: { children: ReactNode }) {
   const [storageMode, setStorageModeState] = useState<StorageMode>(StorageMode.Cloud);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [dbContext, setDbContext] = useState<IRepositoryFactory>(() => createRepositoryFactory(storageMode));
 
-  // Check if database is ready based on storage mode
-  const isDatabaseReady = storageMode === StorageMode.Local ? isSQLiteReady() : true;
+  // Memoize the repository factory to avoid recreating on every render
+  const dbContext = useMemo(() => createRepositoryFactory(storageMode), [storageMode]);
+
+  // Memoize the database ready check to avoid unnecessary function calls
+  const isDatabaseReady = useMemo(() => {
+    return storageMode === StorageMode.Local ? isSQLiteReady() : true;
+  }, [storageMode]);
 
   const setStorageMode = async (mode: StorageMode) => {
     setIsInitializing(true);
@@ -31,8 +35,7 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
       }
 
       setStorageModeState(mode);
-      setDbContext(createRepositoryFactory(mode)); // Update repository factory
-      
+
       // Store the storage mode preference
       await storage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
     } catch (error) {
@@ -48,11 +51,10 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
     const initializeCurrentMode = async () => {
       try {
         // Load saved storage mode
-        const savedMode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE) as StorageMode;
+        const savedMode = (await storage.getItem(STORAGE_KEYS.STORAGE_MODE)) as StorageMode;
         if (savedMode && Object.values(StorageMode).includes(savedMode)) {
           setStorageModeState(savedMode);
-          setDbContext(createRepositoryFactory(savedMode)); // Update repository factory
-          
+
           // Initialize SQLite if needed
           if (savedMode === StorageMode.Local && !isSQLiteReady()) {
             setIsInitializing(true);
