@@ -16,7 +16,7 @@ const StorageModeContext = createContext<StorageModeContextType | undefined>(und
 export function StorageModeProvider({ children }: { children: ReactNode }) {
   const [storageMode, setStorageModeState] = useState<StorageMode>(StorageMode.Cloud);
   const [isInitializing, setIsInitializing] = useState(false);
-  const dbContext = createRepositoryFactory(storageMode);
+  const [dbContext, setDbContext] = useState<IRepositoryFactory>(() => createRepositoryFactory(storageMode));
 
   // Check if database is ready based on storage mode
   const isDatabaseReady = storageMode === StorageMode.Local ? isSQLiteReady() : true;
@@ -31,6 +31,7 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
       }
 
       setStorageModeState(mode);
+      setDbContext(createRepositoryFactory(mode)); // Update repository factory
       
       // Store the storage mode preference
       await storage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
@@ -50,6 +51,7 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
         const savedMode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE) as StorageMode;
         if (savedMode && Object.values(StorageMode).includes(savedMode)) {
           setStorageModeState(savedMode);
+          setDbContext(createRepositoryFactory(savedMode)); // Update repository factory
           
           // Initialize SQLite if needed
           if (savedMode === StorageMode.Local && !isSQLiteReady()) {
