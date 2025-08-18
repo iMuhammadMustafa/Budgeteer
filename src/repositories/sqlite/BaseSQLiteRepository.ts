@@ -95,6 +95,7 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
     if (tenantId && "tenantid" in this.table) {
       insertData.tenantid = tenantId;
     }
+    insertData.createdBy = tenantId;
 
     // Add timestamps if table has these columns
     const now = new Date().toISOString();
@@ -106,12 +107,14 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
     }
 
     const db = await this.getDb();
-    const operation = db.insert(this.table).values(insertData).returning();
-    const result = await operation;
+    console.log("trying to Create", insertData);
+
+    const result = await db.insert(this.table).values(insertData).returning();
+    console.log("Create result:", result);
 
     const resultArray = result as T[];
-    if (!resultArray[0]) {
-      throw new Error("Failed to create record - no data returned");
+    if (!resultArray || resultArray.length === 0 || !resultArray[0]) {
+      throw new Error("Failed to create record - no data returned from database");
     }
 
     return resultArray[0];
