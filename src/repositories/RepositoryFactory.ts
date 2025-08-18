@@ -1,4 +1,4 @@
-import { StorageMode } from "../providers/StorageModeProvider";
+import { StorageMode } from "../types/StorageMode";
 import { IAccountCategoryRepository } from "./interfaces/IAccountCategoryRepository";
 import { IAccountRepository } from "./interfaces/IAccountRepository";
 import { IConfigurationRepository } from "./interfaces/IConfigurationRepository";
