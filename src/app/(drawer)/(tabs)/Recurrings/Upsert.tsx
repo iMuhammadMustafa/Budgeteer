@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, SafeAreaView, ScrollView, Text, Pressable, View, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -8,11 +8,17 @@ import timezone from "dayjs/plugin/timezone";
 
 import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services//Accounts.Service";
-import { useGetRecurring, useCreateRecurring, useUpdateRecurring } from "@/src/services/Recurrings.Service";
+import {
+  useGetTransactionCategories,
+  useTransactionCategoryService,
+} from "@/src/services//TransactionCategories.Service";
+import {
+  useGetRecurring,
+  useCreateRecurring,
+  useUpdateRecurring,
+  useRecurringService,
+} from "@/src/services/Recurrings.Service";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
-import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
@@ -20,6 +26,7 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
 import { useAuth } from "@/src/providers/AuthProvider";
 import { getTransactionsByName } from "@/src/repositories";
+import { useAccountService } from "@/src/services/Accounts.Service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -63,7 +70,7 @@ export const initialRecurringState: RecurringFormType = {
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
-  destinationaccountid: undefined,
+  destinationaccountid: null,
   categoryid: undefined,
   payeename: undefined,
   notes: undefined,
@@ -273,12 +280,15 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
 
-  const { data: recurringToEdit, isLoading: isLoadingRecurring } = useGetRecurring(recurringIdToEdit);
   const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: categories, isLoading: isLoadingCategories } = useGetTransactionCategories();
-  const { data: accounts, isLoading: isLoadingAccounts } = useGetAccounts();
+  const reucorringService = useRecurringService();
+  const transactionCategoriesService = useTransactionCategoryService();
+  const accountsService = useAccountService();
+  const { data: recurringToEdit, isLoading: isLoadingRecurring } = reucorringService.findById(recurringIdToEdit);
+  const { data: categories, isLoading: isLoadingCategories } = transactionCategoriesService.findAll();
+  const { data: accounts, isLoading: isLoadingAccounts } = accountsService.findAll();
 
   const { mutate: createRecurring } = useCreateRecurring();
   const { mutate: updateRecurring } = useUpdateRecurring();
@@ -403,7 +413,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { id: recurringIdToEdit, recurringData: dataToSubmitApi as Updates<TableNames.Recurrings> },
+        { form: dataToSubmitApi as Updates<TableNames.Recurrings> },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
