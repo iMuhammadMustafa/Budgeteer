@@ -22,7 +22,8 @@ export class AccountSQLiteRepository
    */
   async updateAccountBalance(accountid: string, amount: number, tenantId?: string): Promise<number> {
     try {
-      return await updateAccountBalance(this.db, accountid, amount);
+      const db = await this.getDb();
+      return await updateAccountBalance(db, accountid, amount);
     } catch (error) {
       throw new Error(`Failed to update account balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -45,7 +46,8 @@ export class AccountSQLiteRepository
         conditions.push(eq(transactions.tenantid, tenantId));
       }
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           id: transactions.id,
           amount: transactions.amount
@@ -80,7 +82,8 @@ export class AccountSQLiteRepository
         conditions.push(eq(accounts.tenantid, tenantId));
       }
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           totalbalance: sum(accounts.balance)
         })

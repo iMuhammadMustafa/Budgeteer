@@ -354,3 +354,13 @@ const updateTransactionCategoryRepoHelper = async (
 
   return updatedTransactionCategory;
 };
+// Individual hook exports for backward compatibility
+export const useGetTransactionCategories = () => {
+  const service = useTransactionCategoryService();
+  return service.findAll();
+};
+
+export const useGetTransactionCategoryById = (id?: string) => {
+  const service = useTransactionCategoryService();
+  return service.findById(id);
+};

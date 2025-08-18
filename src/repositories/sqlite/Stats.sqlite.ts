@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { eq, and, gte, lte, inArray, sql, desc } from "drizzle-orm";
-import { getSQLiteDB, isSQLiteReady } from "../../providers/SQLite";
+import { BaseSQLiteRepository } from "./BaseSQLiteRepository";
 import { IStatsRepository } from "../interfaces/IStatsRepository";
 import {
   StatsDailyTransactions,
@@ -18,13 +18,8 @@ import {
 } from "../../types/db/sqllite/schema";
 import * as schema from "../../types/db/sqllite/schema";
 
-export class StatsSQLiteRepository implements IStatsRepository {
-  protected get db() {
-    if (!isSQLiteReady()) {
-      throw new Error("SQLite database not initialized. Call initializeSQLite() first.");
-    }
-    return getSQLiteDB();
-  }
+export class StatsSQLiteRepository extends BaseSQLiteRepository<any, any, any> implements IStatsRepository {
+  protected table = transactions; // Stats doesn't really use a single table, but we need this for the base class
 
   async getStatsDailyTransactions(
     tenantId: string,
@@ -53,7 +48,8 @@ export class StatsSQLiteRepository implements IStatsRepository {
       conditions.push(gte(transactions.date, defaultStartDate));
       conditions.push(lte(transactions.date, defaultEndDate));
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           date: transactions.date,
           sum: sql<number>`sum(${transactions.amount})`.as("sum"),
@@ -90,7 +86,8 @@ export class StatsSQLiteRepository implements IStatsRepository {
       conditions.push(gte(transactions.date, defaultStartDate));
       conditions.push(lte(transactions.date, defaultEndDate));
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           date: sql<string>`strftime('%Y-%m', ${transactions.date})`.as("date"),
           sum: sql<number>`sum(${transactions.amount})`.as("sum"),
@@ -131,7 +128,8 @@ export class StatsSQLiteRepository implements IStatsRepository {
         lte(transactions.date, formattedEndDate),
       ];
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           groupid: transactionGroups.id,
           categoryid: transactionCategories.id,
@@ -205,7 +203,8 @@ export class StatsSQLiteRepository implements IStatsRepository {
         lte(transactions.date, formattedEndDate),
       ];
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           account: accounts.name,
           accountid: accounts.id,
@@ -241,7 +240,8 @@ export class StatsSQLiteRepository implements IStatsRepository {
 
       // This is a complex query that calculates net worth growth over time
       // We need to calculate the cumulative balance changes for each month
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .select({
           month: sql<string>`strftime('%Y-%m-01', ${transactions.date})`.as("month"),
           total_net_worth: sql<number>`

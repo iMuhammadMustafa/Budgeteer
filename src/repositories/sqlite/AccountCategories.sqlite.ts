@@ -13,6 +13,7 @@ export class AccountCategorySQLiteRepository
   implements IAccountCategoryRepository {
 
   protected table = accountCategories;
+  private readonly DEFAULT_TIMEOUT = 10000;
 
   /**
    * Override findAll to match Supabase behavior with ordering
@@ -61,12 +62,14 @@ export class AccountCategorySQLiteRepository
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
       // Match Supabase ordering: displayorder desc, then name asc
-      const result = await this.db
+      const db = await this.getDb();
+      const operation = db
         .select()
         .from(this.table)
         .where(whereClause)
         .orderBy(desc(this.table.displayorder), asc(this.table.name));
 
+      const result = await this.withTimeout(operation, 10000, "Find all account categories");
       return result as AccountCategory[];
     } catch (error) {
       throw new Error(`Failed to find account categories: ${error instanceof Error ? error.message : 'Unknown error'}`);

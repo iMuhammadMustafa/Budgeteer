@@ -70,8 +70,9 @@ export class TransactionSQLiteRepository
   /**
    * Builds a TransactionsView-like query by joining transactions with related tables
    */
-  private buildTransactionsViewQuery() {
-    return this.db
+  private async buildTransactionsViewQuery() {
+    const db = await this.getDb();
+    return db
       .select({
         accountid: transactions.accountid,
         accountname: accounts.name,
@@ -108,7 +109,7 @@ export class TransactionSQLiteRepository
    */
   async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
     try {
-      let query = this.buildTransactionsViewQuery();
+      let query = await this.buildTransactionsViewQuery();
 
       // Base conditions
       const conditions = [
@@ -178,7 +179,8 @@ export class TransactionSQLiteRepository
    */
   async getByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
     try {
-      const result = await this.buildTransactionsViewQuery()
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
         .where(and(
           eq(transactions.tenantid, tenantId),
           eq(transactions.isdeleted, false),
@@ -208,7 +210,8 @@ export class TransactionSQLiteRepository
    */
   async findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]> {
     try {
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .selectDistinct({
           name: transactions.name,
           amount: transactions.amount,
@@ -248,7 +251,8 @@ export class TransactionSQLiteRepository
    */
   async createMultipleTransactions(transactionData: TransactionInsert[]): Promise<Transaction[]> {
     try {
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .insert(transactions)
         .values(transactionData)
         .returning();
@@ -274,7 +278,8 @@ export class TransactionSQLiteRepository
       // Add update timestamp
       updateData.updatedat = new Date().toISOString();
 
-      const result = await this.db
+      const db = await this.getDb();
+      const result = await db
         .update(transactions)
         .set(updateData)
         .where(eq(transactions.transferid, transaction.transferid))
@@ -299,7 +304,8 @@ export class TransactionSQLiteRepository
       const startOfDay = dayjs(date).startOf("day").toISOString();
       const endOfDay = dayjs(date).endOf("day").toISOString();
 
-      const result = await this.buildTransactionsViewQuery()
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
         .where(and(
           eq(transactions.tenantid, tenantId),
           eq(transactions.isdeleted, false),
@@ -336,7 +342,8 @@ export class TransactionSQLiteRepository
         conditions.push(eq(transactionGroups.id, categoryId));
       }
 
-      const result = await this.buildTransactionsViewQuery()
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
         .where(and(...conditions))
         .orderBy(desc(transactions.date));
 
@@ -355,7 +362,8 @@ export class TransactionSQLiteRepository
       const startOfMonth = dayjs(month).startOf("month").toISOString();
       const endOfMonth = dayjs(month).endOf("month").toISOString();
 
-      const result = await this.buildTransactionsViewQuery()
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
         .where(and(
           eq(transactions.tenantid, tenantId),
           eq(transactions.isdeleted, false),
@@ -383,7 +391,8 @@ export class TransactionSQLiteRepository
 
       conditions.push(eq(transactions.isdeleted, false));
 
-      const result = await this.buildTransactionsViewQuery()
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
         .where(and(...conditions))
         .limit(1);
 

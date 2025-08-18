@@ -661,3 +661,18 @@ const updateAccountRepoHelper = async (
 
   return updatedAccount;
 };
+// Individual hook exports for backward compatibility
+export const useGetAccounts = () => {
+  const service = useAccountService();
+  return service.findAll();
+};
+
+export const useGetTotalAccountBalance = () => {
+  const service = useAccountService();
+  return service.getTotalAccountBalance();
+};
+
+export const useGetAccountById = (id?: string) => {
+  const service = useAccountService();
+  return service.findById(id);
+};
