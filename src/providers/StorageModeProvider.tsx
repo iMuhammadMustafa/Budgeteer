@@ -1,8 +1,9 @@
 import { createContext, ReactNode, useContext, useEffect, useState, useMemo } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
-import { initializeSQLite, isSQLiteReady } from "./SQLite";
+import { initializeWatermelonDB, isWatermelonDBReady } from "@/src/database";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
 import { StorageMode } from "@/src/types/StorageMode";
+
 type StorageModeContextType = {
   storageMode: StorageMode;
   setStorageMode: (mode: StorageMode) => Promise<void>;
@@ -22,16 +23,16 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
 
   // Memoize the database ready check to avoid unnecessary function calls
   const isDatabaseReady = useMemo(() => {
-    return storageMode === StorageMode.Local ? isSQLiteReady() : true;
+    return storageMode === StorageMode.Local ? isWatermelonDBReady() : true;
   }, [storageMode]);
 
   const setStorageMode = async (mode: StorageMode) => {
     setIsInitializing(true);
     try {
-      // Initialize SQLite if switching to Local mode
+      // Initialize WatermelonDB if switching to Local mode
       if (mode === StorageMode.Local) {
-        await initializeSQLite();
-        console.log("SQLite initialized for Local storage mode");
+        await initializeWatermelonDB();
+        console.log("WatermelonDB initialized for Local storage mode");
       }
 
       setStorageModeState(mode);
@@ -55,11 +56,11 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
         if (savedMode && Object.values(StorageMode).includes(savedMode)) {
           setStorageModeState(savedMode);
 
-          // Initialize SQLite if needed
-          if (savedMode === StorageMode.Local && !isSQLiteReady()) {
+          // Initialize WatermelonDB if needed
+          if (savedMode === StorageMode.Local && !isWatermelonDBReady()) {
             setIsInitializing(true);
-            await initializeSQLite();
-            console.log("SQLite initialized on startup");
+            await initializeWatermelonDB();
+            console.log("WatermelonDB initialized on startup");
           }
         }
       } catch (error) {
