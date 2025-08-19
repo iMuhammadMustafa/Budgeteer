@@ -122,12 +122,35 @@ export const resetWatermelonDB = (): void => {
   initializationPromise = null;
 };
 
+// Function to clear the database completely (for web, clears IndexedDB)
+export const clearWatermelonDB = async (databaseName: string = "budgeteerdb"): Promise<void> => {
+  try {
+    resetWatermelonDB();
+    // For web, clear IndexedDB
+    if (typeof window !== "undefined" && window.indexedDB) {
+      const deleteReq = window.indexedDB.deleteDatabase(databaseName);
+      await new Promise((resolve, reject) => {
+        deleteReq.onsuccess = () => {
+          console.log("IndexedDB database cleared successfully");
+          resolve(undefined);
+        };
+        deleteReq.onerror = () => reject(deleteReq.error);
+      });
+    }
+  } catch (error) {
+    console.warn("Could not clear database:", error);
+    // If we can't delete the database, just reset the references
+    resetWatermelonDB();
+  }
+};
+
 // Default export for convenience
 const watermelonDB = {
   initialize: initializeWatermelonDB,
   getDB: getWatermelonDB,
   isReady: isWatermelonDBReady,
   reset: resetWatermelonDB,
+  clear: clearWatermelonDB,
 };
 
 export default watermelonDB;

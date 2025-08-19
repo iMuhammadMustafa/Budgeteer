@@ -101,12 +101,24 @@ export const resetWatermelonDB = (): void => {
   initializationPromise = null;
 };
 
+// Function to clear the database completely (removes database file)
+export const clearWatermelonDB = async (databaseName: string = "budgeteerdb"): Promise<void> => {
+  try {
+    resetWatermelonDB();
+    console.log("Database references cleared. You may need to restart the app for complete reset.");
+  } catch (error) {
+    console.warn("Could not clear database:", error);
+    resetWatermelonDB();
+  }
+};
+
 // Default export for convenience
 const watermelonDB = {
   initialize: initializeWatermelonDB,
   getDB: getWatermelonDB,
   isReady: isWatermelonDBReady,
   reset: resetWatermelonDB,
+  clear: clearWatermelonDB,
 };
 
 export default watermelonDB;

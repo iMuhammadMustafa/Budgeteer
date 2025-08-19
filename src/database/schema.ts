@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 2, // Increment version for schema change
+  version: 1, // Reset to version 1 to avoid migration issues
   tables: [
     tableSchema({
       name: "account_categories",
