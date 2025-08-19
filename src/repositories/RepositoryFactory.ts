@@ -1,3 +1,8 @@
+/**
+ * Repository Factory - WatermelonDB Migration Complete
+ * All repositories have been implemented for both Cloud (Supabase) and Local (WatermelonDB) storage modes.
+ * WatermelonDB repositories provide offline-first functionality with sync capabilities.
+ */
 import { StorageMode } from "../types/StorageMode";
 import { IAccountCategoryRepository } from "./interfaces/IAccountCategoryRepository";
 import { IAccountRepository } from "./interfaces/IAccountRepository";
@@ -15,14 +20,14 @@ import { StatsSupaRepository } from "./supabase/Stats.supa";
 import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
-import { AccountCategorySQLiteRepository } from "./sqlite/AccountCategories.sqlite";
-import { AccountSQLiteRepository } from "./sqlite/Accounts.sqlite";
-import { ConfigurationSQLiteRepository } from "./sqlite/Configurations.sqlite";
-import { RecurringSQLiteRepository } from "./sqlite/Recurrings.sqlite";
-import { StatsSQLiteRepository } from "./sqlite/Stats.sqlite";
-import { TransactionCategorySQLiteRepository } from "./sqlite/TransactionCategories.sqlite";
-import { TransactionGroupSQLiteRepository } from "./sqlite/TransactionGroups.sqlite";
-import { TransactionSQLiteRepository } from "./sqlite/Transactions.sqlite";
+import { AccountCategoryWatermelonRepository } from "./watermelondb/AccountCategories.watermelon";
+import { AccountWatermelonRepository } from "./watermelondb/Accounts.watermelon";
+import { ConfigurationWatermelonRepository } from "./watermelondb/Configurations.watermelon";
+import { RecurringWatermelonRepository } from "./watermelondb/Recurrings.watermelon";
+import { StatsWatermelonRepository } from "./watermelondb/Stats.watermelon";
+import { TransactionCategoryWatermelonRepository } from "./watermelondb/TransactionCategories.watermelon";
+import { TransactionGroupWatermelonRepository } from "./watermelondb/TransactionGroups.watermelon";
+import { TransactionWatermelonRepository } from "./watermelondb/Transactions.watermelon";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -36,27 +41,26 @@ export interface IRepositoryFactory {
 }
 
 export function createRepositoryFactory(storageMode: StorageMode): IRepositoryFactory {
-  if (storageMode === StorageMode.Local) {
+  if (storageMode === StorageMode.Cloud) {
     return {
-      AccountCategoryRepository: () => new AccountCategorySQLiteRepository(),
-      AccountRepository: () => new AccountSQLiteRepository(),
-      ConfigurationRepository: () => new ConfigurationSQLiteRepository(),
-      RecurringRepository: () => new RecurringSQLiteRepository(),
-      StatsRepository: () => new StatsSQLiteRepository(),
-      TransactionCategoryRepository: () => new TransactionCategorySQLiteRepository(),
-      TransactionGroupRepository: () => new TransactionGroupSQLiteRepository(),
-      TransactionRepository: () => new TransactionSQLiteRepository(),
+      AccountCategoryRepository: () => new AccountCategorySupaRepository(),
+      AccountRepository: () => new AccountSupaRepository(),
+      ConfigurationRepository: () => new ConfigurationSupaRepository(),
+      RecurringRepository: () => new RecurringSupaRepository(),
+      StatsRepository: () => new StatsSupaRepository(),
+      TransactionCategoryRepository: () => new TransactionCategorySupaRepository(),
+      TransactionGroupRepository: () => new TransactionGroupSupaRepository(),
+      TransactionRepository: () => new TransactionSupaRepository(),
     };
   }
-
   return {
-    AccountCategoryRepository: () => new AccountCategorySupaRepository(),
-    AccountRepository: () => new AccountSupaRepository(),
-    ConfigurationRepository: () => new ConfigurationSupaRepository(),
-    RecurringRepository: () => new RecurringSupaRepository(),
-    StatsRepository: () => new StatsSupaRepository(),
-    TransactionCategoryRepository: () => new TransactionCategorySupaRepository(),
-    TransactionGroupRepository: () => new TransactionGroupSupaRepository(),
-    TransactionRepository: () => new TransactionSupaRepository(),
+    AccountCategoryRepository: () => new AccountCategoryWatermelonRepository(),
+    AccountRepository: () => new AccountWatermelonRepository(),
+    TransactionGroupRepository: () => new TransactionGroupWatermelonRepository(),
+    TransactionCategoryRepository: () => new TransactionCategoryWatermelonRepository(),
+    ConfigurationRepository: () => new ConfigurationWatermelonRepository(),
+    RecurringRepository: () => new RecurringWatermelonRepository(),
+    StatsRepository: () => new StatsWatermelonRepository(),
+    TransactionRepository: () => new TransactionWatermelonRepository(),
   };
 }

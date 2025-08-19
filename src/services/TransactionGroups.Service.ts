@@ -2,7 +2,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { createTransactionGroup, updateTransactionGroup } from "@/src/repositories";
+import {
+  createTransactionGroup,
+  ITransactionCategoryRepository,
+  ITransactionGroupRepository,
+  updateTransactionGroup,
+} from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -66,7 +71,7 @@ export function useTransactionGroupService(): ITransactionGroupService {
         original,
       }: {
         form: Updates<TableNames.TransactionGroups>;
-        original: TransactionGroup;
+        original?: TransactionGroup;
       }) => {
         return await updateRepoHelper(form, session, transactionGroupRepo);
       },
@@ -162,7 +167,11 @@ export function useTransactionGroupService(): ITransactionGroupService {
 }
 
 // Repository-based helper functions
-const createRepoHelper = async (formData: Inserts<TableNames.TransactionGroups>, session: Session, repository: any) => {
+const createRepoHelper = async (
+  formData: Inserts<TableNames.TransactionGroups>,
+  session: Session,
+  repository: ITransactionGroupRepository,
+) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
@@ -170,13 +179,17 @@ const createRepoHelper = async (formData: Inserts<TableNames.TransactionGroups>,
   formData.createdby = userId;
   formData.tenantid = tenantid;
 
-  console.log(formData);
+  console.log("formData", formData);
 
   const newEntity = await repository.create(formData, tenantid);
   return newEntity;
 };
 
-const updateRepoHelper = async (formData: Updates<TableNames.TransactionGroups>, session: Session, repository: any) => {
+const updateRepoHelper = async (
+  formData: Updates<TableNames.TransactionGroups>,
+  session: Session,
+  repository: ITransactionGroupRepository,
+) => {
   let userId = session.user.id;
 
   formData.updatedby = userId;

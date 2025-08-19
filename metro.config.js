@@ -12,7 +12,27 @@ config.server.enhanceMiddleware = middleware => {
     middleware(req, res, next);
   };
 };
-config.resolver.sourceExts.push("sql"); // <--- add this
+config.resolver.sourceExts.push("sql");
+
+// WatermelonDB platform-specific configuration
+config.resolver.platforms = ["native", "android", "ios", "web", "default"];
+
+// Platform-specific module resolution for WatermelonDB
+config.resolver.resolverMainFields = ["react-native", "browser", "main"];
+
+// Block problematic Node.js modules from being included in the bundle
+config.resolver.blockList = [
+  /node_modules\/@nozbe\/watermelondb\/adapters\/sqlite\/sqlite-node/,
+  /node_modules\/better-sqlite3/,
+  /sqlite-node/,
+];
+
+// Resolver to redirect problematic imports
+config.resolver.alias = {
+  // Block the sqlite-node adapter entirely
+  "@nozbe/watermelondb/adapters/sqlite/sqlite-node": false,
+  "better-sqlite3": false,
+};
 
 // Workaround for ESM babel/runtime resolving issue with expo-drizzle-studio-plugin
 // config.resolver.unstable_enablePackageExports = false;
