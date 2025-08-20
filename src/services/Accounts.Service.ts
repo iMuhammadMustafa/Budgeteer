@@ -259,20 +259,22 @@ const createAccountRepoHelper = async (
   formAccount.createdby = userId;
   formAccount.tenantid = tenantid;
 
+  console.log("Creating account:", formAccount);
   const newAcc = await accountRepo.create(formAccount, tenantid);
 
   if (newAcc) {
     let config = await configRepo.getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
-      "Id",
+      "id",
       tenantid,
     );
+    console.log(config);
     if (!config) {
       throw new Error("Account Operations Category not found");
     }
 
-    await transactionRepo.create(
+    const transaction = await transactionRepo.create(
       {
         name: TransactionNames.AccountOpened,
         amount: formAccount.balance,
@@ -286,6 +288,7 @@ const createAccountRepoHelper = async (
       },
       tenantid,
     );
+    console.log("Transaction created for account opened:", transaction);
   }
 
   return newAcc;

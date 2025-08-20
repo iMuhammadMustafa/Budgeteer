@@ -4,8 +4,9 @@ import { Link, router } from "expo-router";
 import supabase from "@/src/providers/Supabase";
 import { useDemoMode } from "@/src/providers/DemoModeProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
-import {  useStorageMode } from "@/src/providers/StorageModeProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
+import { WATERMELONDB_DEFAULTS } from "@/src/database/constants";
 
 type LoginMode = {
   id: StorageMode;
@@ -86,10 +87,10 @@ export default function Login() {
         if (setSession) {
           await setSession({
             user: {
-              id: "0742f34e-7c12-408a-91a2-ed95d355bc87",
+              id: WATERMELONDB_DEFAULTS.userId,
               email: "demo@demo.com",
               user_metadata: {
-                tenantid: "0742f34e-7c12-408a-91a2-ed95d355bc87",
+                tenantid: WATERMELONDB_DEFAULTS.tenantId,
                 full_name: "Demo User",
               },
               app_metadata: {},
@@ -106,10 +107,10 @@ export default function Login() {
         // Create local session
         await setSession({
           user: {
-            id: "local-user-id",
+            id: WATERMELONDB_DEFAULTS.userId,
             email: "local@local.com",
             user_metadata: {
-              tenantid: "b3edc1ef-e280-46ba-848e-67042826e126",
+              tenantid: WATERMELONDB_DEFAULTS.tenantId,
               full_name: "Local User",
             },
             app_metadata: {},

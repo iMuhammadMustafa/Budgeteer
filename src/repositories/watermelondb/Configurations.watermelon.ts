@@ -16,7 +16,7 @@ export class ConfigurationWatermelonRepository
   >
   implements IConfigurationRepository
 {
-  protected tableName = "configurations";
+  protected tableName = TableNames.Configurations;
   protected modelClass = Configuration;
 
   // Implementation of the abstract mapping method

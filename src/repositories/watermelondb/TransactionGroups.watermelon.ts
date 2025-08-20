@@ -14,7 +14,7 @@ export class TransactionGroupWatermelonRepository
   >
   implements ITransactionGroupRepository
 {
-  protected tableName = "transaction_groups";
+  protected tableName = TableNames.TransactionGroups;
   protected modelClass = TransactionGroup;
 
   // Implementation of the abstract mapping method

@@ -1,6 +1,7 @@
 import { Model, Q } from "@nozbe/watermelondb";
 import { getWatermelonDB } from "../../database";
 import { IRepository } from "../interfaces/IRepository";
+import { getDefaultTenantId, getDefaultUserId, getCurrentTimestamp } from "../../database/constants";
 
 export abstract class BaseWatermelonRepository<T extends Model, InsertType, UpdateType, MappedType = any>
   implements IRepository<MappedType, InsertType, UpdateType>
@@ -101,11 +102,13 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
         const mappedData = this.mapFieldsForDatabase(data as Record<string, any>);
 
         const record = await db.get(this.tableName).create((record: any) => {
-          if (tenantId) {
-            record[tenantField] = tenantId;
-            record.createdby = tenantId;
-            record.updatedby = tenantId;
-          }
+          // Use provided tenantId or default
+          const actualTenantId = tenantId || getDefaultTenantId();
+          const actualUserId = tenantId || getDefaultUserId();
+
+          record[tenantField] = actualTenantId;
+          record.createdby = actualUserId;
+          record.updatedby = actualUserId;
 
           // Set all provided data
           Object.entries(mappedData).forEach(([key, value]) => {
@@ -114,8 +117,8 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
             }
           });
 
-          // Set timestamps
-          const now = new Date().toISOString();
+          // Set timestamps using the utility function
+          const now = getCurrentTimestamp();
           record[softDeleteField] = false;
           record.createdat = now;
           record.updatedat = now;

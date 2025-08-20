@@ -16,7 +16,7 @@ export class TransactionCategoryWatermelonRepository
   >
   implements ITransactionCategoryRepository
 {
-  protected tableName = "transaction_categories";
+  protected tableName = TableNames.TransactionCategories;
   protected modelClass = TransactionCategory;
 
   // Implementation of the abstract mapping method
@@ -32,7 +32,7 @@ export class TransactionCategoryWatermelonRepository
       // Validate that the group exists if groupid is provided
       if (data.groupid) {
         const groupExists = await db
-          .get("transaction_groups")
+          .get(TableNames.TransactionGroups)
           .query(
             Q.where("id", data.groupid),
             Q.where("isdeleted", false),

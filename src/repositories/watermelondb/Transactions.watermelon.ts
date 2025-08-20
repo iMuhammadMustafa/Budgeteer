@@ -22,7 +22,7 @@ export class TransactionWatermelonRepository
   >
   implements ITransactionRepository
 {
-  protected tableName = "transactions";
+  protected tableName = TableNames.Transactions;
   protected modelClass = Transaction;
 
   // Implementation of the abstract mapping method
