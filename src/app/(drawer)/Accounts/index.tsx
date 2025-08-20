@@ -59,7 +59,7 @@ const AccountsRoute = () => {
   const transactionService = useTransactionService();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.getTotalAccountsBalance();
   const { data: accounts, isLoading: isLoadingAccounts } = accountService.findAll();
-  const { mutate: createTransaction, isPending: isCreating } = transactionService.createTransactionRepo();
+  const { mutate: createTransaction, isPending: isCreating } = transactionService.create();
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
@@ -160,7 +160,7 @@ const AccountsRoute = () => {
             currency: "USD", // TODO: Make currency dynamic
           })}`
         }
-        useDelete={accountService.deleteObj}
+        useDelete={accountService.delete}
         upsertUrl={"/Accounts/Upsert?accountId="}
         groupedBy={"category.name"}
         Footer={<FooterContent />}
@@ -195,12 +195,14 @@ const AccountsRoute = () => {
 const AccountsCategoriesRoute = () => {
   const accountCategoryService = useAccountCategoryService();
 
+  console.log("Account Categories Route Loaded");
+
   return (
     <Tab
       title="Categories"
       queryKey={[TableNames.AccountCategories]}
-      useGet={accountCategoryService.getAccountCategories}
-      useDelete={accountCategoryService.deleteAccountCategory}
+      useGet={accountCategoryService.findAll}
+      useDelete={accountCategoryService.delete}
       upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
     />
   );

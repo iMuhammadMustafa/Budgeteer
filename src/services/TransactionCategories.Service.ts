@@ -74,7 +74,7 @@ export function useTransactionCategoryService(): ITransactionCategoryService {
         original,
       }: {
         form: Updates<TableNames.TransactionCategories>;
-        original: TransactionCategory;
+        original?: TransactionCategory;
       }) => {
         return await updateTransactionCategoryRepoHelper(form, session, transactionCategoryRepo);
       },
@@ -139,15 +139,6 @@ export function useTransactionCategoryService(): ITransactionCategoryService {
     });
   };
 
-  // Legacy hooks for backward compatibility
-  // const getTransactionCategories = useGetTransactionCategories();
-  // const getTransactionCategoryById = (id?: string) => useGetTransactionCategoryById(id);
-  // const createTransactionCategory = useCreateTransactionCategory();
-  // const updateTransactionCategory = useUpdateTransactionCategory();
-  // const upsertTransactionCategory = useUpsertTransactionCategory();
-  // const deleteTransactionCategory = useDeleteTransactionCategory();
-  // const restoreTransactionCategory = useRestoreTransactionCategory();
-
   return {
     // Repository-based methods (new)
     findAll,
@@ -158,16 +149,6 @@ export function useTransactionCategoryService(): ITransactionCategoryService {
     delete: deleteObj,
     softDelete: deleteObj,
     restore,
-
-    // Legacy methods (backward compatibility)
-    // getTransactionCategories,
-    // getTransactionCategoryById,
-    // createTransactionCategory,
-    // updateTransactionCategory,
-    // // upsertTransactionCategory,
-    // deleteTransactionCategory,
-    // restoreTransactionCategory,
-
     // Direct repository access
     repo: transactionCategoryRepo,
   };

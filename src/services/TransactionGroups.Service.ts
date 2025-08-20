@@ -131,16 +131,6 @@ export function useTransactionGroupService(): ITransactionGroupService {
       },
     });
   };
-
-  // Legacy hooks for backward compatibility
-  // const useGetTransactionGroups = () => useGetTransactionGroupsLegacy();
-  // const useGetTransactionGroupById = (id?: string) => useGetTransactionGroupByIdLegacy(id);
-  // const useCreateTransactionGroup = () => useCreateTransactionGroupLegacy();
-  // const useUpdateTransactionGroup = () => useUpdateTransactionGroupLegacy();
-  // const useUpsertTransactionGroup = () => useUpsertTransactionGroupLegacy();
-  // const useDeleteTransactionGroup = () => useDeleteTransactionGroupLegacy();
-  // const useRestoreTransactionGroup = (id?: string) => useRestoreTransactionGroupLegacy(id);
-
   return {
     // Repository-based methods (new) - using simple method names
     findAll,
@@ -151,15 +141,6 @@ export function useTransactionGroupService(): ITransactionGroupService {
     delete: softDelete,
     restore,
     upsert,
-
-    // Legacy methods (backward compatibility)
-    // useGetTransactionGroups,
-    // useGetTransactionGroupById,
-    // useCreateTransactionGroup,
-    // useUpdateTransactionGroup,
-    // useUpsertTransactionGroup,
-    // useDeleteTransactionGroup,
-    // useRestoreTransactionGroup,
 
     // Direct repository access
     repo: transactionGroupRepo,

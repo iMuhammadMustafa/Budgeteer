@@ -17,7 +17,7 @@ export function Tab({
   useDelete,
   upsertUrl,
   refreshOnPull = true,
-  selectable = false,
+  selectable = true,
   groupedBy,
   customDetails,
   Footer,
@@ -38,6 +38,7 @@ export function Tab({
   if (error) return <Text>Error: {error.message}</Text>;
 
   const handleLongPress = (id: string) => {
+    console.log("Long pressed item with id:", id);
     setIsSelectionMode(true);
     setSelectedIds([id]);
   };
@@ -61,6 +62,7 @@ export function Tab({
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
 
+  console.log("data", data);
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />

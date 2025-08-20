@@ -2,48 +2,78 @@ import { Model, Q } from "@nozbe/watermelondb";
 import { getWatermelonDB } from "../../database";
 import { IRepository } from "../interfaces/IRepository";
 
-export abstract class BaseWatermelonRepository<T extends Model, InsertType, UpdateType>
-  implements IRepository<T, InsertType, UpdateType>
+export abstract class BaseWatermelonRepository<T extends Model, InsertType, UpdateType, MappedType = any>
+  implements IRepository<MappedType, InsertType, UpdateType>
 {
-  // Abstract property that concrete repositories must define
+  // Abstract properties that concrete repositories must define
   protected abstract tableName: string;
   protected abstract modelClass: typeof Model;
+
+  // Abstract method for mapping WatermelonDB models to the expected type
+  protected abstract mapFromWatermelon(model: T): MappedType;
+
+  // Optional method for custom field mapping during create/update
+  protected mapFieldsForDatabase(data: Record<string, any>): Record<string, any> {
+    return data;
+  }
+
+  // Optional method to get tenant field name (different repositories use different conventions)
+  protected getTenantFieldName(): string {
+    return "tenantid";
+  }
+
+  // Optional method to get soft delete field name
+  protected getSoftDeleteFieldName(): string {
+    return "isdeleted";
+  }
 
   protected async getDb() {
     return await getWatermelonDB();
   }
 
-  async findById(id: string, tenantId?: string): Promise<T | null> {
+  async findById(id: string, tenantId?: string): Promise<MappedType | null> {
     try {
       const db = await this.getDb();
+      const tenantField = this.getTenantFieldName();
+      const softDeleteField = this.getSoftDeleteFieldName();
 
       const query = db.get(this.tableName).query(
         Q.where("id", id),
         // Add tenant filtering if tenantId is provided
-        ...(tenantId ? [Q.where("tenant_id", tenantId)] : []),
+        ...(tenantId ? [Q.where(tenantField, tenantId)] : []),
         // Add soft delete filtering
-        Q.where("is_deleted", false),
+        Q.where(softDeleteField, false),
       );
 
       const results = await query;
-      return (results[0] as T) || null;
+      const model = results[0] as T;
+      return model ? this.mapFromWatermelon(model) : null;
     } catch (error) {
       throw new Error(`Failed to find record by ID: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 
-  async findAll(filters?: any, tenantId?: string): Promise<T[]> {
+  async findAll(filters?: any, tenantId?: string): Promise<MappedType[]> {
     try {
       const db = await this.getDb();
       const conditions = [];
+      const tenantField = this.getTenantFieldName();
+      const softDeleteField = this.getSoftDeleteFieldName();
+
+      const collection = db.get(this.tableName);
+      if (!collection) {
+        throw new Error(
+          `Collection "${this.tableName}" not found in WatermelonDB. Check your tableName and model registration.`,
+        );
+      }
 
       // Add tenant filtering if tenantId is provided
       if (tenantId) {
-        conditions.push(Q.where("tenant_id", tenantId));
+        conditions.push(Q.where(tenantField, tenantId));
       }
 
       // Add soft delete filtering
-      conditions.push(Q.where("is_deleted", false));
+      conditions.push(Q.where(softDeleteField, false));
 
       // Apply additional filters if provided
       if (filters) {
@@ -53,49 +83,45 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
           }
         });
       }
-
       const query = db.get(this.tableName).query(...conditions);
       const results = await query;
-      return results as T[];
+      return (results as T[]).map(model => this.mapFromWatermelon(model));
     } catch (error) {
       throw new Error(`Failed to find records: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 
-  async create(data: InsertType, tenantId?: string): Promise<T> {
+  async create(data: InsertType, tenantId?: string): Promise<MappedType> {
     try {
       const db = await this.getDb();
+      const tenantField = this.getTenantFieldName();
+      const softDeleteField = this.getSoftDeleteFieldName();
 
       return await db.write(async () => {
-        const record = await db.get(this.tableName).create((record: any) => {
-          // Generate ID if not provided
-          if (!data || typeof data !== "object" || !("id" in data) || !data.id) {
-            record.id = crypto.randomUUID();
-          }
+        const mappedData = this.mapFieldsForDatabase(data as Record<string, any>);
 
-          // Set tenant ID if provided
+        const record = await db.get(this.tableName).create((record: any) => {
           if (tenantId) {
-            record.tenantId = tenantId;
-            record.createdBy = tenantId;
+            record[tenantField] = tenantId;
+            record.createdby = tenantId;
+            record.updatedby = tenantId;
           }
 
           // Set all provided data
-          Object.entries(data as Record<string, any>).forEach(([key, value]) => {
+          Object.entries(mappedData).forEach(([key, value]) => {
             if (key !== "id" && value !== undefined) {
-              // Convert camelCase to snake_case for database columns
-              const dbKey = this.camelToSnake(key);
-              record[dbKey] = value;
+              record[key] = value;
             }
           });
 
           // Set timestamps
-          const now = Date.now();
-          record.createdAt = now;
-          record.updatedAt = now;
-          record.isDeleted = false;
+          const now = new Date().toISOString();
+          record[softDeleteField] = false;
+          record.createdat = now;
+          record.updatedat = now;
         });
 
-        return record as T;
+        return this.mapFromWatermelon(record as T);
       });
     } catch (error) {
       console.error("Create error:", error);
@@ -103,20 +129,22 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
     }
   }
 
-  async update(id: string, data: UpdateType, tenantId?: string): Promise<T | null> {
+  async update(id: string, data: UpdateType, tenantId?: string): Promise<MappedType | null> {
     try {
       const db = await this.getDb();
+      const tenantField = this.getTenantFieldName();
+      const softDeleteField = this.getSoftDeleteFieldName();
 
       return await db.write(async () => {
         const conditions = [Q.where("id", id)];
 
         // Add tenant filtering if tenantId is provided
         if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
+          conditions.push(Q.where(tenantField, tenantId));
         }
 
         // Add soft delete filtering
-        conditions.push(Q.where("is_deleted", false));
+        conditions.push(Q.where(softDeleteField, false));
 
         const query = db.get(this.tableName).query(...conditions);
         const results = await query;
@@ -126,23 +154,35 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
           return null;
         }
 
-        const updatedRecord = await record.update((record: any) => {
-          // Set all provided data
-          Object.entries(data as Record<string, any>).forEach(([key, value]) => {
-            if (value !== undefined) {
-              // Convert camelCase to snake_case for database columns
-              const dbKey = this.camelToSnake(key);
-              record[dbKey] = value;
-            }
-          });
+        const mappedData = this.mapFieldsForDatabase(data as Record<string, any>);
 
-          // Update timestamp
-          record.updatedAt = Date.now();
+        const updatedRecord = await record.update((record: any) => {
+          try {
+            // Fields that should not be updated directly
+            const excludedFields = ["id", "createdat", "createdby", tenantField];
+
+            // Set all provided data except excluded fields
+            Object.entries(mappedData).forEach(([key, value]) => {
+              if (value !== undefined && !excludedFields.includes(key.toLowerCase())) {
+                record[key] = value;
+              }
+            });
+
+            // Update timestamp and updatedBy
+            record.updatedat = new Date().toISOString();
+            if (tenantId) {
+              record.updatedby = tenantId;
+            }
+          } catch (err) {
+            console.error("Error in update callback:", err);
+            throw err;
+          }
         });
 
-        return updatedRecord as T;
+        return this.mapFromWatermelon(updatedRecord as T);
       });
     } catch (error) {
+      console.error("Update error:", error);
       throw new Error(`Failed to update record: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
@@ -156,7 +196,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
         // Add tenant filtering if tenantId is provided
         if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
+          conditions.push(Q.where("tenantid", tenantId));
         }
 
         const query = db.get(this.tableName).query(...conditions);
@@ -181,11 +221,11 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
         // Add tenant filtering if tenantId is provided
         if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
+          conditions.push(Q.where("tenantid", tenantId));
         }
 
         // Add soft delete filtering
-        conditions.push(Q.where("is_deleted", false));
+        conditions.push(Q.where("isdeleted", false));
 
         const query = db.get(this.tableName).query(...conditions);
         const results = await query;
@@ -193,8 +233,11 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
         if (record) {
           await record.update((record: any) => {
-            record.isDeleted = true;
-            record.updatedAt = Date.now();
+            record.isdeleted = true;
+            record.updatedat = new Date().toISOString();
+            if (tenantId) {
+              record.updatedby = tenantId;
+            }
           });
         }
       });
@@ -212,7 +255,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
         // Add tenant filtering if tenantId is provided
         if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
+          conditions.push(Q.where("tenantid", tenantId));
         }
 
         const query = db.get(this.tableName).query(...conditions);
@@ -221,8 +264,11 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
         if (record) {
           await record.update((record: any) => {
-            record.isDeleted = false;
-            record.updatedAt = Date.now();
+            record.isdeleted = false;
+            record.updatedat = new Date().toISOString();
+            if (tenantId) {
+              record.updatedby = tenantId;
+            }
           });
         }
       });
@@ -232,7 +278,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
   }
 
   // Helper method to convert camelCase to snake_case
-  private camelToSnake(str: string): string {
+  protected camelToSnake(str: string): string {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
 
