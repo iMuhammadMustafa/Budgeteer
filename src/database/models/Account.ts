@@ -10,7 +10,7 @@ export default class Account extends Model {
   } as const;
 
   @field("name") name!: string;
-  @field("categoryid") categoryId!: string;
+  @field("categoryid") categoryid!: string;
   @field("balance") balance!: number;
   @field("currency") currency!: string;
   @field("color") color!: string;
@@ -18,14 +18,14 @@ export default class Account extends Model {
   @field("description") description?: string;
   @field("notes") notes?: string;
   @field("owner") owner?: string;
-  @field("displayorder") displayOrder!: number;
-  @field("tenantid") tenantId!: string;
-  @field("isdeleted") isDeleted!: boolean;
-  @field("createdby") createdBy?: string;
-  @field("updatedby") updatedBy?: string;
+  @field("displayorder") displayorder!: number;
+  @field("tenantid") tenantid!: string;
+  @field("isdeleted") isdeleted!: boolean;
+  @field("createdby") createdby?: string;
+  @field("updatedby") updatedby?: string;
 
-  @readonly @date("createdat") createdAt!: Date;
-  @readonly @date("updatedat") updatedAt!: Date;
+  @date("createdat") createdat!: Date;
+  @date("updatedat") updatedat!: Date;
 
   @relation(TableNames.AccountCategories, "categoryid") category!: AccountCategory;
 }

@@ -8,14 +8,14 @@ export default class Configuration extends Model {
   @field("key") key!: string;
   @field("value") value!: string;
   @field("type") type!: string;
-  @field("table") tableName!: string;
-  @field("tenantid") tenantId?: string;
-  @field("isdeleted") isDeleted!: boolean;
-  @field("createdby") createdBy?: string;
-  @field("updatedby") updatedBy?: string;
+  @field("table") tablename!: string;
+  @field("tenantid") tenantid?: string;
+  @field("isdeleted") isdeleted!: boolean;
+  @field("createdby") createdby?: string;
+  @field("updatedby") updatedby?: string;
 
-  @readonly @date("createdat") createdAt!: Date;
-  @readonly @date("updatedat") updatedAt!: Date;
+  @date("createdat") createdat!: Date;
+  @date("updatedat") updatedat!: Date;
 }
 
 export type ConfigurationModel = Configuration;

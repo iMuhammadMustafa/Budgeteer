@@ -12,26 +12,26 @@ export default class Recurring extends Model {
   } as const;
 
   @field("name") name!: string;
-  @field("sourceaccountid") sourceAccountId!: string;
-  @field("categoryid") categoryId?: string;
+  @field("sourceaccountid") sourceaccountid!: string;
+  @field("categoryid") categoryid?: string;
   @field("amount") amount?: number;
   @field("type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
   @field("description") description?: string;
-  @field("payeename") payeeName?: string;
+  @field("payeename") payeename?: string;
   @field("notes") notes?: string;
-  @field("currencycode") currencyCode!: string;
-  @field("recurrencerule") recurrenceRule!: string;
-  @field("nextoccurrencedate") nextOccurrenceDate!: string;
-  @field("enddate") endDate?: string;
-  @field("lastexecutedat") lastExecutedAt?: string;
-  @field("isactive") isActive!: boolean;
-  @field("tenantid") tenantId!: string;
-  @field("isdeleted") isDeleted!: boolean;
-  @field("createdby") createdBy?: string;
-  @field("updatedby") updatedBy?: string;
+  @field("currencycode") currencycode!: string;
+  @field("recurrencerule") recurrencerule!: string;
+  @field("nextoccurrencedate") nextoccurrencedate!: string;
+  @field("enddate") enddate?: string;
+  @field("lastexecutedat") lastexecutedat?: string;
+  @field("isactive") isactive!: boolean;
+  @field("tenantid") tenantid!: string;
+  @field("isdeleted") isdeleted!: boolean;
+  @field("createdby") createdby?: string;
+  @field("updatedby") updatedby?: string;
 
-  @readonly @date("createdat") createdAt!: Date;
-  @readonly @date("updatedat") updatedAt!: Date;
+  @date("createdat") createdat!: Date;
+  @date("updatedat") updatedat!: Date;
 
   @relation(TableNames.Accounts, "sourceaccountid") sourceAccount!: Account;
   @relation(TableNames.TransactionCategories, "categoryid") category?: TransactionCategory;
