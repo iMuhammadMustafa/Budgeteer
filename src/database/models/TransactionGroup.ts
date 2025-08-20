@@ -14,16 +14,16 @@ export default class TransactionGroup extends Model {
   @field("color") color!: string;
   @field("icon") icon!: string;
   @field("description") description?: string;
-  @field("displayorder") displayOrder!: number;
-  @field("budgetamount") budgetAmount!: number;
-  @field("budgetfrequency") budgetFrequency!: string;
-  @field("tenantid") tenantId!: string;
-  @field("isdeleted") isDeleted!: boolean;
-  @field("createdby") createdBy?: string;
-  @field("updatedby") updatedBy?: string;
+  @field("displayorder") displayorder!: number;
+  @field("budgetamount") budgetamount!: number;
+  @field("budgetfrequency") budgetfrequency!: string;
+  @field("tenantid") tenantid!: string;
+  @field("isdeleted") isdeleted!: boolean;
+  @field("createdby") createdby?: string;
+  @field("updatedby") updatedby?: string;
 
-  @readonly @date("createdat") createdAt!: Date;
-  @readonly @date("updatedat") updatedAt!: Date;
+  @date("createdat") createdat!: Date;
+  @date("updatedat") updatedat!: Date;
 
   @children(TableNames.TransactionCategories) categories!: TransactionCategory[];
 }

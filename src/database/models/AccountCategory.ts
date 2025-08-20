@@ -9,14 +9,14 @@ export default class AccountCategory extends Model {
   @field("type") type!: string; // Asset, Liability
   @field("color") color!: string;
   @field("icon") icon!: string;
-  @field("displayorder") displayOrder!: number;
-  @field("tenantid") tenantId!: string;
-  @field("isdeleted") isDeleted!: boolean;
-  @field("createdby") createdBy?: string;
-  @field("updatedby") updatedBy?: string;
+  @field("displayorder") displayorder!: number;
+  @field("tenantid") tenantid!: string;
+  @field("isdeleted") isdeleted!: boolean;
+  @field("createdby") createdby?: string;
+  @field("updatedby") updatedby?: string;
 
-  @readonly @date("createdat") createdAt!: Date;
-  @readonly @date("updatedat") updatedAt!: Date;
+  @date("createdat") createdat!: Date;
+  @date("updatedat") updatedat!: Date;
 }
 
 export type AccountCategoryModel = AccountCategory;
