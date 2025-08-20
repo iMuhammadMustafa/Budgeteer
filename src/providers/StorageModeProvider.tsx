@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState, useMemo } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { initializeWatermelonDB, isWatermelonDBReady } from "@/src/database";
+import { seedWatermelonDB } from "@/src/database/seed";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
 import { StorageMode } from "@/src/types/StorageMode";
 
@@ -33,6 +34,10 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
       if (mode === StorageMode.Local) {
         await initializeWatermelonDB();
         console.log("WatermelonDB initialized for Local storage mode");
+
+        // Seed the database with initial data
+        await seedWatermelonDB();
+        console.log("WatermelonDB seeded with initial data");
       }
 
       setStorageModeState(mode);
@@ -61,6 +66,10 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
             setIsInitializing(true);
             await initializeWatermelonDB();
             console.log("WatermelonDB initialized on startup");
+
+            // Seed the database with initial data
+            await seedWatermelonDB();
+            console.log("WatermelonDB seeded with initial data on startup");
           }
         }
       } catch (error) {

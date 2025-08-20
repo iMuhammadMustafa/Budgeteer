@@ -14,7 +14,7 @@ export class RecurringWatermelonRepository
   >
   implements IRecurringRepository
 {
-  protected tableName = "recurrings";
+  protected tableName = TableNames.Recurrings;
   protected modelClass = Recurring;
 
   // Implementation of the abstract mapping method

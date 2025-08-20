@@ -107,10 +107,8 @@ export abstract class BaseSQLiteRepository<T, InsertType, UpdateType>
     }
 
     const db = await this.getDb();
-    console.log("trying to Create", insertData);
 
     const result = await db.insert(this.table).values(insertData).returning();
-    console.log("Create result:", result);
 
     const resultArray = result as T[];
     if (!resultArray || resultArray.length === 0 || !resultArray[0]) {

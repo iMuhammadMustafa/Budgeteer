@@ -26,8 +26,8 @@ export class StatsWatermelonRepository implements IStatsRepository {
       const db = await this.getDb();
 
       const conditions = [
-        Q.where("tenant_id", tenantId),
-        Q.where("is_deleted", false),
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
         Q.where("type", type ?? "Expense"),
         Q.where("date", Q.gte(startDate ?? dayjs().startOf("week").format("YYYY-MM-DD"))),
         Q.where("date", Q.lte(endDate ?? dayjs().endOf("week").format("YYYY-MM-DD"))),
@@ -65,8 +65,8 @@ export class StatsWatermelonRepository implements IStatsRepository {
       const db = await this.getDb();
 
       const conditions = [
-        Q.where("tenant_id", tenantId),
-        Q.where("is_deleted", false),
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
         Q.where("date", Q.gte(startDate ?? dayjs().startOf("week").format("YYYY-MM-DD"))),
         Q.where("date", Q.lte(endDate ?? dayjs().endOf("week").format("YYYY-MM-DD"))),
       ];
@@ -123,8 +123,8 @@ export class StatsWatermelonRepository implements IStatsRepository {
         : dayjs().endOf("month").format("YYYY-MM-DD");
 
       const conditions = [
-        Q.where("tenant_id", tenantId),
-        Q.where("is_deleted", false),
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
         Q.where("type", Q.oneOf(["Expense", "Adjustment"])),
         Q.where("date", Q.gte(formattedStartDate)),
         Q.where("date", Q.lte(formattedEndDate)),
@@ -193,8 +193,8 @@ export class StatsWatermelonRepository implements IStatsRepository {
         : dayjs().endOf("month").format("YYYY-MM-DD");
 
       const conditions = [
-        Q.where("tenant_id", tenantId),
-        Q.where("is_deleted", false),
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
         Q.where("date", Q.gte(formattedStartDate)),
         Q.where("date", Q.lte(formattedEndDate)),
       ];
@@ -234,7 +234,7 @@ export class StatsWatermelonRepository implements IStatsRepository {
       const db = await this.getDb();
 
       // Get all accounts for the tenant
-      const accounts = await db.get("accounts").query(Q.where("tenant_id", tenantId), Q.where("is_deleted", false));
+      const accounts = await db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
       const startMonth = startDate ? dayjs(startDate).startOf("month") : dayjs().startOf("year");
       const endMonth = endDate ? dayjs(endDate).endOf("month") : dayjs().endOf("year");
