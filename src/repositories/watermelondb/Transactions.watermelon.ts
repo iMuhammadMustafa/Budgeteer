@@ -78,33 +78,87 @@ export class TransactionWatermelonRepository
         conditions.push(Q.where("description", Q.like(`%${searchFilters.description}%`)));
       }
 
+      // Fetch all accounts, categories, and groups for the tenant
+      const [accounts, categories, groups] = await Promise.all([
+        db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactioncategories").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactiongroups").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+      ]);
+
+      // Build lookup maps
+      const accountMap = new Map();
+      for (const acc of accounts) accountMap.set(acc.id, acc);
+      const categoryMap = new Map();
+      for (const cat of categories) categoryMap.set(cat.id, cat);
+      const groupMap = new Map();
+      for (const grp of groups) groupMap.set(grp.id, grp);
+
+      // Fetch and sort transactions by account/date/createdat/updatedat/type/id
       const query = db.get(this.tableName).query(...conditions);
       const results = await query;
+      const transactions = results as Transaction[];
 
-      // Convert to TransactionsView format
-      // Note: This is a simplified version. The actual TransactionsView includes
-      // joined data from accounts, categories, and groups which would need proper relations
-      return (results as Transaction[]).map(transaction => {
+      // Group transactions by accountid for running balance calculation
+      const transactionsByAccount: Record<string, Transaction[]> = {};
+      for (const tx of transactions) {
+        if (!transactionsByAccount[tx.accountid]) transactionsByAccount[tx.accountid] = [];
+        transactionsByAccount[tx.accountid].push(tx);
+      }
+
+      // For each account, sort and calculate running balance
+      const runningBalances: Record<string, Record<string, number>> = {}; // accountid -> txid -> runningbalance
+      for (const [accountid, txs] of Object.entries(transactionsByAccount)) {
+        // Sort as in SQL: date, createdat, updatedat, type, id
+        txs.sort((a, b) => {
+          const da = new Date(a.date).getTime(),
+            dbt = new Date(b.date).getTime();
+          if (da !== dbt) return da - dbt;
+          const ca = new Date(a.createdat).getTime(),
+            cb = new Date(b.createdat).getTime();
+          if (ca !== cb) return ca - cb;
+          const ua = new Date(a.updatedat).getTime(),
+            ub = new Date(b.updatedat).getTime();
+          if (ua !== ub) return ua - ub;
+          if (a.type !== b.type) return (a.type || "").localeCompare(b.type || "");
+          return (a.id || "").localeCompare(b.id || "");
+        });
+        let running = 0;
+        runningBalances[accountid] = {};
+        for (const tx of txs) {
+          // Only count if not void and not deleted
+          if (!tx.isvoid && !tx.isdeleted) {
+            running += tx.amount;
+          }
+          runningBalances[accountid][tx.id] = running;
+        }
+      }
+
+      // Build TransactionsView array
+      return transactions.map(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
+        const account = accountMap.get(mapped.accountid);
+        const category = categoryMap.get(mapped.categoryid);
+        const group = category ? groupMap.get(category.groupid) : null;
+
         return {
           accountid: mapped.accountid,
-          accountname: null, // TODO: Join with accounts table
+          accountname: account ? account.name : null,
           amount: mapped.amount,
-          balance: null, // TODO: Calculate running balance
+          balance: account ? account.balance : null,
           categoryid: mapped.categoryid,
-          categoryname: null, // TODO: Join with categories table
+          categoryname: category ? category.name : null,
           createdat: mapped.createdat,
-          currency: null, // TODO: Join with accounts table
+          currency: account ? account.currency : null,
           date: mapped.date,
-          groupicon: null, // TODO: Join with groups table
-          groupid: null, // TODO: Join through categories table
-          groupname: null, // TODO: Join with groups table
-          icon: null, // TODO: Join with categories table
+          groupicon: group ? group.icon : null,
+          groupid: group ? group.id : null,
+          groupname: group ? group.name : null,
+          icon: category ? category.icon : null,
           id: mapped.id,
           isvoid: mapped.isvoid,
           name: mapped.name,
           payee: mapped.payee,
-          runningbalance: null, // TODO: Calculate running balance
+          runningbalance: runningBalances[mapped.accountid]?.[mapped.id] ?? null,
           tenantid: mapped.tenantid,
           transferaccountid: mapped.transferaccountid,
           transferid: mapped.transferid,
@@ -183,34 +237,37 @@ export class TransactionWatermelonRepository
 
       const results = await query;
 
-      // Create distinct search results
-      const distinctItems = new Map<string, SearchDistinctTransactions>();
-
+      // Deduplicate by name, pick the latest transaction by date DESC
+      const latestByName = new Map<string, { tx: SearchDistinctTransactions; date: string }>();
       (results as Transaction[]).forEach(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
-        const key = mapped.name || mapped.payee || mapped.description || "";
-
-        if (key && !distinctItems.has(key)) {
-          distinctItems.set(key, {
-            name: mapped.name,
-            payee: mapped.payee,
-            description: mapped.description,
-            categoryid: mapped.categoryid,
-            accountid: mapped.accountid,
-            amount: mapped.amount,
-            type: mapped.type,
-            tenantid: mapped.tenantid,
-            isvoid: mapped.isvoid,
-            notes: mapped.notes,
-            transferaccountid: mapped.transferaccountid,
-            transferid: mapped.transferid,
+        const key = mapped.name;
+        if (!key) return;
+        const prev = latestByName.get(key);
+        if (!prev || new Date(mapped.date).getTime() > new Date(prev.date).getTime()) {
+          latestByName.set(key, {
+            tx: {
+              name: mapped.name,
+              payee: mapped.payee,
+              description: mapped.description,
+              categoryid: mapped.categoryid,
+              accountid: mapped.accountid,
+              amount: mapped.amount,
+              type: mapped.type,
+              tenantid: mapped.tenantid,
+              isvoid: mapped.isvoid,
+              notes: mapped.notes,
+              transferaccountid: mapped.transferaccountid,
+              transferid: mapped.transferid,
+            },
+            date: mapped.date,
           });
         }
       });
 
-      return Array.from(distinctItems.entries()).map(([label, item]) => ({
+      return Array.from(latestByName.entries()).map(([label, obj]) => ({
         label,
-        item,
+        item: obj.tx,
       }));
     } catch (error) {
       throw new Error(
