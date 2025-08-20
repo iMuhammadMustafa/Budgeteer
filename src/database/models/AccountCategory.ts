@@ -1,21 +1,22 @@
+import { TableNames } from "@/src/types/db/TableNames";
 import { Model } from "@nozbe/watermelondb";
 import { field, date, readonly } from "@nozbe/watermelondb/decorators";
 
 export default class AccountCategory extends Model {
-  static table = "account_categories";
+  static table = TableNames.AccountCategories;
 
-  @field("Name") name!: string;
-  @field("Type") type!: string; // Asset, Liability
-  @field("Color") color!: string;
-  @field("Icon") icon!: string;
-  @field("DisplayOrder") displayOrder!: number;
-  @field("TenantId") tenantId!: string;
-  @field("IsDeleted") isDeleted!: boolean;
-  @field("CreatedBy") createdBy?: string;
-  @field("UpdatedBy") updatedBy?: string;
+  @field("name") name!: string;
+  @field("type") type!: string; // Asset, Liability
+  @field("color") color!: string;
+  @field("icon") icon!: string;
+  @field("displayorder") displayOrder!: number;
+  @field("tenantid") tenantId!: string;
+  @field("isdeleted") isDeleted!: boolean;
+  @field("createdby") createdBy?: string;
+  @field("updatedby") updatedBy?: string;
 
-  @readonly @date("CreatedAt") createdAt!: Date;
-  @readonly @date("UpdatedAt") updatedAt!: Date;
+  @readonly @date("createdat") createdAt!: Date;
+  @readonly @date("updatedat") updatedAt!: Date;
 }
 
 export type AccountCategoryModel = AccountCategory;

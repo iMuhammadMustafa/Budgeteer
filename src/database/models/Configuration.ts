@@ -1,20 +1,21 @@
+import { TableNames } from "@/src/types/db/TableNames";
 import { Model } from "@nozbe/watermelondb";
 import { field, date, readonly } from "@nozbe/watermelondb/decorators";
 
 export default class Configuration extends Model {
-  static table = "configurations";
+  static table = TableNames.Configurations;
 
-  @field("KEY") key!: string;
-  @field("Value") value!: string;
+  @field("key") key!: string;
+  @field("value") value!: string;
   @field("type") type!: string;
   @field("table") tableName!: string;
-  @field("TenantId") tenantId?: string;
-  @field("IsDeleted") isDeleted!: boolean;
-  @field("CreatedBy") createdBy?: string;
-  @field("UpdatedBy") updatedBy?: string;
+  @field("tenantid") tenantId?: string;
+  @field("isdeleted") isDeleted!: boolean;
+  @field("createdby") createdBy?: string;
+  @field("updatedby") updatedBy?: string;
 
-  @readonly @date("CreatedAt") createdAt!: Date;
-  @readonly @date("UpdatedAt") updatedAt!: Date;
+  @readonly @date("createdat") createdAt!: Date;
+  @readonly @date("updatedat") updatedAt!: Date;
 }
 
 export type ConfigurationModel = Configuration;

@@ -1,31 +1,32 @@
 import { Model } from "@nozbe/watermelondb";
 import { field, date, readonly, relation } from "@nozbe/watermelondb/decorators";
 import type TransactionGroup from "./TransactionGroup";
+import { TableNames } from "@/src/types/db/TableNames";
 
 export default class TransactionCategory extends Model {
-  static table = "transaction_categories";
+  static table = TableNames.TransactionCategories;
   static associations = {
-    transaction_groups: { type: "belongs_to", key: "GroupId" },
+    group: { type: "belongs_to", key: "groupid" },
   } as const;
 
-  @field("Name") name?: string;
-  @field("GroupId") groupId!: string;
-  @field("Type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
-  @field("Color") color!: string;
-  @field("Icon") icon!: string;
-  @field("Description") description?: string;
-  @field("DisplayOrder") displayOrder!: number;
-  @field("BudgetAmount") budgetAmount!: number;
-  @field("BudgetFrequency") budgetFrequency!: string;
-  @field("TenantId") tenantId!: string;
-  @field("IsDeleted") isDeleted!: boolean;
-  @field("CreatedBy") createdBy?: string;
-  @field("UpdatedBy") updatedBy?: string;
+  @field("name") name?: string;
+  @field("groupid") groupId!: string;
+  @field("type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
+  @field("color") color!: string;
+  @field("icon") icon!: string;
+  @field("description") description?: string;
+  @field("displayorder") displayOrder!: number;
+  @field("budgetamount") budgetAmount!: number;
+  @field("budgetfrequency") budgetFrequency!: string;
+  @field("tenantid") tenantId!: string;
+  @field("isdeleted") isDeleted!: boolean;
+  @field("createdby") createdBy?: string;
+  @field("updatedby") updatedBy?: string;
 
-  @readonly @date("CreatedAt") createdAt!: Date;
-  @readonly @date("UpdatedAt") updatedAt!: Date;
+  @readonly @date("createdat") createdAt!: Date;
+  @readonly @date("updatedat") updatedAt!: Date;
 
-  @relation("transaction_groups", "GroupId") group!: TransactionGroup;
+  @relation(TableNames.TransactionGroups, "groupid") group!: TransactionGroup;
 }
 
 export type TransactionCategoryModel = TransactionCategory;

@@ -2,39 +2,40 @@ import { Model } from "@nozbe/watermelondb";
 import { field, date, readonly, relation } from "@nozbe/watermelondb/decorators";
 import type Account from "./Account";
 import type TransactionCategory from "./TransactionCategory";
+import { TableNames } from "@/src/types/db/TableNames";
 
 export default class Transaction extends Model {
-  static table = "transactions";
+  static table = TableNames.Transactions;
   static associations = {
-    accounts: { type: "belongs_to", key: "AccountId" },
-    transaction_categories: { type: "belongs_to", key: "CategoryId" },
-    transfer_accounts: { type: "belongs_to", key: "TransferAccountId" },
+    account: { type: "belongs_to", key: "accountid" },
+    category: { type: "belongs_to", key: "categoryid" },
+    transferAccount: { type: "belongs_to", key: "transferaccountid" },
   } as const;
 
-  @field("Name") name?: string;
-  @field("AccountId") accountId!: string;
-  @field("CategoryId") categoryId!: string;
-  @field("Amount") amount!: number;
-  @field("Date") date!: string;
-  @field("Description") description?: string;
-  @field("Payee") payee?: string;
-  @field("Notes") notes?: string;
-  @field("Tags") tags?: string; // JSON string array
-  @field("Type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
-  @field("TransferAccountId") transferAccountId?: string;
-  @field("TransferId") transferId?: string;
-  @field("IsVoid") isVoid!: boolean;
-  @field("TenantId") tenantId!: string;
-  @field("IsDeleted") isDeleted!: boolean;
-  @field("CreatedBy") createdBy?: string;
-  @field("UpdatedBy") updatedBy?: string;
+  @field("name") name?: string;
+  @field("accountid") accountId!: string;
+  @field("categoryid") categoryId!: string;
+  @field("amount") amount!: number;
+  @field("date") date!: string;
+  @field("description") description?: string;
+  @field("payee") payee?: string;
+  @field("notes") notes?: string;
+  @field("tags") tags?: string; // JSON string array
+  @field("type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
+  @field("transferaccountid") transferAccountId?: string;
+  @field("transferid") transferId?: string;
+  @field("isvoid") isVoid!: boolean;
+  @field("tenantid") tenantId!: string;
+  @field("isdeleted") isDeleted!: boolean;
+  @field("createdby") createdBy?: string;
+  @field("updatedby") updatedBy?: string;
 
-  @readonly @date("CreatedAt") createdAt!: Date;
-  @readonly @date("UpdatedAt") updatedAt!: Date;
+  @readonly @date("createdat") createdAt!: Date;
+  @readonly @date("updatedat") updatedAt!: Date;
 
-  @relation("accounts", "AccountId") account!: Account;
-  @relation("transaction_categories", "CategoryId") category!: TransactionCategory;
-  @relation("accounts", "TransferAccountId") transferAccount?: Account;
+  @relation(TableNames.Accounts, "accountid") account!: Account;
+  @relation(TableNames.TransactionCategories, "categoryid") category!: TransactionCategory;
+  @relation(TableNames.Accounts, "transferaccountid") transferAccount?: Account;
 }
 
 export type TransactionModel = Transaction;
