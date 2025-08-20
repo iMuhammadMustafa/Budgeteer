@@ -104,7 +104,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
         const record = await db.get(this.tableName).create((record: any) => {
           // Use provided tenantId or default
           const actualTenantId = tenantId || getDefaultTenantId();
-          const actualUserId = tenantId || getDefaultUserId();
+          const actualUserId = getDefaultUserId();
 
           record[tenantField] = actualTenantId;
           record.createdby = actualUserId;
@@ -173,9 +173,8 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
             // Update timestamp and updatedBy
             record.updatedat = new Date().toISOString();
-            if (tenantId) {
-              record.updatedby = tenantId;
-            }
+            // updatedby should be set by the service layer, not here
+            // if a userId was provided in the data, it would already be set above
           } catch (err) {
             console.error("Error in update callback:", err);
             throw err;
@@ -238,9 +237,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
           await record.update((record: any) => {
             record.isdeleted = true;
             record.updatedat = new Date().toISOString();
-            if (tenantId) {
-              record.updatedby = tenantId;
-            }
+            // updatedby should be set by the service layer, not here
           });
         }
       });
@@ -269,9 +266,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
           await record.update((record: any) => {
             record.isdeleted = false;
             record.updatedat = new Date().toISOString();
-            if (tenantId) {
-              record.updatedby = tenantId;
-            }
+            // updatedby should be set by the service layer, not here
           });
         }
       });
