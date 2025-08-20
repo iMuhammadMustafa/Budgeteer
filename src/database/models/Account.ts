@@ -1,32 +1,33 @@
 import { Model } from "@nozbe/watermelondb";
 import { field, date, readonly, relation } from "@nozbe/watermelondb/decorators";
 import type AccountCategory from "./AccountCategory";
+import { TableNames } from "@/src/types/db/TableNames";
 
 export default class Account extends Model {
-  static table = "accounts";
+  static table = TableNames.Accounts;
   static associations = {
-    account_categories: { type: "belongs_to", key: "CategoryId" },
+    category: { type: "belongs_to", key: "categoryid" },
   } as const;
 
-  @field("Name") name!: string;
-  @field("CategoryId") categoryId!: string;
-  @field("Balance") balance!: number;
-  @field("Currency") currency!: string;
-  @field("Color") color!: string;
-  @field("Icon") icon!: string;
-  @field("Description") description?: string;
-  @field("Notes") notes?: string;
-  @field("Owner") owner?: string;
-  @field("DisplayOrder") displayOrder!: number;
-  @field("TenantId") tenantId!: string;
-  @field("IsDeleted") isDeleted!: boolean;
-  @field("CreatedBy") createdBy?: string;
-  @field("UpdatedBy") updatedBy?: string;
+  @field("name") name!: string;
+  @field("categoryid") categoryId!: string;
+  @field("balance") balance!: number;
+  @field("currency") currency!: string;
+  @field("color") color!: string;
+  @field("icon") icon!: string;
+  @field("description") description?: string;
+  @field("notes") notes?: string;
+  @field("owner") owner?: string;
+  @field("displayorder") displayOrder!: number;
+  @field("tenantid") tenantId!: string;
+  @field("isdeleted") isDeleted!: boolean;
+  @field("createdby") createdBy?: string;
+  @field("updatedby") updatedBy?: string;
 
-  @readonly @date("CreatedAt") createdAt!: Date;
-  @readonly @date("UpdatedAt") updatedAt!: Date;
+  @readonly @date("createdat") createdAt!: Date;
+  @readonly @date("updatedat") updatedAt!: Date;
 
-  @relation("account_categories", "CategoryId") category!: AccountCategory;
+  @relation(TableNames.AccountCategories, "categoryid") category!: AccountCategory;
 }
 
 export type AccountModel = Account;
