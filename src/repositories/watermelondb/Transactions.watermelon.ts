@@ -10,34 +10,47 @@ import {
 import { TableNames } from "@/src/types/db/TableNames";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { mapTransactionFromWatermelon } from "./TypeMappers";
-import { getWatermelonDB } from "../../database";
+import { BaseWatermelonRepository } from "./BaseWatermelonRepository";
 import { Q } from "@nozbe/watermelondb";
 
-export class TransactionWatermelonRepository implements ITransactionRepository {
-  private async getDb() {
-    return await getWatermelonDB();
+export class TransactionWatermelonRepository
+  extends BaseWatermelonRepository<
+    Transaction,
+    Inserts<TableNames.Transactions>,
+    Updates<TableNames.Transactions>,
+    TransactionType
+  >
+  implements ITransactionRepository
+{
+  protected tableName = "transactions";
+  protected modelClass = Transaction;
+
+  // Implementation of the abstract mapping method
+  protected mapFromWatermelon(model: Transaction): TransactionType {
+    return mapTransactionFromWatermelon(model);
   }
 
-  async findById(id: string, tenantId?: string): Promise<TransactionType | null> {
-    try {
-      const db = await this.getDb();
+  // Override field mapping only for tags special handling
+  protected mapFieldsForDatabase(data: Record<string, any>): Record<string, any> {
+    const mapped: Record<string, any> = {};
 
-      const query = db
-        .get("transactions")
-        .query(Q.where("id", id), ...(tenantId ? [Q.where("tenant_id", tenantId)] : []), Q.where("is_deleted", false));
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "tags" && Array.isArray(value)) {
+        mapped[key] = JSON.stringify(value);
+      } else {
+        mapped[key] = value;
+      }
+    });
 
-      const results = await query;
-      const model = results[0] as Transaction | undefined;
-      return model ? mapTransactionFromWatermelon(model) : null;
-    } catch (error) {
-      throw new Error(`Failed to find record by ID: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
+    return mapped;
   }
 
-  async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
+  // Implementation of interface method with specific signature (overrides base class method)
+  // @ts-ignore - Override base class method with different signature for interface compliance
+  override async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
     try {
       const db = await this.getDb();
-      const conditions = [Q.where("tenant_id", tenantId), Q.where("is_deleted", false)];
+      const conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
       // Apply search filters
       if (searchFilters.startDate) {
@@ -47,10 +60,10 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
         conditions.push(Q.where("date", Q.lte(searchFilters.endDate)));
       }
       if (searchFilters.accountid) {
-        conditions.push(Q.where("account_id", searchFilters.accountid));
+        conditions.push(Q.where("accountid", searchFilters.accountid));
       }
       if (searchFilters.categoryid) {
-        conditions.push(Q.where("category_id", searchFilters.categoryid));
+        conditions.push(Q.where("categoryid", searchFilters.categoryid));
       }
       if (searchFilters.type) {
         conditions.push(Q.where("type", searchFilters.type));
@@ -65,14 +78,14 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
         conditions.push(Q.where("description", Q.like(`%${searchFilters.description}%`)));
       }
 
-      const query = db.get("transactions").query(...conditions);
+      const query = db.get(this.tableName).query(...conditions);
       const results = await query;
 
       // Convert to TransactionsView format
       // Note: This is a simplified version. The actual TransactionsView includes
       // joined data from accounts, categories, and groups which would need proper relations
       return (results as Transaction[]).map(transaction => {
-        const mapped = mapTransactionFromWatermelon(transaction);
+        const mapped = this.mapFromWatermelon(transaction);
         return {
           accountid: mapped.accountid,
           accountname: null, // TODO: Join with accounts table
@@ -104,176 +117,13 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     }
   }
 
-  async create(data: Inserts<TableNames.Transactions>, tenantId?: string): Promise<TransactionType> {
-    try {
-      const db = await this.getDb();
-
-      return await db.write(async () => {
-        const record = await db.get("transactions").create((record: any) => {
-          if (!data.id) {
-            record.id = crypto.randomUUID();
-          }
-
-          if (tenantId) {
-            record.tenantId = tenantId;
-            record.createdBy = tenantId;
-          }
-
-          Object.entries(data).forEach(([key, value]) => {
-            if (key !== "id" && value !== undefined) {
-              const dbKey = this.camelToSnake(key);
-              if (key === "tags" && Array.isArray(value)) {
-                record[dbKey] = JSON.stringify(value);
-              } else {
-                record[dbKey] = value;
-              }
-            }
-          });
-
-          const now = Date.now();
-          record.createdAt = now;
-          record.updatedAt = now;
-          record.isDeleted = false;
-          record.isVoid = false;
-        });
-
-        return mapTransactionFromWatermelon(record as Transaction);
-      });
-    } catch (error) {
-      throw new Error(`Failed to create record: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  async update(id: string, data: Updates<TableNames.Transactions>, tenantId?: string): Promise<TransactionType | null> {
-    try {
-      const db = await this.getDb();
-
-      return await db.write(async () => {
-        const conditions = [Q.where("id", id)];
-
-        if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
-        }
-
-        conditions.push(Q.where("is_deleted", false));
-
-        const query = db.get("transactions").query(...conditions);
-        const results = await query;
-        const record = results[0];
-
-        if (!record) {
-          return null;
-        }
-
-        const updatedRecord = await record.update((record: any) => {
-          Object.entries(data).forEach(([key, value]) => {
-            if (value !== undefined) {
-              const dbKey = this.camelToSnake(key);
-              if (key === "tags" && Array.isArray(value)) {
-                record[dbKey] = JSON.stringify(value);
-              } else {
-                record[dbKey] = value;
-              }
-            }
-          });
-
-          record.updatedAt = Date.now();
-        });
-
-        return mapTransactionFromWatermelon(updatedRecord as Transaction);
-      });
-    } catch (error) {
-      throw new Error(`Failed to update record: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  async delete(id: string, tenantId?: string): Promise<void> {
-    try {
-      const db = await this.getDb();
-
-      await db.write(async () => {
-        const conditions = [Q.where("id", id)];
-
-        if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
-        }
-
-        const query = db.get("transactions").query(...conditions);
-        const results = await query;
-        const record = results[0];
-
-        if (record) {
-          await record.destroyPermanently();
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to delete record: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  async softDelete(id: string, tenantId?: string): Promise<void> {
-    try {
-      const db = await this.getDb();
-
-      await db.write(async () => {
-        const conditions = [Q.where("id", id)];
-
-        if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
-        }
-
-        conditions.push(Q.where("is_deleted", false));
-
-        const query = db.get("transactions").query(...conditions);
-        const results = await query;
-        const record = results[0];
-
-        if (record) {
-          await record.update((record: any) => {
-            record.isDeleted = true;
-            record.updatedAt = Date.now();
-          });
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to soft delete record: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  async restore(id: string, tenantId?: string): Promise<void> {
-    try {
-      const db = await this.getDb();
-
-      await db.write(async () => {
-        const conditions = [Q.where("id", id)];
-
-        if (tenantId) {
-          conditions.push(Q.where("tenant_id", tenantId));
-        }
-
-        const query = db.get("transactions").query(...conditions);
-        const results = await query;
-        const record = results[0];
-
-        if (record) {
-          await record.update((record: any) => {
-            record.isDeleted = false;
-            record.updatedAt = Date.now();
-          });
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to restore record: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  // Specialized methods for TransactionRepository
+  // Specialized method: Get transaction by transfer ID
   async getByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
     try {
       const db = await this.getDb();
       const query = db
-        .get("transactions")
-        .query(Q.where("transfer_id", id), Q.where("tenant_id", tenantId), Q.where("is_deleted", false));
+        .get(this.tableName)
+        .query(Q.where("transferid", id), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
       const results = await query;
       const model = results[0] as Transaction | undefined;
@@ -282,7 +132,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
         throw new Error(`Transaction with transfer ID ${id} not found`);
       }
 
-      const mapped = mapTransactionFromWatermelon(model);
+      const mapped = this.mapFromWatermelon(model);
       return {
         accountid: mapped.accountid,
         accountname: null, // TODO: Join with accounts table
@@ -315,14 +165,15 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     }
   }
 
+  // Specialized method: Search transactions by name/payee/description
   async findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]> {
     try {
       const db = await this.getDb();
       const query = db
-        .get("transactions")
+        .get(this.tableName)
         .query(
-          Q.where("tenant_id", tenantId),
-          Q.where("is_deleted", false),
+          Q.where("tenantid", tenantId),
+          Q.where("isdeleted", false),
           Q.or(
             Q.where("name", Q.like(`%${text}%`)),
             Q.where("payee", Q.like(`%${text}%`)),
@@ -336,7 +187,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
       const distinctItems = new Map<string, SearchDistinctTransactions>();
 
       (results as Transaction[]).forEach(transaction => {
-        const mapped = mapTransactionFromWatermelon(transaction);
+        const mapped = this.mapFromWatermelon(transaction);
         const key = mapped.name || mapped.payee || mapped.description || "";
 
         if (key && !distinctItems.has(key)) {
@@ -368,6 +219,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     }
   }
 
+  // Specialized method: Create multiple transactions in one transaction
   async createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<TransactionType[]> {
     try {
       const db = await this.getDb();
@@ -376,30 +228,8 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
         const results: TransactionType[] = [];
 
         for (const transactionData of transactions) {
-          const record = await db.get("transactions").create((record: any) => {
-            if (!transactionData.id) {
-              record.id = crypto.randomUUID();
-            }
-
-            Object.entries(transactionData).forEach(([key, value]) => {
-              if (key !== "id" && value !== undefined) {
-                const dbKey = this.camelToSnake(key);
-                if (key === "tags" && Array.isArray(value)) {
-                  record[dbKey] = JSON.stringify(value);
-                } else {
-                  record[dbKey] = value;
-                }
-              }
-            });
-
-            const now = Date.now();
-            record.createdAt = now;
-            record.updatedAt = now;
-            record.isDeleted = false;
-            record.isVoid = false;
-          });
-
-          results.push(mapTransactionFromWatermelon(record as Transaction));
+          const createdTransaction = await super.create(transactionData);
+          results.push(createdTransaction);
         }
 
         return results;
@@ -411,6 +241,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     }
   }
 
+  // Specialized method: Update transfer transaction
   async updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<TransactionType> {
     if (!transaction.id) {
       throw new Error("Transaction ID is required for transfer update");
@@ -424,6 +255,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     return result;
   }
 
+  // Specialized method: Find transactions by date
   async findByDate(date: string, tenantId: string): Promise<TransactionsView[]> {
     const filters: TransactionFilters = {
       startDate: date,
@@ -432,13 +264,14 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     return this.findAll(filters, tenantId);
   }
 
+  // Specialized method: Find transactions by category or group
   async findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]> {
     try {
       const db = await this.getDb();
-      let conditions = [Q.where("tenant_id", tenantId), Q.where("is_deleted", false)];
+      let conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
       if (type === "category") {
-        conditions.push(Q.where("category_id", categoryId));
+        conditions.push(Q.where("categoryid", categoryId));
       } else {
         // For group type, we need to find all categories in the group first
         // This is complex and would require proper relations
@@ -447,11 +280,11 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
         return [];
       }
 
-      const query = db.get("transactions").query(...conditions);
+      const query = db.get(this.tableName).query(...conditions);
       const results = await query;
 
       return (results as Transaction[]).map(transaction => {
-        const mapped = mapTransactionFromWatermelon(transaction);
+        const mapped = this.mapFromWatermelon(transaction);
         return {
           accountid: mapped.accountid,
           accountname: null, // TODO: Join with accounts table
@@ -485,6 +318,7 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
     }
   }
 
+  // Specialized method: Find transactions by month
   async findByMonth(month: string, tenantId: string): Promise<TransactionsView[]> {
     const startDate = `${month}-01`;
     const endDate = `${month}-31`; // Simplified - should use proper month end calculation
@@ -494,9 +328,5 @@ export class TransactionWatermelonRepository implements ITransactionRepository {
       endDate,
     };
     return this.findAll(filters, tenantId);
-  }
-
-  private camelToSnake(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
 }
