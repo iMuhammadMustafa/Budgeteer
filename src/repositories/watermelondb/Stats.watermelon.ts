@@ -122,6 +122,24 @@ export class StatsWatermelonRepository implements IStatsRepository {
         ? dayjs(endDate).endOf("month").format("YYYY-MM-DD")
         : dayjs().endOf("month").format("YYYY-MM-DD");
 
+      // Fetch all categories and groups for the tenant
+      const categories = await db
+        .get("transactioncategories")
+        .query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+      const groups = await db
+        .get("transactiongroups")
+        .query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+
+      // Build lookup maps
+      const categoryMap = new Map();
+      for (const cat of categories) {
+        categoryMap.set(cat.id, cat);
+      }
+      const groupMap = new Map();
+      for (const grp of groups) {
+        groupMap.set(grp.id, grp);
+      }
+
       const conditions = [
         Q.where("tenantid", tenantId),
         Q.where("isdeleted", false),
@@ -132,36 +150,36 @@ export class StatsWatermelonRepository implements IStatsRepository {
 
       const transactions = await db.get("transactions").query(...conditions);
 
-      // We need to join with categories and groups to get the complete data
-      // This is complex in WatermelonDB, so for now we'll return a simplified version
-      // TODO: Implement proper joins with categories and groups
-
+      // Aggregate by category, group, month, type
       const categoryStats: Record<string, any> = {};
       for (const transaction of transactions) {
-        const categoryId = (transaction as any).categoryId;
+        const categoryId = (transaction as any).categoryid;
+        const category = categoryMap.get(categoryId);
+        const group = category ? groupMap.get(category.groupid) : null;
         const month = dayjs((transaction as any).date).format("YYYY-MM-01");
-        const key = `${categoryId}-${month}`;
+        const type = (transaction as any).type;
+        const key = `${categoryId}-${month}-${type}`;
 
         if (!categoryStats[key]) {
           categoryStats[key] = {
-            categoryid: categoryId,
-            groupid: null, // TODO: Get from category relation
-            categoryname: null, // TODO: Get from category relation
-            groupname: null, // TODO: Get from group relation
-            sum: 0,
-            type: (transaction as any).type,
+            groupid: group ? group.id : null,
+            categoryid: category ? category.id : null,
+            groupname: group ? group.name : null,
+            type: type,
+            groupbudgetamount: group ? group.budgetamount : null,
+            groupbudgetfrequency: group ? group.budgetfrequency : null,
+            groupicon: group ? group.icon : null,
+            groupcolor: group ? group.color : null,
+            groupdisplayorder: group ? group.displayorder : null,
+            categoryname: category ? category.name : null,
+            categorybudgetamount: category ? category.budgetamount : null,
+            categorybudgetfrequency: category ? category.budgetfrequency : null,
+            categoryicon: category ? category.icon : null,
+            categorycolor: category ? category.color : null,
+            categorydisplayorder: category ? category.displayorder : null,
             date: month,
+            sum: 0,
             tenantid: tenantId,
-            groupicon: null,
-            categoryicon: null,
-            groupbudgetamount: null,
-            categorybudgetamount: null,
-            categorybudgetfrequency: null,
-            categorycolor: null,
-            categorydisplayorder: null,
-            groupbudgetfrequency: null,
-            groupcolor: null,
-            groupdisplayorder: null,
           };
         }
 
@@ -225,6 +243,19 @@ export class StatsWatermelonRepository implements IStatsRepository {
     } catch (error) {
       throw new Error(
         `Failed to get monthly account transaction stats: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  async getStatsTotalAccountBalance(tenantId: string): Promise<{ totalbalance: number }> {
+    try {
+      const db = await this.getDb();
+      const accounts = await db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+      const totalBalance = accounts.reduce((sum, account) => sum + ((account as any).balance || 0), 0);
+      return { totalbalance: totalBalance };
+    } catch (error) {
+      throw new Error(
+        `Failed to get total account balance: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }

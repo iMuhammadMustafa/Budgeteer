@@ -1,5 +1,6 @@
 import { IAccountRepository } from "../interfaces/IAccountRepository";
-import { Account, AccountCategory } from "../../database/models";
+import { Model } from "@nozbe/watermelondb";
+import { Account, AccountCategory, Transaction } from "../../database/models";
 import { Account as AccountType, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { mapAccountFromWatermelon } from "./TypeMappers";
@@ -17,6 +18,77 @@ export class AccountWatermelonRepository
   // Implementation of the abstract mapping method
   protected mapFromWatermelon(model: Account): AccountType {
     return mapAccountFromWatermelon(model);
+  }
+
+  // Returns all accounts with their latest running balance
+  async findAllWithRunningBalance(tenantId?: string): Promise<(AccountType & { running_balance: number })[]> {
+    try {
+      const db = await this.getDb();
+      const accountConditions = [];
+      if (tenantId) accountConditions.push(Q.where("tenantid", tenantId));
+      accountConditions.push(Q.where("isdeleted", false));
+      const accounts = await db.get(this.tableName).query(...accountConditions);
+
+      // Fetch all transactions for these accounts
+      const accountIds = accounts.map(acc => acc.id);
+      const txConditions = [Q.where("accountid", Q.oneOf(accountIds)), Q.where("isdeleted", false)];
+      const transactions = await db.get(TableNames.Transactions).query(...txConditions);
+
+      // Group transactions by accountid and sort
+      const txByAccount: Record<string, Transaction[]> = {};
+      for (const tx of transactions) {
+        const t = tx as Transaction;
+        if (!txByAccount[t.accountid]) txByAccount[t.accountid] = [];
+        txByAccount[t.accountid].push(t);
+      }
+
+      // For each account, find the latest transaction by date/createdat/updatedat/type/id and get its running balance
+      const result: (AccountType & { running_balance: number })[] = [];
+      for (const account of accounts as Account[]) {
+        const mappedAccount = this.mapFromWatermelon(account);
+        const txs = txByAccount[account.id] || [];
+        if (txs.length === 0) {
+          result.push({ ...mappedAccount, running_balance: mappedAccount.balance });
+          continue;
+        }
+        // Sort as in SQL: date DESC, createdat DESC, updatedat DESC, type DESC, id DESC
+        txs.sort((a, b) => {
+          const da = new Date(b.date).getTime() - new Date(a.date).getTime();
+          if (da !== 0) return da;
+          const ca = new Date(b.createdat).getTime() - new Date(a.createdat).getTime();
+          if (ca !== 0) return ca;
+          const ua = new Date(b.updatedat).getTime() - new Date(a.updatedat).getTime();
+          if (ua !== 0) return ua;
+          if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
+          return (b.id || "").localeCompare(a.id || "");
+        });
+        // Calculate running balance in forward order
+        txs.sort((a, b) => {
+          const da = new Date(a.date).getTime() - new Date(b.date).getTime();
+          if (da !== 0) return da;
+          const ca = new Date(a.createdat).getTime() - new Date(b.createdat).getTime();
+          if (ca !== 0) return ca;
+          const ua = new Date(a.updatedat).getTime() - new Date(b.updatedat).getTime();
+          if (ua !== 0) return ua;
+          if ((a.type || "") !== (b.type || "")) return (a.type || "").localeCompare(b.type || "");
+          return (a.id || "").localeCompare(b.id || "");
+        });
+        let running = 0;
+        let lastTxId = null;
+        for (const tx of txs) {
+          if (!tx.isvoid && !tx.isdeleted) {
+            running += tx.amount;
+          }
+          lastTxId = tx.id;
+        }
+        result.push({ ...mappedAccount, running_balance: running });
+      }
+      return result;
+    } catch (error) {
+      throw new Error(
+        `Failed to get accounts with running balance: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
 
   // Override findAll to include category relationship
@@ -156,10 +228,19 @@ export class AccountWatermelonRepository
           throw new Error("Account not found");
         }
 
-        await record.update((record: any) => {
-          record.balance = amount;
-          record.updatedat = new Date().toISOString();
+        console.log("[updateAccountBalance] Before update:", {
+          currentBalance: (record as Account).balance,
+          newAmount: amount,
+          typeOfAmount: typeof amount,
         });
+        if (typeof amount !== "number" || isNaN(amount)) {
+          throw new Error("Amount must be a valid number");
+        }
+        await record.update(rec => {
+          (rec as Account).balance = amount;
+          (rec as Account).updatedat = new Date();
+        });
+        console.log("[updateAccountBalance] After update:", { updatedBalance: (record as Account).balance });
 
         return amount;
       });
