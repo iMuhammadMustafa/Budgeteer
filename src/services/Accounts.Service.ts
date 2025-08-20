@@ -277,7 +277,7 @@ const createAccountRepoHelper = async (
     const transaction = await transactionRepo.create(
       {
         name: TransactionNames.AccountOpened,
-        amount: formAccount.balance,
+        amount: formAccount.balance || 0,
         accountid: newAcc.id,
         categoryid: config.value,
         type: "Initial",
@@ -324,7 +324,7 @@ const updateAccountRepoHelper = async (
     const config = await configRepo.getConfiguration(
       TableNames.TransactionCategories,
       ConfigurationTypes.AccountOpertationsCategory,
-      "Id",
+      "id",
       tenantid,
     );
 
