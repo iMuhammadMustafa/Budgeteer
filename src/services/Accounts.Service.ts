@@ -83,6 +83,7 @@ export function useAccountService(): IAccountService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
     });
   };
@@ -113,6 +114,7 @@ export function useAccountService(): IAccountService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
     });
   };
@@ -132,7 +134,7 @@ export function useAccountService(): IAccountService {
       }) => {
         // Clean up properties that shouldn't be sent to database
         (form as any).category = undefined;
-        (form as any).running_balance = undefined;
+        (form as any).runningbalance = undefined;
 
         if (form.id && original) {
           return await updateAccountRepoHelper(
@@ -156,6 +158,7 @@ export function useAccountService(): IAccountService {
       onSuccess: async (_, data) => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));
@@ -165,12 +168,13 @@ export function useAccountService(): IAccountService {
 
   const deleteObj = () => {
     return useMutation({
-      mutationFn: async (id: string) => {
+      mutationFn: async ({ id }: { id: string }) => {
         return await accountRepo.softDelete(id, tenantId);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
     });
   };
@@ -197,6 +201,7 @@ export function useAccountService(): IAccountService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
     });
   };
@@ -217,6 +222,7 @@ export function useAccountService(): IAccountService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
       },
     });
   };

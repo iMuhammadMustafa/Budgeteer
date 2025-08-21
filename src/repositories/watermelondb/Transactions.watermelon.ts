@@ -285,24 +285,34 @@ export class TransactionWatermelonRepository
 
   // Specialized method: Create multiple transactions in one transaction
   async createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<TransactionType[]> {
-    try {
-      const db = await this.getDb();
+    console.log(transactions);
+    const mappedTransactions = transactions.map(tx => this.mapFieldsForDatabase(tx as Record<string, any>));
 
-      return await db.write(async () => {
-        const results: TransactionType[] = [];
+    const db = await this.getDb();
 
-        for (const transactionData of transactions) {
-          const createdTransaction = await super.create(transactionData);
-          results.push(createdTransaction);
-        }
-
-        return results;
+    return await db.write(async () => {
+      const collection = db.get(this.tableName);
+      const models = mappedTransactions.map(tx => {
+        return collection.prepareCreate(record => {
+          Object.entries(tx).forEach(([key, value]) => {
+            if (key !== "id" && value !== undefined) {
+              // @ts-ignore
+              record[key] = value;
+            }
+          });
+          try {
+            console.log("record", record);
+          } catch (error) {
+            console.error("Error creating record:", error);
+          }
+        });
       });
-    } catch (error) {
-      throw new Error(
-        `Failed to create multiple transactions: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
+      console.log(models);
+
+      await db.batch(...models);
+
+      return models.map(model => this.mapFromWatermelon(model as Transaction));
+    });
   }
 
   // Specialized method: Update transfer transaction

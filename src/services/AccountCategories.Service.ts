@@ -99,7 +99,7 @@ export function useAccountCategoryService(): IAccountCategoryService {
 
   const deleteObj = () => {
     return useMutation({
-      mutationFn: async (id: string) => {
+      mutationFn: async ({ id }: { id: string }) => {
         return await accountCategoryRepo.delete(id, tenantId);
       },
       onSuccess: async () => {

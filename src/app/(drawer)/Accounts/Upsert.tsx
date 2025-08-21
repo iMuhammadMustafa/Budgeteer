@@ -23,7 +23,7 @@ export default function Upsert() {
     if (accountId && data) {
       setInitialValues({
         ...data,
-        running_balance: data.running_balance,
+        runningbalance: data.runningbalance,
       });
     }
   }, [accountId, data]);

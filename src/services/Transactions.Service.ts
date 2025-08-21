@@ -16,8 +16,9 @@ import GenerateUuid from "@/src/utils/UUID.Helper";
 import dayjs from "dayjs";
 import { useStorageMode } from "../providers/StorageModeProvider";
 // Legacy imports - these need to be updated to use repositories
-import { ITransactionRepository } from "@/src/repositories";
+import { IAccountRepository, ITransactionRepository } from "@/src/repositories";
 import { IServiceWithView } from "./IService";
+import { updateAccountBalance } from "../repositories/__mock__/Accounts.mock";
 
 export interface ITransactionService
   extends IServiceWithView<
@@ -38,10 +39,12 @@ export interface ITransactionService
 
 export function useTransactionService(): ITransactionService {
   const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
   const { dbContext } = useStorageMode();
   const transactionRepo = dbContext.TransactionRepository();
+  const accountRepo = dbContext.AccountRepository();
 
   // Repository-based Transaction hooks
   const findAll = (searchFilters: TransactionFilters) => {
@@ -91,10 +94,9 @@ export function useTransactionService(): ITransactionService {
   };
 
   const create = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (form: Inserts<TableNames.Transactions>) => {
-        return await createTransactionHelper(form, session, transactionRepo);
+        return await createTransactionHelper(form, session, transactionRepo, accountRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
@@ -104,10 +106,9 @@ export function useTransactionService(): ITransactionService {
   };
 
   const update = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({ form, original }: { form: Updates<TableNames.Transactions>; original: Transaction }) => {
-        await updateTransactionHelper(form, original, session, transactionRepo);
+        await updateTransactionHelper(form, original, session, transactionRepo, accountRepo);
         return original;
       },
       onSuccess: async () => {
@@ -118,7 +119,6 @@ export function useTransactionService(): ITransactionService {
   };
 
   const createMultipleTransactionsRepo = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (transactions: Inserts<TableNames.Transactions>[]) => {
         return await transactionRepo.createMultipleTransactions(transactions);
@@ -131,7 +131,6 @@ export function useTransactionService(): ITransactionService {
   };
 
   const updateTransferTransactionRepo = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (transaction: Updates<TableNames.Transactions>) => {
         return await transactionRepo.updateTransferTransaction(transaction);
@@ -144,13 +143,26 @@ export function useTransactionService(): ITransactionService {
   };
 
   const deleteObj = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async (id: string) => {
+      mutationFn: async ({ id, item }: { id: string; item?: TransactionsView }) => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
-        return await transactionRepo.softDelete(id, tenantId);
+        await transactionRepo.softDelete(id, tenantId);
+
+        if (!item) return;
+
+        if (item.isvoid !== true && item.accountid && item.amount) {
+          await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
+        }
+
+        if (item.transferid) {
+          await transactionRepo.softDelete(item.transferid, tenantId);
+          if (item.isvoid !== true && item.transferaccountid && item.amount) {
+            await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
+          }
+        }
       },
       onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
@@ -158,7 +170,6 @@ export function useTransactionService(): ITransactionService {
   };
 
   const restore = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
@@ -232,11 +243,34 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
-  const upsert = (id: string) => {
-    if (!id) {
-      return create();
-    }
-    return update();
+  const upsert = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+        original?: Transaction;
+      }) => {
+        if (form.id && original) {
+          await updateTransactionHelper(form, original, session, transactionRepo, accountRepo);
+          return original;
+        }
+        return await createTransactionHelper(
+          form as Inserts<TableNames.Transactions>,
+          session,
+          transactionRepo,
+          accountRepo,
+        );
+      },
+      onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      },
+      onError: (error, variables, context) => {
+        throw new Error(JSON.stringify(error));
+      },
+    });
   };
 
   return {
@@ -266,6 +300,7 @@ const createTransactionHelper = async (
   formTransaction: Inserts<TableNames.Transactions>,
   session: Session,
   repo: ITransactionRepository,
+  accountRepo: IAccountRepository,
 ) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
@@ -298,11 +333,11 @@ const createTransactionHelper = async (
   const newTransactions = await repo.createMultipleTransactions(transactions);
 
   if (newTransactions) {
-    // Account balance updates would need to be handled by the repository or calling code
-    // TODO: Use accountRepo.updateAccountBalance(formTransaction.accountid, formTransaction.amount!, tenantid);
-    // if (formTransaction.transferaccountid) {
-    //   TODO: Use accountRepo.updateAccountBalance(formTransaction.transferaccountid, -formTransaction.amount!, tenantid);
-    // }
+    await accountRepo.updateAccountBalance(formTransaction.accountid, formTransaction.amount!);
+
+    if (formTransaction.transferaccountid) {
+      await accountRepo.updateAccountBalance(formTransaction.transferaccountid, -formTransaction.amount!);
+    }
   }
 
   return newTransactions[0];
@@ -313,6 +348,7 @@ export const updateTransactionHelper = async (
   originalData: Transaction,
   session: Session,
   transactionRepo: ITransactionRepository,
+  accountRepo: IAccountRepository,
 ) => {
   let userId = session.user.id;
   let tenantId = session.user.user_metadata.tenantid;
@@ -579,19 +615,17 @@ export const updateTransactionHelper = async (
   }
 
   try {
-    // Account balance updates would need to be handled by the repository or calling code
-    // TODO: Use accountRepo.updateAccountBalance for these calls
     if (newAccount.id && newAccount.amount) {
-      // TODO: await accountRepo.updateAccountBalance(newAccount.id, newAccount.amount, tenantId);
+      await accountRepo.updateAccountBalance(newAccount.id, newAccount.amount, tenantId);
     }
     if (newTransferAccount.id && newTransferAccount.amount) {
-      // TODO: await accountRepo.updateAccountBalance(newTransferAccount.id, newTransferAccount.amount, tenantId);
+      await accountRepo.updateAccountBalance(newTransferAccount.id, newTransferAccount.amount, tenantId);
     }
     if (originalAccount.id && originalAccount.amount) {
-      // TODO: await accountRepo.updateAccountBalance(originalAccount.id, originalAccount.amount, tenantId);
+      await accountRepo.updateAccountBalance(originalAccount.id, originalAccount.amount, tenantId);
     }
     if (originalTransferAccount.id && originalTransferAccount.amount) {
-      // TODO: await accountRepo.updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount, tenantId);
+      await accountRepo.updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount, tenantId);
     }
   } catch (error) {
     // Rollback or handle the error
