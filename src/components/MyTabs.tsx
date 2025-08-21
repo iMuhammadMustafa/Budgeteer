@@ -62,7 +62,6 @@ export function Tab({
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
 
-  console.log("data", data);
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />
@@ -142,7 +141,7 @@ export function Tab({
         </Pressable>
       )}
 
-      {Footer && <View className="p-2">{Footer}</View>}
+      {Footer && <View className="p-2">{typeof Footer === "string" ? <Text>{Footer}</Text> : Footer}</View>}
     </SafeAreaView>
   );
 }

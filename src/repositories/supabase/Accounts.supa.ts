@@ -141,12 +141,4 @@ export class AccountSupaRepository implements IAccountRepository {
     }
     return data as { totalbalance: number } | null;
   }
-
-  // Legacy methods for backward compatibility
-  getAllAccounts = this.findAll;
-  getAccountById = this.findById;
-  createAccount = this.create;
-  updateAccount = (account: Updates<TableNames.Accounts>) => this.update(account.id!, account);
-  deleteAccount = this.softDelete;
-  restoreAccount = this.restore;
 }

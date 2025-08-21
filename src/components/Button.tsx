@@ -11,7 +11,7 @@ export default function Button({
 }) {
   return (
     <Pressable
-      className={`p-3 flex justify-center items-center ${isValid ? "bg-primary" : "bg-primary-200"}`}
+      className={`p-3 flex justify-center items-center ${isValid ? "bg-primary" : "bg-primary-200"} -z-20`}
       disabled={!isValid}
       onPress={onPress}
     >

@@ -47,10 +47,12 @@ export class AccountCategorySupaRepository implements IAccountCategoryRepository
     data: Updates<TableNames.AccountCategories>,
     tenantId?: string,
   ): Promise<AccountCategory | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
     const { data: result, error } = await supabase
       .from(TableNames.AccountCategories)
       .update({ ...data })
       .eq("id", id)
+      .eq("tenantid", tenantId)
       .select()
       .single();
 
@@ -62,18 +64,21 @@ export class AccountCategorySupaRepository implements IAccountCategoryRepository
   }
 
   async delete(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase.from(TableNames.AccountCategories).delete().eq("id", id);
+    if (!tenantId) throw new Error("Tenant ID is required");
+    const { error } = await supabase.from(TableNames.AccountCategories).delete().eq("id", id).eq("tenantid", tenantId);
     if (error) throw error;
   }
 
   async softDelete(id: string, tenantId?: string): Promise<void> {
+    if (!tenantId) throw new Error("Tenant ID is required");
     const { error } = await supabase
       .from(TableNames.AccountCategories)
       .update({
         isdeleted: true,
         updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("tenantid", tenantId);
     if (error) throw error;
   }
 
@@ -88,34 +93,3 @@ export class AccountCategorySupaRepository implements IAccountCategoryRepository
     if (error) throw error;
   }
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const getAllAccountCategories = async (tenantId: string) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.findAll(undefined, tenantId);
-};
-
-export const getAccountCategoryById = async (id: string, tenantId: string) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.findById(id, tenantId);
-};
-
-export const createAccountCategory = async (accountCategory: Inserts<TableNames.AccountCategories>) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.create(accountCategory);
-};
-
-export const updateAccountCategory = async (accountCategory: Updates<TableNames.AccountCategories>) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.update(accountCategory.id!, accountCategory);
-};
-
-export const deleteAccountCategory = async (id: string, userId: string) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.softDelete(id);
-};
-
-export const restoreAccountCategory = async (id: string, userId: string) => {
-  const repository = new AccountCategorySupaRepository();
-  return repository.restore(id);
-};

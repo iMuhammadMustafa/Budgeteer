@@ -194,9 +194,6 @@ const AccountsRoute = () => {
 
 const AccountsCategoriesRoute = () => {
   const accountCategoryService = useAccountCategoryService();
-
-  console.log("Account Categories Route Loaded");
-
   return (
     <Tab
       title="Categories"

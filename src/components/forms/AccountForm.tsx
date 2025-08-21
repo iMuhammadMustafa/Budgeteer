@@ -41,15 +41,15 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   }, [openTransaction]);
 
   // Add effect to update account balance when open balance changes
-  useEffect(() => {
-    if (openTransaction && openBalance !== null && openTransaction.amount !== openBalance) {
-      const difference = openBalance - openTransaction.amount;
-      setFormData(prevData => ({
-        ...prevData,
-        balance: Number(prevData.balance || 0) + difference,
-      }));
-    }
-  }, [openBalance, openTransaction]);
+  // useEffect(() => {
+  //   if (openTransaction && openBalance !== null && openTransaction.amount !== openBalance) {
+  //     const difference = openBalance - openTransaction.amount;
+  //     setFormData(prevData => ({
+  //       ...prevData,
+  //       balance: Number(prevData.balance || 0) + difference,
+  //     }));
+  //   }
+  // }, [openBalance, openTransaction]);
 
   const { mutate: updateAccount } = accountService.upsert();
   const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
@@ -72,8 +72,6 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
       {
         onSuccess: () => {
           setIsLoading(false);
-          queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-          queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
           router.navigate("/Accounts");
         },
         onError: error => {
@@ -146,10 +144,12 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
               keyboardType="numeric"
             />
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
-            <Switch value={addAdjustmentTransaction} onValueChange={setAddAdjustmentTransaction} />
-            <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
-          </View>
+          {account.id && (
+            <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
+              <Switch value={addAdjustmentTransaction} onValueChange={setAddAdjustmentTransaction} />
+              <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
+            </View>
+          )}
         </View>
 
         {account.id && formData.running_balance !== undefined && account.running_balance !== account.balance && (
@@ -171,7 +171,14 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           <TextInputField
             label="Open Balance"
             value={openBalance?.toString() ?? "0"}
-            onChange={balance => setOpenBalance(balance)}
+            onChange={balance => {
+              setFormData(prevData => ({
+                ...prevData,
+                balance: Number(account.balance || 0) - Number(openTransaction.amount) + (Number(balance) || 0),
+              }));
+              setOpenBalance(balance);
+              setAddAdjustmentTransaction(false);
+            }}
             keyboardType="numeric"
           />
         )}
