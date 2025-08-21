@@ -35,10 +35,17 @@ export class TransactionWatermelonRepository
     const mapped: Record<string, any> = {};
 
     Object.entries(data).forEach(([key, value]) => {
-      if (key === "tags" && Array.isArray(value)) {
-        mapped[key] = JSON.stringify(value);
-      } else {
-        mapped[key] = value;
+      switch (key) {
+        case "amount":
+          mapped[key] = Number(value) || 0;
+          break;
+        case "tags":
+          if (Array.isArray(value)) {
+            mapped[key] = JSON.stringify(value);
+          }
+          break;
+        default:
+          mapped[key] = value;
       }
     });
 

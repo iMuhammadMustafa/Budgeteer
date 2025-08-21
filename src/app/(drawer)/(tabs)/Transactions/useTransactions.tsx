@@ -10,7 +10,7 @@ import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@/src/utils/transactions.helper";
 
-import { useTransactionService } from "@/src/services//Transactions.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 import { useTransactionCategoryService } from "@/src/services//TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 

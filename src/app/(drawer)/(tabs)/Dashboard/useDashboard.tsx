@@ -59,7 +59,7 @@ export default function useDashboard() {
   const fetchTransactionsForDate = async (date: string): Promise<TransactionsView[]> => {
     try {
       if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.transactionRepo.findByDate(date, tenantId);
+      return await transactionService.repo.findByDate(date, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
       return [];
@@ -72,7 +72,7 @@ export default function useDashboard() {
   ): Promise<TransactionsView[]> => {
     try {
       if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.transactionRepo.findByCategory(categoryId, type, tenantId);
+      return await transactionService.repo.findByCategory(categoryId, type, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for category:", error);
       return [];
@@ -82,7 +82,7 @@ export default function useDashboard() {
   const fetchTransactionsForMonthAndType = async (month: string): Promise<TransactionsView[]> => {
     try {
       if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.transactionRepo.findByMonth(month, tenantId);
+      return await transactionService.repo.findByMonth(month, tenantId);
     } catch (error) {
       console.error("Error fetching transactions for month:", error);
       return [];

@@ -5,8 +5,8 @@ import { useLocalSearchParams } from "expo-router";
 
 import { TabBar, TabHeader } from "@/src/components/MyTabs";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
-import { useGetTransactionById } from "@/src/services//Transactions.Service";
 import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 
 export default function AddTransaction() {
   const [index, setIndex] = useState(0);
@@ -18,8 +18,9 @@ export default function AddTransaction() {
   const params = useLocalSearchParams();
   const transaction = params as unknown as TransactionFormType;
 
-  const id = transaction?.id && !transaction?.accountid && !transaction?.categoryid ? transaction.id : null;
-  const { data: transactionById, isLoading, error } = useGetTransactionById(id);
+  const id = transaction?.id && !transaction?.accountid && !transaction?.categoryid ? transaction.id : undefined;
+  const transactionService = useTransactionService();
+  const { data: transactionById, isLoading, error } = transactionService.findById(id);
 
   const renderScene = useCallback(
     ({ route }: any) => {

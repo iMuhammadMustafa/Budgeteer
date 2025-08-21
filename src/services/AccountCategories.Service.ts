@@ -16,7 +16,8 @@ export function useAccountCategoryService(): IAccountCategoryService {
   if (!session) throw new Error("Session not found");
 
   const tenantId = session?.user?.user_metadata?.tenantid;
-  const userId = session?.user?.id;
+  if (!tenantId) throw new Error("Tenant ID not found in session");
+
   const { dbContext } = useStorageMode();
   const accountCategoryRepo = dbContext.AccountCategoryRepository();
 
@@ -24,7 +25,6 @@ export function useAccountCategoryService(): IAccountCategoryService {
     return useQuery<AccountCategory[]>({
       queryKey: [TableNames.AccountCategories, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return accountCategoryRepo.findAll({}, tenantId);
       },
       enabled: !!tenantId,
@@ -36,7 +36,6 @@ export function useAccountCategoryService(): IAccountCategoryService {
       queryKey: [TableNames.AccountCategories, id, tenantId, "repo"],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return accountCategoryRepo.findById(id, tenantId);
       },
       enabled: !!id && !!tenantId,
@@ -61,7 +60,7 @@ export function useAccountCategoryService(): IAccountCategoryService {
         original,
       }: {
         form: Updates<TableNames.AccountCategories>;
-        original: AccountCategory;
+        original?: AccountCategory;
       }) => {
         return await updateAccountCategoryRepoHelper(form, session, accountCategoryRepo);
       },
@@ -101,7 +100,6 @@ export function useAccountCategoryService(): IAccountCategoryService {
   const deleteObj = () => {
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountCategoryRepo.delete(id, tenantId);
       },
       onSuccess: async () => {
@@ -113,7 +111,6 @@ export function useAccountCategoryService(): IAccountCategoryService {
   const softDelete = () => {
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountCategoryRepo.softDelete(id, tenantId);
       },
       onSuccess: async () => {
@@ -125,7 +122,6 @@ export function useAccountCategoryService(): IAccountCategoryService {
   const restore = () => {
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountCategoryRepo.restore(id, tenantId);
       },
       onSuccess: async () => {

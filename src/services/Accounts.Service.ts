@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
+import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
@@ -24,6 +24,8 @@ export function useAccountService(): IAccountService {
 
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
+  if (!tenantId) throw new Error("Tenant ID not found in session");
+
   const { dbContext } = useStorageMode();
   const accountRepo = dbContext.AccountRepository();
   const transactionRepo = dbContext.TransactionRepository();
@@ -33,7 +35,6 @@ export function useAccountService(): IAccountService {
     return useQuery<Account[]>({
       queryKey: [TableNames.Accounts, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return accountRepo.findAll({}, tenantId);
       },
       enabled: !!tenantId,
@@ -45,7 +46,7 @@ export function useAccountService(): IAccountService {
       queryKey: [TableNames.Accounts, id, tenantId, "repo"],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
-        if (!tenantId) throw new Error("Tenant ID not found in session");
+
         return accountRepo.findById(id, tenantId);
       },
       enabled: !!id && !!tenantId,
@@ -54,9 +55,8 @@ export function useAccountService(): IAccountService {
 
   const getTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
-      queryKey: ["Stats_TotalAccountBalance", tenantId, "repo"],
+      queryKey: [ViewNames.StatsTotalAccountBalance, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return accountRepo.getTotalAccountBalance(tenantId);
       },
       enabled: !!tenantId,
@@ -68,7 +68,7 @@ export function useAccountService(): IAccountService {
       queryKey: [TableNames.Transactions, id, tenantId, "repo"],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
-        if (!tenantId) throw new Error("Tenant ID not found in session");
+
         return accountRepo.getAccountOpenedTransaction(id, tenantId);
       },
       enabled: !!id && !!tenantId,
@@ -76,13 +76,13 @@ export function useAccountService(): IAccountService {
   };
 
   const create = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (form: Inserts<TableNames.Accounts>) => {
         return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       },
     });
   };
@@ -112,12 +112,12 @@ export function useAccountService(): IAccountService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       },
     });
   };
 
   const upsert = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
         form,
@@ -164,29 +164,25 @@ export function useAccountService(): IAccountService {
   };
 
   const deleteObj = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountRepo.softDelete(id, tenantId);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
       },
     });
   };
 
   const restore = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountRepo.restore(id, tenantId);
       },
       onSuccess: async id => {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-          queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, id] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
         ]);
       },
@@ -194,10 +190,8 @@ export function useAccountService(): IAccountService {
   };
 
   const updateAccountBalance = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({ accountId, amount }: { accountId: string; amount: number }) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await accountRepo.updateAccountBalance(accountId, amount, tenantId);
       },
       onSuccess: async () => {
@@ -259,7 +253,6 @@ const createAccountRepoHelper = async (
   formAccount.createdby = userId;
   formAccount.tenantid = tenantid;
 
-  console.log("Creating account:", formAccount);
   const newAcc = await accountRepo.create(formAccount, tenantid);
 
   if (newAcc) {
@@ -269,11 +262,9 @@ const createAccountRepoHelper = async (
       "id",
       tenantid,
     );
-    console.log(config);
     if (!config) {
       throw new Error("Account Operations Category not found");
     }
-
     const transaction = await transactionRepo.create(
       {
         name: TransactionNames.AccountOpened,
@@ -288,7 +279,6 @@ const createAccountRepoHelper = async (
       },
       tenantid,
     );
-    console.log("Transaction created for account opened:", transaction);
   }
 
   return newAcc;

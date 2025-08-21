@@ -66,7 +66,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
           onSelect={value => handleTextChange("type", value?.value)}
         />
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between -z-10`}>
           <View className="flex-1">
             <IconPicker
               onSelect={(icon: any) => handleTextChange("icon", icon)}
