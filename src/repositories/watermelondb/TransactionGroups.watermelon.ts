@@ -21,4 +21,19 @@ export class TransactionGroupWatermelonRepository
   protected mapFromWatermelon(model: TransactionGroup): TransactionGroupType {
     return mapTransactionGroupFromWatermelon(model);
   }
+  protected mapFieldsForDatabase(data: Record<string, any>): Record<string, any> {
+    const mapped: Record<string, any> = {};
+
+    Object.entries(data).forEach(([key, value]) => {
+      switch (key) {
+        case "budgetamount":
+          mapped[key] = Number(value) || 0;
+          break;
+        default:
+          mapped[key] = value;
+      }
+    });
+
+    return mapped;
+  }
 }

@@ -23,6 +23,21 @@ export class TransactionCategoryWatermelonRepository
   protected mapFromWatermelon(model: TransactionCategory): TransactionCategoryType {
     return mapTransactionCategoryFromWatermelon(model);
   }
+  protected mapFieldsForDatabase(data: Record<string, any>): Record<string, any> {
+    const mapped: Record<string, any> = {};
+
+    Object.entries(data).forEach(([key, value]) => {
+      switch (key) {
+        case "budgetamount":
+          mapped[key] = Number(value) || 0;
+          break;
+        default:
+          mapped[key] = value;
+      }
+    });
+
+    return mapped;
+  }
 
   // Override findAll to include group relationship
   async findAll(filters?: any, tenantId?: string): Promise<TransactionCategoryType[]> {
@@ -142,33 +157,6 @@ export class TransactionCategoryWatermelonRepository
       return mappedCategory;
     } catch (error) {
       throw new Error(`Failed to find record by ID: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  // Override create to add group validation
-  async create(data: Inserts<TableNames.TransactionCategories>, tenantId?: string): Promise<TransactionCategoryType> {
-    try {
-      const db = await this.getDb();
-
-      // Validate that the group exists if groupid is provided
-      if (data.groupid) {
-        const groupExists = await db
-          .get(TableNames.TransactionGroups)
-          .query(
-            Q.where("id", data.groupid),
-            Q.where("isdeleted", false),
-            ...(tenantId ? [Q.where("tenantid", tenantId)] : []),
-          );
-
-        if (groupExists.length === 0) {
-          throw new Error(`TransactionGroup with ID ${data.groupid} does not exist or is deleted`);
-        }
-      }
-
-      // Use base class create method
-      return await super.create(data, tenantId);
-    } catch (error) {
-      throw new Error(`Failed to create record: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 }
