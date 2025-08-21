@@ -256,16 +256,16 @@ t.id DESC;
 -- FROM categories c;
 
 -- Add new view for accounts with their latest running balance
-CREATE OR REPLACE VIEW view_accounts_with_running_balance WITH (security_invoker) AS
+CREATE OR REPLACE VIEW view_accounts_with_runningbalance WITH (security_invoker) AS
   SELECT
       acc.*,
-      latest_rb.running_balance
+      latest_rb.runningbalance
   FROM
       accounts acc
   LEFT JOIN (
       SELECT
           tv.accountid,
-          tv.RunningBalance AS running_balance,
+          tv.RunningBalance AS runningbalance,
           ROW_NUMBER() OVER (PARTITION BY tv.accountid ORDER BY tv.date DESC, tv.type DESC, tv.id DESC) as rn
       FROM
           TransactionsView tv -- This is the materialized view

@@ -83,14 +83,15 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   };
 
   const handleSyncRunningBalance = () => {
-    if (account.running_balance !== null && account.running_balance !== undefined && account.id) {
+    if (account.runningbalance !== null && account.runningbalance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
         id: account.id,
-        balance: account.running_balance,
+        balance: account.runningbalance,
       };
       updateAccount({ form: updatedAccount, original: account as Account, props: { addAdjustmentTransaction: false } });
     }
   };
+  console.log(account.runningbalance);
 
   return (
     <SafeAreaView className="p-5">
@@ -152,13 +153,13 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           )}
         </View>
 
-        {account.id && formData.running_balance !== undefined && account.running_balance !== account.balance && (
+        {account.id && formData.runningbalance !== undefined && account.runningbalance !== account.balance && (
           <View className="flex flex-row items-center justify-center gap-2 -z-20">
             <View style={{ flex: 1 }}>
               <TextInputField
                 label="Running Balance"
                 isReadOnly={true}
-                value={formData.running_balance?.toString()}
+                value={formData.runningbalance?.toString()}
                 keyboardType="numeric"
                 onChange={() => {}}
               />
@@ -192,7 +193,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 }
 
 export type AccountFormType = (Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>) & {
-  running_balance?: number | null;
+  runningbalance?: number | null;
 };
 export const initialState: AccountFormType = {
   name: "",
@@ -200,5 +201,5 @@ export const initialState: AccountFormType = {
   balance: 0,
   currency: "USD",
   notes: "",
-  running_balance: null,
+  runningbalance: null,
 };

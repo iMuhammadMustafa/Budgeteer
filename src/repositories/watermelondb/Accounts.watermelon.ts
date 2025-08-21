@@ -27,7 +27,7 @@ export class AccountWatermelonRepository
   }
 
   // Returns all accounts with their latest running balance
-  // async findAllWithRunningBalance(tenantId?: string): Promise<(AccountType & { running_balance: number })[]> {
+  // async findAllWithRunningBalance(tenantId?: string): Promise<(AccountType & { runningbalance: number })[]> {
   //   try {
   //     const db = await this.getDb();
   //     const accountConditions = [];
@@ -49,12 +49,12 @@ export class AccountWatermelonRepository
   //     }
 
   //     // For each account, find the latest transaction by date/createdat/updatedat/type/id and get its running balance
-  //     const result: (AccountType & { running_balance: number })[] = [];
+  //     const result: (AccountType & { runningbalance: number })[] = [];
   //     for (const account of accounts as Account[]) {
   //       const mappedAccount = this.mapFromWatermelon(account);
   //       const txs = txByAccount[account.id] || [];
   //       if (txs.length === 0) {
-  //         result.push({ ...mappedAccount, running_balance: mappedAccount.balance });
+  //         result.push({ ...mappedAccount, runningbalance: mappedAccount.balance });
   //         continue;
   //       }
   //       // Sort as in SQL: date DESC, createdat DESC, updatedat DESC, type DESC, id DESC
@@ -87,7 +87,7 @@ export class AccountWatermelonRepository
   //         }
   //         lastTxId = tx.id;
   //       }
-  //       result.push({ ...mappedAccount, running_balance: running });
+  //       result.push({ ...mappedAccount, runningbalance: running });
   //     }
   //     return result;
   //   } catch (error) {
@@ -161,20 +161,20 @@ export class AccountWatermelonRepository
     }
   }
 
-  // Override findById to include category relationship
-  async findById(id: string, tenantId?: string): Promise<AccountType | null> {
+  // Override findById to include category relationship and running balance (matching Supabase view logic)
+  async findById(id: string, tenantId?: string): Promise<(AccountType & { runningbalance: number }) | null> {
     try {
       const db = await this.getDb();
       const tenantField = this.getTenantFieldName();
       const softDeleteField = this.getSoftDeleteFieldName();
 
-      const query = db.get(this.tableName).query(
-        Q.where("id", id),
-        // Add tenant filtering if tenantId is provided
-        ...(tenantId ? [Q.where(tenantField, tenantId)] : []),
-        // Add soft delete filtering
-        Q.where(softDeleteField, false),
-      );
+      const query = db
+        .get(this.tableName)
+        .query(
+          Q.where("id", id),
+          ...(tenantId ? [Q.where(tenantField, tenantId)] : []),
+          Q.where(softDeleteField, false),
+        );
 
       const results = await query;
       const model = results[0] as Account;
@@ -187,9 +187,57 @@ export class AccountWatermelonRepository
       const categoryResults = await categoryQuery;
       const category = categoryResults[0] as AccountCategory | undefined;
 
+      // Fetch all transactions for this account (not deleted, not void)
+      const txConditions = [Q.where("accountid", id), Q.where("isdeleted", false), Q.where("isvoid", false)];
+      if (tenantId) txConditions.push(Q.where("tenantid", tenantId));
+      const transactions = await db.get(TableNames.Transactions).query(...txConditions);
+
+      // Sort transactions ASC (for running sum)
+      const sortedAsc = [...transactions].sort((a, b) => {
+        const ta = a as Transaction;
+        const tb = b as Transaction;
+        const da = new Date(ta.date).getTime() - new Date(tb.date).getTime();
+        if (da !== 0) return da;
+        const ca = new Date(ta.createdat).getTime() - new Date(tb.createdat).getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(ta.updatedat).getTime() - new Date(tb.updatedat).getTime();
+        if (ua !== 0) return ua;
+        if ((ta.type || "") !== (tb.type || "")) return (ta.type || "").localeCompare(tb.type || "");
+        return (ta.id || "").localeCompare(tb.id || "");
+      });
+
+      // Calculate running balances for each transaction
+      let running = 0;
+      const runningBalances: { [txid: string]: number } = {};
+      for (const tx of sortedAsc) {
+        const t = tx as Transaction;
+        running += t.amount;
+        runningBalances[t.id] = running;
+      }
+
+      // Find the latest transaction (DESC order)
+      const sortedDesc = [...transactions].sort((a, b) => {
+        const ta = a as Transaction;
+        const tb = b as Transaction;
+        const da = new Date(tb.date).getTime() - new Date(ta.date).getTime();
+        if (da !== 0) return da;
+        const ca = new Date(tb.createdat).getTime() - new Date(ta.createdat).getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(tb.updatedat).getTime() - new Date(ta.updatedat).getTime();
+        if (ua !== 0) return ua;
+        if ((tb.type || "") !== (ta.type || "")) return (tb.type || "").localeCompare(ta.type || "");
+        return (tb.id || "").localeCompare(ta.id || "");
+      });
+      let runningbalance: number;
+      if (sortedDesc.length > 0) {
+        const latestTx = sortedDesc[0];
+        runningbalance = runningBalances[latestTx.id] ?? 0;
+      } else {
+        runningbalance = model.balance;
+      }
+
       const mappedAccount = this.mapFromWatermelon(model);
       if (category) {
-        // Add category data to the mapped account
         (mappedAccount as any).category = {
           id: category.id,
           name: category.name,
@@ -206,14 +254,14 @@ export class AccountWatermelonRepository
         };
       }
 
-      return mappedAccount;
+      return { ...mappedAccount, runningbalance };
     } catch (error) {
       throw new Error(`Failed to find record by ID: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 
   // Account-specific methods
-  async updateAccountBalance(accountid: string, amount: number, tenantId?: string): Promise<number> {
+  async updateAccountBalance(accountid: string, delta: number, tenantId?: string): Promise<number> {
     try {
       const db = await getWatermelonDB();
 
@@ -234,14 +282,15 @@ export class AccountWatermelonRepository
           throw new Error("Account not found");
         }
 
-        if (typeof amount !== "number" || isNaN(amount)) {
+        if (typeof delta !== "number" || isNaN(delta)) {
           throw new Error("Amount must be a valid number");
         }
+        let newBalance = (record as Account).balance + delta;
         await record.update(rec => {
-          (rec as Account).balance = Number(amount);
+          (rec as Account).balance = newBalance;
           (rec as Account).updatedat = new Date();
         });
-        return amount;
+        return newBalance;
       });
     } catch (error) {
       throw new Error(`Failed to update account balance: ${error instanceof Error ? error.message : "Unknown error"}`);

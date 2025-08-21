@@ -112,9 +112,10 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
           // Set all provided data
           Object.entries(mappedData).forEach(([key, value]) => {
-            if (key !== "id" && value !== undefined) {
-              record[key] = value;
-            }
+            console.log(record["id"]);
+            // if (key !== "id" && value !== undefined) {
+            record[key] = value;
+            // }
           });
 
           // Set timestamps using the utility function

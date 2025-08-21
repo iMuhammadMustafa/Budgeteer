@@ -2,15 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Configuration, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createConfiguration,
-  deleteConfiguration,
-  getConfigurationById,
-  getAllConfigurations,
-  restoreConfiguration,
-  updateConfiguration,
-  IConfigurationRepository,
-} from "@/src/repositories";
+import { IConfigurationRepository } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
@@ -24,6 +16,7 @@ export interface IConfigurationService
 
 export function useConfigurationService(): IConfigurationService {
   const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
   const { dbContext } = useStorageMode();
@@ -65,7 +58,6 @@ export function useConfigurationService(): IConfigurationService {
   };
 
   const create = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (configuration: Inserts<TableNames.Configurations>) => {
         return await createConfigurationRepoHelper(configuration, session, configurationRepo);
@@ -77,7 +69,6 @@ export function useConfigurationService(): IConfigurationService {
   };
 
   const update = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({ form, original }: { form: Updates<TableNames.Configurations>; original: Configuration }) => {
         return await updateConfigurationRepoHelper(form, session, configurationRepo);
@@ -89,7 +80,6 @@ export function useConfigurationService(): IConfigurationService {
   };
 
   const upsert = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async ({
         form,
@@ -118,9 +108,8 @@ export function useConfigurationService(): IConfigurationService {
   };
 
   const deleteObj = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
-      mutationFn: async (id: string) => {
+      mutationFn: async ({ id }: { id: string }) => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         return await configurationRepo.softDelete(id, tenantId);
       },
@@ -131,7 +120,6 @@ export function useConfigurationService(): IConfigurationService {
   };
 
   const restore = () => {
-    if (!session) throw new Error("Session not found");
     return useMutation({
       mutationFn: async (id: string) => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
@@ -207,7 +195,7 @@ export function useConfigurationService(): IConfigurationService {
 
 // export const useCreateConfiguration = () => {
 //   const { session } = useAuth();
-//   if (!session) throw new Error("Session not found");
+//
 //   return useMutation({
 //     mutationFn: async (accountGroup: Inserts<TableNames.Configurations>) => {
 //       return await createConfigurationHelper(accountGroup, session);
@@ -219,7 +207,7 @@ export function useConfigurationService(): IConfigurationService {
 // };
 // export const useUpdateConfiguration = () => {
 //   const { session } = useAuth();
-//   if (!session) throw new Error("Session not found");
+//
 
 //   return useMutation({
 //     mutationFn: async ({
@@ -239,7 +227,7 @@ export function useConfigurationService(): IConfigurationService {
 
 // export const useUpsertConfiguration = () => {
 //   const { session } = useAuth();
-//   if (!session) throw new Error("Session not found");
+//
 
 //   return useMutation({
 //     mutationFn: async ({
@@ -266,7 +254,7 @@ export function useConfigurationService(): IConfigurationService {
 
 // export const useDeleteConfiguration = () => {
 //   const { session } = useAuth();
-//   if (!session) throw new Error("Session not found");
+//
 
 //   const userId = session.user.id;
 
@@ -282,7 +270,7 @@ export function useConfigurationService(): IConfigurationService {
 
 // export const useRestoreConfiguration = (id?: string) => {
 //   const { session } = useAuth();
-//   if (!session) throw new Error("Session not found");
+//
 //   const userId = session.user.id;
 
 //   return useMutation({

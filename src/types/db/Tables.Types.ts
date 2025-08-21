@@ -7,7 +7,7 @@ export type Inserts<T extends keyof Database["public"]["Tables"]> = Database["pu
 export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
 
 // Tables
-export type Account = Tables<"accounts"> & { running_balance?: number | null };
+export type Account = Tables<"accounts"> & { runningbalance?: number | null };
 export type AccountCategory = Tables<"accountcategories">;
 
 export type Transaction = Tables<"transactions">;
@@ -21,7 +21,7 @@ export type Recurring = Tables<"recurrings"> & { type: TransactionType };
 export type TransactionsView = Views<"transactionsview">;
 
 // Views
-export type ViewAccountsWithRunningBalance = Views<"view_accounts_with_running_balance">;
+export type ViewAccountsWithRunningBalance = Views<"view_accounts_with_runningbalance">;
 export type SearchDistinctTransactions = Views<"search_distincttransactions">;
 export type StatsDailyTransactions = Views<"stats_dailytransactions">;
 export type StatsMonthlyTransactionsTypes = Views<"stats_monthlytransactionstypes">;

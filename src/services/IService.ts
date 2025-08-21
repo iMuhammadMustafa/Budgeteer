@@ -15,8 +15,8 @@ export interface IWritableService<T, TInsert, TUpdate> {
   >;
 }
 export interface IDeleteService<T> {
-  softDelete: () => ReturnType<typeof useMutation<void, unknown, string>>;
-  delete: () => ReturnType<typeof useMutation<void, unknown, string>>;
+  softDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: T | undefined }>>;
+  delete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: T | undefined }>>;
   restore: () => ReturnType<typeof useMutation<void, unknown, string>>;
 }
 

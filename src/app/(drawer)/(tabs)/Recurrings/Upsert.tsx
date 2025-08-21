@@ -6,18 +6,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
+import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  useGetTransactionCategories,
-  useTransactionCategoryService,
-} from "@/src/services//TransactionCategories.Service";
-import {
-  useGetRecurring,
-  useCreateRecurring,
-  useUpdateRecurring,
-  useRecurringService,
-} from "@/src/services/Recurrings.Service";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useCreateRecurring, useUpdateRecurring, useRecurringService } from "@/src/services/Recurrings.Service";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";

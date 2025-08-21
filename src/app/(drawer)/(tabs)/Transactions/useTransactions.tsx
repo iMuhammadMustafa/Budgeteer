@@ -82,11 +82,17 @@ export default function useTransactions() {
   const deleteSelection = async () => {
     setIsActionLoading(true);
     for (let item of selectedTransactions) {
-      await deleteMutation.mutateAsync(item.id!, {
-        onSuccess: () => {
-          console.log({ message: "Transaction Deleted Successfully", type: "success" });
+      await deleteMutation.mutateAsync(
+        {
+          id: item.id!,
+          item,
         },
-      });
+        {
+          onSuccess: () => {
+            console.log({ message: "Transaction Deleted Successfully", type: "success" });
+          },
+        },
+      );
     }
     setIsActionLoading(false);
     clearSelection();
