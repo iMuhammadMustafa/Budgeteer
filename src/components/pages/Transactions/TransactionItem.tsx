@@ -21,9 +21,9 @@ export default function TransactionItem({
   const iconProp = getTransactionProp(transaction.type);
   const isTransfer = transaction.type === "Transfer";
 
-  // if (isTransfer && transaction.amount! > 0) {
-  //   return;
-  // }
+  if (isTransfer && transaction.amount! > 0) {
+    return;
+  }
   return (
     <View className="flex-row items-center justify-between">
       <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
