@@ -1,14 +1,16 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useGetAccountCategoryById } from "@/src/services/repositories/AccountCategories.Service";
 import AccountCategoryForm, { AccountCategoryFormType, initialState } from "@/src/components/forms/AccountCategoryForm";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export default function Upsert() {
   const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
   const [initialValues, setInitialValues] = useState<AccountCategoryFormType>(initialState);
 
-  const { data, isLoading, error } = useGetAccountCategoryById(categoryId);
+  const accountCategoryService = useAccountCategoryService();
+
+  const { data, isLoading, error } = accountCategoryService.findById(categoryId);
 
   const navigation = useNavigation();
 

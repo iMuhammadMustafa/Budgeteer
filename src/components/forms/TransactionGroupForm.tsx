@@ -5,15 +5,21 @@ import { router } from "expo-router";
 import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { TransactionGroupFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
-import { useUpsertTransactionGroup } from "@/src/services/repositories/TransactionGroups.Service";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
-import { commonValidationRules, createCategoryNameValidation, createDescriptionValidation } from "@/src/utils/form-validation";
+import {
+  commonValidationRules,
+  createCategoryNameValidation,
+  createDescriptionValidation,
+} from "@/src/utils/form-validation";
 import FormContainer from "./FormContainer";
 import FormField from "./FormField";
 import FormSection from "./FormSection";
+import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
+import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
-import { ColorsPickerDropdown } from "../DropDownField";
+import Button from "../Button";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 
 export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 
@@ -31,44 +37,44 @@ export const initialState: TransactionGroupFormData = {
 // Validation schema for TransactionGroupForm
 const validationSchema: ValidationSchema<TransactionGroupFormData> = {
   name: createCategoryNameValidation(),
-  type: [commonValidationRules.required('Transaction type is required')],
+  type: [commonValidationRules.required("Transaction type is required")],
   description: createDescriptionValidation(false),
   budgetamount: [
-    commonValidationRules.required('Budget amount is required'),
-    commonValidationRules.min(0, 'Budget amount must be 0 or greater'),
-    commonValidationRules.max(999999999.99, 'Budget amount is too large'),
+    commonValidationRules.required("Budget amount is required"),
+    commonValidationRules.min(0, "Budget amount must be 0 or greater"),
+    commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
-  budgetfrequency: [commonValidationRules.required('Budget frequency is required')],
-  icon: [commonValidationRules.required('Icon is required')],
-  color: [commonValidationRules.required('Color is required')],
+  budgetfrequency: [commonValidationRules.required("Budget frequency is required")],
+  icon: [commonValidationRules.required("Icon is required")],
+  color: [commonValidationRules.required("Color is required")],
   displayorder: [
-    commonValidationRules.required('Display order is required'),
-    commonValidationRules.min(0, 'Display order must be 0 or greater'),
+    commonValidationRules.required("Display order is required"),
+    commonValidationRules.min(0, "Display order must be 0 or greater"),
   ],
 };
 
 // Form field configurations
 const createFormFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
   {
-    name: 'name',
-    label: 'Group Name',
-    type: 'text',
+    name: "name",
+    label: "Group Name",
+    type: "text",
     required: true,
-    placeholder: 'Enter group name',
-    description: 'A descriptive name for this transaction group',
+    placeholder: "Enter group name",
+    description: "A descriptive name for this transaction group",
   },
   {
-    name: 'description',
-    label: 'Description',
-    type: 'textarea',
+    name: "description",
+    label: "Description",
+    type: "textarea",
     required: false,
-    placeholder: 'Enter description (optional)',
-    description: 'Additional details about this transaction group',
+    placeholder: "Enter description (optional)",
+    description: "Additional details about this transaction group",
   },
   {
-    name: 'type',
-    label: 'Transaction Type',
-    type: 'select',
+    name: "type",
+    label: "Transaction Type",
+    type: "select",
     required: true,
     options: [
       { id: "Income", label: "Income", value: "Income" },
@@ -78,32 +84,32 @@ const createFormFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
       { id: "Initial", label: "Initial", value: "Initial", disabled: true },
       { id: "Refund", label: "Refund", value: "Refund", disabled: true },
     ],
-    description: 'Choose the type of transactions this group will contain',
+    description: "Choose the type of transactions this group will contain",
   },
   {
-    name: 'displayorder',
-    label: 'Display Order',
-    type: 'number',
+    name: "displayorder",
+    label: "Display Order",
+    type: "number",
     required: true,
-    placeholder: '0',
-    description: 'Order in which this group appears in lists (lower numbers appear first)',
+    placeholder: "0",
+    description: "Order in which this group appears in lists (lower numbers appear first)",
   },
 ];
 
 // Budget field configurations
 const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
   {
-    name: 'budgetamount',
-    label: 'Budget Amount',
-    type: 'number',
+    name: "budgetamount",
+    label: "Budget Amount",
+    type: "number",
     required: true,
-    placeholder: '0.00',
-    description: 'The budget amount for this group',
+    placeholder: "0.00",
+    description: "The budget amount for this group",
   },
   {
-    name: 'budgetfrequency',
-    label: 'Budget Frequency',
-    type: 'select',
+    name: "budgetfrequency",
+    label: "Budget Frequency",
+    type: "select",
     required: true,
     options: [
       { id: "Daily", label: "Daily", value: "Daily" },
@@ -111,7 +117,7 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
       { id: "Monthly", label: "Monthly", value: "Monthly" },
       { id: "Yearly", label: "Yearly", value: "Yearly" },
     ],
-    description: 'How often this budget amount applies',
+    description: "How often this budget amount applies",
   },
 ];
 
@@ -121,52 +127,53 @@ interface TransactionGroupFormProps {
 
 function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
   // Initialize form data from props
-  const initialFormData: TransactionGroupFormData = useMemo(() => ({
-    ...initialState,
-    ...group,
-  }), [group]);
+  const initialFormData: TransactionGroupFormData = useMemo(
+    () => ({
+      ...initialState,
+      ...group,
+    }),
+    [group],
+  );
 
   // Form state management
-  const {
-    formState,
-    updateField,
-    setFieldTouched,
-    validateForm,
-    resetForm,
-    isValid,
-    isDirty,
-  } = useFormState(initialFormData, validationSchema);
+  const { formState, updateField, setFieldTouched, validateForm, resetForm, isValid, isDirty } = useFormState(
+    initialFormData,
+    validationSchema,
+  );
 
   // Form submission handling
-  const { mutate } = useUpsertTransactionGroup();
+  const { mutate } = useTransactionGroupService().upsert();
 
-  const handleSubmit = useCallback(async (data: TransactionGroupFormData) => {
-    await new Promise<void>((resolve, reject) => {
-      mutate(
-        {
-          formData: data,
-          originalData: group as TransactionGroup,
-        },
-        {
-          onSuccess: () => {
-            console.log({ message: "Transaction Group Created Successfully", type: "success" });
-            router.replace("/Categories");
-            resolve();
+  const handleSubmit = useCallback(
+    async (data: TransactionGroupFormData) => {
+      await new Promise<void>((resolve, reject) => {
+        mutate(
+          {
+            form: data,
+            original: group as TransactionGroup,
           },
-          onError: (error) => {
-            console.error("Failed to save transaction group:", error);
-            reject(error);
+          {
+            onSuccess: () => {
+              console.log({ message: "Transaction Group Created Successfully", type: "success" });
+              router.replace("/Categories");
+              resolve();
+            },
+            onError: error => {
+              console.error("Failed to save transaction group:", error);
+              reject(error);
+            },
           },
-        },
-      );
-    });
-  }, [mutate, group]);
+        );
+      });
+    },
+    [mutate, group],
+  );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
     onSuccess: () => {
       console.log("Transaction group saved successfully");
     },
-    onError: (error) => {
+    onError: error => {
       console.error("Form submission error:", error);
     },
   });
@@ -184,38 +191,53 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
   }, [resetForm]);
 
   // Field change handlers
-  const handleFieldChange = useCallback((field: keyof TransactionGroupFormData, value: any) => {
-    updateField(field, value);
-  }, [updateField]);
+  const handleFieldChange = useCallback(
+    (field: keyof TransactionGroupFormData, value: any) => {
+      updateField(field, value);
+    },
+    [updateField],
+  );
 
-  const handleFieldBlur = useCallback((field: keyof TransactionGroupFormData) => {
-    setFieldTouched(field);
-  }, [setFieldTouched]);
+  const handleFieldBlur = useCallback(
+    (field: keyof TransactionGroupFormData) => {
+      setFieldTouched(field);
+    },
+    [setFieldTouched],
+  );
 
   // Icon selection handler
-  const handleIconSelect = useCallback((icon: string) => {
-    updateField('icon', icon);
-  }, [updateField]);
+  const handleIconSelect = useCallback(
+    (icon: string) => {
+      updateField("icon", icon);
+    },
+    [updateField],
+  );
 
   // Color selection handler
-  const handleColorSelect = useCallback((colorOption: any) => {
-    updateField('color', colorOption?.value || 'info-100');
-  }, [updateField]);
+  const handleColorSelect = useCallback(
+    (colorOption: any) => {
+      updateField("color", colorOption?.value || "info-100");
+    },
+    [updateField],
+  );
 
   // Budget amount change handler with validation
-  const handleBudgetAmountChange = useCallback((value: string) => {
-    // Allow empty string for clearing the field
-    if (value === '') {
-      updateField('budgetamount', 0);
-      return;
-    }
+  const handleBudgetAmountChange = useCallback(
+    (value: string) => {
+      // Allow empty string for clearing the field
+      if (value === "") {
+        updateField("budgetamount", 0);
+        return;
+      }
 
-    // Only allow valid numeric input
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && isFinite(numericValue)) {
-      updateField('budgetamount', numericValue);
-    }
-  }, [updateField]);
+      // Only allow valid numeric input
+      const numericValue = parseFloat(value);
+      if (!isNaN(numericValue) && isFinite(numericValue)) {
+        updateField("budgetamount", numericValue);
+      }
+    },
+    [updateField],
+  );
 
   // Form fields configuration
   const formFields = useMemo(() => createFormFields(), []);
@@ -234,14 +256,14 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
         >
           <FormSection title="Group Details">
             {/* Render standard form fields */}
-            {formFields.map((fieldConfig) => (
+            {formFields.map(fieldConfig => (
               <FormField
                 key={String(fieldConfig.name)}
                 config={fieldConfig}
                 value={formState.data[fieldConfig.name]}
                 error={formState.errors[fieldConfig.name]}
                 touched={formState.touched[fieldConfig.name]}
-                onChange={(value) => handleFieldChange(fieldConfig.name, value)}
+                onChange={value => handleFieldChange(fieldConfig.name, value)}
                 onBlur={() => handleFieldBlur(fieldConfig.name)}
               />
             ))}
@@ -251,11 +273,11 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
             {/* Budget Amount with custom handler */}
             <FormField
               config={budgetFields[0]}
-              value={formState.data.budgetamount?.toString() || ''}
+              value={formState.data.budgetamount?.toString() || ""}
               error={formState.errors.budgetamount}
               touched={formState.touched.budgetamount}
               onChange={handleBudgetAmountChange}
-              onBlur={() => handleFieldBlur('budgetamount')}
+              onBlur={() => handleFieldBlur("budgetamount")}
             />
 
             {/* Budget Frequency */}
@@ -264,8 +286,8 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
               value={formState.data.budgetfrequency}
               error={formState.errors.budgetfrequency}
               touched={formState.touched.budgetfrequency}
-              onChange={(value) => handleFieldChange('budgetfrequency', value)}
-              onBlur={() => handleFieldBlur('budgetfrequency')}
+              onChange={value => handleFieldChange("budgetfrequency", value)}
+              onBlur={() => handleFieldBlur("budgetfrequency")}
             />
           </FormSection>
 
@@ -279,10 +301,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
                   initialIcon={formState.data.icon ?? "CircleHelp"}
                 />
               </View>
-              <ColorsPickerDropdown
-                selectedValue={formState.data.color}
-                handleSelect={handleColorSelect}
-              />
+              <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
             </View>
           </FormSection>
 
@@ -290,7 +309,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <Text className="text-red-700 text-sm">
-                {error.message || 'An error occurred while saving the transaction group'}
+                {error.message || "An error occurred while saving the transaction group"}
               </Text>
             </View>
           )}

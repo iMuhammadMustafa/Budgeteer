@@ -13,13 +13,10 @@ import {
 } from "react-native";
 import dayjs from "dayjs";
 import ExpenseComparison from "@/src/components/ExpenseComparison";
-import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services/repositories/Stats.Service";
+import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services//Stats.Service";
 import { Calendar } from "react-native-calendars";
 import { LinearGradient } from "expo-linear-gradient";
-import { queryClient } from "@/src/providers/QueryProvider";
-import { ViewNames } from "@/src/types/db/TableNames";
 import { RefreshCcw } from "lucide-react-native";
-import { PieData } from "@/src/types/components/Charts.types";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
 
 type TimePeriod = "month" | "3months" | "year" | "custom";

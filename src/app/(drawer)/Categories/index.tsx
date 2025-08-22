@@ -2,14 +2,8 @@ import { useCallback, useState } from "react";
 import { TabView } from "react-native-tab-view";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
-import {
-  useDeleteTransactionCategory,
-  useGetTransactionCategories,
-} from "@/src/services/repositories/TransactionCategories.Service";
-import {
-  useDeleteTransactionGroup,
-  useGetTransactionGroups,
-} from "@/src/services/repositories/TransactionGroups.Service";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 
 export default function Categories() {
   const [index, setIndex] = useState(0);
@@ -53,23 +47,30 @@ const Bar = (props: any) => (
   </>
 );
 
-const FirstRoute = () => (
-  <Tab
-    title="Categories"
-    queryKey={[TableNames.TransactionCategories]}
-    useGet={useGetTransactionCategories}
-    useDelete={useDeleteTransactionCategory}
-    upsertUrl={"/Categories/Upsert?categoryId="}
-    groupedBy="group.name"
-  />
-);
+const FirstRoute = () => {
+  const transactionCategoryService = useTransactionCategoryService();
+  return (
+    <Tab
+      title="Categories"
+      queryKey={[TableNames.TransactionCategories]}
+      useGet={transactionCategoryService.findAll}
+      useDelete={transactionCategoryService.delete}
+      upsertUrl={"/Categories/Upsert?categoryId="}
+      groupedBy="group.name"
+    />
+  );
+};
 
-const SecondRoute = () => (
-  <Tab
-    title="Groups"
-    queryKey={[TableNames.TransactionGroups]}
-    useGet={useGetTransactionGroups}
-    useDelete={useDeleteTransactionGroup}
-    upsertUrl={"/Categories/Groups/Upsert?groupd="}
-  />
-);
+const SecondRoute = () => {
+  const transactionGroupService = useTransactionGroupService();
+
+  return (
+    <Tab
+      title="Groups"
+      queryKey={[TableNames.TransactionGroups]}
+      useGet={transactionGroupService.findAll}
+      useDelete={transactionGroupService.softDelete}
+      upsertUrl={"/Categories/Groups/Upsert?groupId="}
+    />
+  );
+};

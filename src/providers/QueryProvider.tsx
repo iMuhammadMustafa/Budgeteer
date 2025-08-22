@@ -1,9 +1,10 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
+import { useStorageMode } from "./StorageModeProvider";
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -12,7 +13,7 @@ const asyncStoragePersister = createAsyncStoragePersister({
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       refetchOnReconnect: false,
       // refetchOnMount: false,
       gcTime: 1000 * 60 * 60 * 24, // 24 hours
@@ -31,6 +32,14 @@ export const queryClient = new QueryClient({
 });
 
 export default function QueryProvider({ children }: PropsWithChildren) {
+  const { storageMode } = useStorageMode();
+
+  useEffect(() => {
+    // Clear cache when switching storage modes to prevent stale data
+    // This ensures fresh data is loaded from the new storage source
+    queryClient.clear();
+  }, [storageMode]);
+
   return (
     <PersistQueryClientProvider
       client={queryClient}

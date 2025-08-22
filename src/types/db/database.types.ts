@@ -1,6 +1,11 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)";
+  };
   public: {
     Tables: {
       accountcategories: {
@@ -190,6 +195,236 @@ export type Database = {
       };
       recurrings: {
         Row: {
+          amount: number | null;
+          categoryid: string | null;
+          createdat: string | null;
+          createdby: string | null;
+          currencycode: string;
+          description: string | null;
+          enddate: string | null;
+          id: string;
+          isactive: boolean | null;
+          isdeleted: boolean | null;
+          lastexecutedat: string | null;
+          name: string;
+          nextoccurrencedate: string;
+          notes: string | null;
+          payeename: string | null;
+          recurrencerule: string;
+          sourceaccountid: string;
+          tenantid: string;
+          type: Database["public"]["Enums"]["transactiontypes"];
+          updatedat: string | null;
+          updatedby: string | null;
+        };
+        Insert: {
+          amount?: number | null;
+          categoryid?: string | null;
+          createdat?: string | null;
+          createdby?: string | null;
+          currencycode?: string;
+          description?: string | null;
+          enddate?: string | null;
+          id?: string;
+          isactive?: boolean | null;
+          isdeleted?: boolean | null;
+          lastexecutedat?: string | null;
+          name: string;
+          nextoccurrencedate: string;
+          notes?: string | null;
+          payeename?: string | null;
+          recurrencerule: string;
+          sourceaccountid: string;
+          tenantid: string;
+          type?: Database["public"]["Enums"]["transactiontypes"];
+          updatedat?: string | null;
+          updatedby?: string | null;
+        };
+        Update: {
+          amount?: number | null;
+          categoryid?: string | null;
+          createdat?: string | null;
+          createdby?: string | null;
+          currencycode?: string;
+          description?: string | null;
+          enddate?: string | null;
+          id?: string;
+          isactive?: boolean | null;
+          isdeleted?: boolean | null;
+          lastexecutedat?: string | null;
+          name?: string;
+          nextoccurrencedate?: string;
+          notes?: string | null;
+          payeename?: string | null;
+          recurrencerule?: string;
+          sourceaccountid?: string;
+          tenantid?: string;
+          type?: Database["public"]["Enums"]["transactiontypes"];
+          updatedat?: string | null;
+          updatedby?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recurrings_categoryid_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "stats_monthlycategoriestransactions";
+            referencedColumns: ["categoryid"];
+          },
+          {
+            foreignKeyName: "recurrings_categoryid_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "transactioncategories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurrings_categoryid_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "transactionsview";
+            referencedColumns: ["categoryid"];
+          },
+          {
+            foreignKeyName: "recurrings_sourceaccountid_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurrings_sourceaccountid_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "transactionsview";
+            referencedColumns: ["accountid"];
+          },
+          {
+            foreignKeyName: "recurrings_sourceaccountid_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "view_accounts_with_runningbalance";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recurringz: {
+        Row: {
+          amount: number | null;
+          categoryid: string | null;
+          createdat: string | null;
+          createdby: string | null;
+          currencycode: string;
+          description: string | null;
+          enddate: string | null;
+          id: string;
+          isactive: boolean | null;
+          isdeleted: boolean | null;
+          lastexecutedat: string | null;
+          name: string;
+          nextoccurrencedate: string;
+          notes: string | null;
+          payeename: string | null;
+          recurrencerule: string;
+          sourceaccountid: string;
+          tenantid: string;
+          type: Database["public"]["Enums"]["transactiontypes"] | null;
+          updatedat: string | null;
+          updatedby: string | null;
+        };
+        Insert: {
+          amount?: number | null;
+          categoryid?: string | null;
+          createdat?: string | null;
+          createdby?: string | null;
+          currencycode?: string;
+          description?: string | null;
+          enddate?: string | null;
+          id?: string;
+          isactive?: boolean | null;
+          isdeleted?: boolean | null;
+          lastexecutedat?: string | null;
+          name: string;
+          nextoccurrencedate: string;
+          notes?: string | null;
+          payeename?: string | null;
+          recurrencerule: string;
+          sourceaccountid: string;
+          tenantid: string;
+          type?: Database["public"]["Enums"]["transactiontypes"] | null;
+          updatedat?: string | null;
+          updatedby?: string | null;
+        };
+        Update: {
+          amount?: number | null;
+          categoryid?: string | null;
+          createdat?: string | null;
+          createdby?: string | null;
+          currencycode?: string;
+          description?: string | null;
+          enddate?: string | null;
+          id?: string;
+          isactive?: boolean | null;
+          isdeleted?: boolean | null;
+          lastexecutedat?: string | null;
+          name?: string;
+          nextoccurrencedate?: string;
+          notes?: string | null;
+          payeename?: string | null;
+          recurrencerule?: string;
+          sourceaccountid?: string;
+          tenantid?: string;
+          type?: Database["public"]["Enums"]["transactiontypes"] | null;
+          updatedat?: string | null;
+          updatedby?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reminders_category_id_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "stats_monthlycategoriestransactions";
+            referencedColumns: ["categoryid"];
+          },
+          {
+            foreignKeyName: "reminders_category_id_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "transactioncategories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reminders_category_id_fkey";
+            columns: ["categoryid"];
+            isOneToOne: false;
+            referencedRelation: "transactionsview";
+            referencedColumns: ["categoryid"];
+          },
+          {
+            foreignKeyName: "reminders_source_account_id_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reminders_source_account_id_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "transactionsview";
+            referencedColumns: ["accountid"];
+          },
+          {
+            foreignKeyName: "reminders_source_account_id_fkey";
+            columns: ["sourceaccountid"];
+            isOneToOne: false;
+            referencedRelation: "view_accounts_with_runningbalance";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reoccurrings: {
+        Row: {
           amount: number;
           categoryid: string | null;
           createdat: string | null;
@@ -208,6 +443,7 @@ export type Database = {
           recurrencerule: string;
           sourceaccountid: string;
           tenantid: string;
+          type: Database["public"]["Enums"]["transactiontypes"];
           updatedat: string | null;
           updatedby: string | null;
         };
@@ -230,6 +466,7 @@ export type Database = {
           recurrencerule: string;
           sourceaccountid: string;
           tenantid: string;
+          type?: Database["public"]["Enums"]["transactiontypes"];
           updatedat?: string | null;
           updatedby?: string | null;
         };
@@ -252,50 +489,51 @@ export type Database = {
           recurrencerule?: string;
           sourceaccountid?: string;
           tenantid?: string;
+          type?: Database["public"]["Enums"]["transactiontypes"];
           updatedat?: string | null;
           updatedby?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: "recurrings_category_id_fkey";
+            foreignKeyName: "reoccurrings_categoryid_fkey";
             columns: ["categoryid"];
             isOneToOne: false;
             referencedRelation: "stats_monthlycategoriestransactions";
             referencedColumns: ["categoryid"];
           },
           {
-            foreignKeyName: "recurrings_category_id_fkey";
+            foreignKeyName: "reoccurrings_categoryid_fkey";
             columns: ["categoryid"];
             isOneToOne: false;
             referencedRelation: "transactioncategories";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "recurrings_category_id_fkey";
+            foreignKeyName: "reoccurrings_categoryid_fkey";
             columns: ["categoryid"];
             isOneToOne: false;
             referencedRelation: "transactionsview";
             referencedColumns: ["categoryid"];
           },
           {
-            foreignKeyName: "recurrings_source_account_id_fkey";
+            foreignKeyName: "reoccurrings_sourceaccountid_fkey";
             columns: ["sourceaccountid"];
             isOneToOne: false;
             referencedRelation: "accounts";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "recurrings_source_account_id_fkey";
+            foreignKeyName: "reoccurrings_sourceaccountid_fkey";
             columns: ["sourceaccountid"];
             isOneToOne: false;
             referencedRelation: "transactionsview";
             referencedColumns: ["accountid"];
           },
           {
-            foreignKeyName: "recurrings_source_account_id_fkey";
+            foreignKeyName: "reoccurrings_sourceaccountid_fkey";
             columns: ["sourceaccountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
         ];
@@ -519,7 +757,7 @@ export type Database = {
             foreignKeyName: "transactions_accountid_fkey";
             columns: ["accountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
           {
@@ -561,7 +799,7 @@ export type Database = {
             foreignKeyName: "transactions_transferaccountid_fkey";
             columns: ["transferaccountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
           {
@@ -616,7 +854,7 @@ export type Database = {
             foreignKeyName: "transactions_accountid_fkey";
             columns: ["accountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
           {
@@ -658,7 +896,7 @@ export type Database = {
             foreignKeyName: "transactions_transferaccountid_fkey";
             columns: ["transferaccountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
           {
@@ -713,7 +951,7 @@ export type Database = {
             foreignKeyName: "transactions_accountid_fkey";
             columns: ["accountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
         ];
@@ -810,7 +1048,7 @@ export type Database = {
             foreignKeyName: "transactions_transferaccountid_fkey";
             columns: ["transferaccountid"];
             isOneToOne: false;
-            referencedRelation: "view_accounts_with_running_balance";
+            referencedRelation: "view_accounts_with_runningbalance";
             referencedColumns: ["id"];
           },
           {
@@ -829,7 +1067,7 @@ export type Database = {
           },
         ];
       };
-      view_accounts_with_running_balance: {
+      view_accounts_with_runningbalance: {
         Row: {
           balance: number | null;
           categoryid: string | null;
@@ -845,7 +1083,7 @@ export type Database = {
           name: string | null;
           notes: string | null;
           owner: string | null;
-          running_balance: number | null;
+          runningbalance: number | null;
           tenantid: string | null;
           updatedat: string | null;
           updatedby: string | null;
@@ -889,21 +1127,25 @@ export type Database = {
   };
 };
 
-type DefaultSchema = Database[Extract<keyof Database, "public">];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R;
     }
     ? R
@@ -917,14 +1159,16 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
     }
     ? I
@@ -938,14 +1182,16 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
     }
     ? U
@@ -959,27 +1205,33 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never;
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"] | { schema: keyof Database },
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never;

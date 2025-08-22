@@ -4,24 +4,22 @@ import { router } from "expo-router";
 
 import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetAccountCategories } from "@/src/services/repositories/AccountCategories.Service";
-import {
-  useGetAccountOpenedTransaction,
-  useUpdateAccountOpenedTransaction,
-  useUpsertAccount,
-} from "@/src/services/repositories/Accounts.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import { queryClient } from "@/src/providers/QueryProvider";
 import Button from "../Button";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export default function AccountForm({ account }: { account: AccountFormType }) {
+  const accountService = useAccountService();
+  const accountCategoryService = useAccountCategoryService();
   const [formData, setFormData] = useState<AccountFormType>(account);
   const [isLoading, setIsLoading] = useState(false);
-  const { data: accountCategories } = useGetAccountCategories();
+  const { data: accountCategories } = accountCategoryService.findAll();
   // const [isOpen, setIsOpen] = useState(false);
-  const { data: openTransaction } = useGetAccountOpenedTransaction(account.id);
+  const { data: openTransaction } = accountService.getAccountOpenedTransaction(account.id);
   const [openBalance, setOpenBalance] = useState<number | null>(null);
   const [addAdjustmentTransaction, setAddAdjustmentTransaction] = useState(true);
 
@@ -43,18 +41,18 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   }, [openTransaction]);
 
   // Add effect to update account balance when open balance changes
-  useEffect(() => {
-    if (openTransaction && openBalance !== null && openTransaction.amount !== openBalance) {
-      const difference = openBalance - openTransaction.amount;
-      setFormData(prevData => ({
-        ...prevData,
-        balance: Number(prevData.balance || 0) + difference,
-      }));
-    }
-  }, [openBalance, openTransaction]);
+  // useEffect(() => {
+  //   if (openTransaction && openBalance !== null && openTransaction.amount !== openBalance) {
+  //     const difference = openBalance - openTransaction.amount;
+  //     setFormData(prevData => ({
+  //       ...prevData,
+  //       balance: Number(prevData.balance || 0) + difference,
+  //     }));
+  //   }
+  // }, [openBalance, openTransaction]);
 
-  const { mutate: updateAccount } = useUpsertAccount();
-  const { mutate: updateOpenBalance } = useUpdateAccountOpenedTransaction();
+  const { mutate: updateAccount } = accountService.upsert();
+  const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prevData => ({ ...prevData, [field]: value }));
@@ -70,27 +68,30 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
 
     updateAccount(
-      { formAccount: { ...formData }, originalData: account as Account, addAdjustmentTransaction },
+      { form: { ...formData }, original: account as Account, props: { addAdjustmentTransaction } },
       {
         onSuccess: () => {
           setIsLoading(false);
-          queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-          queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
           router.navigate("/Accounts");
+        },
+        onError: error => {
+          setIsLoading(false);
+          console.error("Error updating account:", error);
         },
       },
     );
   };
 
   const handleSyncRunningBalance = () => {
-    if (account.running_balance !== null && account.running_balance !== undefined && account.id) {
+    if (account.runningbalance !== null && account.runningbalance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
         id: account.id,
-        balance: account.running_balance,
+        balance: account.runningbalance,
       };
-      updateAccount({ formAccount: updatedAccount, originalData: account as Account, addAdjustmentTransaction: false });
+      updateAccount({ form: updatedAccount, original: account as Account, props: { addAdjustmentTransaction: false } });
     }
   };
+  console.log(account.runningbalance);
 
   return (
     <SafeAreaView className="p-5">
@@ -144,19 +145,21 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
               keyboardType="numeric"
             />
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
-            <Switch value={addAdjustmentTransaction} onValueChange={setAddAdjustmentTransaction} />
-            <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
-          </View>
+          {account.id && (
+            <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
+              <Switch value={addAdjustmentTransaction} onValueChange={setAddAdjustmentTransaction} />
+              <Text style={{ marginLeft: 5 }}>Add Adjustment Transaction</Text>
+            </View>
+          )}
         </View>
 
-        {account.id && formData.running_balance !== undefined && account.running_balance !== account.balance && (
+        {account.id && formData.runningbalance !== undefined && account.runningbalance !== account.balance && (
           <View className="flex flex-row items-center justify-center gap-2 -z-20">
             <View style={{ flex: 1 }}>
               <TextInputField
                 label="Running Balance"
                 isReadOnly={true}
-                value={formData.running_balance?.toString()}
+                value={formData.runningbalance?.toString()}
                 keyboardType="numeric"
                 onChange={() => {}}
               />
@@ -169,7 +172,14 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
           <TextInputField
             label="Open Balance"
             value={openBalance?.toString() ?? "0"}
-            onChange={balance => setOpenBalance(balance)}
+            onChange={balance => {
+              setFormData(prevData => ({
+                ...prevData,
+                balance: Number(account.balance || 0) - Number(openTransaction.amount) + (Number(balance) || 0),
+              }));
+              setOpenBalance(balance);
+              setAddAdjustmentTransaction(false);
+            }}
             keyboardType="numeric"
           />
         )}
@@ -183,7 +193,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 }
 
 export type AccountFormType = (Inserts<TableNames.Accounts> | Updates<TableNames.Accounts>) & {
-  running_balance?: number | null;
+  runningbalance?: number | null;
 };
 export const initialState: AccountFormType = {
   name: "",
@@ -191,5 +201,5 @@ export const initialState: AccountFormType = {
   balance: 0,
   currency: "USD",
   notes: "",
-  running_balance: null,
+  runningbalance: null,
 };

@@ -17,7 +17,7 @@ export enum ViewNames {
   StatsMonthlyAccountsTransactions = "stats_monthlyaccountstransactions",
   StatsNetWorthGrowth = "stats_networthgrowth",
   StatsTotalAccountBalance = "stats_totalaccountbalance",
-  ViewAccountsWithRunningBalance = "view_accounts_with_running_balance",
+  ViewAccountsWithRunningBalance = "view_accounts_with_runningbalance",
 }
 
 export enum EnumNames {

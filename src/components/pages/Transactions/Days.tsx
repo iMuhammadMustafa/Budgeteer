@@ -23,6 +23,12 @@ export default function DaysList({
   handleLongPress: (item: TransactionsView) => void;
   handlePress: (item: TransactionsView) => void;
 }) {
+  console.log(
+    Object.values(data)
+      .flatMap(d => d.transactions)
+      .filter(el => el.type === "Transfer"),
+  );
+
   return (
     <View className="flex justify-center p-3">
       <DaysListHeader day={day} data={data} />

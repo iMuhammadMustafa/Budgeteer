@@ -5,15 +5,17 @@ import { router } from "expo-router";
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { AccountCategoryFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
-import { useUpsertAccountCategory } from "@/src/services/repositories/AccountCategories.Service";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
 import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
 import FormContainer from "./FormContainer";
 import FormField from "./FormField";
 import FormSection from "./FormSection";
+import TextInputField from "../TextInputField";
+import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
-import { ColorsPickerDropdown } from "../DropDownField";
+import Button from "../Button";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 
@@ -28,43 +30,43 @@ export const initialState: AccountCategoryFormData = {
 // Validation schema for AccountCategoryForm
 const validationSchema: ValidationSchema<AccountCategoryFormData> = {
   name: createCategoryNameValidation(),
-  type: [commonValidationRules.required('Account type is required')],
-  icon: [commonValidationRules.required('Icon is required')],
-  color: [commonValidationRules.required('Color is required')],
+  type: [commonValidationRules.required("Account type is required")],
+  icon: [commonValidationRules.required("Icon is required")],
+  color: [commonValidationRules.required("Color is required")],
   displayorder: [
-    commonValidationRules.required('Display order is required'),
-    commonValidationRules.min(0, 'Display order must be 0 or greater'),
+    commonValidationRules.required("Display order is required"),
+    commonValidationRules.min(0, "Display order must be 0 or greater"),
   ],
 };
 
 // Form field configurations
 const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
   {
-    name: 'name',
-    label: 'Category Name',
-    type: 'text',
+    name: "name",
+    label: "Category Name",
+    type: "text",
     required: true,
-    placeholder: 'Enter category name',
-    description: 'A descriptive name for this account category',
+    placeholder: "Enter category name",
+    description: "A descriptive name for this account category",
   },
   {
-    name: 'type',
-    label: 'Account Type',
-    type: 'select',
+    name: "type",
+    label: "Account Type",
+    type: "select",
     required: true,
     options: [
       { id: "Asset", label: "Asset", value: "Asset" },
       { id: "Liability", label: "Liability", value: "Liability" },
     ],
-    description: 'Choose whether this category represents assets or liabilities',
+    description: "Choose whether this category represents assets or liabilities",
   },
   {
-    name: 'displayorder',
-    label: 'Display Order',
-    type: 'number',
+    name: "displayorder",
+    label: "Display Order",
+    type: "number",
     required: true,
-    placeholder: '0',
-    description: 'Order in which this category appears in lists (lower numbers appear first)',
+    placeholder: "0",
+    description: "Order in which this category appears in lists (lower numbers appear first)",
   },
 ];
 
@@ -74,52 +76,53 @@ interface AccountCategoryFormProps {
 
 function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   // Initialize form data from props
-  const initialFormData: AccountCategoryFormData = useMemo(() => ({
-    ...initialState,
-    ...category,
-  }), [category]);
+  const initialFormData: AccountCategoryFormData = useMemo(
+    () => ({
+      ...initialState,
+      ...category,
+    }),
+    [category],
+  );
 
   // Form state management
-  const {
-    formState,
-    updateField,
-    setFieldTouched,
-    validateForm,
-    resetForm,
-    isValid,
-    isDirty,
-  } = useFormState(initialFormData, validationSchema);
+  const { formState, updateField, setFieldTouched, validateForm, resetForm, isValid, isDirty } = useFormState(
+    initialFormData,
+    validationSchema,
+  );
 
   // Form submission handling
-  const { mutate } = useUpsertAccountCategory();
+  const { mutate } = useAccountCategoryService().upsert();
 
-  const handleSubmit = useCallback(async (data: AccountCategoryFormData) => {
-    await new Promise<void>((resolve, reject) => {
-      mutate(
-        {
-          formData: data,
-          originalData: category as AccountCategory,
-        },
-        {
-          onSuccess: () => {
-            console.log({ message: "Category Created Successfully", type: "success" });
-            router.replace("/Accounts");
-            resolve();
+  const handleSubmit = useCallback(
+    async (data: AccountCategoryFormData) => {
+      await new Promise<void>((resolve, reject) => {
+        mutate(
+          {
+            form: data,
+            original: category as AccountCategory,
           },
-          onError: (error) => {
-            console.error("Failed to save category:", error);
-            reject(error);
+          {
+            onSuccess: () => {
+              console.log({ message: "Category Created Successfully", type: "success" });
+              router.replace("/Accounts");
+              resolve();
+            },
+            onError: error => {
+              console.error("Failed to save category:", error);
+              reject(error);
+            },
           },
-        },
-      );
-    });
-  }, [mutate, category]);
+        );
+      });
+    },
+    [mutate, category],
+  );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
     onSuccess: () => {
       console.log("Account category saved successfully");
     },
-    onError: (error) => {
+    onError: error => {
       console.error("Form submission error:", error);
     },
   });
@@ -137,23 +140,35 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   }, [resetForm]);
 
   // Field change handlers
-  const handleFieldChange = useCallback((field: keyof AccountCategoryFormData, value: any) => {
-    updateField(field, value);
-  }, [updateField]);
+  const handleFieldChange = useCallback(
+    (field: keyof AccountCategoryFormData, value: any) => {
+      updateField(field, value);
+    },
+    [updateField],
+  );
 
-  const handleFieldBlur = useCallback((field: keyof AccountCategoryFormData) => {
-    setFieldTouched(field);
-  }, [setFieldTouched]);
+  const handleFieldBlur = useCallback(
+    (field: keyof AccountCategoryFormData) => {
+      setFieldTouched(field);
+    },
+    [setFieldTouched],
+  );
 
   // Icon selection handler
-  const handleIconSelect = useCallback((icon: string) => {
-    updateField('icon', icon);
-  }, [updateField]);
+  const handleIconSelect = useCallback(
+    (icon: string) => {
+      updateField("icon", icon);
+    },
+    [updateField],
+  );
 
   // Color selection handler
-  const handleColorSelect = useCallback((colorOption: any) => {
-    updateField('color', colorOption?.value || 'info-100');
-  }, [updateField]);
+  const handleColorSelect = useCallback(
+    (colorOption: any) => {
+      updateField("color", colorOption?.value || "info-100");
+    },
+    [updateField],
+  );
 
   // Form fields configuration
   const formFields = useMemo(() => createFormFields(), []);
@@ -171,14 +186,14 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
         >
           <FormSection title="Category Details">
             {/* Render standard form fields */}
-            {formFields.map((fieldConfig) => (
+            {formFields.map(fieldConfig => (
               <FormField
                 key={String(fieldConfig.name)}
                 config={fieldConfig}
                 value={formState.data[fieldConfig.name]}
                 error={formState.errors[fieldConfig.name]}
                 touched={formState.touched[fieldConfig.name]}
-                onChange={(value) => handleFieldChange(fieldConfig.name, value)}
+                onChange={value => handleFieldChange(fieldConfig.name, value)}
                 onBlur={() => handleFieldBlur(fieldConfig.name)}
               />
             ))}
@@ -194,10 +209,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
                   initialIcon={formState.data.icon ?? "CircleHelp"}
                 />
               </View>
-              <ColorsPickerDropdown
-                selectedValue={formState.data.color}
-                handleSelect={handleColorSelect}
-              />
+              <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
             </View>
           </FormSection>
 
@@ -205,7 +217,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <Text className="text-red-700 text-sm">
-                {error.message || 'An error occurred while saving the category'}
+                {error.message || "An error occurred while saving the category"}
               </Text>
             </View>
           )}

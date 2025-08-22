@@ -6,9 +6,6 @@ import dayjs from "dayjs";
 import { MultiTransactionGroup, MultiTransactionItem } from "@/src/types/components/MultipleTransactions.types";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import { TransactionFormType } from "./TransactionForm";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Service";
-import { useCreateTransactions } from "@/src/services/repositories/Transactions.Service";
 import TextInputField from "../TextInputField";
 import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
 import MyDateTimePicker from "../MyDateTimePicker";
@@ -16,6 +13,9 @@ import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "..
 import MyIcon from "@/src/utils/Icons.Helper";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { ViewNames } from "@/src/types/db/TableNames";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 
 let groupId = GenerateUuid();
 export const initalState: MultiTransactionGroup = {
@@ -71,11 +71,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const [currentAmount, setCurrentAmount] = useState(0);
   const [maxAmount, setMaxAmount] = useState(0);
 
-  const { data: categories, isLoading: isCategoriesLoading } = useGetTransactionCategories();
-  const { data: accounts, isLoading: isAccountsLoading } = useGetAccounts();
+  const transactionCategoriesService = useTransactionCategoryService();
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.findAll();
+  const accountsService = useAccountService();
+  const { data: accounts, isLoading: isAccountsLoading } = accountsService.findAll();
   const [isLoading, setIsLoading] = useState(false);
 
-  const submitAllMutation = useCreateTransactions();
+  const transactionService = useTransactionService();
+  const submitAllMutation = transactionService.createMultipleTransactionsRepo();
 
   if (isCategoriesLoading || isAccountsLoading) return <ActivityIndicator size="large" color="#0000ff" />;
 
@@ -112,7 +115,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     setIsLoading(true);
     await submitAllMutation.mutateAsync(
       {
-        transactionsGroup: group,
+        transactions: group,
         totalAmount: Math.abs(currentAmount) * (mode === "minus" ? -1 : 1),
       },
       {

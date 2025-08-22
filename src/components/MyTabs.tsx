@@ -17,7 +17,7 @@ export function Tab({
   useDelete,
   upsertUrl,
   refreshOnPull = true,
-  selectable = false,
+  selectable = true,
   groupedBy,
   customDetails,
   Footer,
@@ -38,6 +38,7 @@ export function Tab({
   if (error) return <Text>Error: {error.message}</Text>;
 
   const handleLongPress = (id: string) => {
+    console.log("Long pressed item with id:", id);
     setIsSelectionMode(true);
     setSelectedIds([id]);
   };
@@ -140,7 +141,7 @@ export function Tab({
         </Pressable>
       )}
 
-      {Footer && <View className="p-2">{Footer}</View>}
+      {Footer && <View className="p-2">{typeof Footer === "string" ? <Text>{Footer}</Text> : Footer}</View>}
     </SafeAreaView>
   );
 }

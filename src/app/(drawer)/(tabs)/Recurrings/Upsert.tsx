@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, SafeAreaView, ScrollView, Text, Pressable, View, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -6,25 +6,19 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Account, Inserts, Recurring, Transaction, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
+import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useGetTransactionCategories } from "@/src/services/repositories/TransactionCategories.Service";
-import { useGetAccounts } from "@/src/services/repositories/Accounts.Service";
-import {
-  useGetRecurring,
-  useCreateRecurring,
-  useUpdateRecurring,
-} from "@/src/services/repositories/Recurrings.Service";
-import { getTransactionById, getTransactionsByName } from "@/src/services/apis/Transactions.repository";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useCreateRecurring, useUpdateRecurring, useRecurringService } from "@/src/services/Recurrings.Service";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
-import MyIcon from "@/src/utils/Icons.Helper";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
-import { CreateRecurringDto, UpdateRecurringDto } from "@/src/services/apis/Recurrings.repository";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { getTransactionsByName } from "@/src/repositories";
+import { useAccountService } from "@/src/services/Accounts.Service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -32,7 +26,7 @@ dayjs.extend(timezone);
 // Define RecurringType, assuming these are the valid types
 export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
 
-type RecurringFormType = Omit<CreateRecurringDto | UpdateRecurringDto, "recurrencerule"> & {
+type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
   type: RecurringTransactionType; // Added type field
@@ -68,7 +62,7 @@ export const initialRecurringState: RecurringFormType = {
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
-  destinationaccountid: undefined,
+  destinationaccountid: null,
   categoryid: undefined,
   payeename: undefined,
   notes: undefined,
@@ -278,12 +272,15 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
 
-  const { data: recurringToEdit, isLoading: isLoadingRecurring } = useGetRecurring(recurringIdToEdit);
   const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: categories, isLoading: isLoadingCategories } = useGetTransactionCategories();
-  const { data: accounts, isLoading: isLoadingAccounts } = useGetAccounts();
+  const reucorringService = useRecurringService();
+  const transactionCategoriesService = useTransactionCategoryService();
+  const accountsService = useAccountService();
+  const { data: recurringToEdit, isLoading: isLoadingRecurring } = reucorringService.findById(recurringIdToEdit);
+  const { data: categories, isLoading: isLoadingCategories } = transactionCategoriesService.findAll();
+  const { data: accounts, isLoading: isLoadingAccounts } = accountsService.findAll();
 
   const { mutate: createRecurring } = useCreateRecurring();
   const { mutate: updateRecurring } = useUpdateRecurring();
@@ -394,7 +391,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
     const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: CreateRecurringDto | UpdateRecurringDto = {
+    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
       ...restOfFormData,
       recurrencerule: recurrenceRule,
     };
@@ -408,7 +405,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { id: recurringIdToEdit, recurringData: dataToSubmitApi as UpdateRecurringDto },
+        { form: dataToSubmitApi as Updates<TableNames.Recurrings> },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
@@ -420,7 +417,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         },
       );
     } else {
-      createRecurring(dataToSubmitApi as CreateRecurringDto, {
+      createRecurring(dataToSubmitApi as Inserts<TableNames.Recurrings>, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();
