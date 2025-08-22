@@ -290,15 +290,7 @@ export const getTransactionById = async (transactionid: string, tenantId: string
   return data;
 };
 
-export const getTransactionByTransferId = async (id: string, tenantId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.getByTransferId(id, tenantId);
-};
 
-export const getTransactionsByName = async (text: string, tenantId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.findByName(text, tenantId);
-};
 
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
   const repository = new TransactionSupaRepository();

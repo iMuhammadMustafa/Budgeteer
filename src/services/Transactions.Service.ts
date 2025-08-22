@@ -28,7 +28,8 @@ export interface ITransactionService
     TransactionsView
   > {
   findAllInfinite: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<TransactionsView[]>>;
-  findByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: SearchDistinctTransactions }[]>>;
+  findByName: (text: string) => Promise<{ label: string; item: SearchDistinctTransactions }[]>;
+  // findByName: (text: string) => ReturnType<typeof useQuery<{ label: string; item: SearchDistinctTransactions }[]>>;
   getByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   createMultipleTransactionsRepo: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   updateTransferTransactionRepo: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
@@ -41,6 +42,7 @@ export function useTransactionService(): ITransactionService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
   const tenantId = session?.user?.user_metadata?.tenantid;
+  if (!tenantId) throw new Error("Tenant ID not found in session");
   const userId = session?.user?.id;
   const { dbContext } = useStorageMode();
   const transactionRepo = dbContext.TransactionRepository();
@@ -51,7 +53,6 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [ViewNames.TransactionsView, searchFilters, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return transactionRepo.findAll(searchFilters, tenantId);
       },
       enabled: !!tenantId,
@@ -63,7 +64,7 @@ export function useTransactionService(): ITransactionService {
       queryKey: [TableNames.Transactions, id, tenantId, "repo"],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
-        if (!tenantId) throw new Error("Tenant ID not found in session");
+
         return transactionRepo.findById(id, tenantId);
       },
       enabled: !!id && !!tenantId,
@@ -71,14 +72,14 @@ export function useTransactionService(): ITransactionService {
   };
 
   const findByName = (text: string) => {
-    return useQuery<{ label: string; item: any }[]>({
-      queryKey: [TableNames.Transactions, "search", text, tenantId, "repo"],
-      queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
-        return transactionRepo.findByName(text, tenantId);
-      },
-      enabled: !!tenantId && !!text,
-    });
+    return transactionRepo.findByName(text, tenantId);
+    // return useQuery<{ label: string; item: any }[]>({
+    //   queryKey: [TableNames.Transactions, "search", text, tenantId, "repo"],
+    //   queryFn: async () => {
+    //     return transactionRepo.findByName(text, tenantId);
+    //   },
+    //   enabled: !!tenantId && !!text,
+    // });
   };
 
   const getByTransferId = (id?: string) => {
@@ -86,7 +87,7 @@ export function useTransactionService(): ITransactionService {
       queryKey: [TableNames.Transactions, "transfer", id, tenantId, "repo"],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
-        if (!tenantId) throw new Error("Tenant ID not found in session");
+
         return transactionRepo.getByTransferId(id, tenantId);
       },
       enabled: !!id && !!tenantId,
@@ -149,18 +150,21 @@ export function useTransactionService(): ITransactionService {
   const deleteObj = () => {
     return useMutation({
       mutationFn: async ({ id, item }: { id: string; item?: TransactionsView }) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
-        await transactionRepo.softDelete(id, tenantId);
+        const s = await transactionRepo.softDelete(id, tenantId);
+        // console.log("Deleting transaction with ID:", id);
 
         if (!item) return;
 
         if (item.isvoid !== true && item.accountid && item.amount) {
+          // console.log("Updating Account balance With Id:", item.accountid, "and amount:", item.amount);
           await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
         }
 
         if (item.transferid) {
+          // console.log("Deleting transfer transaction with ID:", item.transferid);
           await transactionRepo.softDelete(item.transferid, tenantId);
           if (item.isvoid !== true && item.transferaccountid && item.amount) {
+            // console.log("Updating Account balance With Id:", item.transferaccountid, "and amount:", item.amount);
             await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
           }
         }
@@ -177,7 +181,6 @@ export function useTransactionService(): ITransactionService {
   const restore = () => {
     return useMutation({
       mutationFn: async (id: string) => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return await transactionRepo.restore(id, tenantId);
       },
       onSuccess: async () => {
@@ -192,7 +195,6 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byDate", date, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return transactionRepo.findByDate(date, tenantId);
       },
       enabled: !!tenantId && !!date,
@@ -203,7 +205,6 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byCategory", categoryId, type, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return transactionRepo.findByCategory(categoryId, type, tenantId);
       },
       enabled: !!tenantId && !!categoryId,
@@ -214,7 +215,6 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [TableNames.Transactions, "byMonth", month, tenantId, "repo"],
       queryFn: async () => {
-        if (!tenantId) throw new Error("Tenant ID not found in session");
         return transactionRepo.findByMonth(month, tenantId);
       },
       enabled: !!tenantId && !!month,
