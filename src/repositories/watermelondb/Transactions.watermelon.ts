@@ -472,7 +472,8 @@ export class TransactionWatermelonRepository
         }
       }
 
-      return transactions.map(transaction => {
+      // Map to TransactionsView, then sort DESC for display
+      const views = transactions.map(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
         const account = accountMap.get(mapped.accountid) as Account | undefined;
         const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
@@ -505,6 +506,18 @@ export class TransactionWatermelonRepository
           updatedat: mapped.updatedat,
         } as TransactionsView;
       });
+      // Sort DESC by date, createdat, updatedat, type, id
+      views.sort((a, b) => {
+        const da = new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime();
+        if (da !== 0) return da;
+        const ca = new Date(b.createdat ?? "").getTime() - new Date(a.createdat ?? "").getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(b.updatedat ?? "").getTime() - new Date(a.updatedat ?? "").getTime();
+        if (ua !== 0) return ua;
+        if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
+        return (b.id || "").localeCompare(a.id || "");
+      });
+      return views;
     } catch (error) {
       throw new Error(
         `Failed to find transactions by category: ${error instanceof Error ? error.message : "Unknown error"}`,
