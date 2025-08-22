@@ -1,72 +1,95 @@
 import { TableNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { IAccountCategoryRepository } from "../interfaces/IAccountCategoryRepository";
 
-export const getAllAccountCategories = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
-};
+export class AccountCategorySupaRepository implements IAccountCategoryRepository {
+  async findAll(filters?: any, tenantId?: string): Promise<AccountCategory[]> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+    const { data, error } = await supabase
+      .from(TableNames.AccountCategories)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .order("displayorder", { ascending: false })
+      .order("name");
+    if (error) throw new Error(error.message);
+    return data;
+  }
 
-export const getAccountCategoryById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+  async findById(id: string, tenantId?: string): Promise<AccountCategory | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
 
-export const createAccountCategory = async (accountCategory: Inserts<TableNames.AccountCategories>) => {
-  const { data, error } = await supabase.from(TableNames.AccountCategories).insert(accountCategory).select().single();
+    const { data, error } = await supabase
+      .from(TableNames.AccountCategories)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .eq("id", id)
+      .single();
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw new Error(error.message);
+    }
+    return data;
+  }
 
-  if (error) throw error;
-  return data;
-};
+  async create(data: Inserts<TableNames.AccountCategories>, tenantId?: string): Promise<AccountCategory> {
+    const { data: result, error } = await supabase.from(TableNames.AccountCategories).insert(data).select().single();
 
-export const updateAccountCategory = async (accountCategory: Updates<TableNames.AccountCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({ ...accountCategory })
-    .eq("id", accountCategory.id!)
-    .select()
-    .single();
+    if (error) throw error;
+    return result;
+  }
 
-  if (error) throw error;
-  return data;
-};
+  async update(
+    id: string,
+    data: Updates<TableNames.AccountCategories>,
+    tenantId?: string,
+  ): Promise<AccountCategory | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+    const { data: result, error } = await supabase
+      .from(TableNames.AccountCategories)
+      .update({ ...data })
+      .eq("id", id)
+      .eq("tenantid", tenantId)
+      .select()
+      .single();
 
-export const deleteAccountCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreAccountCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.AccountCategories)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw error;
+    }
+    return result;
+  }
+
+  async delete(id: string, tenantId?: string): Promise<void> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+    const { error } = await supabase.from(TableNames.AccountCategories).delete().eq("id", id).eq("tenantid", tenantId);
+    if (error) throw error;
+  }
+
+  async softDelete(id: string, tenantId?: string): Promise<void> {
+    if (!tenantId) throw new Error("Tenant ID is required");
+    const { error } = await supabase
+      .from(TableNames.AccountCategories)
+      .update({
+        isdeleted: true,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id)
+      .eq("tenantid", tenantId);
+    if (error) throw error;
+  }
+
+  async restore(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.AccountCategories)
+      .update({
+        isdeleted: false,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+}

@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { ViewNames } from "@/src/types/db/TableNames";
-import { StatsMonthlyAccountsTransactions, StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
 import {
-  getStatsDailyTransactions,
-  getStatsMonthlyAccountsTransactions,
-  getStatsMonthlyCategoriesTransactions,
-  getStatsMonthlyTransactionsTypes,
-  getStatsNetWorthGrowth,
-} from "@/src/repositories/Stats.repository";
+  StatsDailyTransactions,
+  StatsMonthlyAccountsTransactions,
+  StatsMonthlyCategoriesTransactions,
+  StatsMonthlyTransactionsTypes,
+  StatsNetWorthGrowth,
+  TransactionType,
+} from "@/src/types/db/Tables.Types";
 import {
   BarDataType,
   DoubleBarPoint,
@@ -17,43 +17,140 @@ import {
 } from "@/src/types/components/Charts.types";
 import dayjs from "dayjs";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 
-export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
+export interface IStatsService {
+  getStatsDailyTransactions: (
+    startDate: string,
+    endDate: string,
+    week?: boolean,
+    type?: TransactionType,
+  ) => ReturnType<
+    typeof useQuery<{
+      barsData?: BarDataType[];
+      calendarData: MyCalendarData;
+    }>
+  >;
+  getStatsMonthlyTransactionsTypes: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<typeof useQuery<DoubleBarPoint[]>>;
+  getStatsMonthlyCategoriesTransactions: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<
+    typeof useQuery<{
+      groups: (PieData & { id: string })[];
+      categories: (PieData & { id: string })[];
+    }>
+  >;
+  getStatsMonthlyAccountsTransactions: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<typeof useQuery<StatsMonthlyAccountsTransactions[]>>;
+  getStatsNetWorthGrowth: (startDate?: string, endDate?: string) => ReturnType<typeof useQuery<LineChartPoint[]>>;
+  statsRepo: any;
+}
+
+export function useStatsService(): IStatsService {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<{
-    barsData?: BarDataType[];
-    calendarData: MyCalendarData;
-  }>({
-    queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsDailyTransactionsHelper(tenantId, startDate, endDate, week);
-    },
-    enabled: !!tenantId,
-  });
-};
+  const { dbContext } = useStorageMode();
+  const statsRepo = dbContext.StatsRepository();
+  if (!tenantId) throw new Error("Tenant ID not found in session");
+
+  const getStatsDailyTransactions = (
+    startDate: string,
+    endDate: string,
+    week = false,
+    type: TransactionType = "Expense",
+  ) => {
+    return useQuery({
+      queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, type, tenantId, "repo"],
+      queryFn: async () => {
+        const data = await statsRepo.getStatsDailyTransactions(tenantId, startDate, endDate, type);
+        return getStatsDailyTransactionsHelper(data, week);
+      },
+    });
+  };
+
+  const getStatsMonthlyTransactionsTypes = (startDate?: string, endDate?: string) => {
+    return useQuery({
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate, tenantId, "repo"],
+      queryFn: async () => {
+        const data = await statsRepo.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
+        return getStatsMonthlyTransactionsTypesHelper(data);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const getStatsMonthlyCategoriesTransactions = (startDate?: string, endDate?: string) => {
+    return useQuery<{
+      groups: (PieData & { id: string })[];
+      categories: (PieData & { id: string })[];
+    }>({
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId, "repo"],
+      queryFn: async () => {
+        const data = await statsRepo.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
+        return getStatsMonthlyCategoriesTransactionsDashboardHelper(data);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const getStatsMonthlyAccountsTransactions = (startDate?: string, endDate?: string) => {
+    return useQuery<StatsMonthlyAccountsTransactions[]>({
+      queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return statsRepo.getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const getStatsNetWorthGrowth = (startDate?: string, endDate?: string) => {
+    return useQuery<LineChartPoint[]>({
+      queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        const data = await statsRepo.getStatsNetWorthGrowth(tenantId, startDate, endDate);
+        return getStatsNetWorthGrowthHelper(data);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  return {
+    // Repository-based methods (new)
+    getStatsDailyTransactions,
+    getStatsMonthlyTransactionsTypes,
+    getStatsMonthlyCategoriesTransactions,
+    getStatsMonthlyAccountsTransactions,
+    getStatsNetWorthGrowth,
+
+    // Direct repository access
+    statsRepo,
+  };
+}
 const getStatsDailyTransactionsHelper = async (
-  tenantId: string,
-  startDate: string,
-  endDate: string,
+  data: StatsDailyTransactions[],
   week = false,
 ): Promise<{
   barsData?: BarDataType[];
   calendarData: MyCalendarData;
 }> => {
-  const data = await getStatsDailyTransactions(tenantId, startDate, endDate, "Expense");
-
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
     const today = dayjs().format("ddd");
     const thisWeekData = data
       .filter(
-        item =>
+        (item: any) =>
           dayjs(item.date).local() >= dayjs().startOf("week").local() &&
           dayjs(item.date).local() <= dayjs().endOf("week").local(),
       )
-      .map(item => {
+      .map((item: any) => {
         const x = dayjs(item.date).format("ddd");
         const y = Math.abs(item.sum ?? 0);
         const color = (item.sum ?? 0) > 0 ? "rgba(76, 175, 80, 0.6)" : "rgba(244, 67, 54, 0.6)";
@@ -62,7 +159,7 @@ const getStatsDailyTransactionsHelper = async (
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     barsData = daysOfWeek.map(day => {
-      const dayData = thisWeekData.find(x => x.x === day);
+      const dayData = thisWeekData.find((x: any) => x.x === day);
       const x = today === day ? "Today" : day;
       return {
         x,
@@ -72,7 +169,7 @@ const getStatsDailyTransactionsHelper = async (
     });
   }
 
-  const calendarData: MyCalendarData = data.reduce((acc: MyCalendarData, item) => {
+  const calendarData: MyCalendarData = data.reduce((acc: MyCalendarData, item: any) => {
     const day = dayjs(item.date).format("YYYY-MM-DD");
     const dots = acc[day]?.dots ?? [];
     const dotColor = item.type === "Income" ? "green" : item.type === "Expense" ? "red" : "teal";
@@ -83,51 +180,16 @@ const getStatsDailyTransactionsHelper = async (
 
   return { barsData, calendarData };
 };
-
-export const useGetStatsYearTransactionsTypes = (startDate: string, endDate: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<DoubleBarPoint[]>({
-    queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsMonthlyTransactionsTypesHelper(tenantId, startDate, endDate);
-    },
-    enabled: !!tenantId,
-  });
-};
 const getStatsMonthlyTransactionsTypesHelper = async (
-  tenantId: string,
-  startDate: string,
-  endDate: string,
+  data: StatsMonthlyTransactionsTypes[],
 ): Promise<DoubleBarPoint[]> => {
-  const data = await getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
-
-  //   [
-  //    {
-  //       "type": "Expense",
-  //      "date": "2025-01-01",
-  //      "sum": 120.5
-  //    }
-  //  ]
-
-  /*
-items = 
-  [
-    {
-      x : month, 
-      expensesSum : 100,
-      incomeSum : 200,
-    }
-  ]
-*/
   type Item = {
     [x: string]: {
       expensesSum: number;
       incomeSum: number;
     };
   };
-  const items = data.reduce((acc: Item, item) => {
+  const items = data.reduce((acc: Item, item: any) => {
     let month = dayjs(item.date).format("MMM");
     let income = item.type === "Income" ? (item.sum ?? 0) : 0;
     let expense = item.type === "Expense" ? (item.sum ?? 0) : 0;
@@ -151,12 +213,12 @@ items =
       x: month,
       barOne: {
         label: "Income",
-        value: item.incomeSum,
+        value: (item as any).incomeSum,
         color: "rgba(76, 175, 80, 0.6)",
       },
       barTwo: {
         label: "Expense",
-        value: Math.abs(item.expensesSum),
+        value: Math.abs((item as any).expensesSum),
         color: "rgba(244, 67, 54, 0.6)",
       },
     };
@@ -164,51 +226,17 @@ items =
 
   return barsData;
 };
-
-export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<StatsMonthlyCategoriesTransactions[]>({
-    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
-    },
-    enabled: !!tenantId,
-  });
-};
-
-export const useGetStatsMonthlyCategoriesTransactionsForDashboard = (startDate: string, endDate: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<{
-    groups: (PieData & { id: string })[];
-    categories: (PieData & { id: string })[];
-  }>({
-    queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, "dashboard", tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsMonthlyCategoriesTransactionsDashboardHelper(tenantId, startDate, endDate);
-    },
-    enabled: !!tenantId,
-  });
-};
-
 const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
-  tenantId: string,
-  startDate: string,
-  endDate: string,
+  data: StatsMonthlyCategoriesTransactions[],
 ): Promise<{
   groups: (PieData & { id: string })[];
   categories: (PieData & { id: string })[];
 }> => {
-  const data = await getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
-
   // Group data by IDs
   const groupsMap = new Map<string, { sum: number; name: string }>();
   const categoriesMap = new Map<string, { sum: number; name: string }>();
 
-  data.forEach(item => {
+  data.forEach((item: any) => {
     if (item.groupid && item.sum && item.groupname) {
       const currentData = groupsMap.get(item.groupid) || { sum: 0, name: item.groupname };
       groupsMap.set(item.groupid, {
@@ -244,45 +272,35 @@ const getStatsMonthlyCategoriesTransactionsDashboardHelper = async (
 
   return { groups, categories };
 };
-
-export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDate: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<StatsMonthlyAccountsTransactions[]>({
-    queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsMonthlyAccountsTransactionsHelper(tenantId, startDate, endDate);
-    },
-    enabled: !!tenantId,
-  });
-};
-
-const getStatsMonthlyAccountsTransactionsHelper = async (tenantId: string, startDate: string, endDate: string) => {
-  return await getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
-};
-
-export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<LineChartPoint[]>({
-    queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getStatsNetWorthGrowthHelper(tenantId, startDate, endDate);
-    },
-    enabled: !!tenantId,
-  });
-};
-
-const getStatsNetWorthGrowthHelper = async (
-  tenantId: string,
-  startDate: string,
-  endDate: string,
-): Promise<LineChartPoint[]> => {
-  const data = await getStatsNetWorthGrowth(tenantId, startDate, endDate);
-  return data.map(item => ({
+const getStatsNetWorthGrowthHelper = async (data: StatsNetWorthGrowth[]): Promise<LineChartPoint[]> => {
+  return data.map((item: any) => ({
     x: dayjs(item.month).format("MMM"),
     y: item.total_net_worth ?? 0,
   }));
+};
+
+// Individual hook exports for backward compatibility
+export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyCategoriesTransactions(startDate, endDate);
+};
+
+export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
+  const service = useStatsService();
+  return service.getStatsDailyTransactions(startDate, endDate, week);
+};
+
+export const useGetStatsYearTransactionsTypes = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyTransactionsTypes(startDate, endDate);
+};
+
+export const useGetStatsMonthlyAccountsTransactions = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyAccountsTransactions(startDate, endDate);
+};
+
+export const useGetStatsNetWorthGrowth = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsNetWorthGrowth(startDate, endDate);
 };

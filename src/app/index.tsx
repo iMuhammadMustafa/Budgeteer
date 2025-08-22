@@ -1,9 +1,9 @@
 import { router } from "expo-router";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, ScrollView, View } from "react-native";
 import { useAuth } from "@/src/providers/AuthProvider";
 
-import Landing from "@/src/components/pages/Landing";
 import BudgeteerLanding from "@/src/components/pages/VLanding";
+
 export default function Index() {
   const { session, isSessionLoading } = useAuth();
 

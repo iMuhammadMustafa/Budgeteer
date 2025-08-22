@@ -1,77 +1,96 @@
 import { TableNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TransactionCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { ITransactionCategoryRepository } from "../interfaces/ITransactionCategoryRepository";
 
-export const getAllTransactionCategories = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("group(displayorder)", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
-};
+export class TransactionCategorySupaRepository implements ITransactionCategoryRepository {
+  async findAll(filters?: any, tenantId?: string): Promise<TransactionCategory[]> {
+    if (!tenantId) throw new Error("Tenant ID is required");
 
-export const getTransactionCategoryById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+    const { data, error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .order("displayorder", { ascending: false })
+      .order("group(displayorder)", { ascending: false })
+      .order("name");
+    if (error) throw new Error(error.message);
+    return data as unknown as TransactionCategory[];
+  }
 
-export const createTransactionCategory = async (transactionCategory: Inserts<TableNames.TransactionCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .insert(transactionCategory)
-    .select()
-    .single();
+  async findById(id: string, tenantId?: string): Promise<TransactionCategory | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
 
-  if (error) throw error;
-  return data;
-};
+    const { data, error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .eq("id", id)
+      .single();
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw new Error(error.message);
+    }
+    return data;
+  }
 
-export const updateTransactionCategory = async (transactionCategory: Updates<TableNames.TransactionCategories>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({ ...transactionCategory })
-    .eq("id", transactionCategory.id!)
-    .select()
-    .single();
+  async create(data: Inserts<TableNames.TransactionCategories>, tenantId?: string): Promise<TransactionCategory> {
+    const { data: result, error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .insert(data)
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
-};
+    if (error) throw error;
+    return result;
+  }
 
-export const deleteTransactionCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreTransactionCategory = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionCategories)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
+  async update(
+    id: string,
+    data: Updates<TableNames.TransactionCategories>,
+    tenantId?: string,
+  ): Promise<TransactionCategory | null> {
+    const { data: result, error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .update({ ...data })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw error;
+    }
+    return result;
+  }
+
+  async delete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase.from(TableNames.TransactionCategories).delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async softDelete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .update({
+        isdeleted: true,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+
+  async restore(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.TransactionCategories)
+      .update({
+        isdeleted: false,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+}

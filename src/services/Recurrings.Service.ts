@@ -7,305 +7,434 @@ import {
   createRecurring,
   updateRecurring,
   deleteRecurring,
-  // applyRecurringTransaction, // Removed as logic moves to repository
-  CreateRecurringDto,
-  UpdateRecurringDto,
-} from "@/src/repositories/Recurrings.repository";
+} from "@/src/repositories";
 // Import createTransaction from Transactions.api
-import { createTransaction } from "@/src/repositories/Transactions.repository";
-import { updateAccountBalance } from "@/src/repositories/Accounts.repository";
+import { createTransaction } from "@/src/repositories";
 import { Inserts as TransactionInserts } from "@/src/types/db/Tables.Types"; // For Transaction DTO
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { Session } from "@supabase/supabase-js";
 import dayjs from "dayjs";
+import { IService } from "./IService";
+
+export interface IRecurringService
+  extends IService<Recurring, Inserts<TableNames.Recurrings>, Updates<TableNames.Recurrings>> {}
+
+export function useRecurringService(): IRecurringService {
+  const { session } = useAuth();
+  const tenantId = session?.user?.user_metadata?.tenantid;
+  const userId = session?.user?.id;
+  const { dbContext } = useStorageMode();
+  const recurringRepo = dbContext.RecurringRepository();
+
+  // Repository-based Recurring hooks
+  const findAll = () => {
+    return useQuery<Recurring[]>({
+      queryKey: [TableNames.Recurrings, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return recurringRepo.findAll({}, tenantId);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const findById = (id?: string) => {
+    return useQuery<Recurring | null>({
+      queryKey: [TableNames.Recurrings, id, tenantId, "repo"],
+      queryFn: async () => {
+        if (!id) throw new Error("ID is required");
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return recurringRepo.findById(id, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
+
+  const create = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (data: Inserts<TableNames.Recurrings>) => {
+        return await createRepoHelper(data, session, recurringRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+      },
+    });
+  };
+
+  const update = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async ({ form, original }: { form: Updates<TableNames.Recurrings>; original: Recurring }) => {
+        return await updateRepoHelper(form, session, recurringRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+      },
+    });
+  };
+
+  const softDelete = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (id: string) => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return await recurringRepo.softDelete(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+      },
+    });
+  };
+
+  const restore = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (id: string) => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return await recurringRepo.restore(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+      },
+    });
+  };
+
+  const executeRecurringAction = () => {
+    if (!session) throw new Error("Session not found");
+    return useMutation({
+      mutationFn: async (params: { item: Recurring; amount?: number }) => {
+        // This is a simplified implementation - in production you'd want to implement
+        // the full recurring transaction logic here
+        throw new Error("Execute recurring action not yet implemented in repository layer");
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      },
+    });
+  };
+
+  // Legacy hooks for backward compatibility
+  // const useListRecurrings = (filters?: any) => useListRecurringsLegacy(filters);
+  // const useGetRecurring = (id?: string) => useGetRecurringLegacy(id);
+  // const useCreateRecurring = () => useCreateRecurringLegacy();
+  // const useUpdateRecurring = () => useUpdateRecurringLegacy();
+  // const useDeleteRecurring = () => useDeleteRecurringLegacy();
+  // const useExecuteRecurringAction = () => useExecuteRecurringActionLegacy();
+
+  return {
+    // Repository-based methods (new) - using simple method names
+    findAll,
+    findById,
+    create,
+    update,
+    softDelete,
+    delete: softDelete,
+    restore,
+    executeRecurringAction,
+
+    // Legacy methods (backward compatibility)
+    // useListRecurrings,
+    // useGetRecurring,
+    // useCreateRecurring,
+    // useUpdateRecurring,
+    // useDeleteRecurring,
+    // useExecuteRecurringAction,
+
+    // Direct repository access
+    repo: recurringRepo,
+  };
+}
+
+// Repository-based helper functions
+const createRepoHelper = async (formData: Inserts<TableNames.Recurrings>, session: Session, repository: any) => {
+  let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
+
+  formData.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+  formData.createdby = userId;
+  formData.tenantid = tenantid;
+
+  const newEntity = await repository.create(formData, tenantid);
+  return newEntity;
+};
+
+const updateRepoHelper = async (formData: Updates<TableNames.Recurrings>, session: Session, repository: any) => {
+  let userId = session.user.id;
+
+  formData.updatedby = userId;
+  formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+
+  if (!formData.id) throw new Error("ID is required for update");
+  const updatedEntity = await repository.update(formData.id, formData);
+  return updatedEntity;
+};
+
+// Legacy functions for backward compatibility
+// export const useListRecurringsLegacy = (filters?: any) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Recurring[]>({
+//     queryKey: [TableNames.Recurrings, tenantId, filters],
+//     queryFn: async () => {
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return listRecurrings({ tenantId, filters });
+//     },
+//     enabled: !!tenantId,
+//   });
+// };
+
+// export const useGetRecurringLegacy = (id?: string) => {
+//   const { session } = useAuth();
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   return useQuery<Recurring | null>({
+//     queryKey: [TableNames.Recurrings, id, tenantId],
+//     queryFn: async () => {
+//       if (!id) throw new Error("ID is required");
+//       if (!tenantId) throw new Error("Tenant ID not found in session");
+//       return getRecurringById(id, tenantId);
+//     },
+//     enabled: !!id && !!tenantId,
+//   });
+// };
+
+// export const useCreateRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+
+//   return useMutation({
+//     mutationFn: async (recurringData: Inserts<TableNames.Recurrings>) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+
+//       const dataToInsert: Inserts<TableNames.Recurrings> = {
+//         ...(recurringData as any),
+//         tenantid: tenantId,
+//         createdby: userId,
+//         createdat: dayjs().toISOString(),
+//       };
+
+//       return createRecurring(dataToInsert, tenantId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//     },
+//     onError: error => {
+//       console.error("Error creating recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
+
+// export const useUpdateRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+
+//   return useMutation({
+//     mutationFn: async ({ id, recurringData }: { id: string; recurringData: Updates<TableNames.Recurrings> }) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+
+//       const {
+//         category: categoryObject,
+//         account: accountObject,
+//         source_account: sourceAccountObject,
+//         ...coreRecurringProps
+//       } = recurringData as any;
+
+//       const dataToUpdate: Partial<Updates<TableNames.Recurrings>> = {
+//         ...coreRecurringProps,
+//         updatedby: userId,
+//         updatedat: dayjs().toISOString(),
+//       };
+
+//       if (categoryObject && typeof categoryObject === "object" && "id" in categoryObject) {
+//         dataToUpdate.categoryid = (categoryObject as { id: string }).id;
+//       }
+
+//       if (sourceAccountObject && typeof sourceAccountObject === "object" && "id" in sourceAccountObject) {
+//         dataToUpdate.sourceaccountid = (sourceAccountObject as { id: string }).id;
+//       } else if (accountObject && typeof accountObject === "object" && "id" in accountObject) {
+//         dataToUpdate.sourceaccountid = (accountObject as { id: string }).id;
+//       }
+
+//       delete (dataToUpdate as any).category;
+//       delete (dataToUpdate as any).account;
+//       delete (dataToUpdate as any).source_account;
+
+//       return updateRecurring(id, dataToUpdate as Updates<TableNames.Recurrings>, tenantId);
+//     },
+//     onSuccess: async (_, variables) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.id, tenantId] });
+//     },
+//     onError: error => {
+//       console.error("Error updating recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
+
+// export const useDeleteRecurringLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+
+//   return useMutation({
+//     mutationFn: async (id: string) => {
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+//       return deleteRecurring(id, tenantId, userId);
+//     },
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+//     },
+//     onError: error => {
+//       console.error("Error deleting recurring:", error);
+//       throw error;
+//     },
+//   });
+// };
+
+// export const useExecuteRecurringActionLegacy = () => {
+//   const { session } = useAuth();
+//   const userId = session?.user.id;
+//   const tenantId = session?.user?.user_metadata?.tenantid;
+//   const { dbContext } = useStorageMode();
+//   const accountRepo = dbContext.AccountRepository();
+
+//   return useMutation({
+//     mutationFn: async (params: { item: Recurring; amount?: number }) => {
+//       const { item: recurring, amount } = params;
+//       if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
+
+//       if (!recurring || !recurring.isactive) {
+//         throw new Error("Recurring not found, not active, or does not belong to tenant.");
+//       }
+
+//       const currentNextOccurrenceDate = dayjs(recurring.nextoccurrencedate);
+
+//       const transactionPayload: TransactionInserts<TableNames.Transactions> = {
+//         name: recurring.name,
+//         description: recurring.description,
+//         amount: typeof amount === "number" && !isNaN(amount) ? amount : (recurring.amount ?? 0),
+//         date: currentNextOccurrenceDate.toISOString(),
+//         accountid: recurring.sourceaccountid,
+//         payee: recurring.payeename,
+//         notes: recurring.notes,
+//         type: recurring.type,
+//         tenantid: tenantId,
+//         createdby: userId,
+//         createdat: dayjs().toISOString(),
+//         categoryid: recurring.categoryid ?? " ",
+//       };
+
+//       const newTransaction = await createTransaction(transactionPayload);
+//       if (!newTransaction) {
+//         throw new Error("Failed to create transaction for recurring.");
+//       }
+
+//       if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
+//         throw new Error("Transaction amount is invalid for account balance update.");
+//       }
+//       await accountRepo.updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount, tenantId);
+
+//       let newNextOccurrenceDate: dayjs.Dayjs;
+//       const rrule = recurring.recurrencerule;
+//       let freq = "MONTHLY";
+//       let interval = 1;
+
+//       if (rrule) {
+//         const freqMatch = rrule.match(/FREQ=([^;]+)/);
+//         const intervalMatch = rrule.match(/INTERVAL=(\d+)/);
+//         if (freqMatch && freqMatch[1]) freq = freqMatch[1];
+//         if (intervalMatch && intervalMatch[1]) interval = parseInt(intervalMatch[1], 10);
+//       }
+
+//       if (interval <= 0) interval = 1;
+
+//       switch (freq.toUpperCase()) {
+//         case "DAILY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "day");
+//           break;
+//         case "WEEKLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "week");
+//           break;
+//         case "MONTHLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "month");
+//           break;
+//         case "YEARLY":
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "year");
+//           break;
+//         default:
+//           newNextOccurrenceDate = currentNextOccurrenceDate.add(1, "month");
+//           console.warn(`Unsupported frequency: ${freq}. Defaulting to monthly.`);
+//       }
+
+//       const recurringUpdateData: Updates<TableNames.Recurrings> = {
+//         lastexecutedat: currentNextOccurrenceDate.toISOString(),
+//         nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
+//         updatedby: userId,
+//         updatedat: dayjs().toISOString(),
+//       };
+
+//       if (recurring.enddate && newNextOccurrenceDate.isAfter(dayjs(recurring.enddate))) {
+//         (recurringUpdateData as any).isactive = false;
+//       }
+
+//       await updateRecurring(recurring.id, recurringUpdateData, tenantId);
+
+//       return { newTransaction, updatedRecurring: recurringUpdateData };
+//     },
+//     onSuccess: async (data, variables) => {
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.item.id, tenantId] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+//       await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
+//       await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+//     },
+//     onError: error => {
+//       console.error("Error executing recurring action:", error);
+//       throw error;
+//     },
+//   });
+// };
+
+// Maintain legacy exports for backward compatibility
+// export const useListRecurrings = useListRecurringsLegacy;
+// export const useGetRecurring = useGetRecurringLegacy;
+// export const useCreateRecurring = useCreateRecurringLegacy;
+// export const useUpdateRecurring = useUpdateRecurringLegacy;
+// export const useDeleteRecurring = useDeleteRecurringLegacy;
+// export const useExecuteRecurringAction = useExecuteRecurringActionLegacy;
+// Individual hook exports for backward compatibility
+export const useExecuteRecurringAction = () => {
+  const service = useRecurringService();
+  return service.executeRecurringAction();
+};
 
 export const useListRecurrings = (filters?: any) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Recurring[]>({
-    queryKey: [TableNames.Recurrings, tenantId, filters],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return listRecurrings({ tenantId, filters });
-    },
-    enabled: !!tenantId,
-  });
-};
-
-export const useGetRecurring = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<Recurring | null>({
-    queryKey: [TableNames.Recurrings, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getRecurringById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
-
-export const useCreateRecurring = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
-
-  return useMutation({
-    mutationFn: async (recurringData: CreateRecurringDto) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-      // recurringData (CreateRecurringDto) should have camelCase keys from regenerated types.
-      // The createRecurring API function expects lowercase keys in its direct payload.
-      const apiPayload = {
-        ...recurringData, // Spread camelCase keys
-        tenantid: tenantId, // API expects lowercase
-        createdby: userId, // API expects lowercase
-        createdat: dayjs().toISOString(), // API expects lowercase
-      };
-      // We need to ensure all keys from recurringData are also lowercase if they are part of the DB schema.
-      // This assumes CreateRecurringDto maps directly to DB columns.
-      // A more robust way would be to explicitly map camelCase from recurringData to lowercase for apiPayload.
-      // For now, let's assume the spread works and only override the specific ones.
-      // However, if recurringData contains e.g. nextOccurrenceDate, it will be passed as camelCase.
-      // The createRecurring API function needs to handle this or this layer needs to map all.
-
-      // Let's be explicit for clarity and correctness based on API's expectation of lowercase
-      const explicitApiPayload: any = {};
-      for (const key in recurringData) {
-        const newKey = key.replace(/([A-Z])/g, "_$1").toLowerCase(); // Convert camel to snake, then to lower
-        explicitApiPayload[newKey] = (recurringData as any)[key];
-      }
-      explicitApiPayload.tenantid = tenantId;
-      explicitApiPayload.createdby = userId;
-      explicitApiPayload.createdat = dayjs().toISOString();
-
-      // The DTO (CreateRecurringDto) should already have the correct (camelCase) casing from regenerated types.
-      // The API layer (createRecurring) is the one that transforms it to lowercase for the .insert() call.
-      // So, we should pass data structured as CreateRecurringDto expects (camelCase).
-      // The API layer's .insert({ ...payload, tenantid: tenantId }) handles the final structure.
-      // Let's revert to simpler if DTOs are camelCase and API layer handles the snake_case for DB.
-      // The issue was that the API layer was expecting lowercase for its *own* added properties.
-
-      // Correct approach: CreateRecurringDto is camelCase. The API function `createRecurring`
-      // receives this camelCase DTO and is responsible for any mapping if Supabase client needs snake_case.
-      // The API function itself adds tenant_id, so that should be tenantid in its own object construction.
-      // The `recurringData` itself should be passed as is.
-      // The API function `createRecurring` was: .insert({ ...recurringData, tenant_id: tenantId })
-      // This should now be: .insert({ ...recurringData, tenantid: tenantId }) (lowercase in API)
-      // And recurringData itself is camelCase.
-
-      // So, the dataToInsert here should be camelCase as per Inserts<TableNames.Recurrings>
-      const dataToInsert: CreateRecurringDto = {
-        // CreateRecurringDto should be camelCase now
-        ...(recurringData as any), // Cast to any if recurringData is not perfectly matching CreateRecurringDto yet
-        tenantid: tenantId, // This should be camelCase if CreateRecurringDto expects it
-        createdby: userId, // This should be camelCase
-        createdat: dayjs().toISOString(), // This should be camelCase
-      };
-      // The createRecurring API function will receive this camelCase object.
-      // Its internal call to supabase.insert() will use the lowercase keys as we modified in Recurrings.api.ts
-      return createRecurring(dataToInsert, tenantId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-    },
-    onError: error => {
-      // Handle or log error
-      console.error("Error creating recurring:", error);
-      throw error;
-    },
-  });
-};
-
-export const useUpdateRecurring = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
-
-  return useMutation({
-    mutationFn: async ({ id, recurringData }: { id: string; recurringData: UpdateRecurringDto }) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-
-      // Destructure potential relational objects and other properties from recurringData.
-      // Casting to 'any' to handle properties not strictly defined in UpdateRecurringDto.
-      const {
-        category: categoryObject,
-        account: accountObject, // Handles if the source account object is passed as 'account'
-        source_account: sourceAccountObject, // Handles if passed as 'source_account'
-        ...coreRecurringProps
-      } = recurringData as any;
-
-      // Initialize dataToUpdate with core properties and audit fields.
-      // Properties like 'categoryid' or 'sourceaccountid' might already be in coreRecurringProps if passed directly.
-      const dataToUpdate: Partial<UpdateRecurringDto> = {
-        ...coreRecurringProps,
-        updatedby: userId, // Assuming DTO uses camelCase or API layer handles conversion
-        updatedat: dayjs().toISOString(), // Assuming DTO uses camelCase or API layer handles conversion
-      };
-
-      // Handle category: If a category object with an ID is provided, use its ID.
-      // This overrides any 'categoryid' that might have been spread from coreRecurringProps.
-      if (categoryObject && typeof categoryObject === "object" && "id" in categoryObject) {
-        dataToUpdate.categoryid = (categoryObject as { id: string }).id;
-      }
-
-      // Handle source account: Prioritize source_account object, then account object.
-      // This overrides any 'sourceaccountid' from coreRecurringProps.
-      if (sourceAccountObject && typeof sourceAccountObject === "object" && "id" in sourceAccountObject) {
-        dataToUpdate.sourceaccountid = (sourceAccountObject as { id: string }).id;
-      } else if (accountObject && typeof accountObject === "object" && "id" in accountObject) {
-        dataToUpdate.sourceaccountid = (accountObject as { id: string }).id;
-      }
-
-      // Explicitly delete the full relational objects from the payload to prevent them from being sent to the API.
-      // This is a safeguard in case they were part of coreRecurringProps or UpdateRecurringDto somehow.
-      delete (dataToUpdate as any).category;
-      delete (dataToUpdate as any).account;
-      delete (dataToUpdate as any).source_account;
-
-      // The updateRecurring API function expects an UpdateRecurringDto (likely camelCase).
-      // It is responsible for any case conversion if the DB requires snake_case.
-      return updateRecurring(id, dataToUpdate as UpdateRecurringDto, tenantId);
-    },
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.id, tenantId] });
-    },
-    onError: error => {
-      console.error("Error updating recurring:", error);
-      throw error;
-    },
-  });
+  const service = useRecurringService();
+  return service.findAll(filters);
 };
 
 export const useDeleteRecurring = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-      return deleteRecurring(id, tenantId, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-    },
-    onError: error => {
-      console.error("Error deleting recurring:", error);
-      throw error;
-    },
-  });
+  const service = useRecurringService();
+  return service.softDelete();
+};
+export const useGetRecurring = (id?: string) => {
+  const service = useRecurringService();
+  return service.findById(id);
 };
 
-// New hook to handle the multi-step recurring execution process
-export const useExecuteRecurringAction = () => {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const tenantId = session?.user?.user_metadata?.tenantid;
+export const useCreateRecurring = () => {
+  const service = useRecurringService();
+  return service.create();
+};
 
-  /**
-   * Accepts { id, amount? }
-   * If amount is provided, it overrides the recurring's amount for this execution.
-   */
-  return useMutation({
-    mutationFn: async (params: { item: Recurring; amount?: number }) => {
-      const { item: recurring, amount } = params;
-      if (!tenantId || !userId) throw new Error("User or Tenant ID not found");
-
-      // 1. Fetch the recurring details
-      if (!recurring || !recurring.isactive) {
-        throw new Error("Recurring not found, not active, or does not belong to tenant.");
-      }
-
-      const currentNextOccurrenceDate = dayjs(recurring.nextoccurrencedate);
-
-      // 2. Create a new transaction (transaction field names are already lowercase)
-      const transactionPayload: TransactionInserts<TableNames.Transactions> = {
-        name: recurring.name,
-        description: recurring.description,
-        amount: typeof amount === "number" && !isNaN(amount) ? amount : recurring.amount,
-        date: currentNextOccurrenceDate.toISOString(),
-        accountid: recurring.sourceaccountid,
-        payee: recurring.payeename,
-        notes: recurring.notes,
-        type: recurring.type,
-        tenantid: tenantId,
-        createdby: userId,
-        createdat: dayjs().toISOString(),
-        categoryid: recurring.categoryid ?? " ",
-      };
-
-      const newTransaction = await createTransaction(transactionPayload);
-      if (!newTransaction) {
-        throw new Error("Failed to create transaction for recurring.");
-      }
-
-      // Explicitly update the account balance
-      if (typeof transactionPayload.amount !== "number" || isNaN(transactionPayload.amount)) {
-        throw new Error("Transaction amount is invalid for account balance update.");
-      }
-      await updateAccountBalance(recurring.sourceaccountid, transactionPayload.amount);
-
-      // 3. Calculate the new next_occurrence_date
-      let newNextOccurrenceDate: dayjs.Dayjs;
-      const rrule = recurring.recurrencerule;
-      let freq = "MONTHLY";
-      let interval = 1;
-
-      if (rrule) {
-        const freqMatch = rrule.match(/FREQ=([^;]+)/);
-        const intervalMatch = rrule.match(/INTERVAL=(\d+)/);
-        if (freqMatch && freqMatch[1]) freq = freqMatch[1];
-        if (intervalMatch && intervalMatch[1]) interval = parseInt(intervalMatch[1], 10);
-      }
-
-      if (interval <= 0) interval = 1;
-
-      switch (freq.toUpperCase()) {
-        case "DAILY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "day");
-          break;
-        case "WEEKLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "week");
-          break;
-        case "MONTHLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "month");
-          break;
-        case "YEARLY":
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(interval, "year");
-          break;
-        default:
-          newNextOccurrenceDate = currentNextOccurrenceDate.add(1, "month");
-          console.warn(`Unsupported frequency: ${freq}. Defaulting to monthly.`);
-      }
-
-      // 4. Update the recurring
-      const recurringUpdateData: UpdateRecurringDto = {
-        lastexecutedat: currentNextOccurrenceDate.toISOString(),
-        nextoccurrencedate: newNextOccurrenceDate.format("YYYY-MM-DD"),
-        updatedby: userId,
-        updatedat: dayjs().toISOString(),
-      };
-
-      if (recurring.enddate && newNextOccurrenceDate.isAfter(dayjs(recurring.enddate))) {
-        (recurringUpdateData as any).isactive = false;
-      }
-
-      await updateRecurring(recurring.id, recurringUpdateData, tenantId);
-
-      return { newTransaction, updatedRecurring: recurringUpdateData };
-    },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.item.id, tenantId] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-      await queryClient.invalidateQueries({ queryKey: ["transactionsview"] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-    },
-    onError: error => {
-      console.error("Error executing recurring action:", error);
-      throw error;
-    },
-  });
+export const useUpdateRecurring = () => {
+  const service = useRecurringService();
+  return service.update();
 };

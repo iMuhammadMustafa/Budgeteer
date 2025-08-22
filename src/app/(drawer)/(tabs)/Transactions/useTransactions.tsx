@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { BackHandler, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -10,13 +10,9 @@ import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@/src/utils/transactions.helper";
 
-import {
-  useCreateTransaction,
-  useDeleteTransaction,
-  useGetTransactionsInfinite,
-} from "@/src/services//Transactions.Service";
-import { useGetAccounts } from "@/src/services//Accounts.Service";
-import { useGetTransactionCategories } from "@/src/services//TransactionCategories.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
+import { useTransactionCategoryService } from "@/src/services//TransactionCategories.Service";
+import { useAccountService } from "@/src/services/Accounts.Service";
 
 export default function useTransactions() {
   const router = useRouter();
@@ -24,15 +20,18 @@ export default function useTransactions() {
 
   const params = useLocalSearchParams() as TransactionFilters;
 
+  const transactionService = useTransactionService();
   // const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
-    useGetTransactionsInfinite(params);
+    transactionService.findAllInfinite(params);
   const transactions = data?.pages.flatMap(page => page);
 
-  const { data: accounts } = useGetAccounts();
-  const { data: categories } = useGetTransactionCategories();
-  const addMutation = useCreateTransaction();
-  const deleteMutation = useDeleteTransaction();
+  const transactionCategoriesService = useTransactionCategoryService();
+  const accountsService = useAccountService();
+  const { data: accounts } = accountsService.findAll();
+  const { data: categories } = transactionCategoriesService.findAll();
+  const addMutation = transactionService.create();
+  const deleteMutation = transactionService.delete();
 
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
@@ -83,11 +82,17 @@ export default function useTransactions() {
   const deleteSelection = async () => {
     setIsActionLoading(true);
     for (let item of selectedTransactions) {
-      await deleteMutation.mutateAsync(item.id!, {
-        onSuccess: () => {
-          console.log({ message: "Transaction Deleted Successfully", type: "success" });
+      await deleteMutation.mutateAsync(
+        {
+          id: item.id!,
+          item,
         },
-      });
+        {
+          onSuccess: () => {
+            console.log({ message: "Transaction Deleted Successfully", type: "success" });
+          },
+        },
+      );
     }
     setIsActionLoading(false);
     clearSelection();

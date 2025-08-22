@@ -104,21 +104,21 @@ function ThemeToggler({ toggleTheme, isDarkMode }: { toggleTheme: () => void; is
 import { useEffect } from "react";
 
 function DrawerContent(props: any) {
-  const { isDemo } = useDemoMode();
+  // const { isDemo } = useDemoMode();
 
-  useEffect(() => {
-    if (isDemo) {
-      initializeMockDataInLocalStorage();
-    }
-  }, [isDemo]);
+  // useEffect(() => {
+  //   if (isDemo) {
+  //     initializeMockDataInLocalStorage();
+  //   }
+  // }, [isDemo]);
 
   return (
     <DrawerContentScrollView {...props} className="flex-1">
-      {isDemo && (
+      {/* {isDemo && (
         <View className="bg-yellow-300 p-2 mb-2 rounded-md items-center">
           <Text className="text-black font-bold">Demo Mode</Text>
         </View>
-      )}
+      )} */}
       <DrawerItemList {...props} />
       <Footer />
     </DrawerContentScrollView>
@@ -126,12 +126,12 @@ function DrawerContent(props: any) {
 }
 const Footer = () => {
   const { currentlyRunning, isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
-  const { setDemo, isDemo } = useDemoMode();
+  // const { setDemo, isDemo } = useDemoMode();
 
   const handleLogout = () => {
-    setDemo(false);
+    // setDemo(false);
+    router.navigate("/(auth)/Logout");
     supabase.auth.signOut();
-    router.navigate("/(auth)/Login");
   };
 
   const handleResetDemoData = () => {
@@ -161,11 +161,11 @@ const Footer = () => {
         )}
       </View>
 
-      {isDemo && (
+      {/* {isDemo && (
         <Pressable onPress={handleResetDemoData} className="bg-yellow-200 p-2 rounded-md mt-2 mb-2">
           <Text className="text-black text-center font-bold">Reset Demo Data</Text>
         </Pressable>
-      )}
+      )} */}
 
       <Pressable onPress={handleLogout} className="bg-danger-100 p-2 rounded-md mt-2">
         <Text className="text-foreground text-center">Logout</Text>

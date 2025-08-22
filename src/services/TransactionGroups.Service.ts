@@ -2,161 +2,165 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createTransactionGroup,
-  deleteTransactionGroup,
-  getTransactionGroupById,
-  getAllTransactionGroups,
-  restoreTransactionGroup,
-  updateTransactionGroup,
-} from "@/src/repositories/TransactionGroups.repository";
+import { createTransactionGroup, ITransactionGroupRepository, updateTransactionGroup } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { Session } from "@supabase/supabase-js";
+import { IService } from "./IService";
 
-export const useGetTransactionGroups = () => {
+export interface ITransactionGroupService
+  extends IService<TransactionGroup, Inserts<TableNames.TransactionGroups>, Updates<TableNames.TransactionGroups>> {}
+
+export function useTransactionGroupService(): ITransactionGroupService {
   const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
   const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionGroup[]>({
-    queryKey: [TableNames.TransactionGroups, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllTransactionGroups(tenantId);
-    },
-    enabled: !!tenantId,
-  });
-};
+  if (!tenantId) throw new Error("Tenant ID not found in session");
+  const userId = session?.user?.id;
+  const { dbContext } = useStorageMode();
+  const transactionGroupRepo = dbContext.TransactionGroupRepository();
 
-export const useGetTransactionGroupById = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<TransactionGroup>({
-    queryKey: [TableNames.TransactionGroups, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getTransactionGroupById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
+  // Repository-based Transaction Group hooks
+  const findAll = () => {
+    return useQuery<TransactionGroup[]>({
+      queryKey: [TableNames.TransactionGroups, tenantId, "repo"],
+      queryFn: async () => {
+        return transactionGroupRepo.findAll({}, tenantId);
+      },
+      enabled: !!tenantId,
+    });
+  };
 
-export const useCreateTransactionGroup = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  return useMutation({
-    mutationFn: async (accountGroup: Inserts<TableNames.TransactionGroups>) => {
-      return await createTransactionGroupHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
-export const useUpdateTransactionGroup = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const findById = (id?: string) => {
+    return useQuery<TransactionGroup | null>({
+      queryKey: [TableNames.TransactionGroups, id, tenantId, "repo"],
+      queryFn: async () => {
+        if (!id) throw new Error("ID is required");
 
-  return useMutation({
-    mutationFn: async ({
-      accountGroup,
-      originalData,
-    }: {
-      accountGroup: Updates<TableNames.TransactionGroups>;
-      originalData: TransactionGroup;
-    }) => {
-      return await updateTransactionGroupHelper(accountGroup, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
+        return transactionGroupRepo.findById(id, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
 
-export const useUpsertTransactionGroup = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const create = () => {
+    return useMutation({
+      mutationFn: async (form: Inserts<TableNames.TransactionGroups>) => {
+        return await createRepoHelper(form, session, transactionGroupRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+      },
+    });
+  };
 
-  return useMutation({
-    mutationFn: async ({
-      formData,
-      originalData,
-    }: {
-      formData: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
-      originalData?: TransactionGroup;
-    }) => {
-      if (formData.id && originalData) {
-        return await updateTransactionGroupHelper(formData, session);
-      }
-      return await createTransactionGroupHelper(formData as Inserts<TableNames.TransactionGroups>, session);
-    },
-    onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-      await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    },
-    onError: (error, variables, context) => {
-      throw new Error(JSON.stringify(error));
-    },
-  });
-};
+  const update = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Updates<TableNames.TransactionGroups>;
+        original?: TransactionGroup;
+      }) => {
+        return await updateRepoHelper(form, session, transactionGroupRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+      },
+    });
+  };
 
-export const useDeleteTransactionGroup = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const upsert = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
+        original?: TransactionGroup;
+      }) => {
+        if (form.id && original) {
+          return await updateRepoHelper(form, session, transactionGroupRepo);
+        }
+        return await createRepoHelper(form as Inserts<TableNames.TransactionGroups>, session, transactionGroupRepo);
+      },
+      onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+      },
+      onError: (error, variables, context) => {
+        throw new Error(JSON.stringify(error));
+      },
+    });
+  };
 
-  const userId = session.user.id;
+  const softDelete = () => {
+    return useMutation({
+      mutationFn: async ({ id }: { id: string }) => {
+        return await transactionGroupRepo.softDelete(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+      },
+    });
+  };
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await deleteTransactionGroup(id, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    },
-  });
-};
+  const restore = () => {
+    return useMutation({
+      mutationFn: async (id: string) => {
+        return await transactionGroupRepo.restore(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
+      },
+    });
+  };
+  return {
+    // Repository-based methods (new) - using simple method names
+    findAll,
+    findById,
+    create,
+    update,
+    softDelete,
+    delete: softDelete,
+    restore,
+    upsert,
 
-export const useRestoreTransactionGroup = (id?: string) => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  const userId = session.user.id;
+    // Direct repository access
+    repo: transactionGroupRepo,
+  };
+}
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await restoreTransactionGroup(id, userId);
-    },
-    onSuccess: async id => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] })]);
-    },
-  });
-};
-
-const createTransactionGroupHelper = async (
-  formTransactionGroup: Inserts<TableNames.TransactionGroups>,
+// Repository-based helper functions
+const createRepoHelper = async (
+  formData: Inserts<TableNames.TransactionGroups>,
   session: Session,
+  repository: ITransactionGroupRepository,
 ) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
 
-  formTransactionGroup.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
-  formTransactionGroup.createdby = userId;
-  formTransactionGroup.tenantid = tenantid;
+  formData.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+  formData.createdby = userId;
+  formData.tenantid = tenantid;
 
-  const newTransactionGroup = await createTransactionGroup(formTransactionGroup);
-
-  return newTransactionGroup;
+  const newEntity = await repository.create(formData, tenantid);
+  return newEntity;
 };
 
-const updateTransactionGroupHelper = async (
-  formTransactionGroup: Updates<TableNames.TransactionGroups>,
+const updateRepoHelper = async (
+  formData: Updates<TableNames.TransactionGroups>,
   session: Session,
+  repository: ITransactionGroupRepository,
 ) => {
   let userId = session.user.id;
 
-  formTransactionGroup.updatedby = userId;
-  formTransactionGroup.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+  formData.updatedby = userId;
+  formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedTransactionGroup = await updateTransactionGroup(formTransactionGroup);
-
-  return updatedTransactionGroup;
+  if (!formData.id) throw new Error("ID is required for update");
+  const updatedEntity = await repository.update(formData.id, formData);
+  return updatedEntity;
 };

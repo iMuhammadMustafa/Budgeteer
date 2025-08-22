@@ -1,13 +1,18 @@
 import { TransactionType } from "../db/Tables.Types";
 
-export type TransactionFilters = {
+export interface QueryFilters {
+  startDate?: string;
+  endDate?: string;
+
+  startIndex?: number;
+  endIndex?: number;
+}
+
+export interface TransactionFilters extends QueryFilters {
   name?: string;
   description?: string;
 
   amount?: number;
-
-  startDate?: string;
-  endDate?: string;
 
   accountid?: string;
   categoryid?: string;
@@ -15,10 +20,7 @@ export type TransactionFilters = {
   type?: TransactionType;
   isVoid?: string;
   tags?: string[];
-
-  startIndex?: number;
-  endIndex?: number;
-};
+}
 
 export const initalTransactionSearchParams: TransactionFilters = {
   startIndex: 0,

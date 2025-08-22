@@ -1,6 +1,7 @@
 // Mock implementation for Recurrings API
 
-import { CreateRecurringDto, UpdateRecurringDto } from "../supabase/Recurrings.api.supa";
+import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/db/TableNames";
 import { recurrings, accounts, transactionCategories } from "./mockDataStore";
 
 export const listRecurrings = async (params: { tenantId: string; filters?: any }) => {
@@ -23,7 +24,7 @@ export const getRecurringById = async (id: string, tenantId: string) => {
   };
 };
 
-export const createRecurring = async (recurringData: CreateRecurringDto, tenantId: string) => {
+export const createRecurring = async (recurringData: Inserts<TableNames.Recurrings>, tenantId: string) => {
   const newRecurring = {
     ...recurringData,
     id: `rec-${Date.now()}`,
@@ -37,7 +38,7 @@ export const createRecurring = async (recurringData: CreateRecurringDto, tenantI
   return newRecurring;
 };
 
-export const updateRecurring = async (id: string, recurringData: UpdateRecurringDto, tenantId: string) => {
+export const updateRecurring = async (id: string, recurringData: Updates<TableNames.Recurrings>, tenantId: string) => {
   const idx = recurrings.findIndex(rec => rec.id === id && (rec.tenantid === tenantId || tenantId === "demo"));
   if (idx === -1) throw new Error("Recurring not found");
   recurrings[idx] = {

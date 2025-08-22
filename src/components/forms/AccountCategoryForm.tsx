@@ -4,11 +4,11 @@ import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertAccountCategory } from "@/src/services//AccountCategories.Service";
 import TextInputField from "../TextInputField";
 import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import Button from "../Button";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 export const initialState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
@@ -26,8 +26,9 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
   useEffect(() => {
     setFormData(category);
   }, [category]);
+  const accountCategoryService = useAccountCategoryService();
 
-  const { mutate } = useUpsertAccountCategory();
+  const { mutate } = accountCategoryService.upsert();
 
   const handleTextChange = (name: keyof AccountCategoryFormType, text: string) => {
     setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
@@ -37,8 +38,8 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
   const handleSubmit = () => {
     mutate(
       {
-        formData,
-        originalData: category as AccountCategory,
+        form: formData,
+        original: category as AccountCategory,
       },
       {
         onSuccess: () => {
@@ -65,7 +66,7 @@ export default function AccountCategoryForm({ category }: { category: AccountCat
           onSelect={value => handleTextChange("type", value?.value)}
         />
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between -z-10`}>
           <View className="flex-1">
             <IconPicker
               onSelect={(icon: any) => handleTextChange("icon", icon)}

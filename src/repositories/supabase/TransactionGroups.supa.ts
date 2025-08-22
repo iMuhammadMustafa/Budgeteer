@@ -1,72 +1,91 @@
 import { TableNames } from "@/src/types/db/TableNames";
 import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TransactionGroup, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { ITransactionGroupRepository } from "../interfaces/ITransactionGroupRepository";
 
-export const getAllTransactionGroups = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .order("displayorder", { ascending: false })
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data;
-};
+export class TransactionGroupSupaRepository implements ITransactionGroupRepository {
+  async findAll(filters?: any, tenantId?: string): Promise<TransactionGroup[]> {
+    if (!tenantId) throw new Error("Tenant ID is required");
 
-export const getTransactionGroupById = async (id: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
+    const { data, error } = await supabase
+      .from(TableNames.TransactionGroups)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .order("displayorder", { ascending: false })
+      .order("name");
+    if (error) throw new Error(error.message);
+    return data;
+  }
 
-export const createTransactionGroup = async (transactionGroup: Inserts<TableNames.TransactionGroups>) => {
-  const { data, error } = await supabase.from(TableNames.TransactionGroups).insert(transactionGroup).select().single();
+  async findById(id: string, tenantId?: string): Promise<TransactionGroup | null> {
+    if (!tenantId) throw new Error("Tenant ID is required");
 
-  if (error) throw error;
-  return data;
-};
+    const { data, error } = await supabase
+      .from(TableNames.TransactionGroups)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", false)
+      .eq("id", id)
+      .single();
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw new Error(error.message);
+    }
+    return data;
+  }
 
-export const updateTransactionGroup = async (transactionGroup: Updates<TableNames.TransactionGroups>) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({ ...transactionGroup })
-    .eq("id", transactionGroup.id!)
-    .select()
-    .single();
+  async create(data: Inserts<TableNames.TransactionGroups>, tenantId?: string): Promise<TransactionGroup> {
+    const { data: result, error } = await supabase.from(TableNames.TransactionGroups).insert(data).select().single();
 
-  if (error) throw error;
-  return data;
-};
+    if (error) throw error;
+    return result;
+  }
 
-export const deleteTransactionGroup = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({
-      isdeleted: true,
-      updatedby: userId,
-      updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const restoreTransactionGroup = async (id: string, userId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.TransactionGroups)
-    .update({ isdeleted: false, updatedby: userId, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
+  async update(
+    id: string,
+    data: Updates<TableNames.TransactionGroups>,
+    tenantId?: string,
+  ): Promise<TransactionGroup | null> {
+    const { data: result, error } = await supabase
+      .from(TableNames.TransactionGroups)
+      .update({ ...data })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null; // No rows found
+      throw error;
+    }
+    return result;
+  }
+
+  async delete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase.from(TableNames.TransactionGroups).delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async softDelete(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.TransactionGroups)
+      .update({
+        isdeleted: true,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+
+  async restore(id: string, tenantId?: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.TransactionGroups)
+      .update({
+        isdeleted: false,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("id", id);
+    if (error) throw error;
+  }
+}

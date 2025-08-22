@@ -2,140 +2,151 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import {
-  createAccountCategory,
-  deleteAccountCategory,
-  getAccountCategoryById,
-  getAllAccountCategories,
-  restoreAccountCategory,
-  updateAccountCategory,
-} from "@/src/repositories/AccountCategories.repository";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { Session } from "@supabase/supabase-js";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { IService } from "./IService";
 
-export const useGetAccountCategories = () => {
+export interface IAccountCategoryService
+  extends IService<AccountCategory, Inserts<TableNames.AccountCategories>, Updates<TableNames.AccountCategories>> {}
+
+export function useAccountCategoryService(): IAccountCategoryService {
   const { session } = useAuth();
+  if (!session) throw new Error("Session not found");
+
   const tenantId = session?.user?.user_metadata?.tenantid;
+  if (!tenantId) throw new Error("Tenant ID not found in session");
 
-  return useQuery<AccountCategory[]>({
-    queryKey: [TableNames.AccountCategories, tenantId],
-    queryFn: async () => {
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAllAccountCategories(tenantId);
-    },
-    enabled: !!tenantId,
-    // refetchOnMount: true,
-    // refetchOnWindowFocus: true,
-  });
-};
+  const { dbContext } = useStorageMode();
+  const accountCategoryRepo = dbContext.AccountCategoryRepository();
 
-export const useGetAccountCategoryById = (id?: string) => {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
-  return useQuery<AccountCategory | null>({
-    queryKey: [TableNames.AccountCategories, id, tenantId],
-    queryFn: async () => {
-      if (!id) throw new Error("ID is required");
-      if (!tenantId) throw new Error("Tenant ID not found in session");
-      return getAccountCategoryById(id, tenantId);
-    },
-    enabled: !!id && !!tenantId,
-  });
-};
+  const findAll = () => {
+    return useQuery<AccountCategory[]>({
+      queryKey: [TableNames.AccountCategories, tenantId, "repo"],
+      queryFn: async () => {
+        return accountCategoryRepo.findAll({}, tenantId);
+      },
+      enabled: !!tenantId,
+    });
+  };
 
-export const useCreateAccountCategory = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  return useMutation({
-    mutationFn: async (accountCategory: Inserts<TableNames.AccountCategories>) => {
-      return await createAccountCategoryHelper(accountCategory, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-    },
-  });
-};
-export const useUpdateAccountCategory = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const findById = (id?: string) => {
+    return useQuery<AccountCategory | null>({
+      queryKey: [TableNames.AccountCategories, id, tenantId, "repo"],
+      queryFn: async () => {
+        if (!id) throw new Error("ID is required");
+        return accountCategoryRepo.findById(id, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
 
-  return useMutation({
-    mutationFn: async ({
-      accountCategory,
-      originalData,
-    }: {
-      accountCategory: Updates<TableNames.AccountCategories>;
-      originalData: AccountCategory;
-    }) => {
-      return await updateAccountCategoryHelper(accountCategory, session);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-    },
-  });
-};
+  const create = () => {
+    return useMutation({
+      mutationFn: async (accountCategory: Inserts<TableNames.AccountCategories>) => {
+        return await createAccountCategoryRepoHelper(accountCategory, session, accountCategoryRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+    });
+  };
 
-export const useUpsertAccountCategory = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const update = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Updates<TableNames.AccountCategories>;
+        original?: AccountCategory;
+      }) => {
+        return await updateAccountCategoryRepoHelper(form, session, accountCategoryRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+    });
+  };
 
-  return useMutation({
-    mutationFn: async ({
-      formData,
-      originalData,
-    }: {
-      formData: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
-      originalData?: AccountCategory;
-    }) => {
-      if (formData.id && originalData) {
-        return await updateAccountCategoryHelper(formData, session);
-      }
-      return await createAccountCategoryHelper(formData as Inserts<TableNames.AccountCategories>, session);
-    },
-    onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-    },
-    onError: (error, variables, context) => {
-      throw new Error(JSON.stringify(error));
-    },
-  });
-};
+  const upsert = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
+        original?: AccountCategory;
+      }) => {
+        if (form.id && original) {
+          return await updateAccountCategoryRepoHelper(form, session, accountCategoryRepo);
+        }
+        return await createAccountCategoryRepoHelper(
+          form as Inserts<TableNames.AccountCategories>,
+          session,
+          accountCategoryRepo,
+        );
+      },
+      onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+      onError: (error, variables, context) => {
+        throw new Error(JSON.stringify(error));
+      },
+    });
+  };
 
-export const useDeleteAccountCategory = () => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
+  const deleteObj = () => {
+    return useMutation({
+      mutationFn: async ({ id }: { id: string }) => {
+        return await accountCategoryRepo.delete(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+    });
+  };
 
-  const userId = session.user.id;
+  const softDelete = () => {
+    return useMutation({
+      mutationFn: async ({ id }: { id: string }) => {
+        return await accountCategoryRepo.softDelete(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+    });
+  };
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await deleteAccountCategory(id, userId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-    },
-  });
-};
+  const restore = () => {
+    return useMutation({
+      mutationFn: async (id: string) => {
+        return await accountCategoryRepo.restore(id, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
+      },
+    });
+  };
 
-export const useRestoreAccountCategory = (id?: string) => {
-  const { session } = useAuth();
-  if (!session) throw new Error("Session not found");
-  const userId = session.user.id;
+  return {
+    findAll,
+    findById,
+    create,
+    update,
+    upsert,
+    delete: deleteObj,
+    softDelete,
+    restore,
+    repo: accountCategoryRepo,
+  };
+}
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return await restoreAccountCategory(id, userId);
-    },
-    onSuccess: async id => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] })]);
-    },
-  });
-};
-
-const createAccountCategoryHelper = async (
+const createAccountCategoryRepoHelper = async (
   formAccountCategory: Inserts<TableNames.AccountCategories>,
   session: Session,
+  repository: any,
 ) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
@@ -144,21 +155,25 @@ const createAccountCategoryHelper = async (
   formAccountCategory.createdby = userId;
   formAccountCategory.tenantid = tenantid;
 
-  const newAccountCategory = await createAccountCategory(formAccountCategory);
+  const newAccountCategory = await repository.create(formAccountCategory, tenantid);
 
   return newAccountCategory;
 };
 
-const updateAccountCategoryHelper = async (
+const updateAccountCategoryRepoHelper = async (
   formAccountCategory: Updates<TableNames.AccountCategories>,
   session: Session,
+  repository: any,
 ) => {
   let userId = session.user.id;
+  let tenantid = session.user.user_metadata.tenantid;
 
   formAccountCategory.updatedby = userId;
   formAccountCategory.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
 
-  const updatedAccountCategory = await updateAccountCategory(formAccountCategory);
+  if (!formAccountCategory.id) throw new Error("ID is required for update");
+
+  const updatedAccountCategory = await repository.update(formAccountCategory.id, formAccountCategory, tenantid);
 
   return updatedAccountCategory;
 };

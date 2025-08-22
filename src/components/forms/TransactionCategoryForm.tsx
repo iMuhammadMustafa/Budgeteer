@@ -3,12 +3,12 @@ import { Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react
 import { router } from "expo-router";
 import { Inserts, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { useUpsertTransactionCategory } from "@/src/services//TransactionCategories.Service";
-import { useGetTransactionGroups } from "@/src/services//TransactionGroups.Service";
 import DropdownField, { ColorsPickerDropdown, MyTransactionTypesDropdown } from "../DropDownField";
 import TextInputField from "../TextInputField";
 import IconPicker from "../IconPicker";
 import Button from "../Button";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 
 export type TransactionCategoryFormType =
   | Inserts<TableNames.TransactionCategories>
@@ -30,14 +30,16 @@ export const initialState: TransactionCategoryFormType = {
 export default function CategoryForm({ category }: { category: TransactionCategoryFormType }) {
   const [formData, setFormData] = useState<TransactionCategoryFormType>(category);
   const [isLoading] = useState(false);
+  const transactionCategoryService = useTransactionCategoryService();
+  const transactionGroupService = useTransactionGroupService();
 
   useEffect(() => {
     setFormData(category);
   }, [category]);
 
-  const { mutate } = useUpsertTransactionCategory();
+  const { mutate } = transactionCategoryService.upsert();
 
-  const { data: categoryGroups, isLoading: iscategoryGroupLoading } = useGetTransactionGroups();
+  const { data: categoryGroups, isLoading: iscategoryGroupLoading } = transactionGroupService.findAll();
 
   const isValid =
     !isLoading && !!formData.name && formData.name.length > 0 && !!formData.groupid && formData.groupid.length > 0;
@@ -53,8 +55,8 @@ export default function CategoryForm({ category }: { category: TransactionCatego
   const handleSubmit = () => {
     mutate(
       {
-        formData,
-        originalData: category as TransactionCategory,
+        form: formData,
+        original: category as TransactionCategory,
       },
       {
         onSuccess: () => {
