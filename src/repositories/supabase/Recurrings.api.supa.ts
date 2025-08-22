@@ -119,29 +119,3 @@ export class RecurringSupaRepository implements IRecurringRepository {
     if (error) throw error;
   }
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const listRecurrings = async (params: { tenantId: string; filters?: any }): Promise<Recurring[]> => {
-  const repository = new RecurringSupaRepository();
-  return repository.findAll(params.filters, params.tenantId);
-};
-
-export const getRecurringById = async (id: string, tenantId: string): Promise<Recurring | null> => {
-  const repository = new RecurringSupaRepository();
-  return repository.findById(id, tenantId);
-};
-
-export const createRecurring = async (recurringData: Inserts<TableNames.Recurrings>, tenantId: string) => {
-  const repository = new RecurringSupaRepository();
-  return repository.create(recurringData, tenantId);
-};
-
-export const updateRecurring = async (id: string, recurringData: Updates<TableNames.Recurrings>, tenantId: string) => {
-  const repository = new RecurringSupaRepository();
-  return repository.update(id, recurringData, tenantId);
-};
-
-export const deleteRecurring = async (id: string, tenantId: string, userId?: string) => {
-  const repository = new RecurringSupaRepository();
-  return repository.softDelete(id, tenantId);
-};

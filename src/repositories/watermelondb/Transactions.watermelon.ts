@@ -1,5 +1,5 @@
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
-import { Transaction } from "../../database/models";
+import { Transaction, Account, TransactionCategory, TransactionGroup } from "../../database/models";
 import {
   Transaction as TransactionType,
   TransactionsView,
@@ -103,7 +103,7 @@ export class TransactionWatermelonRepository
       // Fetch and sort transactions by account/date/createdat/updatedat/type/id
       const query = db.get(this.tableName).query(...conditions);
       const results = await query;
-      const transactions = results as Transaction[];
+      const transactions: Transaction[] = results as Transaction[];
 
       // Group transactions by accountid for running balance calculation
       const transactionsByAccount: Record<string, Transaction[]> = {};
@@ -116,22 +116,30 @@ export class TransactionWatermelonRepository
       const runningBalances: Record<string, Record<string, number>> = {}; // accountid -> txid -> runningbalance
       for (const [accountid, txs] of Object.entries(transactionsByAccount)) {
         // Sort as in SQL: date, createdat, updatedat, type, id
-        txs.sort((a, b) => {
-          const da = new Date(a.date).getTime(),
-            dbt = new Date(b.date).getTime();
-          if (da !== dbt) return da - dbt;
-          const ca = new Date(a.createdat).getTime(),
-            cb = new Date(b.createdat).getTime();
-          if (ca !== cb) return ca - cb;
-          const ua = new Date(a.updatedat).getTime(),
-            ub = new Date(b.updatedat).getTime();
-          if (ua !== ub) return ua - ub;
-          if (a.type !== b.type) return (a.type || "").localeCompare(b.type || "");
+        const txArr: Transaction[] = txs as Transaction[];
+        txArr.sort((a, b) => {
+          const da = new Date(a.date).getTime() - new Date(b.date).getTime();
+          if (da !== 0) return da;
+          const ca = new Date(a.createdat).getTime() - new Date(b.createdat).getTime();
+          if (ca !== 0) return ca;
+          const ua = new Date(a.updatedat).getTime() - new Date(b.updatedat).getTime();
+          if (ua !== 0) return ua;
+          if ((a.type || "") !== (b.type || "")) return (a.type || "").localeCompare(b.type || "");
           return (a.id || "").localeCompare(b.id || "");
         });
+        // txArr.sort((a: any, b: any) => {
+        //   const da = new Date(b.date).getTime() - new Date(a.date).getTime();
+        //   if (da !== 0) return da;
+        //   const ca = new Date(b.createdat).getTime() - new Date(a.createdat).getTime();
+        //   if (ca !== 0) return ca;
+        //   const ua = new Date(b.updatedat).getTime() - new Date(a.updatedat).getTime();
+        //   if (ua !== 0) return ua;
+        //   if ((a.type || "") !== (b.type || "")) return (b.type || "").localeCompare(a.type || "");
+        //   return (b.id || "").localeCompare(a.id || "");
+        // });
         let running = 0;
         runningBalances[accountid] = {};
-        for (const tx of txs) {
+        for (const tx of txArr) {
           // Only count if not void and not deleted
           if (!tx.isvoid && !tx.isdeleted) {
             running += tx.amount;
@@ -141,11 +149,13 @@ export class TransactionWatermelonRepository
       }
 
       // Build TransactionsView array
-      return transactions.map(transaction => {
+      // Map to TransactionsView, then sort DESC for display
+      const views = transactions.map(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
-        const account = accountMap.get(mapped.accountid);
-        const category = categoryMap.get(mapped.categoryid);
-        const group = category ? groupMap.get(category.groupid) : null;
+        const account = accountMap.get(mapped.accountid) as Account | undefined;
+        const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
+        const group =
+          category && category.groupid ? (groupMap.get(category.groupid) as TransactionGroup | undefined) : null;
 
         return {
           accountid: mapped.accountid,
@@ -173,6 +183,18 @@ export class TransactionWatermelonRepository
           updatedat: mapped.updatedat,
         } as TransactionsView;
       });
+      // Sort DESC by date, createdat, updatedat, type, id
+      views.sort((a, b) => {
+        const da = new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime();
+        if (da !== 0) return da;
+        const ca = new Date(b.createdat ?? "").getTime() - new Date(a.createdat ?? "").getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(b.updatedat ?? "").getTime() - new Date(a.updatedat ?? "").getTime();
+        if (ua !== 0) return ua;
+        if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
+        return (b.id || "").localeCompare(a.id || "");
+      });
+      return views;
     } catch (error) {
       throw new Error(`Failed to find records: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
@@ -193,26 +215,68 @@ export class TransactionWatermelonRepository
         throw new Error(`Transaction with transfer ID ${id} not found`);
       }
 
+      // Fetch related data
       const mapped = this.mapFromWatermelon(model);
+      const [account, category] = await Promise.all([
+        db.get("accounts").find(mapped.accountid),
+        mapped.categoryid ? db.get("transactioncategories").find(mapped.categoryid) : null,
+      ]);
+      const catTyped = category as any;
+      const group = catTyped && catTyped.groupid ? await db.get("transactiongroups").find(catTyped.groupid) : null;
+
+      // Calculate running balance for this transaction
+      const txs = await db
+        .get(this.tableName)
+        .query(
+          Q.where("accountid", mapped.accountid),
+          Q.where("tenantid", tenantId),
+          Q.where("isdeleted", false),
+          Q.where("isvoid", false),
+        );
+      // Sort as in findAll
+      txs.sort((a: any, b: any) => {
+        const da = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (da !== 0) return da;
+
+        const ca = new Date(b.createdat).getTime() - new Date(a.createdat).getTime();
+        if (ca !== 0) return ca;
+
+        const ua = new Date(b.updatedat).getTime() - new Date(a.updatedat).getTime();
+        if (ua !== 0) return ua;
+
+        if ((a.type || "") !== (b.type || "")) return (b.type || "").localeCompare(a.type || "");
+
+        return (b.id || "").localeCompare(a.id || "");
+      });
+      let running = 0;
+      let runningbalance = null;
+      for (const tx of txs) {
+        running += (tx as Transaction).amount;
+        if (tx.id === mapped.id) {
+          runningbalance = running;
+          break;
+        }
+      }
+
       return {
         accountid: mapped.accountid,
-        accountname: null, // TODO: Join with accounts table
+        accountname: account ? (account as any).name : null,
         amount: mapped.amount,
-        balance: null, // TODO: Calculate running balance
+        balance: account ? (account as any).balance : null,
         categoryid: mapped.categoryid,
-        categoryname: null, // TODO: Join with categories table
+        categoryname: category ? (category as any).name : null,
         createdat: mapped.createdat,
-        currency: null, // TODO: Join with accounts table
+        currency: account ? (account as any).currency : null,
         date: mapped.date,
-        groupicon: null, // TODO: Join with groups table
-        groupid: null, // TODO: Join through categories table
-        groupname: null, // TODO: Join with groups table
-        icon: null, // TODO: Join with categories table
+        groupicon: group ? (group as any).icon : null,
+        groupid: group ? (group as any).id : null,
+        groupname: group ? (group as any).name : null,
+        icon: category ? (category as any).icon : null,
         id: mapped.id,
         isvoid: mapped.isvoid,
         name: mapped.name,
         payee: mapped.payee,
-        runningbalance: null, // TODO: Calculate running balance
+        runningbalance,
         tenantid: mapped.tenantid,
         transferaccountid: mapped.transferaccountid,
         transferid: mapped.transferid,
@@ -347,40 +411,94 @@ export class TransactionWatermelonRepository
       const db = await this.getDb();
       let conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
+      let categoryIds: string[] = [];
       if (type === "category") {
-        conditions.push(Q.where("categoryid", categoryId));
+        categoryIds = [categoryId];
       } else {
-        // For group type, we need to find all categories in the group first
-        // This is complex and would require proper relations
-        // For now, just return empty array
-        // TODO: Implement proper group filtering
-        return [];
+        // For group type, find all categories in the group
+        const categories = await db
+          .get("transactioncategories")
+          .query(Q.where("groupid", categoryId), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+        categoryIds = categories.map((cat: any) => cat.id);
+        if (categoryIds.length === 0) return [];
       }
+
+      conditions.push(Q.where("categoryid", Q.oneOf(categoryIds)));
 
       const query = db.get(this.tableName).query(...conditions);
       const results = await query;
 
-      return (results as Transaction[]).map(transaction => {
+      // Build lookup maps for related data
+      const [accounts, categories, groups] = await Promise.all([
+        db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactioncategories").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactiongroups").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+      ]);
+      const accountMap = new Map();
+      for (const acc of accounts) accountMap.set(acc.id, acc);
+      const categoryMap = new Map();
+      for (const cat of categories) categoryMap.set(cat.id, cat);
+      const groupMap = new Map();
+      for (const grp of groups) groupMap.set(grp.id, grp);
+
+      // Calculate running balances for each transaction
+      const transactions = results as Transaction[];
+      const transactionsByAccount: Record<string, Transaction[]> = {};
+      for (const tx of transactions) {
+        if (!transactionsByAccount[tx.accountid]) transactionsByAccount[tx.accountid] = [];
+        transactionsByAccount[tx.accountid].push(tx);
+      }
+      const runningBalances: Record<string, Record<string, number>> = {};
+      for (const [accountid, txs] of Object.entries(transactionsByAccount)) {
+        // Sort as in findAll
+        const txArr: Transaction[] = txs as Transaction[];
+        txArr.sort((a, b) => {
+          const da = new Date(a.date).getTime() - new Date(b.date).getTime();
+          if (da !== 0) return da;
+          const ca = new Date(a.createdat).getTime() - new Date(b.createdat).getTime();
+          if (ca !== 0) return ca;
+          const ua = new Date(a.updatedat).getTime() - new Date(b.updatedat).getTime();
+          if (ua !== 0) return ua;
+          if ((a.type || "") !== (b.type || "")) return (a.type || "").localeCompare(b.type || "");
+          return (a.id || "").localeCompare(b.id || "");
+        });
+        let running = 0;
+        runningBalances[accountid] = {};
+        for (const tx of txArr) {
+          if (!tx.isvoid && !tx.isdeleted) {
+            running += tx.amount;
+          }
+          runningBalances[accountid][tx.id] = running;
+        }
+      }
+
+      // Map to TransactionsView, then sort DESC for display
+      const views = transactions.map(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
+        const account = accountMap.get(mapped.accountid) as Account | undefined;
+        const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
+        const group =
+          category && category.groupid ? (groupMap.get(category.groupid) as TransactionGroup | undefined) : null;
+
         return {
           accountid: mapped.accountid,
-          accountname: null, // TODO: Join with accounts table
+          accountname: account ? account.name : null,
           amount: mapped.amount,
-          balance: null, // TODO: Calculate running balance
+          balance: account ? account.balance : null,
           categoryid: mapped.categoryid,
-          categoryname: null, // TODO: Join with categories table
+          categoryname: category ? category.name : null,
           createdat: mapped.createdat,
-          currency: null, // TODO: Join with accounts table
+          currency: account ? account.currency : null,
           date: mapped.date,
-          groupicon: null, // TODO: Join with groups table
-          groupid: null, // TODO: Join through categories table
-          groupname: null, // TODO: Join with groups table
-          icon: null, // TODO: Join with categories table
+          groupicon: group ? group.icon : null,
+          groupid: group ? group.id : null,
+          groupname: group ? group.name : null,
+          icon: category ? category.icon : null,
           id: mapped.id,
           isvoid: mapped.isvoid,
           name: mapped.name,
           payee: mapped.payee,
-          runningbalance: null, // TODO: Calculate running balance
+          runningbalance: runningBalances[mapped.accountid]?.[mapped.id] ?? null,
           tenantid: mapped.tenantid,
           transferaccountid: mapped.transferaccountid,
           transferid: mapped.transferid,
@@ -388,6 +506,18 @@ export class TransactionWatermelonRepository
           updatedat: mapped.updatedat,
         } as TransactionsView;
       });
+      // Sort DESC by date, createdat, updatedat, type, id
+      views.sort((a, b) => {
+        const da = new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime();
+        if (da !== 0) return da;
+        const ca = new Date(b.createdat ?? "").getTime() - new Date(a.createdat ?? "").getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(b.updatedat ?? "").getTime() - new Date(a.updatedat ?? "").getTime();
+        if (ua !== 0) return ua;
+        if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
+        return (b.id || "").localeCompare(a.id || "");
+      });
+      return views;
     } catch (error) {
       throw new Error(
         `Failed to find transactions by category: ${error instanceof Error ? error.message : "Unknown error"}`,

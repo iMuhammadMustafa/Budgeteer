@@ -6,7 +6,11 @@ import { TableNames } from "@/src/types/db/TableNames";
 import { TransactionCategoryFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
-import { commonValidationRules, createCategoryNameValidation, createDescriptionValidation } from "@/src/utils/form-validation";
+import {
+  commonValidationRules,
+  createCategoryNameValidation,
+  createDescriptionValidation,
+} from "@/src/utils/form-validation";
 import FormContainer from "./FormContainer";
 import FormField from "./FormField";
 import FormSection from "./FormSection";
@@ -281,9 +285,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
               {formState.touched.groupid && formState.errors.groupid && (
                 <Text className="text-red-500 text-sm mt-1">{formState.errors.groupid}</Text>
               )}
-              <Text className="text-gray-600 text-sm mt-1">
-                Select the transaction group this category belongs to
-              </Text>
+              <Text className="text-gray-600 text-sm mt-1">Select the transaction group this category belongs to</Text>
             </View>
 
             {/* Description field */}
@@ -341,10 +343,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
                 )}
               </View>
               <View>
-                <ColorsPickerDropdown 
-                  selectedValue={formState.data.color} 
-                  handleSelect={handleColorSelect} 
-                />
+                <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
                 {formState.touched.color && formState.errors.color && (
                   <Text className="text-red-500 text-sm mt-1">{formState.errors.color}</Text>
                 )}

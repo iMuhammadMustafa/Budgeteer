@@ -131,38 +131,3 @@ export class StatsSupaRepository implements IStatsRepository {
     return data;
   }
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const getStatsDailyTransactions = async (
-  tenantId: string,
-  startDate?: string,
-  endDate?: string,
-  type?: TransactionType,
-) => {
-  const repository = new StatsSupaRepository();
-  return repository.getStatsDailyTransactions(tenantId, startDate, endDate, type);
-};
-
-export const getStatsMonthlyTransactionsTypes = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsSupaRepository();
-  return repository.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
-};
-
-export const getStatsMonthlyCategoriesTransactions = async (
-  tenantId: string,
-  startDate?: string,
-  endDate?: string,
-): Promise<StatsMonthlyCategoriesTransactions[]> => {
-  const repository = new StatsSupaRepository();
-  return repository.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
-};
-
-export const getStatsMonthlyAccountsTransactions = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsSupaRepository();
-  return repository.getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
-};
-
-export const getStatsNetWorthGrowth = async (tenantId: string, startDate?: string, endDate?: string) => {
-  const repository = new StatsSupaRepository();
-  return repository.getStatsNetWorthGrowth(tenantId, startDate, endDate);
-};

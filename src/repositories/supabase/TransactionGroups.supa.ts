@@ -89,34 +89,3 @@ export class TransactionGroupSupaRepository implements ITransactionGroupReposito
     if (error) throw error;
   }
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const getAllTransactionGroups = async (tenantId: string) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.findAll(undefined, tenantId);
-};
-
-export const getTransactionGroupById = async (id: string, tenantId: string) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.findById(id, tenantId);
-};
-
-export const createTransactionGroup = async (transactionGroup: Inserts<TableNames.TransactionGroups>) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.create(transactionGroup);
-};
-
-export const updateTransactionGroup = async (transactionGroup: Updates<TableNames.TransactionGroups>) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.update(transactionGroup.id!, transactionGroup);
-};
-
-export const deleteTransactionGroup = async (id: string, userId: string) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.softDelete(id);
-};
-
-export const restoreTransactionGroup = async (id: string, userId: string) => {
-  const repository = new TransactionGroupSupaRepository();
-  return repository.restore(id);
-};

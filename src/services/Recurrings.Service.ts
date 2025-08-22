@@ -423,8 +423,8 @@ export const useListRecurrings = (filters?: any) => {
 export const useDeleteRecurring = () => {
   const service = useRecurringService();
   return service.softDelete();
-};export
- const useGetRecurring = (id?: string) => {
+};
+export const useGetRecurring = (id?: string) => {
   const service = useRecurringService();
   return service.findById(id);
 };
@@ -432,6 +432,11 @@ export const useDeleteRecurring = () => {
 export const useCreateRecurring = () => {
   const service = useRecurringService();
   return service.create();
+};
+
+export const useUpdateRecurring = () => {
+  const service = useRecurringService();
+  return service.update();
 };
 
 export const useUpdateRecurring = () => {

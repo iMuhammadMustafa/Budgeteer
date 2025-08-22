@@ -107,6 +107,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
     };
     return formData;
   }, [category]);
+  const accountCategoryService = useAccountCategoryService();
 
   // Form state management
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =

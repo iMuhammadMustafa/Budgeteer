@@ -31,6 +31,8 @@ export class TransactionCategoryWatermelonRepository
         case "budgetamount":
           mapped[key] = Number(value) || 0;
           break;
+        case "group":
+          break;
         default:
           mapped[key] = value;
       }

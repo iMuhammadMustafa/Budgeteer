@@ -17,9 +17,9 @@ export const initialState: ConfigurationFormType = {
   type: "",
   key: "",
   value: "",
-  createdby:"",
+  createdby: "",
   isdeleted: false,
-  updatedby:"",
+  updatedby: "",
   tenantid: "",
 };
 

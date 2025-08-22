@@ -133,8 +133,6 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [account, updateAccount]);
 
-
-
   // Handle open balance changes (treated as separate form)
   const handleOpenBalanceChange = useCallback(
     (value: any) => {
@@ -159,10 +157,10 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     const originalOpenBalance = openTransaction?.amount || null;
     const originalBalance = Number(account.balance) || 0;
     const currentOpenAmount = Number(formState.data.openBalance) || 0;
-    
+
     // Calculate the balance adjustment needed
     const adjustedBalance = originalBalance - currentOpenAmount + (originalOpenBalance || 0);
-    
+
     // Reset open balance to original value
     updateField("openBalance", originalOpenBalance);
     updateField("balance", adjustedBalance);
@@ -173,14 +171,14 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     // Store the current open balance since it's managed as a separate form
     const currentOpenBalance = formState.data.openBalance;
     const originalOpenBalance = openTransaction?.amount || null;
-    
+
     // Create new initial data that preserves the open balance field
     // The open balance is treated as a separate form, so we preserve its current state
     const resetData = {
       ...initialFormData,
       openBalance: currentOpenBalance, // Preserve current open balance value
     };
-    
+
     // Use setInitialFormData to reset without triggering dirty state
     // This properly resets the form while preserving the open balance
     setInitialFormData(resetData);
@@ -358,9 +356,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
             {openTransaction && (
               <View className="border border-gray-200 rounded-md p-3 bg-gray-50">
                 <View className="flex flex-row items-center justify-between mb-2">
-                  <Text className="text-sm font-medium text-gray-700">
-                    Open Balance (Separate Form)
-                  </Text>
+                  <Text className="text-sm font-medium text-gray-700">Open Balance (Separate Form)</Text>
                   <Text
                     className="text-blue-600 underline text-sm"
                     onPress={handleResetOpenBalance}
@@ -375,7 +371,8 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
                     name: "openBalance",
                     label: "Open Balance",
                     type: "number",
-                    description: "Adjusting this will update the account balance accordingly. This field is managed separately from the main form.",
+                    description:
+                      "Adjusting this will update the account balance accordingly. This field is managed separately from the main form.",
                   }}
                   value={formState.data.openBalance?.toString() ?? "0"}
                   onChange={handleOpenBalanceChange}

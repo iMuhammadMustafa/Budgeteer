@@ -3,7 +3,12 @@ import { ActivityIndicator, FlatList, Platform, Pressable, SafeAreaView, ScrollV
 import { router } from "expo-router";
 import dayjs from "dayjs";
 
-import { MultipleTransactionsFormData, MultipleTransactionItemData, ValidationSchema, OptionItem } from "@/src/types/components/forms.types";
+import {
+  MultipleTransactionsFormData,
+  MultipleTransactionItemData,
+  ValidationSchema,
+  OptionItem,
+} from "@/src/types/components/forms.types";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
 import FormContainer from "./FormContainer";
@@ -17,18 +22,18 @@ import { ViewNames } from "@/src/types/db/TableNames";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { 
-  commonValidationRules, 
-  createAmountValidation, 
+import {
+  commonValidationRules,
+  createAmountValidation,
   createDateValidation,
-  createDescriptionValidation 
+  createDescriptionValidation,
 } from "@/src/utils/form-validation";
 
 // Generate initial state for multiple transactions form
 const generateInitialState = (): MultipleTransactionsFormData => {
   const groupId = GenerateUuid();
   const transactionId = GenerateUuid();
-  
+
   return {
     originalTransactionId: null,
     payee: "",
@@ -57,7 +62,7 @@ export const initialMultipleTransactionsState = generateInitialState();
 const convertTransactionToMultipleForm = (transaction: TransactionFormType): MultipleTransactionsFormData => {
   const groupId = transaction.id || GenerateUuid();
   const transactionId = GenerateUuid();
-  
+
   return {
     originalTransactionId: transaction.id || null,
     payee: transaction.payee || "",
@@ -94,32 +99,27 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const [maxAmount, setMaxAmount] = useState(0);
 
   // Create validation schema
-  const validationSchema: ValidationSchema<MultipleTransactionsFormData> = useMemo(() => ({
-    payee: [commonValidationRules.required('Payee is required')],
-    date: createDateValidation(),
-    accountid: [commonValidationRules.required('Account is required')],
-    type: [commonValidationRules.required('Transaction type is required')],
-    description: createDescriptionValidation(false),
-    groupid: [commonValidationRules.required('Group ID is required')],
-  }), []);
+  const validationSchema: ValidationSchema<MultipleTransactionsFormData> = useMemo(
+    () => ({
+      payee: [commonValidationRules.required("Payee is required")],
+      date: createDateValidation(),
+      accountid: [commonValidationRules.required("Account is required")],
+      type: [commonValidationRules.required("Transaction type is required")],
+      description: createDescriptionValidation(false),
+      groupid: [commonValidationRules.required("Group ID is required")],
+    }),
+    [],
+  );
 
   // Initialize form data from props
-  const initialFormData = useMemo(() => 
-    transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState,
-    [transaction]
+  const initialFormData = useMemo(
+    () => (transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState),
+    [transaction],
   );
 
   // Initialize form state
-  const {
-    formState,
-    updateField,
-    setFieldTouched,
-    validateForm,
-    resetForm,
-    setFormData,
-    isValid,
-    isDirty,
-  } = useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
+  const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
+    useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
 
   if (isCategoriesLoading || isAccountsLoading) {
     return (
@@ -133,8 +133,8 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Initialize mode and maxAmount when transaction changes
   useEffect(() => {
     if (transaction) {
-      const amount = Math.abs(parseFloat(transaction.amount?.toString() || '0'));
-      setMode(parseFloat(transaction.amount?.toString() || '0') < 0 ? "minus" : "plus");
+      const amount = Math.abs(parseFloat(transaction.amount?.toString() || "0"));
+      setMode(parseFloat(transaction.amount?.toString() || "0") < 0 ? "minus" : "plus");
       setMaxAmount(amount);
     }
   }, [transaction]);
@@ -147,44 +147,47 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   }, [formState.data.transactions]);
 
   // Handle form submission
-  const handleSubmit = useCallback(async (data: MultipleTransactionsFormData) => {
-    const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
-    
-    // Convert form data to the format expected by the service
-    const submissionData = {
-      transactions: {
-        originalTransactionId: data.originalTransactionId,
-        payee: data.payee,
-        date: dayjs(data.date),
-        description: data.description,
-        type: data.type,
-        isvoid: data.isvoid,
-        accountid: data.accountid,
-        groupid: data.groupid,
-        transactions: data.transactions,
-      },
-      totalAmount,
-    };
+  const handleSubmit = useCallback(
+    async (data: MultipleTransactionsFormData) => {
+      const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
 
-    await submitAllMutation.mutateAsync(submissionData, {
-      onSuccess: async () => {
-        console.log({
-          message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
-          type: "success",
-        });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
-        router.replace("/Transactions");
-      },
-    });
-  }, [submitAllMutation, transaction?.id, mode, currentAmount]);
+      // Convert form data to the format expected by the service
+      const submissionData = {
+        transactions: {
+          originalTransactionId: data.originalTransactionId,
+          payee: data.payee,
+          date: dayjs(data.date),
+          description: data.description,
+          type: data.type,
+          isvoid: data.isvoid,
+          accountid: data.accountid,
+          groupid: data.groupid,
+          transactions: data.transactions,
+        },
+        totalAmount,
+      };
+
+      await submitAllMutation.mutateAsync(submissionData, {
+        onSuccess: async () => {
+          console.log({
+            message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
+            type: "success",
+          });
+          await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+          router.replace("/Transactions");
+        },
+      });
+    },
+    [submitAllMutation, transaction?.id, mode, currentAmount],
+  );
 
   // Form submission hook
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
     onSuccess: () => {
-      console.log('Multiple transactions saved successfully');
+      console.log("Multiple transactions saved successfully");
     },
-    onError: (error) => {
-      console.error('Failed to save multiple transactions:', error);
+    onError: error => {
+      console.error("Failed to save multiple transactions:", error);
     },
   });
 
@@ -204,12 +207,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Prepare dropdown options
   const categoryOptions = useMemo(() => {
     if (!categories) return [];
-    
+
     return categories
       .filter(item => item.name)
       .map(item => ({
         id: item.id,
-        label: item.name || '',
+        label: item.name || "",
         value: item.id,
         icon: item.icon,
         color: item.color,
@@ -219,14 +222,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   const accountOptions = useMemo(() => {
     if (!accounts) return [];
-    
+
     return accounts
       .filter(item => item.name)
       .map(item => ({
         id: item.id,
-        label: item.name || '',
+        label: item.name || "",
         value: item.id,
-        group: item.categoryname || 'Other',
+        group: item.categoryname || "Other",
       }))
       .sort((a, b) => {
         if (a.group !== b.group) {
@@ -237,13 +240,13 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   }, [accounts]);
 
   const transactionTypeOptions: OptionItem[] = [
-    { id: 'income', label: 'Income', value: 'Income' },
-    { id: 'expense', label: 'Expense', value: 'Expense' },
+    { id: "income", label: "Income", value: "Income" },
+    { id: "expense", label: "Expense", value: "Expense" },
   ];
 
   // Handle mode toggle
   const handleModeToggle = useCallback(() => {
-    setMode(prevMode => prevMode === 'plus' ? 'minus' : 'plus');
+    setMode(prevMode => (prevMode === "plus" ? "minus" : "plus"));
   }, []);
 
   // Handle max amount change
@@ -259,15 +262,15 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
       cleanValue = cleanValue.replace("-", "");
     }
 
-    if (cleanValue.includes('.')) {
-      const parts = cleanValue.split('.');
+    if (cleanValue.includes(".")) {
+      const parts = cleanValue.split(".");
       if (parts[1] && parts[1].length > 2) {
-        cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+        cleanValue = parts[0] + "." + parts[1].substring(0, 2);
       }
     }
 
     const numericAmount = parseFloat(cleanValue) || 0;
-    
+
     if (numericAmount <= 999999999.99) {
       setMaxAmount(numericAmount);
     }
@@ -288,36 +291,39 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           onReset={handleReset}
         >
           {/* Basic Information Section */}
-          <FormSection title="Transaction Group Details" description="Enter the common information for all transactions">
+          <FormSection
+            title="Transaction Group Details"
+            description="Enter the common information for all transactions"
+          >
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
               <FormField
                 config={{
-                  name: 'payee',
-                  label: 'Payee',
-                  type: 'text',
+                  name: "payee",
+                  label: "Payee",
+                  type: "text",
                   required: true,
-                  placeholder: 'Enter payee name',
+                  placeholder: "Enter payee name",
                 }}
                 value={formState.data.payee}
                 error={formState.errors.payee}
                 touched={formState.touched.payee}
-                onChange={(value) => updateField('payee', value)}
-                onBlur={() => setFieldTouched('payee')}
+                onChange={value => updateField("payee", value)}
+                onBlur={() => setFieldTouched("payee")}
                 className="flex-1"
               />
 
               <FormField
                 config={{
-                  name: 'description',
-                  label: 'Description',
-                  type: 'text',
-                  placeholder: 'Enter description',
+                  name: "description",
+                  label: "Description",
+                  type: "text",
+                  placeholder: "Enter description",
                 }}
                 value={formState.data.description}
                 error={formState.errors.description}
                 touched={formState.touched.description}
-                onChange={(value) => updateField('description', value)}
-                onBlur={() => setFieldTouched('description')}
+                onChange={value => updateField("description", value)}
+                onBlur={() => setFieldTouched("description")}
                 className="flex-1"
               />
             </View>
@@ -344,11 +350,11 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
                 <View className="flex-1">
                   <FormField
                     config={{
-                      name: 'totalAmount',
-                      label: 'Total Amount',
-                      type: 'number',
+                      name: "totalAmount",
+                      label: "Total Amount",
+                      type: "number",
                       required: true,
-                      placeholder: '0.00',
+                      placeholder: "0.00",
                     }}
                     value={maxAmount.toString()}
                     onChange={handleMaxAmountChange}
@@ -359,21 +365,21 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
               <FormField
                 config={{
-                  name: 'date',
-                  label: 'Date',
-                  type: 'date',
+                  name: "date",
+                  label: "Date",
+                  type: "date",
                   required: true,
                 }}
                 value={formState.data.date}
                 error={formState.errors.date}
                 touched={formState.touched.date}
-                onChange={(value) => {
+                onChange={value => {
                   if (value) {
                     const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
-                    updateField('date', formattedDate);
+                    updateField("date", formattedDate);
                   }
                 }}
-                onBlur={() => setFieldTouched('date')}
+                onBlur={() => setFieldTouched("date")}
                 className="flex-1"
               />
             </View>
@@ -381,40 +387,43 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
               <FormField
                 config={{
-                  name: 'type',
-                  label: 'Type',
-                  type: 'select',
+                  name: "type",
+                  label: "Type",
+                  type: "select",
                   required: true,
                   options: transactionTypeOptions,
                 }}
                 value={formState.data.type}
                 error={formState.errors.type}
                 touched={formState.touched.type}
-                onChange={(value) => updateField('type', value)}
-                onBlur={() => setFieldTouched('type')}
+                onChange={value => updateField("type", value)}
+                onBlur={() => setFieldTouched("type")}
                 className="flex-1"
               />
 
               <FormField
                 config={{
-                  name: 'accountid',
-                  label: 'Account',
-                  type: 'select',
+                  name: "accountid",
+                  label: "Account",
+                  type: "select",
                   required: true,
                   options: accountOptions,
                 }}
                 value={formState.data.accountid}
                 error={formState.errors.accountid}
                 touched={formState.touched.accountid}
-                onChange={(value) => updateField('accountid', value)}
-                onBlur={() => setFieldTouched('accountid')}
+                onChange={value => updateField("accountid", value)}
+                onBlur={() => setFieldTouched("accountid")}
                 className="flex-1"
               />
             </View>
           </FormSection>
 
           {/* Transactions List Section */}
-          <FormSection title="Individual Transactions" description="Break down the total amount into individual transactions">
+          <FormSection
+            title="Individual Transactions"
+            description="Break down the total amount into individual transactions"
+          >
             <TransactionsCreationList
               formState={formState}
               updateField={updateField}
@@ -439,9 +448,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">
-                Error: {error.message}
-              </Text>
+              <Text className="text-red-700 text-sm">Error: {error.message}</Text>
             </View>
           )}
         </FormContainer>
@@ -473,7 +480,7 @@ const TransactionsCreationList = ({
   const addNewTransaction = useCallback(() => {
     const newTransactionId = GenerateUuid();
     const remainingAmount = (mode === "minus" ? -maxAmount : maxAmount) - currentAmount;
-    
+
     const newTransaction: MultipleTransactionItemData = {
       name: "",
       amount: Math.abs(remainingAmount),
@@ -483,7 +490,7 @@ const TransactionsCreationList = ({
       groupid: formState.data.groupid,
     };
 
-    updateField('transactions', {
+    updateField("transactions", {
       ...formState.data.transactions,
       [newTransactionId]: newTransaction,
     });
@@ -552,66 +559,74 @@ const TransactionCard = ({
   canDelete: boolean;
 }) => {
   // Update a specific transaction field
-  const updateTransactionField = useCallback((field: keyof MultipleTransactionItemData, value: any) => {
-    const updatedTransactions = {
-      ...formState.data.transactions,
-      [id]: {
-        ...formState.data.transactions[id],
-        [field]: value,
-      },
-    };
-    updateField('transactions', updatedTransactions);
-  }, [formState.data.transactions, id, updateField]);
+  const updateTransactionField = useCallback(
+    (field: keyof MultipleTransactionItemData, value: any) => {
+      const updatedTransactions = {
+        ...formState.data.transactions,
+        [id]: {
+          ...formState.data.transactions[id],
+          [field]: value,
+        },
+      };
+      updateField("transactions", updatedTransactions);
+    },
+    [formState.data.transactions, id, updateField],
+  );
 
   // Handle amount change with validation
-  const handleAmountChange = useCallback((value: string) => {
-    let cleanValue = value
-      .replace(/[^0-9.]/g, "")
-      .replace(/\.{2,}/g, ".")
-      .replace(/^0+(?=\d)/, "");
+  const handleAmountChange = useCallback(
+    (value: string) => {
+      let cleanValue = value
+        .replace(/[^0-9.]/g, "")
+        .replace(/\.{2,}/g, ".")
+        .replace(/^0+(?=\d)/, "");
 
-    if (cleanValue.includes('.')) {
-      const parts = cleanValue.split('.');
-      if (parts[1] && parts[1].length > 2) {
-        cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+      if (cleanValue.includes(".")) {
+        const parts = cleanValue.split(".");
+        if (parts[1] && parts[1].length > 2) {
+          cleanValue = parts[0] + "." + parts[1].substring(0, 2);
+        }
       }
-    }
 
-    const numericAmount = parseFloat(cleanValue) || 0;
-    
-    // Calculate remaining amount available
-    const otherTransactionsTotal = Object.entries(formState.data.transactions)
-      .filter(([transactionId]) => transactionId !== id)
-      .reduce((total, [, trans]) => total + (trans.amount || 0), 0);
-    
-    const availableAmount = maxAmount - otherTransactionsTotal;
-    
-    // Limit to available amount
-    const finalAmount = Math.min(numericAmount, Math.max(0, availableAmount));
-    
-    updateTransactionField('amount', finalAmount);
-  }, [formState.data.transactions, id, maxAmount, updateTransactionField]);
+      const numericAmount = parseFloat(cleanValue) || 0;
+
+      // Calculate remaining amount available
+      const otherTransactionsTotal = Object.entries(formState.data.transactions)
+        .filter(([transactionId]) => transactionId !== id)
+        .reduce((total, [, trans]) => total + (trans.amount || 0), 0);
+
+      const availableAmount = maxAmount - otherTransactionsTotal;
+
+      // Limit to available amount
+      const finalAmount = Math.min(numericAmount, Math.max(0, availableAmount));
+
+      updateTransactionField("amount", finalAmount);
+    },
+    [formState.data.transactions, id, maxAmount, updateTransactionField],
+  );
 
   // Handle transaction deletion
   const handleDelete = useCallback(() => {
     if (!canDelete) return;
-    
+
     const { [id]: deletedTransaction, ...remainingTransactions } = formState.data.transactions;
-    updateField('transactions', remainingTransactions);
+    updateField("transactions", remainingTransactions);
   }, [canDelete, formState.data.transactions, id, updateField]);
 
   return (
-    <View className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}>
+    <View
+      className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}
+    >
       {/* Amount Field */}
       <FormField
         config={{
-          name: 'amount',
-          label: 'Amount',
-          type: 'number',
+          name: "amount",
+          label: "Amount",
+          type: "number",
           required: true,
-          placeholder: '0.00',
+          placeholder: "0.00",
         }}
-        value={transaction.amount?.toString() || '0'}
+        value={transaction.amount?.toString() || "0"}
         onChange={handleAmountChange}
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
@@ -619,14 +634,14 @@ const TransactionCard = ({
       {/* Name Field */}
       <FormField
         config={{
-          name: 'name',
-          label: 'Transaction Name',
-          type: 'text',
+          name: "name",
+          label: "Transaction Name",
+          type: "text",
           required: true,
-          placeholder: 'Enter transaction name',
+          placeholder: "Enter transaction name",
         }}
-        value={transaction.name || ''}
-        onChange={(value) => updateTransactionField('name', value)}
+        value={transaction.name || ""}
+        onChange={value => updateTransactionField("name", value)}
         onBlur={() => setFieldTouched(`transactions.${id}.name`)}
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
@@ -634,14 +649,14 @@ const TransactionCard = ({
       {/* Category Field */}
       <FormField
         config={{
-          name: 'categoryid',
-          label: 'Category',
-          type: 'select',
+          name: "categoryid",
+          label: "Category",
+          type: "select",
           required: true,
           options: categoryOptions,
         }}
-        value={transaction.categoryid || ''}
-        onChange={(value) => updateTransactionField('categoryid', value)}
+        value={transaction.categoryid || ""}
+        onChange={value => updateTransactionField("categoryid", value)}
         onBlur={() => setFieldTouched(`transactions.${id}.categoryid`)}
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
@@ -649,13 +664,13 @@ const TransactionCard = ({
       {/* Notes Field */}
       <FormField
         config={{
-          name: 'notes',
-          label: 'Notes',
-          type: 'textarea',
-          placeholder: 'Optional notes',
+          name: "notes",
+          label: "Notes",
+          type: "textarea",
+          placeholder: "Optional notes",
         }}
-        value={transaction.notes || ''}
-        onChange={(value) => updateTransactionField('notes', value)}
+        value={transaction.notes || ""}
+        onChange={value => updateTransactionField("notes", value)}
         onBlur={() => setFieldTouched(`transactions.${id}.notes`)}
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
@@ -663,13 +678,15 @@ const TransactionCard = ({
       {/* Tags Field */}
       <FormField
         config={{
-          name: 'tags',
-          label: 'Tags',
-          type: 'multiselect',
-          placeholder: 'Enter tags separated by commas',
+          name: "tags",
+          label: "Tags",
+          type: "multiselect",
+          placeholder: "Enter tags separated by commas",
         }}
         value={transaction.tags}
-        onChange={(value) => updateTransactionField('tags', Array.isArray(value) ? value : value?.split(',').filter(Boolean))}
+        onChange={value =>
+          updateTransactionField("tags", Array.isArray(value) ? value : value?.split(",").filter(Boolean))
+        }
         onBlur={() => setFieldTouched(`transactions.${id}.tags`)}
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
@@ -709,31 +726,30 @@ const TransactionsSummary = ({
       <View className="space-y-2">
         <View className="flex-row justify-between">
           <Text className="text-foreground font-medium">Target Total:</Text>
-          <Text className="text-foreground font-bold">
-            {targetAmount.toFixed(2)}
-          </Text>
+          <Text className="text-foreground font-bold">{targetAmount.toFixed(2)}</Text>
         </View>
-        
+
         <View className="flex-row justify-between">
           <Text className="text-foreground font-medium">Current Total:</Text>
-          <Text className="text-foreground font-bold">
-            {currentAmount.toFixed(2)}
-          </Text>
+          <Text className="text-foreground font-bold">{currentAmount.toFixed(2)}</Text>
         </View>
-        
+
         <View className="flex-row justify-between border-t border-gray-300 pt-2">
           <Text className="text-foreground font-medium">Remaining:</Text>
-          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? 'text-green-600' : 'text-orange-600'}`}>
+          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-green-600" : "text-orange-600"}`}>
             {remainingAmount.toFixed(2)}
           </Text>
         </View>
 
         {/* Balance Status */}
-        <View className="mt-3 p-2 rounded-md bg-opacity-20" style={{
-          backgroundColor: isBalanced ? '#10b981' : '#f59e0b'
-        }}>
-          <Text className={`text-center font-medium ${isBalanced ? 'text-green-700' : 'text-orange-700'}`}>
-            {isBalanced ? '✓ Transactions are balanced' : '⚠ Transactions need to be balanced'}
+        <View
+          className="mt-3 p-2 rounded-md bg-opacity-20"
+          style={{
+            backgroundColor: isBalanced ? "#10b981" : "#f59e0b",
+          }}
+        >
+          <Text className={`text-center font-medium ${isBalanced ? "text-green-700" : "text-orange-700"}`}>
+            {isBalanced ? "✓ Transactions are balanced" : "⚠ Transactions need to be balanced"}
           </Text>
         </View>
       </View>
