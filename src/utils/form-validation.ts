@@ -3,7 +3,12 @@
  * This file contains validation functions, built-in validators, and validation helpers
  */
 
-import { ValidationRule, ValidationResult, FormValidationResult, ValidationSchema } from '../types/components/forms.types';
+import {
+  ValidationRule,
+  ValidationResult,
+  FormValidationResult,
+  ValidationSchema,
+} from "../types/components/forms.types";
 
 // ============================================================================
 // Built-in Validators
@@ -14,7 +19,7 @@ import { ValidationRule, ValidationResult, FormValidationResult, ValidationSchem
  */
 export const requiredValidator = (value: any): boolean => {
   if (value === null || value === undefined) return false;
-  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === "string") return value.trim().length > 0;
   if (Array.isArray(value)) return value.length > 0;
   return true;
 };
@@ -64,7 +69,7 @@ export const patternValidator = (value: string, pattern: RegExp): boolean => {
  */
 export const emailValidator = (value: string): boolean => {
   if (!value) return true; // Let required validator handle empty values
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^(?!.*\.\.)[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(value);
 };
 
@@ -75,36 +80,32 @@ export const emailValidator = (value: string): boolean => {
 /**
  * Executes a single validation rule against a value
  */
-export const executeValidationRule = (
-  rule: ValidationRule,
-  value: any,
-  formData?: any
-): ValidationResult => {
+export const executeValidationRule = (rule: ValidationRule, value: any, formData?: any): ValidationResult => {
   let isValid = true;
 
   switch (rule.type) {
-    case 'required':
+    case "required":
       isValid = requiredValidator(value);
       break;
-    case 'minLength':
+    case "minLength":
       isValid = minLengthValidator(value, rule.value);
       break;
-    case 'maxLength':
+    case "maxLength":
       isValid = maxLengthValidator(value, rule.value);
       break;
-    case 'min':
+    case "min":
       isValid = minValidator(value, rule.value);
       break;
-    case 'max':
+    case "max":
       isValid = maxValidator(value, rule.value);
       break;
-    case 'pattern':
+    case "pattern":
       isValid = patternValidator(value, rule.value);
       break;
-    case 'email':
+    case "email":
       isValid = emailValidator(value);
       break;
-    case 'custom':
+    case "custom":
       if (rule.validator) {
         isValid = rule.validator(value, formData);
       }
@@ -127,7 +128,7 @@ export const validateField = <T>(
   _fieldName: keyof T,
   value: any,
   validationRules: ValidationRule[],
-  formData?: T
+  formData?: T,
 ): ValidationResult => {
   for (const rule of validationRules) {
     const result = executeValidationRule(rule, value, formData);
@@ -144,7 +145,7 @@ export const validateField = <T>(
  */
 export const validateForm = <T extends Record<string, any>>(
   formData: T,
-  validationSchema: ValidationSchema<T>
+  validationSchema: ValidationSchema<T>,
 ): FormValidationResult<T> => {
   const errors: Partial<Record<keyof T, string>> = {};
   let isValid = true;
@@ -154,7 +155,7 @@ export const validateForm = <T extends Record<string, any>>(
     if (fieldRules) {
       const fieldValue = formData[fieldName];
       const fieldResult = validateField(fieldName, fieldValue, fieldRules, formData);
-      
+
       if (!fieldResult.isValid) {
         errors[fieldName] = fieldResult.error;
         isValid = false;
@@ -176,48 +177,48 @@ export const validateForm = <T extends Record<string, any>>(
  * Common validation rules for different field types
  */
 export const commonValidationRules = {
-  required: (message = 'This field is required'): ValidationRule => ({
-    type: 'required',
+  required: (message = "This field is required"): ValidationRule => ({
+    type: "required",
     message,
   }),
 
   minLength: (length: number, message?: string): ValidationRule => ({
-    type: 'minLength',
+    type: "minLength",
     value: length,
     message: message || `Must be at least ${length} characters`,
   }),
 
   maxLength: (length: number, message?: string): ValidationRule => ({
-    type: 'maxLength',
+    type: "maxLength",
     value: length,
     message: message || `Must be no more than ${length} characters`,
   }),
 
   min: (value: number, message?: string): ValidationRule => ({
-    type: 'min',
+    type: "min",
     value,
     message: message || `Must be at least ${value}`,
   }),
 
   max: (value: number, message?: string): ValidationRule => ({
-    type: 'max',
+    type: "max",
     value,
     message: message || `Must be no more than ${value}`,
   }),
 
-  email: (message = 'Must be a valid email address'): ValidationRule => ({
-    type: 'email',
+  email: (message = "Must be a valid email address"): ValidationRule => ({
+    type: "email",
     message,
   }),
 
   pattern: (regex: RegExp, message: string): ValidationRule => ({
-    type: 'pattern',
+    type: "pattern",
     value: regex,
     message,
   }),
 
   custom: (validator: (value: any, formData?: any) => boolean, message: string): ValidationRule => ({
-    type: 'custom',
+    type: "custom",
     validator,
     message,
   }),
@@ -271,37 +272,37 @@ export const numericStringValidator = (value: string): boolean => {
  * Creates validation rules for account names
  */
 export const createAccountNameValidation = (): ValidationRule[] => [
-  commonValidationRules.required('Account name is required'),
-  commonValidationRules.minLength(2, 'Account name must be at least 2 characters'),
-  commonValidationRules.maxLength(100, 'Account name must be no more than 100 characters'),
-  commonValidationRules.custom(safeStringValidator, 'Account name contains invalid characters'),
+  commonValidationRules.required("Account name is required"),
+  commonValidationRules.minLength(2, "Account name must be at least 2 characters"),
+  commonValidationRules.maxLength(100, "Account name must be no more than 100 characters"),
+  commonValidationRules.custom(safeStringValidator, "Account name contains invalid characters"),
 ];
 
 /**
  * Creates validation rules for transaction amounts
  */
 export const createAmountValidation = (): ValidationRule[] => [
-  commonValidationRules.required('Amount is required'),
-  commonValidationRules.min(0.01, 'Amount must be greater than 0'),
-  commonValidationRules.max(999999999.99, 'Amount is too large'),
+  commonValidationRules.required("Amount is required"),
+  commonValidationRules.min(0.01, "Amount must be greater than 0"),
+  commonValidationRules.max(999999999.99, "Amount is too large"),
 ];
 
 /**
  * Creates validation rules for transaction dates
  */
 export const createDateValidation = (): ValidationRule[] => [
-  commonValidationRules.required('Date is required'),
-  commonValidationRules.custom(notFutureDateValidator, 'Date cannot be in the future'),
+  commonValidationRules.required("Date is required"),
+  commonValidationRules.custom(notFutureDateValidator, "Date cannot be in the future"),
 ];
 
 /**
  * Creates validation rules for category names
  */
 export const createCategoryNameValidation = (): ValidationRule[] => [
-  commonValidationRules.required('Category name is required'),
-  commonValidationRules.minLength(2, 'Category name must be at least 2 characters'),
-  commonValidationRules.maxLength(50, 'Category name must be no more than 50 characters'),
-  commonValidationRules.custom(safeStringValidator, 'Category name contains invalid characters'),
+  commonValidationRules.required("Category name is required"),
+  commonValidationRules.minLength(2, "Category name must be at least 2 characters"),
+  commonValidationRules.maxLength(50, "Category name must be no more than 50 characters"),
+  commonValidationRules.custom(safeStringValidator, "Category name contains invalid characters"),
 ];
 
 /**
@@ -309,16 +310,16 @@ export const createCategoryNameValidation = (): ValidationRule[] => [
  */
 export const createDescriptionValidation = (required = false): ValidationRule[] => {
   const rules: ValidationRule[] = [];
-  
+
   if (required) {
-    rules.push(commonValidationRules.required('Description is required'));
+    rules.push(commonValidationRules.required("Description is required"));
   }
-  
+
   rules.push(
-    commonValidationRules.maxLength(500, 'Description must be no more than 500 characters'),
-    commonValidationRules.custom(safeStringValidator, 'Description contains invalid characters')
+    commonValidationRules.maxLength(500, "Description must be no more than 500 characters"),
+    commonValidationRules.custom(safeStringValidator, "Description contains invalid characters"),
   );
-  
+
   return rules;
 };
 
@@ -329,14 +330,11 @@ export const createDescriptionValidation = (required = false): ValidationRule[] 
 /**
  * Debounces validation to improve performance
  */
-export const createDebouncedValidator = <T>(
-  validator: (data: T) => FormValidationResult<T>,
-  delay = 300
-) => {
+export const createDebouncedValidator = <T>(validator: (data: T) => FormValidationResult<T>, delay = 300) => {
   let timeoutId: NodeJS.Timeout;
-  
+
   return (data: T): Promise<FormValidationResult<T>> => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         resolve(validator(data));
@@ -356,7 +354,7 @@ export const formatValidationError = (error: string): string => {
  * Checks if a form has any validation errors
  */
 export const hasValidationErrors = <T>(errors: Partial<Record<keyof T, string>>): boolean => {
-  return Object.values(errors).some(error => error !== undefined && error !== '');
+  return Object.values(errors).some(error => error !== undefined && error !== "");
 };
 
 /**
