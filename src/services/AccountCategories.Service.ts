@@ -110,7 +110,7 @@ export function useAccountCategoryService(): IAccountCategoryService {
 
   const softDelete = () => {
     return useMutation({
-      mutationFn: async (id: string) => {
+      mutationFn: async ({ id }: { id: string }) => {
         return await accountCategoryRepo.softDelete(id, tenantId);
       },
       onSuccess: async () => {
