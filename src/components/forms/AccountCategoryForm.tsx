@@ -1,86 +1,221 @@
-import { useEffect, useState } from "react";
-import { Platform, SafeAreaView, ScrollView, View } from "react-native";
+import React, { memo, useCallback, useMemo } from "react";
+import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
+import { AccountCategoryFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
 import { useUpsertAccountCategory } from "@/src/services/repositories/AccountCategories.Service";
-import TextInputField from "../TextInputField";
-import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
+import { useFormState } from "../hooks/useFormState";
+import { useFormSubmission } from "../hooks/useFormSubmission";
+import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
+import FormContainer from "./FormContainer";
+import FormField from "./FormField";
+import FormSection from "./FormSection";
 import IconPicker from "../IconPicker";
-import Button from "../Button";
+import { ColorsPickerDropdown } from "../DropDownField";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
-export const initialState: Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories> = {
+
+export const initialState: AccountCategoryFormData = {
   name: "",
   icon: "CircleHelp",
-  color: "",
+  color: "info-100",
   displayorder: 0,
   type: "Asset",
 };
 
-export default function AccountCategoryForm({ category }: { category: AccountCategoryFormType }) {
-  const [formData, setFormData] = useState<AccountCategoryFormType>(category);
-  const [isLoading] = useState(false);
+// Validation schema for AccountCategoryForm
+const validationSchema: ValidationSchema<AccountCategoryFormData> = {
+  name: createCategoryNameValidation(),
+  type: [commonValidationRules.required('Account type is required')],
+  icon: [commonValidationRules.required('Icon is required')],
+  color: [commonValidationRules.required('Color is required')],
+  displayorder: [
+    commonValidationRules.required('Display order is required'),
+    commonValidationRules.min(0, 'Display order must be 0 or greater'),
+  ],
+};
 
-  useEffect(() => {
-    setFormData(category);
-  }, [category]);
+// Form field configurations
+const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
+  {
+    name: 'name',
+    label: 'Category Name',
+    type: 'text',
+    required: true,
+    placeholder: 'Enter category name',
+    description: 'A descriptive name for this account category',
+  },
+  {
+    name: 'type',
+    label: 'Account Type',
+    type: 'select',
+    required: true,
+    options: [
+      { id: "Asset", label: "Asset", value: "Asset" },
+      { id: "Liability", label: "Liability", value: "Liability" },
+    ],
+    description: 'Choose whether this category represents assets or liabilities',
+  },
+  {
+    name: 'displayorder',
+    label: 'Display Order',
+    type: 'number',
+    required: true,
+    placeholder: '0',
+    description: 'Order in which this category appears in lists (lower numbers appear first)',
+  },
+];
 
+interface AccountCategoryFormProps {
+  category: AccountCategoryFormType;
+}
+
+function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
+  // Initialize form data from props
+  const initialFormData: AccountCategoryFormData = useMemo(() => ({
+    ...initialState,
+    ...category,
+  }), [category]);
+
+  // Form state management
+  const {
+    formState,
+    updateField,
+    setFieldTouched,
+    validateForm,
+    resetForm,
+    isValid,
+    isDirty,
+  } = useFormState(initialFormData, validationSchema);
+
+  // Form submission handling
   const { mutate } = useUpsertAccountCategory();
 
-  const handleTextChange = (name: keyof AccountCategoryFormType, text: string) => {
-    setFormData(prevFormData => ({ ...prevFormData, [name]: text }));
-  };
-
-  const isValid = !isLoading && !!formData.name && formData.name.length > 0;
-  const handleSubmit = () => {
-    mutate(
-      {
-        formData,
-        originalData: category as AccountCategory,
-      },
-      {
-        onSuccess: () => {
-          console.log({ message: "Category Created Successfully", type: "success" });
-          router.replace("/Accounts");
+  const handleSubmit = useCallback(async (data: AccountCategoryFormData) => {
+    await new Promise<void>((resolve, reject) => {
+      mutate(
+        {
+          formData: data,
+          originalData: category as AccountCategory,
         },
-      },
-    );
-  };
+        {
+          onSuccess: () => {
+            console.log({ message: "Category Created Successfully", type: "success" });
+            router.replace("/Accounts");
+            resolve();
+          },
+          onError: (error) => {
+            console.error("Failed to save category:", error);
+            reject(error);
+          },
+        },
+      );
+    });
+  }, [mutate, category]);
+
+  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
+    onSuccess: () => {
+      console.log("Account category saved successfully");
+    },
+    onError: (error) => {
+      console.error("Form submission error:", error);
+    },
+  });
+
+  // Form submission handler
+  const handleFormSubmit = useCallback(() => {
+    if (validateForm()) {
+      submit(formState.data);
+    }
+  }, [validateForm, submit, formState.data]);
+
+  // Reset form handler
+  const handleReset = useCallback(() => {
+    resetForm();
+  }, [resetForm]);
+
+  // Field change handlers
+  const handleFieldChange = useCallback((field: keyof AccountCategoryFormData, value: any) => {
+    updateField(field, value);
+  }, [updateField]);
+
+  const handleFieldBlur = useCallback((field: keyof AccountCategoryFormData) => {
+    setFieldTouched(field);
+  }, [setFieldTouched]);
+
+  // Icon selection handler
+  const handleIconSelect = useCallback((icon: string) => {
+    updateField('icon', icon);
+  }, [updateField]);
+
+  // Color selection handler
+  const handleColorSelect = useCallback((colorOption: any) => {
+    updateField('color', colorOption?.value || 'info-100');
+  }, [updateField]);
+
+  // Form fields configuration
+  const formFields = useMemo(() => createFormFields(), []);
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="p-5 flex-1" nestedScrollEnabled={true}>
-        <TextInputField label="Name" value={formData.name} onChange={text => handleTextChange("name", text)} />
+      <ScrollView className="flex-1" nestedScrollEnabled={true}>
+        <FormContainer
+          onSubmit={handleFormSubmit}
+          isValid={isValid && !isSubmitting}
+          isLoading={isSubmitting}
+          submitLabel="Save Category"
+          showReset={isDirty}
+          onReset={handleReset}
+        >
+          <FormSection title="Category Details">
+            {/* Render standard form fields */}
+            {formFields.map((fieldConfig) => (
+              <FormField
+                key={String(fieldConfig.name)}
+                config={fieldConfig}
+                value={formState.data[fieldConfig.name]}
+                error={formState.errors[fieldConfig.name]}
+                touched={formState.touched[fieldConfig.name]}
+                onChange={(value) => handleFieldChange(fieldConfig.name, value)}
+                onBlur={() => handleFieldBlur(fieldConfig.name)}
+              />
+            ))}
+          </FormSection>
 
-        <DropdownField
-          isModal={Platform.OS !== "web"}
-          label="Type"
-          options={[
-            { id: "Asset", label: "Asset", value: "Asset" },
-            { id: "Liability", label: "Liability", value: "Liability" },
-          ]}
-          selectedValue={formData.type}
-          onSelect={value => handleTextChange("type", value?.value)}
-        />
+          <FormSection title="Appearance">
+            {/* Icon and Color Selection */}
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+              <View className="flex-1">
+                <IconPicker
+                  onSelect={handleIconSelect}
+                  label="Icon"
+                  initialIcon={formState.data.icon ?? "CircleHelp"}
+                />
+              </View>
+              <ColorsPickerDropdown
+                selectedValue={formState.data.color}
+                handleSelect={handleColorSelect}
+              />
+            </View>
+          </FormSection>
 
-        <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
-          <View className="flex-1">
-            <IconPicker
-              onSelect={(icon: any) => handleTextChange("icon", icon)}
-              label="Icon"
-              initialIcon={formData.icon ?? "CircleHelp"}
-            />
-          </View>
-          <ColorsPickerDropdown
-            selectedValue={formData.color}
-            handleSelect={value => handleTextChange("color", value?.value)}
-          />
-        </View>
-
-        <Button label="Save" onPress={handleSubmit} isValid={isValid} />
+          {/* Display submission error if any */}
+          {error && (
+            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <Text className="text-red-700 text-sm">
+                {error.message || 'An error occurred while saving the category'}
+              </Text>
+            </View>
+          )}
+        </FormContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+const AccountCategoryForm = memo(AccountCategoryFormComponent);
+
+export default AccountCategoryForm;
