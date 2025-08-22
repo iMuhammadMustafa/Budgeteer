@@ -289,7 +289,6 @@ export const getTransactionById = async (transactionid: string, tenantId: string
   if (error) throw new Error(error.message);
   return data;
 };
-
 export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
   const repository = new TransactionSupaRepository();
   return repository.create(transaction);

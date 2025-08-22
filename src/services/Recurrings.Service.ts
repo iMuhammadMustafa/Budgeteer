@@ -438,3 +438,8 @@ export const useUpdateRecurring = () => {
   const service = useRecurringService();
   return service.update();
 };
+
+export const useUpdateRecurring = () => {
+  const service = useRecurringService();
+  return service.update();
+};

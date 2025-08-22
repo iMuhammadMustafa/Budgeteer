@@ -75,13 +75,13 @@ function DropdownField({
   return (
     <>
       <View onLayout={onButtonLayout} className="my-1 flex-1 -z-10 relative">
-        <Text className="text-foreground ">{label}</Text>
+        {/* <Text className="text-foreground ">{label}</Text> */}
         {isWritable ? (
           <Text>Not Yet implemented</Text>
         ) : (
           <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
             <Text selectable={false} className="-z-10">
-              {selectedItem ? selectedItem.label : label}
+              {selectedItem ? selectedItem.label : label ? label : "Select"} 
             </Text>
           </Pressable>
         )}
