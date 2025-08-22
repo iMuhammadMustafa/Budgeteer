@@ -93,6 +93,7 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
   }
 
   async create(data: InsertType, tenantId?: string): Promise<MappedType> {
+    console.log(data);
     try {
       const db = await this.getDb();
       const tenantField = this.getTenantFieldName();
@@ -112,10 +113,14 @@ export abstract class BaseWatermelonRepository<T extends Model, InsertType, Upda
 
           // Set all provided data
           Object.entries(mappedData).forEach(([key, value]) => {
-            console.log(record["id"]);
-            // if (key !== "id" && value !== undefined) {
-            record[key] = value;
-            // }
+            // console.log(record["id"]);
+            if (key !== "id" && value !== undefined) {
+              // @ts-ignore
+              record[key] = value;
+            }
+            if (key === "id") {
+              record._raw.id = value; // Manually set the ID for WatermelonDB
+            }
           });
 
           // Set timestamps using the utility function

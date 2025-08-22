@@ -100,6 +100,7 @@ export function useTransactionService(): ITransactionService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
@@ -113,6 +114,7 @@ export function useTransactionService(): ITransactionService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
@@ -125,6 +127,7 @@ export function useTransactionService(): ITransactionService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
@@ -137,6 +140,7 @@ export function useTransactionService(): ITransactionService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
@@ -164,6 +168,7 @@ export function useTransactionService(): ITransactionService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
@@ -177,6 +182,7 @@ export function useTransactionService(): ITransactionService {
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
     });
