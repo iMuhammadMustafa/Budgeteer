@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FormSectionProps } from '@/src/types/components/forms.types';
 
@@ -22,8 +22,15 @@ function FormSectionComponent({
     }
   }, [collapsible]);
 
-  const sectionId = title ? `section-${title.toLowerCase().replace(/\s+/g, '-')}` : undefined;
-  const descriptionId = description ? `${sectionId}-description` : undefined;
+  // Memoize computed values to prevent unnecessary recalculations
+  const sectionId = useMemo(() => 
+    title ? `section-${title.toLowerCase().replace(/\s+/g, '-')}` : undefined, 
+    [title]
+  );
+  const descriptionId = useMemo(() => 
+    description ? `${sectionId}-description` : undefined, 
+    [description, sectionId]
+  );
 
   return (
     <View className={`my-4 ${className}`}>
@@ -93,7 +100,19 @@ function FormSectionComponent({
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
-const FormSection = memo(FormSectionComponent);
+// Memoize the component with custom comparison function for better performance
+const FormSection = memo(FormSectionComponent, (prevProps, nextProps) => {
+  // Custom comparison to optimize re-renders
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.collapsible === nextProps.collapsible &&
+    prevProps.defaultExpanded === nextProps.defaultExpanded &&
+    prevProps.description === nextProps.description &&
+    prevProps.className === nextProps.className
+    // children comparison is handled by React's default shallow comparison
+  );
+});
+
+FormSection.displayName = 'FormSection';
 
 export default FormSection;

@@ -3,7 +3,7 @@
  * Provides state management, field updates, and validation for forms
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   FormState,
   ValidationSchema,
@@ -11,6 +11,7 @@ import {
   FormFieldValue
 } from '../../types/components/forms.types';
 import { validateForm, validateField } from '../../utils/form-validation';
+import { debounce } from '../../utils/debounce';
 
 /**
  * Custom hook for managing form state with validation
@@ -22,6 +23,9 @@ export function useFormState<T extends Record<string, any>>(
   initialData: T,
   validationSchema?: ValidationSchema<T>
 ): UseFormStateReturn<T> {
+  // Keep track of the initial data for comparison
+  const initialDataRef = useRef<T>(initialData);
+  
   // Initialize form state
   const [formState, setFormState] = useState<FormState<T>>(() => ({
     data: { ...initialData },
@@ -31,40 +35,78 @@ export function useFormState<T extends Record<string, any>>(
     isDirty: false,
   }));
 
-  // Update a single field value
-  const updateField = useCallback((field: keyof T, value: FormFieldValue) => {
-    setFormState(prevState => {
-      const newData = { ...prevState.data, [field]: value };
-      const newTouched = { ...prevState.touched, [field]: true };
+  // Update form state when initial data changes (for edit mode)
+  useEffect(() => {
+    // Deep comparison to avoid unnecessary updates
+    const hasChanged = JSON.stringify(initialDataRef.current) !== JSON.stringify(initialData);
+    
+    if (hasChanged) {
+      initialDataRef.current = initialData;
+      setFormState(prevState => ({
+        ...prevState,
+        data: { ...initialData },
+        isDirty: false, // Reset dirty state when initial data changes
+        errors: {}, // Clear errors when data changes
+        touched: {}, // Reset touched state
+      }));
+    }
+  }, [initialData]);
 
-      // Validate the field if validation schema exists
-      let newErrors = { ...prevState.errors };
-      if (validationSchema && validationSchema[field]) {
-        const fieldValidation = validateField(field, value, validationSchema[field]!, newData);
+  // Debounced validation for performance optimization
+  const debouncedValidateField = useMemo(
+    () => debounce((field: keyof T, value: FormFieldValue, schema: ValidationSchema<T>[keyof T], data: T) => {
+      if (!schema) return;
+      
+      const fieldValidation = validateField(field, value, schema, data);
+      
+      setFormState(prevState => {
+        const newErrors = { ...prevState.errors };
         if (fieldValidation.isValid) {
           delete newErrors[field];
         } else {
           newErrors[field] = fieldValidation.error;
         }
-      }
+        
+        const isValid = Object.keys(newErrors).length === 0;
+        
+        return {
+          ...prevState,
+          errors: newErrors,
+          isValid,
+        };
+      });
+    }, 300),
+    []
+  );
+
+  // Update a single field value with optimized validation
+  const updateField = useCallback((field: keyof T, value: FormFieldValue) => {
+    setFormState(prevState => {
+      const newData = { ...prevState.data, [field]: value };
+      const newTouched = { ...prevState.touched, [field]: true };
 
       // Check if form is dirty (different from initial data)
       const isDirty = Object.keys(newData).some(key =>
-        newData[key as keyof T] !== initialData[key as keyof T]
+        newData[key as keyof T] !== initialDataRef.current[key as keyof T]
       );
 
-      // Check if form is valid (no errors)
-      const isValid = Object.keys(newErrors).length === 0;
-
-      return {
+      // Immediate state update without validation for better UX
+      const newState = {
         data: newData,
-        errors: newErrors,
+        errors: prevState.errors, // Keep existing errors for now
         touched: newTouched,
-        isValid,
+        isValid: prevState.isValid, // Keep existing validity for now
         isDirty,
       };
+
+      // Trigger debounced validation if schema exists
+      if (validationSchema && validationSchema[field]) {
+        debouncedValidateField(field, value, validationSchema[field]!, newData);
+      }
+
+      return newState;
     });
-  }, [initialData, validationSchema]);
+  }, [validationSchema, debouncedValidateField]);
 
   // Mark a field as touched
   const setFieldTouched = useCallback((field: keyof T) => {
@@ -124,20 +166,25 @@ export function useFormState<T extends Record<string, any>>(
   // Reset form to initial state
   const resetForm = useCallback(() => {
     setFormState({
-      data: { ...initialData },
+      data: { ...initialDataRef.current },
       errors: {},
       touched: {},
       isValid: true,
       isDirty: false,
     });
-  }, [initialData]);
+  }, []);
 
   // Set initial form data (doesn't trigger dirty state)
   const setInitialFormData = useCallback((data: Partial<T>) => {
+    // Update the initial data reference
+    initialDataRef.current = { ...initialDataRef.current, ...data };
+    
     setFormState(prevState => ({
       ...prevState,
       data: { ...prevState.data, ...data },
       isDirty: false, // Explicitly set to false since this is initial data
+      errors: {}, // Clear errors when setting initial data
+      touched: {}, // Reset touched state for new initial data
     }));
   }, []);
 
@@ -166,7 +213,7 @@ export function useFormState<T extends Record<string, any>>(
       const isDirty = options?.preserveDirtyState
         ? prevState.isDirty
         : Object.keys(newData).some(key =>
-          newData[key as keyof T] !== initialData[key as keyof T]
+          newData[key as keyof T] !== initialDataRef.current[key as keyof T]
         );
 
       // Check if form is valid

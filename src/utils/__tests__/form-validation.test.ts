@@ -1,5 +1,6 @@
 /**
- * Unit tests for form validation utilities
+ * Comprehensive tests for form validation utilities
+ * Tests all validation rules, edge cases, and performance
  */
 
 import {
@@ -28,402 +29,481 @@ import {
   hasValidationErrors,
   getFirstValidationError,
 } from '../form-validation';
+
 import { ValidationRule, ValidationSchema } from '../../types/components/forms.types';
 
-describe('Built-in Validators', () => {
-  describe('requiredValidator', () => {
-    it('should return false for null', () => {
-      expect(requiredValidator(null)).toBe(false);
-    });
-
-    it('should return false for undefined', () => {
-      expect(requiredValidator(undefined)).toBe(false);
-    });
-
-    it('should return false for empty string', () => {
-      expect(requiredValidator('')).toBe(false);
-    });
-
-    it('should return false for whitespace-only string', () => {
-      expect(requiredValidator('   ')).toBe(false);
-    });
-
-    it('should return false for empty array', () => {
-      expect(requiredValidator([])).toBe(false);
-    });
-
-    it('should return true for non-empty string', () => {
-      expect(requiredValidator('test')).toBe(true);
-    });
-
-    it('should return true for non-empty array', () => {
-      expect(requiredValidator(['item'])).toBe(true);
-    });
-
-    it('should return true for number 0', () => {
-      expect(requiredValidator(0)).toBe(true);
-    });
-
-    it('should return true for boolean false', () => {
-      expect(requiredValidator(false)).toBe(true);
-    });
-  });
-
-  describe('minLengthValidator', () => {
-    it('should return true for empty value', () => {
-      expect(minLengthValidator('', 5)).toBe(true);
-    });
-
-    it('should return false when string is shorter than minimum', () => {
-      expect(minLengthValidator('abc', 5)).toBe(false);
-    });
-
-    it('should return true when string equals minimum length', () => {
-      expect(minLengthValidator('abcde', 5)).toBe(true);
-    });
-
-    it('should return true when string is longer than minimum', () => {
-      expect(minLengthValidator('abcdef', 5)).toBe(true);
-    });
-  });
-
-  describe('maxLengthValidator', () => {
-    it('should return true for empty value', () => {
-      expect(maxLengthValidator('', 5)).toBe(true);
-    });
-
-    it('should return true when string is shorter than maximum', () => {
-      expect(maxLengthValidator('abc', 5)).toBe(true);
-    });
-
-    it('should return true when string equals maximum length', () => {
-      expect(maxLengthValidator('abcde', 5)).toBe(true);
-    });
-
-    it('should return false when string is longer than maximum', () => {
-      expect(maxLengthValidator('abcdef', 5)).toBe(false);
-    });
-  });
-
-  describe('minValidator', () => {
-    it('should return true for null/undefined values', () => {
-      expect(minValidator(null as any, 5)).toBe(true);
-      expect(minValidator(undefined as any, 5)).toBe(true);
-    });
-
-    it('should return false when number is less than minimum', () => {
-      expect(minValidator(3, 5)).toBe(false);
-    });
-
-    it('should return true when number equals minimum', () => {
-      expect(minValidator(5, 5)).toBe(true);
-    });
-
-    it('should return true when number is greater than minimum', () => {
-      expect(minValidator(7, 5)).toBe(true);
-    });
-  });
-
-  describe('maxValidator', () => {
-    it('should return true for null/undefined values', () => {
-      expect(maxValidator(null as any, 5)).toBe(true);
-      expect(maxValidator(undefined as any, 5)).toBe(true);
-    });
-
-    it('should return true when number is less than maximum', () => {
-      expect(maxValidator(3, 5)).toBe(true);
-    });
-
-    it('should return true when number equals maximum', () => {
-      expect(maxValidator(5, 5)).toBe(true);
-    });
-
-    it('should return false when number is greater than maximum', () => {
-      expect(maxValidator(7, 5)).toBe(false);
-    });
-  });
-
-  describe('patternValidator', () => {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    it('should return true for empty value', () => {
-      expect(patternValidator('', emailPattern)).toBe(true);
-    });
-
-    it('should return true when value matches pattern', () => {
-      expect(patternValidator('test@example.com', emailPattern)).toBe(true);
-    });
-
-    it('should return false when value does not match pattern', () => {
-      expect(patternValidator('invalid-email', emailPattern)).toBe(false);
-    });
-  });
-
-  describe('emailValidator', () => {
-    it('should return true for empty value', () => {
-      expect(emailValidator('')).toBe(true);
-    });
-
-    it('should return true for valid email', () => {
-      expect(emailValidator('test@example.com')).toBe(true);
-    });
-
-    it('should return false for invalid email', () => {
-      expect(emailValidator('invalid-email')).toBe(false);
-      expect(emailValidator('test@')).toBe(false);
-      expect(emailValidator('@example.com')).toBe(false);
-      expect(emailValidator('test@example')).toBe(false);
-    });
-  });
-});
-
-describe('Validation Rule Executor', () => {
-  describe('executeValidationRule', () => {
-    it('should execute required validation rule', () => {
-      const rule: ValidationRule = {
-        type: 'required',
-        message: 'Field is required',
-      };
-
-      expect(executeValidationRule(rule, '')).toEqual({
-        isValid: false,
-        error: 'Field is required',
+describe('Form Validation Utilities', () => {
+  describe('Basic Validators', () => {
+    describe('requiredValidator', () => {
+      it('should validate required fields correctly', () => {
+        expect(requiredValidator('test')).toBe(true);
+        expect(requiredValidator('   test   ')).toBe(true);
+        expect(requiredValidator(123)).toBe(true);
+        expect(requiredValidator(0)).toBe(true);
+        expect(requiredValidator(false)).toBe(true);
+        expect(requiredValidator(['item'])).toBe(true);
+        
+        expect(requiredValidator('')).toBe(false);
+        expect(requiredValidator('   ')).toBe(false);
+        expect(requiredValidator(null)).toBe(false);
+        expect(requiredValidator(undefined)).toBe(false);
+        expect(requiredValidator([])).toBe(false);
       });
 
-      expect(executeValidationRule(rule, 'test')).toEqual({
-        isValid: true,
+      it('should handle edge cases', () => {
+        expect(requiredValidator(0)).toBe(true); // Zero is valid
+        expect(requiredValidator(false)).toBe(true); // False is valid
+        expect(requiredValidator(NaN)).toBe(true); // NaN is considered a value
+        expect(requiredValidator({})).toBe(true); // Empty object is valid
       });
     });
 
-    it('should execute minLength validation rule', () => {
-      const rule: ValidationRule = {
-        type: 'minLength',
-        value: 5,
-        message: 'Must be at least 5 characters',
-      };
-
-      expect(executeValidationRule(rule, 'abc')).toEqual({
-        isValid: false,
-        error: 'Must be at least 5 characters',
+    describe('minLengthValidator', () => {
+      it('should validate minimum length correctly', () => {
+        expect(minLengthValidator('hello', 3)).toBe(true);
+        expect(minLengthValidator('hello', 5)).toBe(true);
+        expect(minLengthValidator('hi', 3)).toBe(false);
+        expect(minLengthValidator('', 1)).toBe(false);
       });
 
-      expect(executeValidationRule(rule, 'abcdef')).toEqual({
-        isValid: true,
-      });
-    });
-
-    it('should execute custom validation rule', () => {
-      const rule: ValidationRule = {
-        type: 'custom',
-        validator: (value: number) => value > 0,
-        message: 'Must be positive',
-      };
-
-      expect(executeValidationRule(rule, -1)).toEqual({
-        isValid: false,
-        error: 'Must be positive',
+      it('should handle empty values gracefully', () => {
+        expect(minLengthValidator('', 5)).toBe(true); // Let required validator handle empty
+        expect(minLengthValidator(null as any, 5)).toBe(true);
+        expect(minLengthValidator(undefined as any, 5)).toBe(true);
       });
 
-      expect(executeValidationRule(rule, 5)).toEqual({
-        isValid: true,
+      it('should handle unicode characters correctly', () => {
+        expect(minLengthValidator('🚀🌟', 2)).toBe(true);
+        expect(minLengthValidator('café', 4)).toBe(true);
+        expect(minLengthValidator('你好', 2)).toBe(true);
       });
     });
 
-    it('should handle unknown validation rule type', () => {
-      const rule: ValidationRule = {
-        type: 'unknown' as any,
-        message: 'Unknown rule',
-      };
+    describe('maxLengthValidator', () => {
+      it('should validate maximum length correctly', () => {
+        expect(maxLengthValidator('hello', 10)).toBe(true);
+        expect(maxLengthValidator('hello', 5)).toBe(true);
+        expect(maxLengthValidator('hello world', 5)).toBe(false);
+      });
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const result = executeValidationRule(rule, 'test');
+      it('should handle empty values gracefully', () => {
+        expect(maxLengthValidator('', 5)).toBe(true);
+        expect(maxLengthValidator(null as any, 5)).toBe(true);
+        expect(maxLengthValidator(undefined as any, 5)).toBe(true);
+      });
+    });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Unknown validation rule type: unknown');
-      expect(result).toEqual({ isValid: true });
+    describe('minValidator', () => {
+      it('should validate minimum numeric values correctly', () => {
+        expect(minValidator(10, 5)).toBe(true);
+        expect(minValidator(5, 5)).toBe(true);
+        expect(minValidator(3, 5)).toBe(false);
+        expect(minValidator(-5, -10)).toBe(true);
+        expect(minValidator(-15, -10)).toBe(false);
+      });
 
-      consoleSpy.mockRestore();
+      it('should handle edge cases', () => {
+        expect(minValidator(0, 0)).toBe(true);
+        expect(minValidator(Infinity, 1000)).toBe(true);
+        expect(minValidator(-Infinity, -1000)).toBe(false);
+        expect(minValidator(null as any, 5)).toBe(true); // Let required validator handle null
+        expect(minValidator(undefined as any, 5)).toBe(true);
+      });
+
+      it('should handle floating point numbers', () => {
+        expect(minValidator(3.14, 3)).toBe(true);
+        expect(minValidator(2.99, 3)).toBe(false);
+        expect(minValidator(0.1, 0.05)).toBe(true);
+      });
+    });
+
+    describe('maxValidator', () => {
+      it('should validate maximum numeric values correctly', () => {
+        expect(maxValidator(5, 10)).toBe(true);
+        expect(maxValidator(10, 10)).toBe(true);
+        expect(maxValidator(15, 10)).toBe(false);
+        expect(maxValidator(-10, -5)).toBe(true);
+        expect(maxValidator(-3, -5)).toBe(false);
+      });
+
+      it('should handle edge cases', () => {
+        expect(maxValidator(0, 0)).toBe(true);
+        expect(maxValidator(-Infinity, 1000)).toBe(true);
+        expect(maxValidator(Infinity, 1000)).toBe(false);
+        expect(maxValidator(null as any, 5)).toBe(true);
+        expect(maxValidator(undefined as any, 5)).toBe(true);
+      });
+    });
+
+    describe('patternValidator', () => {
+      it('should validate regex patterns correctly', () => {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        expect(patternValidator('test@example.com', emailPattern)).toBe(true);
+        expect(patternValidator('invalid-email', emailPattern)).toBe(false);
+
+        const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
+        expect(patternValidator('123-456-7890', phonePattern)).toBe(true);
+        expect(patternValidator('1234567890', phonePattern)).toBe(false);
+      });
+
+      it('should handle empty values gracefully', () => {
+        const pattern = /^[a-z]+$/;
+        expect(patternValidator('', pattern)).toBe(true);
+        expect(patternValidator(null as any, pattern)).toBe(true);
+        expect(patternValidator(undefined as any, pattern)).toBe(true);
+      });
+
+      it('should handle complex patterns', () => {
+        // Password pattern: at least 8 chars, 1 uppercase, 1 lowercase, 1 digit
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+        expect(patternValidator('Password123', passwordPattern)).toBe(true);
+        expect(patternValidator('password', passwordPattern)).toBe(false);
+        expect(patternValidator('PASSWORD123', passwordPattern)).toBe(false);
+        expect(patternValidator('Pass123', passwordPattern)).toBe(false); // Too short
+      });
+    });
+
+    describe('emailValidator', () => {
+      it('should validate email addresses correctly', () => {
+        const validEmails = [
+          'test@example.com',
+          'user.name@domain.co.uk',
+          'user+tag@example.org',
+          'user123@test-domain.com',
+          'a@b.co',
+        ];
+
+        const invalidEmails = [
+          'invalid-email',
+          '@example.com',
+          'test@',
+          'test.example.com',
+          'test@.com',
+          'test@com',
+          'test..test@example.com',
+          'test@example.',
+        ];
+
+        validEmails.forEach(email => {
+          expect(emailValidator(email)).toBe(true);
+        });
+
+        invalidEmails.forEach(email => {
+          expect(emailValidator(email)).toBe(false);
+        });
+      });
+
+      it('should handle empty values gracefully', () => {
+        expect(emailValidator('')).toBe(true);
+        expect(emailValidator(null as any)).toBe(true);
+        expect(emailValidator(undefined as any)).toBe(true);
+      });
+
+      it('should handle international domain names', () => {
+        // Note: The current regex doesn't support IDN, but we test the expected behavior
+        expect(emailValidator('test@example.com')).toBe(true);
+        expect(emailValidator('test@subdomain.example.com')).toBe(true);
+      });
     });
   });
-});
 
-describe('Field Validation', () => {
-  describe('validateField', () => {
-    it('should validate field with single rule', () => {
-      const rules: ValidationRule[] = [
-        {
+  describe('Validation Rule Execution', () => {
+    describe('executeValidationRule', () => {
+      it('should execute required rules correctly', () => {
+        const rule: ValidationRule = {
           type: 'required',
           message: 'Field is required',
-        },
-      ];
+        };
 
-      expect(validateField('name', '', rules)).toEqual({
-        isValid: false,
-        error: 'Field is required',
+        expect(executeValidationRule(rule, 'test')).toEqual({
+          isValid: true,
+        });
+
+        expect(executeValidationRule(rule, '')).toEqual({
+          isValid: false,
+          error: 'Field is required',
+        });
       });
 
-      expect(validateField('name', 'test', rules)).toEqual({
-        isValid: true,
-      });
-    });
-
-    it('should validate field with multiple rules', () => {
-      const rules: ValidationRule[] = [
-        {
-          type: 'required',
-          message: 'Field is required',
-        },
-        {
+      it('should execute minLength rules correctly', () => {
+        const rule: ValidationRule = {
           type: 'minLength',
           value: 5,
           message: 'Must be at least 5 characters',
-        },
-      ];
+        };
 
-      expect(validateField('name', '', rules)).toEqual({
-        isValid: false,
-        error: 'Field is required',
+        expect(executeValidationRule(rule, 'hello')).toEqual({
+          isValid: true,
+        });
+
+        expect(executeValidationRule(rule, 'hi')).toEqual({
+          isValid: false,
+          error: 'Must be at least 5 characters',
+        });
       });
 
-      expect(validateField('name', 'abc', rules)).toEqual({
-        isValid: false,
-        error: 'Must be at least 5 characters',
+      it('should execute custom rules correctly', () => {
+        const rule: ValidationRule = {
+          type: 'custom',
+          validator: (value: number) => value % 2 === 0,
+          message: 'Must be even number',
+        };
+
+        expect(executeValidationRule(rule, 4)).toEqual({
+          isValid: true,
+        });
+
+        expect(executeValidationRule(rule, 3)).toEqual({
+          isValid: false,
+          error: 'Must be even number',
+        });
       });
 
-      expect(validateField('name', 'abcdef', rules)).toEqual({
-        isValid: true,
+      it('should handle custom rules with form data context', () => {
+        const rule: ValidationRule = {
+          type: 'custom',
+          validator: (value: string, formData: any) => {
+            return formData && value === formData.confirmPassword;
+          },
+          message: 'Passwords must match',
+        };
+
+        const formData = { password: 'secret123', confirmPassword: 'secret123' };
+
+        expect(executeValidationRule(rule, 'secret123', formData)).toEqual({
+          isValid: true,
+        });
+
+        expect(executeValidationRule(rule, 'different', formData)).toEqual({
+          isValid: false,
+          error: 'Passwords must match',
+        });
+      });
+
+      it('should handle unknown rule types gracefully', () => {
+        const rule: ValidationRule = {
+          type: 'unknown' as any,
+          message: 'Unknown rule',
+        };
+
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        const result = executeValidationRule(rule, 'test');
+
+        expect(result).toEqual({ isValid: true });
+        expect(consoleSpy).toHaveBeenCalledWith('Unknown validation rule type: unknown');
+
+        consoleSpy.mockRestore();
       });
     });
 
-    it('should stop at first validation error', () => {
-      const rules: ValidationRule[] = [
-        {
-          type: 'required',
-          message: 'Field is required',
-        },
-        {
-          type: 'minLength',
-          value: 5,
-          message: 'Must be at least 5 characters',
-        },
-      ];
+    describe('validateField', () => {
+      it('should validate field with multiple rules', () => {
+        const rules: ValidationRule[] = [
+          { type: 'required', message: 'Required' },
+          { type: 'minLength', value: 3, message: 'Too short' },
+          { type: 'maxLength', value: 10, message: 'Too long' },
+        ];
 
-      const result = validateField('name', '', rules);
-      expect(result.error).toBe('Field is required');
+        expect(validateField('name', 'hello', rules)).toEqual({
+          isValid: true,
+        });
+
+        expect(validateField('name', '', rules)).toEqual({
+          isValid: false,
+          error: 'Required',
+        });
+
+        expect(validateField('name', 'hi', rules)).toEqual({
+          isValid: false,
+          error: 'Too short',
+        });
+
+        expect(validateField('name', 'this is too long', rules)).toEqual({
+          isValid: false,
+          error: 'Too long',
+        });
+      });
+
+      it('should stop at first validation failure', () => {
+        const rules: ValidationRule[] = [
+          { type: 'required', message: 'Required' },
+          { type: 'minLength', value: 10, message: 'Too short' },
+        ];
+
+        // Should fail on required, not reach minLength
+        const result = validateField('name', '', rules);
+        expect(result).toEqual({
+          isValid: false,
+          error: 'Required',
+        });
+      });
+
+      it('should handle empty rules array', () => {
+        const result = validateField('name', 'test', []);
+        expect(result).toEqual({ isValid: true });
+      });
+    });
+
+    describe('validateForm', () => {
+      interface TestFormData {
+        name: string;
+        email: string;
+        age: number;
+        description?: string;
+      }
+
+      const testSchema: ValidationSchema<TestFormData> = {
+        name: [
+          { type: 'required', message: 'Name is required' },
+          { type: 'minLength', value: 2, message: 'Name too short' },
+        ],
+        email: [
+          { type: 'required', message: 'Email is required' },
+          { type: 'email', message: 'Invalid email' },
+        ],
+        age: [
+          { type: 'required', message: 'Age is required' },
+          { type: 'min', value: 18, message: 'Must be 18 or older' },
+        ],
+      };
+
+      it('should validate entire form correctly', () => {
+        const validData: TestFormData = {
+          name: 'John Doe',
+          email: 'john@example.com',
+          age: 25,
+        };
+
+        const result = validateForm(validData, testSchema);
+        expect(result).toEqual({
+          isValid: true,
+          errors: {},
+        });
+      });
+
+      it('should collect all validation errors', () => {
+        const invalidData: TestFormData = {
+          name: '',
+          email: 'invalid-email',
+          age: 16,
+        };
+
+        const result = validateForm(invalidData, testSchema);
+        expect(result).toEqual({
+          isValid: false,
+          errors: {
+            name: 'Name is required',
+            email: 'Invalid email',
+            age: 'Must be 18 or older',
+          },
+        });
+      });
+
+      it('should handle partial validation schema', () => {
+        const partialSchema: ValidationSchema<TestFormData> = {
+          name: [{ type: 'required', message: 'Name is required' }],
+          // email and age not validated
+        };
+
+        const data: TestFormData = {
+          name: '',
+          email: 'invalid-email',
+          age: 16,
+        };
+
+        const result = validateForm(data, partialSchema);
+        expect(result).toEqual({
+          isValid: false,
+          errors: {
+            name: 'Name is required',
+            // email and age should not have errors
+          },
+        });
+      });
+
+      it('should handle empty validation schema', () => {
+        const data: TestFormData = {
+          name: '',
+          email: 'invalid',
+          age: 0,
+        };
+
+        const result = validateForm(data, {});
+        expect(result).toEqual({
+          isValid: true,
+          errors: {},
+        });
+      });
     });
   });
-});
 
-describe('Form Validation', () => {
-  describe('validateForm', () => {
-    interface TestFormData {
-      name: string;
-      email: string;
-      age: number;
-    }
-
-    const validationSchema: ValidationSchema<TestFormData> = {
-      name: [
-        {
-          type: 'required',
-          message: 'Name is required',
-        },
-        {
-          type: 'minLength',
-          value: 2,
-          message: 'Name must be at least 2 characters',
-        },
-      ],
-      email: [
-        {
-          type: 'required',
-          message: 'Email is required',
-        },
-        {
-          type: 'email',
-          message: 'Must be a valid email',
-        },
-      ],
-      age: [
-        {
-          type: 'min',
-          value: 0,
-          message: 'Age must be positive',
-        },
-      ],
-    };
-
-    it('should validate valid form data', () => {
-      const formData: TestFormData = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 25,
-      };
-
-      const result = validateForm(formData, validationSchema);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toEqual({});
-    });
-
-    it('should validate invalid form data', () => {
-      const formData: TestFormData = {
-        name: '',
-        email: 'invalid-email',
-        age: -5,
-      };
-
-      const result = validateForm(formData, validationSchema);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toEqual({
-        name: 'Name is required',
-        email: 'Must be a valid email',
-        age: 'Age must be positive',
-      });
-    });
-
-    it('should validate partially invalid form data', () => {
-      const formData: TestFormData = {
-        name: 'John',
-        email: 'john@example.com',
-        age: -5,
-      };
-
-      const result = validateForm(formData, validationSchema);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toEqual({
-        age: 'Age must be positive',
-      });
-    });
-  });
-});
-
-describe('Common Validation Rules', () => {
-  describe('commonValidationRules', () => {
-    it('should create required rule with default message', () => {
+  describe('Common Validation Rules', () => {
+    it('should create required rules correctly', () => {
       const rule = commonValidationRules.required();
       expect(rule).toEqual({
         type: 'required',
         message: 'This field is required',
       });
+
+      const customRule = commonValidationRules.required('Custom message');
+      expect(customRule.message).toBe('Custom message');
     });
 
-    it('should create required rule with custom message', () => {
-      const rule = commonValidationRules.required('Name is required');
-      expect(rule).toEqual({
-        type: 'required',
-        message: 'Name is required',
-      });
-    });
-
-    it('should create minLength rule', () => {
-      const rule = commonValidationRules.minLength(5);
-      expect(rule).toEqual({
+    it('should create length validation rules correctly', () => {
+      const minRule = commonValidationRules.minLength(5);
+      expect(minRule).toEqual({
         type: 'minLength',
         value: 5,
         message: 'Must be at least 5 characters',
       });
+
+      const maxRule = commonValidationRules.maxLength(10, 'Too long');
+      expect(maxRule).toEqual({
+        type: 'maxLength',
+        value: 10,
+        message: 'Too long',
+      });
     });
 
-    it('should create custom rule', () => {
+    it('should create numeric validation rules correctly', () => {
+      const minRule = commonValidationRules.min(18);
+      expect(minRule).toEqual({
+        type: 'min',
+        value: 18,
+        message: 'Must be at least 18',
+      });
+
+      const maxRule = commonValidationRules.max(100, 'Too high');
+      expect(maxRule).toEqual({
+        type: 'max',
+        value: 100,
+        message: 'Too high',
+      });
+    });
+
+    it('should create email validation rules correctly', () => {
+      const rule = commonValidationRules.email();
+      expect(rule).toEqual({
+        type: 'email',
+        message: 'Must be a valid email address',
+      });
+
+      const customRule = commonValidationRules.email('Invalid email format');
+      expect(customRule.message).toBe('Invalid email format');
+    });
+
+    it('should create pattern validation rules correctly', () => {
+      const pattern = /^\d{3}-\d{3}-\d{4}$/;
+      const rule = commonValidationRules.pattern(pattern, 'Invalid phone format');
+      expect(rule).toEqual({
+        type: 'pattern',
+        value: pattern,
+        message: 'Invalid phone format',
+      });
+    });
+
+    it('should create custom validation rules correctly', () => {
       const validator = (value: number) => value > 0;
       const rule = commonValidationRules.custom(validator, 'Must be positive');
       expect(rule).toEqual({
@@ -433,205 +513,345 @@ describe('Common Validation Rules', () => {
       });
     });
   });
-});
 
-describe('Form-Specific Validation Helpers', () => {
-  describe('positiveAmountValidator', () => {
-    it('should return false for negative numbers', () => {
-      expect(positiveAmountValidator(-1)).toBe(false);
+  describe('Form-Specific Validators', () => {
+    describe('positiveAmountValidator', () => {
+      it('should validate positive amounts correctly', () => {
+        expect(positiveAmountValidator(100)).toBe(true);
+        expect(positiveAmountValidator(0.01)).toBe(true);
+        expect(positiveAmountValidator(999999.99)).toBe(true);
+        
+        expect(positiveAmountValidator(0)).toBe(false);
+        expect(positiveAmountValidator(-1)).toBe(false);
+        expect(positiveAmountValidator(-0.01)).toBe(false);
+      });
     });
 
-    it('should return false for zero', () => {
-      expect(positiveAmountValidator(0)).toBe(false);
+    describe('notFutureDateValidator', () => {
+      it('should validate dates correctly', () => {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        expect(notFutureDateValidator(today)).toBe(true);
+        expect(notFutureDateValidator(yesterday)).toBe(true);
+        expect(notFutureDateValidator(tomorrow)).toBe(false);
+        expect(notFutureDateValidator('')).toBe(true); // Empty is valid
+      });
+
+      it('should handle different date formats', () => {
+        const pastDate = '2020-01-01';
+        const futureDate = '2030-12-31';
+
+        expect(notFutureDateValidator(pastDate)).toBe(true);
+        expect(notFutureDateValidator(futureDate)).toBe(false);
+      });
     });
 
-    it('should return true for positive numbers', () => {
-      expect(positiveAmountValidator(1)).toBe(true);
-      expect(positiveAmountValidator(0.01)).toBe(true);
-    });
-  });
+    describe('safeStringValidator', () => {
+      it('should validate safe strings correctly', () => {
+        const validStrings = [
+          'Hello World',
+          'Test-123',
+          'User_Name',
+          'Price: $19.99',
+          'Question?',
+          'Exclamation!',
+          'Parentheses (test)',
+        ];
 
-  describe('notFutureDateValidator', () => {
-    it('should return true for empty value', () => {
-      expect(notFutureDateValidator('')).toBe(true);
-    });
+        const invalidStrings = [
+          '<script>alert("xss")</script>',
+          'SELECT * FROM users',
+          'test@#$%^&*',
+          'test\nwith\nnewlines',
+          'test\twith\ttabs',
+        ];
 
-    it('should return true for past date', () => {
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-      expect(notFutureDateValidator(pastDate.toISOString())).toBe(true);
-    });
+        validStrings.forEach(str => {
+          expect(safeStringValidator(str)).toBe(true);
+        });
 
-    it('should return true for today', () => {
-      const today = new Date().toISOString().split('T')[0];
-      expect(notFutureDateValidator(today)).toBe(true);
-    });
+        invalidStrings.forEach(str => {
+          expect(safeStringValidator(str)).toBe(false);
+        });
 
-    it('should return false for future date', () => {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1);
-      expect(notFutureDateValidator(futureDate.toISOString())).toBe(false);
-    });
-  });
-
-  describe('safeStringValidator', () => {
-    it('should return true for empty value', () => {
-      expect(safeStringValidator('')).toBe(true);
+        expect(safeStringValidator('')).toBe(true); // Empty is valid
+      });
     });
 
-    it('should return true for safe strings', () => {
-      expect(safeStringValidator('Hello World')).toBe(true);
-      expect(safeStringValidator('Test-123_456')).toBe(true);
-      expect(safeStringValidator('Question?')).toBe(true);
-      expect(safeStringValidator('Exclamation!')).toBe(true);
-    });
+    describe('numericStringValidator', () => {
+      it('should validate numeric strings correctly', () => {
+        expect(numericStringValidator('123')).toBe(true);
+        expect(numericStringValidator('123.45')).toBe(true);
+        expect(numericStringValidator('-123')).toBe(true);
+        expect(numericStringValidator('0')).toBe(true);
+        expect(numericStringValidator('0.0')).toBe(true);
 
-    it('should return false for unsafe strings', () => {
-      expect(safeStringValidator('<script>')).toBe(false);
-      expect(safeStringValidator('test@email')).toBe(false);
-      expect(safeStringValidator('test#hash')).toBe(false);
-    });
-  });
+        expect(numericStringValidator('abc')).toBe(false);
+        expect(numericStringValidator('12.34.56')).toBe(false);
+        expect(numericStringValidator('123abc')).toBe(false);
+        expect(numericStringValidator('  123  ')).toBe(false); // Whitespace not allowed
+        expect(numericStringValidator('')).toBe(true); // Empty is valid
+      });
 
-  describe('numericStringValidator', () => {
-    it('should return true for empty value', () => {
-      expect(numericStringValidator('')).toBe(true);
-    });
-
-    it('should return true for valid numeric strings', () => {
-      expect(numericStringValidator('123')).toBe(true);
-      expect(numericStringValidator('123.45')).toBe(true);
-      expect(numericStringValidator('-123')).toBe(true);
-      expect(numericStringValidator('0')).toBe(true);
-    });
-
-    it('should return false for invalid numeric strings', () => {
-      expect(numericStringValidator('abc')).toBe(false);
-      expect(numericStringValidator('12abc')).toBe(false);
-      expect(numericStringValidator('Infinity')).toBe(false);
-    });
-  });
-});
-
-describe('Validation Schema Builders', () => {
-  describe('createAccountNameValidation', () => {
-    it('should create validation rules for account names', () => {
-      const rules = createAccountNameValidation();
-      expect(rules).toHaveLength(4);
-      expect(rules[0].type).toBe('required');
-      expect(rules[1].type).toBe('minLength');
-      expect(rules[2].type).toBe('maxLength');
-      expect(rules[3].type).toBe('custom');
-    });
-  });
-
-  describe('createAmountValidation', () => {
-    it('should create validation rules for amounts', () => {
-      const rules = createAmountValidation();
-      expect(rules).toHaveLength(3);
-      expect(rules[0].type).toBe('required');
-      expect(rules[1].type).toBe('min');
-      expect(rules[2].type).toBe('max');
+      it('should handle edge cases', () => {
+        expect(numericStringValidator('Infinity')).toBe(false);
+        expect(numericStringValidator('-Infinity')).toBe(false);
+        expect(numericStringValidator('NaN')).toBe(false);
+        expect(numericStringValidator('1e10')).toBe(false); // Scientific notation not supported
+      });
     });
   });
 
-  describe('createDateValidation', () => {
-    it('should create validation rules for dates', () => {
-      const rules = createDateValidation();
-      expect(rules).toHaveLength(2);
-      expect(rules[0].type).toBe('required');
-      expect(rules[1].type).toBe('custom');
+  describe('Validation Schema Builders', () => {
+    describe('createAccountNameValidation', () => {
+      it('should create account name validation rules', () => {
+        const rules = createAccountNameValidation();
+        expect(rules).toHaveLength(4);
+        expect(rules[0].type).toBe('required');
+        expect(rules[1].type).toBe('minLength');
+        expect(rules[2].type).toBe('maxLength');
+        expect(rules[3].type).toBe('custom');
+      });
+
+      it('should validate account names correctly', () => {
+        const rules = createAccountNameValidation();
+        
+        expect(validateField('name', 'Valid Account', rules).isValid).toBe(true);
+        expect(validateField('name', '', rules).isValid).toBe(false);
+        expect(validateField('name', 'A', rules).isValid).toBe(false); // Too short
+        expect(validateField('name', 'A'.repeat(101), rules).isValid).toBe(false); // Too long
+      });
+    });
+
+    describe('createAmountValidation', () => {
+      it('should create amount validation rules', () => {
+        const rules = createAmountValidation();
+        expect(rules).toHaveLength(3);
+        expect(rules[0].type).toBe('required');
+        expect(rules[1].type).toBe('min');
+        expect(rules[2].type).toBe('max');
+      });
+
+      it('should validate amounts correctly', () => {
+        const rules = createAmountValidation();
+        
+        expect(validateField('amount', 100, rules).isValid).toBe(true);
+        expect(validateField('amount', 0.01, rules).isValid).toBe(true);
+        expect(validateField('amount', null, rules).isValid).toBe(false);
+        expect(validateField('amount', 0, rules).isValid).toBe(false);
+        expect(validateField('amount', -1, rules).isValid).toBe(false);
+        expect(validateField('amount', 1000000000, rules).isValid).toBe(false); // Too large
+      });
+    });
+
+    describe('createDateValidation', () => {
+      it('should create date validation rules', () => {
+        const rules = createDateValidation();
+        expect(rules).toHaveLength(2);
+        expect(rules[0].type).toBe('required');
+        expect(rules[1].type).toBe('custom');
+      });
+
+      it('should validate dates correctly', () => {
+        const rules = createDateValidation();
+        const today = new Date().toISOString().split('T')[0];
+        const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        expect(validateField('date', today, rules).isValid).toBe(true);
+        expect(validateField('date', '', rules).isValid).toBe(false);
+        expect(validateField('date', futureDate, rules).isValid).toBe(false);
+      });
+    });
+
+    describe('createCategoryNameValidation', () => {
+      it('should create category name validation rules', () => {
+        const rules = createCategoryNameValidation();
+        expect(rules).toHaveLength(4);
+        expect(rules[0].type).toBe('required');
+        expect(rules[1].type).toBe('minLength');
+        expect(rules[2].type).toBe('maxLength');
+        expect(rules[3].type).toBe('custom');
+      });
+    });
+
+    describe('createDescriptionValidation', () => {
+      it('should create optional description validation', () => {
+        const rules = createDescriptionValidation(false);
+        expect(rules).toHaveLength(2);
+        expect(rules[0].type).toBe('maxLength');
+        expect(rules[1].type).toBe('custom');
+      });
+
+      it('should create required description validation', () => {
+        const rules = createDescriptionValidation(true);
+        expect(rules).toHaveLength(3);
+        expect(rules[0].type).toBe('required');
+        expect(rules[1].type).toBe('maxLength');
+        expect(rules[2].type).toBe('custom');
+      });
     });
   });
 
-  describe('createCategoryNameValidation', () => {
-    it('should create validation rules for category names', () => {
-      const rules = createCategoryNameValidation();
-      expect(rules).toHaveLength(4);
-      expect(rules[0].type).toBe('required');
-      expect(rules[1].type).toBe('minLength');
-      expect(rules[2].type).toBe('maxLength');
-      expect(rules[3].type).toBe('custom');
+  describe('Utility Functions', () => {
+    describe('createDebouncedValidator', () => {
+      it('should debounce validation calls', async () => {
+        let callCount = 0;
+        const validator = (data: any) => {
+          callCount++;
+          return { isValid: true, errors: {} };
+        };
+
+        const debouncedValidator = createDebouncedValidator(validator, 100);
+
+        // Make multiple rapid calls
+        debouncedValidator({ test: 'data1' });
+        debouncedValidator({ test: 'data2' });
+        debouncedValidator({ test: 'data3' });
+
+        // Should not have called validator yet
+        expect(callCount).toBe(0);
+
+        // Wait for debounce
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        // Should have called validator only once
+        expect(callCount).toBe(1);
+      });
+
+      it('should return a promise', async () => {
+        const validator = (data: any) => ({ isValid: true, errors: {} });
+        const debouncedValidator = createDebouncedValidator(validator, 50);
+
+        const result = debouncedValidator({ test: 'data' });
+        expect(result).toBeInstanceOf(Promise);
+
+        const validationResult = await result;
+        expect(validationResult).toEqual({ isValid: true, errors: {} });
+      });
+    });
+
+    describe('formatValidationError', () => {
+      it('should format error messages correctly', () => {
+        expect(formatValidationError('field is required')).toBe('Field is required');
+        expect(formatValidationError('UPPERCASE ERROR')).toBe('UPPERCASE ERROR');
+        expect(formatValidationError('')).toBe('');
+        expect(formatValidationError('a')).toBe('A');
+      });
+    });
+
+    describe('hasValidationErrors', () => {
+      it('should detect validation errors correctly', () => {
+        expect(hasValidationErrors({})).toBe(false);
+        expect(hasValidationErrors({ name: undefined })).toBe(false);
+        expect(hasValidationErrors({ name: '' })).toBe(false);
+        expect(hasValidationErrors({ name: 'Error message' })).toBe(true);
+        expect(hasValidationErrors({ 
+          name: 'Error 1', 
+          email: undefined, 
+          age: 'Error 2' 
+        })).toBe(true);
+      });
+    });
+
+    describe('getFirstValidationError', () => {
+      it('should return first validation error', () => {
+        expect(getFirstValidationError({})).toBeUndefined();
+        expect(getFirstValidationError({ name: undefined })).toBeUndefined();
+        expect(getFirstValidationError({ name: '' })).toBeUndefined();
+        expect(getFirstValidationError({ name: 'First error' })).toBe('First error');
+        expect(getFirstValidationError({ 
+          name: 'First error', 
+          email: 'Second error' 
+        })).toBe('First error');
+      });
     });
   });
 
-  describe('createDescriptionValidation', () => {
-    it('should create validation rules for optional descriptions', () => {
-      const rules = createDescriptionValidation(false);
-      expect(rules).toHaveLength(2);
-      expect(rules[0].type).toBe('maxLength');
-      expect(rules[1].type).toBe('custom');
+  describe('Performance Tests', () => {
+    it('should validate large forms efficiently', () => {
+      const largeFormData = Array.from({ length: 1000 }, (_, i) => [`field${i}`, `value${i}`])
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+      const largeSchema: ValidationSchema<any> = {};
+      for (let i = 0; i < 1000; i++) {
+        largeSchema[`field${i}`] = [
+          { type: 'required', message: 'Required' },
+          { type: 'minLength', value: 2, message: 'Too short' },
+        ];
+      }
+
+      const startTime = performance.now();
+      const result = validateForm(largeFormData, largeSchema);
+      const endTime = performance.now();
+
+      expect(result.isValid).toBe(true);
+      expect(endTime - startTime).toBeLessThan(100); // Should validate in less than 100ms
     });
 
-    it('should create validation rules for required descriptions', () => {
-      const rules = createDescriptionValidation(true);
-      expect(rules).toHaveLength(3);
-      expect(rules[0].type).toBe('required');
-      expect(rules[1].type).toBe('maxLength');
-      expect(rules[2].type).toBe('custom');
-    });
-  });
-});
+    it('should handle complex validation rules efficiently', () => {
+      const complexRules: ValidationRule[] = Array.from({ length: 50 }, (_, i) => ({
+        type: 'custom',
+        validator: (value: string) => value.length > i,
+        message: `Must be longer than ${i} characters`,
+      }));
 
-describe('Utility Functions', () => {
-  describe('createDebouncedValidator', () => {
-    it('should create a debounced validator function', () => {
-      const mockValidator = jest.fn().mockReturnValue({ isValid: true, errors: {} });
-      const debouncedValidator = createDebouncedValidator(mockValidator, 100);
+      const startTime = performance.now();
+      const result = validateField('test', 'a'.repeat(100), complexRules);
+      const endTime = performance.now();
 
-      expect(typeof debouncedValidator).toBe('function');
-    });
-
-    it('should return a promise', () => {
-      const mockValidator = jest.fn().mockReturnValue({ isValid: true, errors: {} });
-      const debouncedValidator = createDebouncedValidator(mockValidator, 100);
-
-      const result = debouncedValidator({ test: 'value' });
-      expect(result).toBeInstanceOf(Promise);
-    });
-  });
-
-  describe('formatValidationError', () => {
-    it('should capitalize first letter of error message', () => {
-      expect(formatValidationError('field is required')).toBe('Field is required');
-      expect(formatValidationError('ALREADY CAPITALIZED')).toBe('ALREADY CAPITALIZED');
-      expect(formatValidationError('')).toBe('');
+      expect(result.isValid).toBe(true);
+      expect(endTime - startTime).toBeLessThan(50); // Should validate in less than 50ms
     });
   });
 
-  describe('hasValidationErrors', () => {
-    it('should return false for empty errors object', () => {
-      expect(hasValidationErrors({})).toBe(false);
-    });
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle circular references in form data', () => {
+      const circularData: any = { name: 'test' };
+      circularData.self = circularData;
 
-    it('should return false for errors with undefined values', () => {
-      expect(hasValidationErrors({ name: undefined, email: undefined })).toBe(false);
-    });
-
-    it('should return false for errors with empty string values', () => {
-      expect(hasValidationErrors({ name: '', email: '' })).toBe(false);
-    });
-
-    it('should return true for errors with actual error messages', () => {
-      expect(hasValidationErrors({ name: 'Name is required' })).toBe(true);
-    });
-  });
-
-  describe('getFirstValidationError', () => {
-    it('should return undefined for empty errors object', () => {
-      expect(getFirstValidationError({})).toBeUndefined();
-    });
-
-    it('should return undefined for errors with no actual messages', () => {
-      expect(getFirstValidationError({ name: undefined, email: '' })).toBeUndefined();
-    });
-
-    it('should return first error message', () => {
-      const errors = {
-        name: 'Name is required',
-        email: 'Email is invalid',
+      const schema = {
+        name: [{ type: 'required', message: 'Required' }],
       };
-      expect(getFirstValidationError(errors)).toBe('Name is required');
+
+      expect(() => validateForm(circularData, schema)).not.toThrow();
+    });
+
+    it('should handle malformed validation rules gracefully', () => {
+      const malformedRules: ValidationRule[] = [
+        { type: 'required', message: 'Required' },
+        { type: 'minLength' } as any, // Missing required properties
+        { type: 'custom', message: 'Custom' }, // Missing validator
+      ];
+
+      expect(() => validateField('test', 'value', malformedRules)).not.toThrow();
+    });
+
+    it('should handle very large strings', () => {
+      const largeString = 'a'.repeat(1000000); // 1MB string
+      const rules = [
+        { type: 'required', message: 'Required' },
+        { type: 'maxLength', value: 2000000, message: 'Too long' },
+      ];
+
+      const startTime = performance.now();
+      const result = validateField('test', largeString, rules);
+      const endTime = performance.now();
+
+      expect(result.isValid).toBe(true);
+      expect(endTime - startTime).toBeLessThan(100); // Should handle large strings efficiently
+    });
+
+    it('should handle unicode and special characters', () => {
+      const unicodeString = '🚀 Hello 世界 café naïve résumé';
+      const rules = [
+        { type: 'required', message: 'Required' },
+        { type: 'minLength', value: 5, message: 'Too short' },
+      ];
+
+      const result = validateField('test', unicodeString, rules);
+      expect(result.isValid).toBe(true);
     });
   });
 });

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from "react";
+import React, { memo, useCallback, useMemo, useEffect } from "react";
 import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Inserts, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";

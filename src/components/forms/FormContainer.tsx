@@ -1,3 +1,4 @@
+import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FormContainerProps } from '@/src/types/components/forms.types';
 import Button from '../Button';
@@ -6,8 +7,12 @@ import Button from '../Button';
  * FormContainer component provides consistent layout, submission handling, and loading states
  * for all forms in the application. It includes form validation display, submit/reset buttons,
  * and responsive design with accessibility support.
+ * 
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - useCallback for event handlers to maintain referential equality
  */
-export default function FormContainer({
+function FormContainerComponent({
   children,
   onSubmit,
   isValid,
@@ -17,25 +22,25 @@ export default function FormContainer({
   onReset,
   className = '',
 }: FormContainerProps) {
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!isLoading && isValid) {
       onSubmit();
     }
-  };
+  }, [isLoading, isValid, onSubmit]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (!isLoading && onReset) {
       onReset();
     }
-  };
+  }, [isLoading, onReset]);
 
-  const handleKeyPress = (event: any) => {
+  const handleKeyPress = useCallback((event: any) => {
     // Handle Enter key for form submission
     if (event.nativeEvent?.key === 'Enter' && !event.nativeEvent?.shiftKey) {
       event.preventDefault();
       handleSubmit();
     }
-  };
+  }, [handleSubmit]);
 
   return (
     <View
@@ -43,6 +48,10 @@ export default function FormContainer({
       accessible={true}
       accessibilityRole="form"
       accessibilityLabel="Form container"
+      accessibilityState={{ 
+        busy: isLoading,
+        disabled: isLoading 
+      }}
       onKeyPress={handleKeyPress}
     >
       {/* Form Content */}
@@ -72,6 +81,17 @@ export default function FormContainer({
           label={isLoading ? 'Saving...' : submitLabel}
           onPress={handleSubmit}
           isValid={isValid && !isLoading}
+          accessibilityHint={
+            !isValid 
+              ? "Form has validation errors that need to be fixed before submission"
+              : isLoading 
+                ? "Form is currently being submitted"
+                : "Submit the form with current values"
+          }
+          accessibilityState={{
+            busy: isLoading,
+            disabled: !isValid || isLoading
+          }}
         />
       </View>
 
@@ -91,3 +111,22 @@ export default function FormContainer({
     </View>
   );
 }
+
+// Memoize the component with custom comparison function
+const FormContainer = memo(FormContainerComponent, (prevProps, nextProps) => {
+  // Custom comparison to optimize re-renders
+  return (
+    prevProps.isValid === nextProps.isValid &&
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.submitLabel === nextProps.submitLabel &&
+    prevProps.showReset === nextProps.showReset &&
+    prevProps.className === nextProps.className &&
+    prevProps.onSubmit === nextProps.onSubmit &&
+    prevProps.onReset === nextProps.onReset
+    // children comparison is handled by React's default shallow comparison
+  );
+});
+
+FormContainer.displayName = 'FormContainer';
+
+export default FormContainer;

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import '@testing-library/jest-native/extend-expect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AccountForm, { AccountFormType, initialState } from '../AccountForm';
 
@@ -308,6 +309,93 @@ describe('AccountForm', () => {
     });
   });
 
+  describe('Form Data Initialization', () => {
+    it('should initialize form correctly in create mode', () => {
+      const newAccount: AccountFormType = {
+        ...initialState,
+      };
+
+      render(
+        <TestWrapper>
+          <AccountForm account={newAccount} />
+        </TestWrapper>
+      );
+
+      expect(screen.getByDisplayValue('')).toBeTruthy(); // Empty name field
+      expect(screen.getByDisplayValue('0')).toBeTruthy(); // Default balance
+      expect(screen.getByDisplayValue('USD')).toBeTruthy(); // Default currency
+    });
+
+    it('should initialize form correctly in edit mode', () => {
+      render(
+        <TestWrapper>
+          <AccountForm account={defaultAccount} />
+        </TestWrapper>
+      );
+
+      expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+      expect(screen.getByDisplayValue('1000')).toBeTruthy();
+      expect(screen.getByDisplayValue('USD')).toBeTruthy();
+    });
+
+    it('should update form when initial data changes', async () => {
+      const { rerender } = render(
+        <TestWrapper>
+          <AccountForm account={defaultAccount} />
+        </TestWrapper>
+      );
+
+      expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+
+      // Update the account data
+      const updatedAccount: AccountFormType = {
+        ...defaultAccount,
+        name: 'Updated Account',
+        balance: 2000,
+      };
+
+      rerender(
+        <TestWrapper>
+          <AccountForm account={updatedAccount} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Updated Account')).toBeTruthy();
+        expect(screen.getByDisplayValue('2000')).toBeTruthy();
+      });
+    });
+
+    it('should not show dirty state when initial data changes', async () => {
+      const { rerender } = render(
+        <TestWrapper>
+          <AccountForm account={defaultAccount} />
+        </TestWrapper>
+      );
+
+      // Initially no reset button should be visible
+      expect(screen.queryByText('Reset')).toBeNull();
+
+      // Update the account data
+      const updatedAccount: AccountFormType = {
+        ...defaultAccount,
+        name: 'Updated Account',
+      };
+
+      rerender(
+        <TestWrapper>
+          <AccountForm account={updatedAccount} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Updated Account')).toBeTruthy();
+        // Still no reset button should be visible since this is initial data change
+        expect(screen.queryByText('Reset')).toBeNull();
+      });
+    });
+  });
+
   describe('Running Balance Sync', () => {
     it('should show sync button when running balance differs from balance', () => {
       const accountWithRunningBalance: AccountFormType = {
@@ -355,6 +443,115 @@ describe('AccountForm', () => {
     });
   });
 
+  describe('Open Balance Handling', () => {
+    it('should show open balance field when account has opening transaction', () => {
+      // Mock open transaction
+      jest.doMock('@/src/services/Accounts.Service', () => ({
+        useAccountService: () => ({
+          upsert: () => ({ mutate: mockUpsert }),
+          updateAccountOpenedTransaction: () => ({ mutate: mockUpdateOpenBalance }),
+          getAccountOpenedTransaction: () => ({ 
+            data: { id: 'open-1', amount: 500 } 
+          }),
+        }),
+      }));
+
+      const accountWithOpenBalance: AccountFormType = {
+        ...defaultAccount,
+        openBalance: 500,
+      };
+
+      render(
+        <TestWrapper>
+          <AccountForm account={accountWithOpenBalance} />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('Open Balance')).toBeTruthy();
+      expect(screen.getByDisplayValue('500')).toBeTruthy();
+    });
+
+    it('should update balance when open balance changes', async () => {
+      // Mock open transaction
+      jest.doMock('@/src/services/Accounts.Service', () => ({
+        useAccountService: () => ({
+          upsert: () => ({ mutate: mockUpsert }),
+          updateAccountOpenedTransaction: () => ({ mutate: mockUpdateOpenBalance }),
+          getAccountOpenedTransaction: () => ({ 
+            data: { id: 'open-1', amount: 500 } 
+          }),
+        }),
+      }));
+
+      const accountWithOpenBalance: AccountFormType = {
+        ...defaultAccount,
+        balance: 1000,
+        openBalance: 500,
+      };
+
+      render(
+        <TestWrapper>
+          <AccountForm account={accountWithOpenBalance} />
+        </TestWrapper>
+      );
+
+      const openBalanceField = screen.getByDisplayValue('500');
+      fireEvent.changeText(openBalanceField, '600');
+
+      await waitFor(() => {
+        // Balance should be updated: original balance (1000) - original open (500) + new open (600) = 1100
+        expect(screen.getByDisplayValue('1100')).toBeTruthy();
+      });
+    });
+
+    it('should treat open balance as separate form for reset purposes', async () => {
+      // Mock open transaction
+      jest.doMock('@/src/services/Accounts.Service', () => ({
+        useAccountService: () => ({
+          upsert: () => ({ mutate: mockUpsert }),
+          updateAccountOpenedTransaction: () => ({ mutate: mockUpdateOpenBalance }),
+          getAccountOpenedTransaction: () => ({ 
+            data: { id: 'open-1', amount: 500 } 
+          }),
+        }),
+      }));
+
+      const accountWithOpenBalance: AccountFormType = {
+        ...defaultAccount,
+        openBalance: 500,
+      };
+
+      render(
+        <TestWrapper>
+          <AccountForm account={accountWithOpenBalance} />
+        </TestWrapper>
+      );
+
+      // Change both name and open balance
+      const nameField = screen.getByDisplayValue('Test Account');
+      fireEvent.changeText(nameField, 'Modified Name');
+
+      const openBalanceField = screen.getByDisplayValue('500');
+      fireEvent.changeText(openBalanceField, '600');
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Modified Name')).toBeTruthy();
+        expect(screen.getByDisplayValue('600')).toBeTruthy();
+      });
+
+      // Reset form
+      const resetButton = screen.getByText('Reset');
+      fireEvent.press(resetButton);
+
+      await waitFor(() => {
+        // Name should be reset
+        expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+        // Open balance should be preserved since it's treated as separate form
+        expect(screen.getByDisplayValue('600')).toBeTruthy();
+      });
+    });
+  });
+
   describe('Form Reset', () => {
     it('should show reset button when form is dirty', async () => {
       render(
@@ -393,6 +590,98 @@ describe('AccountForm', () => {
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+      });
+    });
+
+    it('should preserve open balance field when resetting form', async () => {
+      const accountWithOpenTransaction: AccountFormType = {
+        ...defaultAccount,
+        openBalance: 500,
+      };
+
+      // Mock open transaction
+      jest.doMock('@/src/services/Accounts.Service', () => ({
+        useAccountService: () => ({
+          upsert: () => ({ mutate: mockUpsert }),
+          updateAccountOpenedTransaction: () => ({ mutate: mockUpdateOpenBalance }),
+          getAccountOpenedTransaction: () => ({ 
+            data: { id: 'open-1', amount: 500 } 
+          }),
+        }),
+      }));
+
+      render(
+        <TestWrapper>
+          <AccountForm account={accountWithOpenTransaction} />
+        </TestWrapper>
+      );
+
+      // Make form dirty by changing name
+      const nameField = screen.getByDisplayValue('Test Account');
+      fireEvent.changeText(nameField, 'Modified Name');
+
+      // Change open balance
+      const openBalanceField = screen.getByDisplayValue('500');
+      fireEvent.changeText(openBalanceField, '600');
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Modified Name')).toBeTruthy();
+        expect(screen.getByDisplayValue('600')).toBeTruthy();
+      });
+
+      // Reset form
+      const resetButton = screen.getByText('Reset');
+      fireEvent.press(resetButton);
+
+      await waitFor(() => {
+        // Name should be reset to original
+        expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+        // Open balance should be preserved (current value, not original)
+        expect(screen.getByDisplayValue('600')).toBeTruthy();
+      });
+    });
+
+    it('should reset open balance to original if it was not changed', async () => {
+      const accountWithOpenTransaction: AccountFormType = {
+        ...defaultAccount,
+        openBalance: 500,
+      };
+
+      // Mock open transaction
+      jest.doMock('@/src/services/Accounts.Service', () => ({
+        useAccountService: () => ({
+          upsert: () => ({ mutate: mockUpsert }),
+          updateAccountOpenedTransaction: () => ({ mutate: mockUpdateOpenBalance }),
+          getAccountOpenedTransaction: () => ({ 
+            data: { id: 'open-1', amount: 500 } 
+          }),
+        }),
+      }));
+
+      render(
+        <TestWrapper>
+          <AccountForm account={accountWithOpenTransaction} />
+        </TestWrapper>
+      );
+
+      // Make form dirty by changing name only (not open balance)
+      const nameField = screen.getByDisplayValue('Test Account');
+      fireEvent.changeText(nameField, 'Modified Name');
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Modified Name')).toBeTruthy();
+        expect(screen.getByDisplayValue('500')).toBeTruthy();
+      });
+
+      // Reset form
+      const resetButton = screen.getByText('Reset');
+      fireEvent.press(resetButton);
+
+      await waitFor(() => {
+        // Name should be reset to original
+        expect(screen.getByDisplayValue('Test Account')).toBeTruthy();
+        // Open balance should also be reset to original since it wasn't changed
+        expect(screen.getByDisplayValue('500')).toBeTruthy();
       });
     });
   });

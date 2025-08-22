@@ -104,6 +104,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     return baseSchema;
   }, [formState?.data?.type]);
 
+  // Initialize form data from props
+  const initialFormData: TransactionFormType = useMemo(() => ({
+    ...transaction,
+    amount: Math.abs(transaction.amount ?? 0),
+    mode: transaction.amount && transaction.amount < 0 ? 'minus' : 'plus',
+  }), [transaction]);
+
   // Initialize form state with validation
   const {
     formState,
@@ -114,11 +121,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     setFormData,
     isValid,
     isDirty,
-  } = useFormState<TransactionFormType>({
-    ...transaction,
-    amount: Math.abs(transaction.amount ?? 0),
-    mode: transaction.amount && transaction.amount < 0 ? 'minus' : 'plus',
-  }, validationSchema);
+  } = useFormState<TransactionFormType>(initialFormData, validationSchema);
 
   // Enhanced amount calculation with better logic
   const calculateFinalAmount = useCallback((data: TransactionFormType, currentMode: 'plus' | 'minus'): number => {
@@ -220,16 +223,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     }
   }, [validateForm, submit, formState.data, setFormData]);
 
-  // Update form data when transaction prop changes
+  // Synchronize mode state with form data
   useEffect(() => {
-    const initialMode = transaction.amount && transaction.amount < 0 ? 'minus' : 'plus';
-    setMode(initialMode);
-    setFormData({
-      ...transaction,
-      amount: Math.abs(transaction.amount ?? 0),
-      mode: initialMode,
-    });
-  }, [transaction, setFormData]);
+    const currentMode = formState.data.mode || (transaction.amount && transaction.amount < 0 ? 'minus' : 'plus');
+    setMode(currentMode);
+  }, [formState.data.mode, transaction.amount]);
 
   // Handle mode changes
   const handleModeToggle = useCallback(() => {

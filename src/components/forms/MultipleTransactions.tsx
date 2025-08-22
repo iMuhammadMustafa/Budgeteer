@@ -103,6 +103,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     groupid: [commonValidationRules.required('Group ID is required')],
   }), []);
 
+  // Initialize form data from props
+  const initialFormData = useMemo(() => 
+    transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState,
+    [transaction]
+  );
+
   // Initialize form state
   const {
     formState,
@@ -113,10 +119,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     setFormData,
     isValid,
     isDirty,
-  } = useFormState<MultipleTransactionsFormData>(
-    transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState,
-    validationSchema
-  );
+  } = useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
 
   if (isCategoriesLoading || isAccountsLoading) {
     return (
@@ -127,17 +130,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     );
   }
 
-  // Initialize form data when transaction changes
+  // Initialize mode and maxAmount when transaction changes
   useEffect(() => {
     if (transaction) {
       const amount = Math.abs(parseFloat(transaction.amount?.toString() || '0'));
       setMode(parseFloat(transaction.amount?.toString() || '0') < 0 ? "minus" : "plus");
       setMaxAmount(amount);
-      
-      const formData = convertTransactionToMultipleForm(transaction);
-      setFormData(formData);
     }
-  }, [transaction, setFormData]);
+  }, [transaction]);
 
   // Calculate current total amount from all transactions
   const currentAmount = useMemo(() => {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useCallback } from "react";
-import { Platform, SafeAreaView, ScrollView, View, Switch, Text } from "react-native";
+import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
 
-import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { Account, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
 import { useFormState } from "../hooks/useFormState";
@@ -28,6 +28,16 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   const { mutate: updateAccount } = accountService.upsert();
   const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
 
+  // Initialize form data from props
+  const initialFormData: AccountFormData = useMemo(
+    () => ({
+      ...account,
+      openBalance: openTransaction?.amount || null,
+      addAdjustmentTransaction: true,
+    }),
+    [account, openTransaction],
+  );
+
   // Create validation schema
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
     () => ({
@@ -48,8 +58,13 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   );
 
   // Initialize form state with validation
-  const { formState, updateField, validateForm, resetForm, setFormData, setInitialFormData, isValid, isDirty } =
-    useFormState<AccountFormData>(account, validationSchema);
+  const { formState, updateField, validateForm, resetForm, setInitialFormData, isValid, isDirty } =
+    useFormState<AccountFormData>(initialFormData, validationSchema);
+
+  // Update form data when initial data changes (for edit mode)
+  useEffect(() => {
+    setInitialFormData(initialFormData);
+  }, [initialFormData, setInitialFormData]);
 
   // Handle form submission
   const handleSubmit = useCallback(
@@ -118,22 +133,9 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     }
   }, [account, updateAccount]);
 
-  // Initialize form data from props
-  const initialFormData: AccountFormData = useMemo(
-    () => ({
-      ...account,
-      openBalance: openTransaction?.amount || null,
-      addAdjustmentTransaction: true,
-    }),
-    [account, openTransaction],
-  );
 
-  // Update form data when account prop changes (without triggering dirty state)
-  useEffect(() => {
-    setInitialFormData(initialFormData);
-  }, [initialFormData, setInitialFormData]);
 
-  // Handle open balance changes
+  // Handle open balance changes (treated as separate form)
   const handleOpenBalanceChange = useCallback(
     (value: any) => {
       const openBalanceValue = Number(value) || 0;
@@ -143,6 +145,8 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
       // Calculate new balance based on open balance change
       const newBalance = originalBalance - originalOpenAmount + openBalanceValue;
 
+      // Update open balance and related fields
+      // Note: This will affect dirty state, but open balance is treated as separate
       updateField("openBalance", openBalanceValue);
       updateField("balance", newBalance);
       updateField("addAdjustmentTransaction", false);
@@ -150,15 +154,37 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
     [account.balance, openTransaction?.amount, updateField],
   );
 
-  // Custom reset handler that preserves open balance
+  // Reset open balance to its original value (separate from main form reset)
+  const handleResetOpenBalance = useCallback(() => {
+    const originalOpenBalance = openTransaction?.amount || null;
+    const originalBalance = Number(account.balance) || 0;
+    const currentOpenAmount = Number(formState.data.openBalance) || 0;
+    
+    // Calculate the balance adjustment needed
+    const adjustedBalance = originalBalance - currentOpenAmount + (originalOpenBalance || 0);
+    
+    // Reset open balance to original value
+    updateField("openBalance", originalOpenBalance);
+    updateField("balance", adjustedBalance);
+  }, [openTransaction?.amount, account.balance, formState.data.openBalance, updateField]);
+
+  // Custom reset handler that preserves open balance field
   const handleReset = useCallback(() => {
+    // Store the current open balance since it's managed as a separate form
     const currentOpenBalance = formState.data.openBalance;
-    resetForm();
-    // Restore the open balance after reset since it's managed separately
-    if (currentOpenBalance !== null && currentOpenBalance !== undefined) {
-      updateField("openBalance", currentOpenBalance);
-    }
-  }, [resetForm, formState.data.openBalance, updateField]);
+    const originalOpenBalance = openTransaction?.amount || null;
+    
+    // Create new initial data that preserves the open balance field
+    // The open balance is treated as a separate form, so we preserve its current state
+    const resetData = {
+      ...initialFormData,
+      openBalance: currentOpenBalance, // Preserve current open balance value
+    };
+    
+    // Use setInitialFormData to reset without triggering dirty state
+    // This properly resets the form while preserving the open balance
+    setInitialFormData(resetData);
+  }, [initialFormData, formState.data.openBalance, setInitialFormData]);
 
   // Prepare dropdown options for categories
   const categoryOptions = useMemo(
@@ -330,16 +356,31 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
             {/* Open Balance (for existing accounts with opening transaction) */}
             {openTransaction && (
-              <FormField
-                config={{
-                  name: "openBalance",
-                  label: "Open Balance",
-                  type: "number",
-                  description: "Adjusting this will update the account balance accordingly",
-                }}
-                value={formState.data.openBalance?.toString() ?? "0"}
-                onChange={handleOpenBalanceChange}
-              />
+              <View className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                <View className="flex flex-row items-center justify-between mb-2">
+                  <Text className="text-sm font-medium text-gray-700">
+                    Open Balance (Separate Form)
+                  </Text>
+                  <Text
+                    className="text-blue-600 underline text-sm"
+                    onPress={handleResetOpenBalance}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reset open balance to original value"
+                  >
+                    Reset
+                  </Text>
+                </View>
+                <FormField
+                  config={{
+                    name: "openBalance",
+                    label: "Open Balance",
+                    type: "number",
+                    description: "Adjusting this will update the account balance accordingly. This field is managed separately from the main form.",
+                  }}
+                  value={formState.data.openBalance?.toString() ?? "0"}
+                  onChange={handleOpenBalanceChange}
+                />
+              </View>
             )}
           </FormSection>
 
@@ -371,18 +412,23 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
   );
 }
 
-export type AccountFormType = AccountFormData & {
-  runningbalance?: number | null;
-  openBalance?: number | null;
-  addAdjustmentTransaction?: boolean;
-};
+export type AccountFormType = AccountFormData;
 
 export const initialState: AccountFormType = {
   name: "",
   categoryid: "",
   balance: 0,
   currency: "USD",
+  description: "",
   notes: "",
+  icon: "CircleHelp",
+  color: "info-100",
+  displayorder: 0,
+  owner: "",
+  tenantid: "",
+  isdeleted: false,
+  createdby: null,
+  updatedby: null,
   runningbalance: null,
   openBalance: null,
   addAdjustmentTransaction: true,

@@ -1,5 +1,5 @@
-import React, { memo, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, Switch } from 'react-native';
+import React, { memo, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, Switch } from 'react-native';
 import { FormFieldProps, OptionItem } from '@/src/types/components/forms.types';
 import DropdownField from '../DropDownField';
 import MyDateTimePicker from '../MyDateTimePicker';
@@ -31,9 +31,19 @@ function FormFieldComponent<T>({
   } = config;
 
   const hasError = touched && error;
-  const fieldId = `field-${String(name)}`;
-  const errorId = `${fieldId}-error`;
-  const descriptionId = `${fieldId}-description`;
+  
+  // Memoize computed values to prevent unnecessary recalculations
+  const fieldId = useMemo(() => `field-${String(name)}`, [name]);
+  const errorId = useMemo(() => `${fieldId}-error`, [fieldId]);
+  const descriptionId = useMemo(() => `${fieldId}-description`, [fieldId]);
+  
+  // Enhanced accessibility attributes
+  const accessibilityDescribedBy = useMemo(() => {
+    const describedByIds = [];
+    if (description) describedByIds.push(descriptionId);
+    if (hasError) describedByIds.push(errorId);
+    return describedByIds.length > 0 ? describedByIds.join(' ') : undefined;
+  }, [description, hasError, descriptionId, errorId]);
 
   const handleChange = useCallback((newValue: any) => {
     onChange(newValue);
@@ -48,13 +58,20 @@ function FormFieldComponent<T>({
   const renderField = () => {
     const baseAccessibilityProps = {
       accessible: true,
-      accessibilityLabel: label,
+      accessibilityLabel: label + (required ? ' (required)' : ''),
       accessibilityRequired: required,
-      accessibilityInvalid: hasError,
-      accessibilityDescribedBy: [
-        description ? descriptionId : null,
-        hasError ? errorId : null,
-      ].filter(Boolean).join(' ') || undefined,
+      accessibilityInvalid: Boolean(hasError),
+      accessibilityDescribedBy: accessibilityDescribedBy,
+      accessibilityState: {
+        invalid: Boolean(hasError),
+        required: required,
+        disabled: disabled,
+      },
+      accessibilityHint: hasError 
+        ? `This field has an error: ${error}` 
+        : description 
+          ? description 
+          : undefined,
     };
 
     switch (type) {
@@ -230,7 +247,7 @@ function FormFieldComponent<T>({
         <Text 
           id={errorId}
           className="text-red-500 text-sm mt-1"
-          accessibilityRole="alert"
+          accessibilityRole="text"
           accessibilityLiveRegion="polite"
         >
           {error}
@@ -240,7 +257,20 @@ function FormFieldComponent<T>({
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
-const FormField = memo(FormFieldComponent) as typeof FormFieldComponent;
+// Memoize the component with custom comparison function for better performance
+const FormField = memo(FormFieldComponent, (prevProps, nextProps) => {
+  // Custom comparison to optimize re-renders
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.error === nextProps.error &&
+    prevProps.touched === nextProps.touched &&
+    prevProps.config === nextProps.config &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onBlur === nextProps.onBlur &&
+    prevProps.className === nextProps.className
+  );
+}) as typeof FormFieldComponent;
+
+FormField.displayName = 'FormField';
 
 export default FormField;

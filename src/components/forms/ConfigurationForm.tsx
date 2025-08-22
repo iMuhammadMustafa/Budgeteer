@@ -1,5 +1,5 @@
 // ConfigurationForm.tsx - Refactored to use new form system
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Text, View } from "react-native";
 import { useConfigurationService } from "@/src/services/Configurations.Service";
 import { useFormState } from "../hooks/useFormState";
@@ -17,6 +17,10 @@ export const initialState: ConfigurationFormType = {
   type: "",
   key: "",
   value: "",
+  createdby:"",
+  isdeleted: false,
+  updatedby:"",
+  tenantid: "",
 };
 
 // Validation schema for configuration form
