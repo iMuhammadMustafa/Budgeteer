@@ -101,39 +101,3 @@ export class ConfigurationSupaRepository implements IConfigurationRepository {
     return data;
   }
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const getAllConfigurations = async (tenantId: string) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.findAll(undefined, tenantId);
-};
-
-export const getConfigurationById = async (id: string, tenantId: string) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.findById(id, tenantId);
-};
-
-export const getConfiguration = async (table: string, type: string, key: string, tenantId: string) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.getConfiguration(table, type, key, tenantId);
-};
-
-export const createConfiguration = async (configuration: Inserts<TableNames.Configurations>) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.create(configuration);
-};
-
-export const updateConfiguration = async (configuration: Updates<TableNames.Configurations>) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.update(configuration.id!, configuration);
-};
-
-export const deleteConfiguration = async (id: string, userId: string) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.softDelete(id);
-};
-
-export const restoreConfiguration = async (id: string, userId: string) => {
-  const repository = new ConfigurationSupaRepository();
-  return repository.restore(id);
-};
