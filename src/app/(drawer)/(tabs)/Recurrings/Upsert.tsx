@@ -17,8 +17,8 @@ import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
 import { useAuth } from "@/src/providers/AuthProvider";
-import { getTransactionsByName } from "@/src/repositories";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -95,6 +95,7 @@ export default function RecurringUpsertScreen() {
     handleSubmit,
     handleCancel,
   } = useRecurringForm(recurringIdToEdit);
+  const transactionService = useTransactionService();
 
   if (isLoading) return <ActivityIndicator className="flex-1 justify-center items-center" />;
 
@@ -109,7 +110,7 @@ export default function RecurringUpsertScreen() {
           <SearchableDropdown
             label="Blueprint Transaction (Optional)"
             placeholder="Search transaction by name..."
-            searchAction={getTransactionsByName}
+            searchAction={transactionService.findByName}
             onSelectItem={handleBlueprintTransactionSelect}
             onChange={() => {}} // Required, but selection handles logic
           />

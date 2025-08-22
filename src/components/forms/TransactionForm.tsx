@@ -14,7 +14,6 @@ import MyDateTimePicker from "../MyDateTimePicker";
 import TextInputField from "../TextInputField";
 import CalculatorComponent from "../Calculator";
 import { AccountSelecterDropdown, MyCategoriesDropdown, MyTransactionTypesDropdown } from "../DropDownField";
-import { getTransactionsByName } from "@/src/repositories";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
@@ -69,6 +68,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     onSelectItem,
     handleSwitchAccounts,
   } = useTransactionForm({ transaction });
+  const transactionService = useTransactionService();
   // console.log(transaction);
 
   // const [searchText, setSearchText] = useState<string>("");
@@ -96,7 +96,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
         <SearchableDropdown
           label="Name"
-          searchAction={getTransactionsByName}
+          searchAction={transactionService.findByName}
           // searchSetter={setSearchText}
           // result={searchResults}
           initalValue={transaction.name}
