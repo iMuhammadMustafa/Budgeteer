@@ -3,13 +3,14 @@ import { View, Text, FlatList, Pressable, ActivityIndicator, Alert } from "react
 import Button from "@/src/components/Button";
 import MyModal from "@/src/components/MyModal";
 import ConfigurationForm, { ConfigurationFormType, initialState } from "@/src/components/forms/ConfigurationForm";
-import { useGetConfigurations, useDeleteConfiguration } from "@/src/services//Configurations.Service";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
+import { useConfigurationService } from "@/src/services/Configurations.Service";
 
 export default function Settings() {
-  const { data, isLoading, error } = useGetConfigurations();
-  const { mutate: deleteConfiguration, isPending: isDeleting } = useDeleteConfiguration();
+  const configService = useConfigurationService();
+  const { data, isLoading, error } = configService.findAll();
+  const { mutate: deleteConfiguration, isPending: isDeleting } = configService.delete();
   const { storageMode, setStorageMode, isInitializing } = useStorageMode();
 
   const [modalOpen, setModalOpen] = useState(false);

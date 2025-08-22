@@ -164,33 +164,3 @@ const updateRepoHelper = async (
   const updatedEntity = await repository.update(formData.id, formData);
   return updatedEntity;
 };
-
-const createTransactionGroupHelper = async (
-  formTransactionGroup: Inserts<TableNames.TransactionGroups>,
-  session: Session,
-) => {
-  let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
-
-  formTransactionGroup.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
-  formTransactionGroup.createdby = userId;
-  formTransactionGroup.tenantid = tenantid;
-
-  const newTransactionGroup = await createTransactionGroup(formTransactionGroup);
-
-  return newTransactionGroup;
-};
-
-const updateTransactionGroupHelper = async (
-  formTransactionGroup: Updates<TableNames.TransactionGroups>,
-  session: Session,
-) => {
-  let userId = session.user.id;
-
-  formTransactionGroup.updatedby = userId;
-  formTransactionGroup.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
-
-  const updatedTransactionGroup = await updateTransactionGroup(formTransactionGroup);
-
-  return updatedTransactionGroup;
-};
