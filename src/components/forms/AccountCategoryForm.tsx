@@ -1,10 +1,10 @@
-import React, { memo, useCallback, useMemo } from "react";
+import React, { memo, useCallback, useMemo, useEffect } from "react";
 import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
 
 import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
-import { AccountCategoryFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
+import { ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
 import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
@@ -18,6 +18,21 @@ import Button from "../Button";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
+
+// Define the form data type with only the fields we need for the form
+interface AccountCategoryFormData {
+  name: string;
+  icon: string;
+  color: string;
+  displayorder: number;
+  type: "Asset" | "Liability";
+  // Optional fields that might come from existing data
+  id?: string;
+  tenantid?: string;
+  isdeleted?: boolean;
+  createdby?: string;
+  updatedby?: string;
+}
 
 export const initialState: AccountCategoryFormData = {
   name: "",
@@ -76,19 +91,31 @@ interface AccountCategoryFormProps {
 
 function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   // Initialize form data from props
-  const initialFormData: AccountCategoryFormData = useMemo(
-    () => ({
-      ...initialState,
-      ...category,
-    }),
-    [category],
-  );
+  const initialFormData: AccountCategoryFormData = useMemo(() => {
+    const formData = {
+      name: category.name || "",
+      icon: category.icon || "CircleHelp",
+      color: category.color || "info-100",
+      displayorder: category.displayorder ?? 0,
+      type: (category.type as "Asset" | "Liability") || "Asset",
+      // Include optional fields if they exist
+      ...(category.id && { id: category.id }),
+      ...(category.tenantid && { tenantid: category.tenantid }),
+      ...(category.isdeleted !== undefined && { isdeleted: category.isdeleted }),
+      ...(category.createdby && { createdby: category.createdby }),
+      ...(category.updatedby && { updatedby: category.updatedby }),
+    };
+    return formData;
+  }, [category]);
 
   // Form state management
-  const { formState, updateField, setFieldTouched, validateForm, resetForm, isValid, isDirty } = useFormState(
-    initialFormData,
-    validationSchema,
-  );
+  const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
+    useFormState(initialFormData, validationSchema);
+
+  // Update form data when category changes (for edit mode)
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData, setFormData]);
 
   // Form submission handling
   const { mutate } = useAccountCategoryService().upsert();

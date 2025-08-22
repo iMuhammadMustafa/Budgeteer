@@ -1,57 +1,45 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import dayjs from "dayjs";
 
-import { MultiTransactionGroup, MultiTransactionItem } from "@/src/types/components/MultipleTransactions.types";
+import { MultipleTransactionsFormData, MultipleTransactionItemData, ValidationSchema, OptionItem } from "@/src/types/components/forms.types";
+import { useFormState } from "../hooks/useFormState";
+import { useFormSubmission } from "../hooks/useFormSubmission";
+import FormContainer from "./FormContainer";
+import FormField from "./FormField";
+import FormSection from "./FormSection";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import { TransactionFormType } from "./TransactionForm";
-import TextInputField from "../TextInputField";
-import TextInputFieldWithIcon from "../TextInputFieldWithIcon";
-import MyDateTimePicker from "../MyDateTimePicker";
-import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../DropDownField";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { ViewNames } from "@/src/types/db/TableNames";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
+import { 
+  commonValidationRules, 
+  createAmountValidation, 
+  createDateValidation,
+  createDescriptionValidation 
+} from "@/src/utils/form-validation";
 
-let groupId = GenerateUuid();
-export const initalState: MultiTransactionGroup = {
-  originalTransactionId: null,
-  date: dayjs().local(),
-  description: "",
-  type: "Expense",
-  accountid: "",
-  isvoid: false,
-  groupid: groupId,
-  payee: "",
-  transactions: {
-    [GenerateUuid()]: {
-      name: "",
-      amount: 0,
-      categoryid: "",
-      notes: null,
-      tags: null,
-      groupid: groupId,
-    },
-  },
-};
-
-const generateInitalState = () => {
-  let groupId = GenerateUuid();
+// Generate initial state for multiple transactions form
+const generateInitialState = (): MultipleTransactionsFormData => {
+  const groupId = GenerateUuid();
+  const transactionId = GenerateUuid();
+  
   return {
     originalTransactionId: null,
-    date: dayjs().local(),
+    payee: "",
+    date: dayjs().local().format("YYYY-MM-DDTHH:mm:ss"),
     description: "",
     type: "Expense",
-    accountid: "",
     isvoid: false,
+    accountid: "",
     groupid: groupId,
-    payee: "",
     transactions: {
-      [GenerateUuid()]: {
+      [transactionId]: {
         name: "",
         amount: 0,
         categoryid: "",
@@ -63,238 +51,478 @@ const generateInitalState = () => {
   };
 };
 
+export const initialMultipleTransactionsState = generateInitialState();
+
+// Helper function to convert single transaction to multiple transactions form
+const convertTransactionToMultipleForm = (transaction: TransactionFormType): MultipleTransactionsFormData => {
+  const groupId = transaction.id || GenerateUuid();
+  const transactionId = GenerateUuid();
+  
+  return {
+    originalTransactionId: transaction.id || null,
+    payee: transaction.payee || "",
+    date: transaction.date || dayjs().local().format("YYYY-MM-DDTHH:mm:ss"),
+    description: transaction.description || "",
+    type: transaction.type || "Expense",
+    isvoid: transaction.isvoid || false,
+    accountid: transaction.accountid || "",
+    groupid: groupId,
+    transactions: {
+      [transactionId]: {
+        name: transaction.name || "",
+        amount: Math.abs(transaction.amount || 0),
+        categoryid: transaction.categoryid || "",
+        notes: transaction.notes || null,
+        tags: transaction.tags || null,
+        groupid: groupId,
+      },
+    },
+  };
+};
+
 function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
-  const [group, setGroup] = useState<MultiTransactionGroup>(initalState);
-
-  const [mode, setMode] = useState<"plus" | "minus">("minus");
-
-  const [currentAmount, setCurrentAmount] = useState(0);
-  const [maxAmount, setMaxAmount] = useState(0);
-
+  // Services
   const transactionCategoriesService = useTransactionCategoryService();
   const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.findAll();
   const accountsService = useAccountService();
   const { data: accounts, isLoading: isAccountsLoading } = accountsService.findAll();
-  const [isLoading, setIsLoading] = useState(false);
-
   const transactionService = useTransactionService();
   const submitAllMutation = transactionService.createMultipleTransactionsRepo();
 
-  if (isCategoriesLoading || isAccountsLoading) return <ActivityIndicator size="large" color="#0000ff" />;
+  // State for tracking amounts and mode
+  const [mode, setMode] = useState<"plus" | "minus">("minus");
+  const [maxAmount, setMaxAmount] = useState(0);
 
-  useEffect(() => {
-    if (transaction && transaction.id) {
-      setMode(parseFloat(transaction.amount.toString()) < 0 ? "minus" : "plus");
-      setMaxAmount(Math.abs(parseFloat(transaction.amount.toString())));
-      setCurrentAmount(parseFloat(transaction.amount.toString()));
+  // Create validation schema
+  const validationSchema: ValidationSchema<MultipleTransactionsFormData> = useMemo(() => ({
+    payee: [commonValidationRules.required('Payee is required')],
+    date: createDateValidation(),
+    accountid: [commonValidationRules.required('Account is required')],
+    type: [commonValidationRules.required('Transaction type is required')],
+    description: createDescriptionValidation(false),
+    groupid: [commonValidationRules.required('Group ID is required')],
+  }), []);
 
-      setGroup({
-        originalTransactionId: transaction.id,
-        date: dayjs(transaction.date),
-        description: transaction.description!,
-        type: transaction.type!,
-        accountid: transaction.accountid!,
-        isvoid: transaction.isvoid!,
-        groupid: transaction.id,
-        payee: transaction.payee!,
-        transactions: {
-          [GenerateUuid()]: {
-            name: transaction.name!,
-            amount: transaction.amount!,
-            categoryid: transaction.categoryid!,
-            notes: transaction.notes!,
-            tags: transaction.tags!,
-            groupid: groupId,
-          },
-        },
-      });
-    }
-  }, [transaction]);
+  // Initialize form state
+  const {
+    formState,
+    updateField,
+    setFieldTouched,
+    validateForm,
+    resetForm,
+    setFormData,
+    isValid,
+    isDirty,
+  } = useFormState<MultipleTransactionsFormData>(
+    transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState,
+    validationSchema
+  );
 
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    await submitAllMutation.mutateAsync(
-      {
-        transactions: group,
-        totalAmount: Math.abs(currentAmount) * (mode === "minus" ? -1 : 1),
-      },
-      {
-        onSuccess: async () => {
-          console.log({
-            message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
-            type: "success",
-          });
-          setIsLoading(false);
-          await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
-          handleReset();
-          router.replace("/Transactions");
-        },
-      },
+  if (isCategoriesLoading || isAccountsLoading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text className="mt-2 text-foreground">Loading...</Text>
+      </SafeAreaView>
     );
-  };
+  }
 
-  const handleReset = () => {
-    setGroup(generateInitalState());
+  // Initialize form data when transaction changes
+  useEffect(() => {
+    if (transaction) {
+      const amount = Math.abs(parseFloat(transaction.amount?.toString() || '0'));
+      setMode(parseFloat(transaction.amount?.toString() || '0') < 0 ? "minus" : "plus");
+      setMaxAmount(amount);
+      
+      const formData = convertTransactionToMultipleForm(transaction);
+      setFormData(formData);
+    }
+  }, [transaction, setFormData]);
+
+  // Calculate current total amount from all transactions
+  const currentAmount = useMemo(() => {
+    return Object.values(formState.data.transactions).reduce((total, transaction) => {
+      return total + (transaction.amount || 0);
+    }, 0);
+  }, [formState.data.transactions]);
+
+  // Handle form submission
+  const handleSubmit = useCallback(async (data: MultipleTransactionsFormData) => {
+    const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
+    
+    // Convert form data to the format expected by the service
+    const submissionData = {
+      transactions: {
+        originalTransactionId: data.originalTransactionId,
+        payee: data.payee,
+        date: dayjs(data.date),
+        description: data.description,
+        type: data.type,
+        isvoid: data.isvoid,
+        accountid: data.accountid,
+        groupid: data.groupid,
+        transactions: data.transactions,
+      },
+      totalAmount,
+    };
+
+    await submitAllMutation.mutateAsync(submissionData, {
+      onSuccess: async () => {
+        console.log({
+          message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
+          type: "success",
+        });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+        router.replace("/Transactions");
+      },
+    });
+  }, [submitAllMutation, transaction?.id, mode, currentAmount]);
+
+  // Form submission hook
+  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
+    onSuccess: () => {
+      console.log('Multiple transactions saved successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to save multiple transactions:', error);
+    },
+  });
+
+  // Handle form submission
+  const onSubmit = useCallback(() => {
+    if (validateForm()) {
+      submit(formState.data);
+    }
+  }, [validateForm, submit, formState.data]);
+
+  // Handle form reset
+  const handleReset = useCallback(() => {
+    resetForm();
     setMaxAmount(0);
-    setCurrentAmount(0);
-  };
+  }, [resetForm]);
+
+  // Prepare dropdown options
+  const categoryOptions = useMemo(() => {
+    if (!categories) return [];
+    
+    return categories
+      .filter(item => item.name)
+      .map(item => ({
+        id: item.id,
+        label: item.name || '',
+        value: item.id,
+        icon: item.icon,
+        color: item.color,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories]);
+
+  const accountOptions = useMemo(() => {
+    if (!accounts) return [];
+    
+    return accounts
+      .filter(item => item.name)
+      .map(item => ({
+        id: item.id,
+        label: item.name || '',
+        value: item.id,
+        group: item.categoryname || 'Other',
+      }))
+      .sort((a, b) => {
+        if (a.group !== b.group) {
+          return a.group.localeCompare(b.group);
+        }
+        return a.label.localeCompare(b.label);
+      });
+  }, [accounts]);
+
+  const transactionTypeOptions: OptionItem[] = [
+    { id: 'income', label: 'Income', value: 'Income' },
+    { id: 'expense', label: 'Expense', value: 'Expense' },
+  ];
+
+  // Handle mode toggle
+  const handleModeToggle = useCallback(() => {
+    setMode(prevMode => prevMode === 'plus' ? 'minus' : 'plus');
+  }, []);
+
+  // Handle max amount change
+  const handleMaxAmountChange = useCallback((value: string) => {
+    let cleanValue = value
+      .replace(/[^0-9.-]/g, "")
+      .replace(/(?!^)-/g, "")
+      .replace(/\.{2,}/g, ".")
+      .replace(/^0+(?=\d)/, "");
+
+    if (cleanValue.startsWith("-")) {
+      setMode("minus");
+      cleanValue = cleanValue.replace("-", "");
+    }
+
+    if (cleanValue.includes('.')) {
+      const parts = cleanValue.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    }
+
+    const numericAmount = parseFloat(cleanValue) || 0;
+    
+    if (numericAmount <= 999999999.99) {
+      setMaxAmount(numericAmount);
+    }
+  }, []);
+
+  // Check if amounts balance
+  const isBalanced = Math.abs(currentAmount - (mode === "minus" ? -maxAmount : maxAmount)) < 0.01;
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className={`flex-1 p-5 mt-2 ${Platform.OS !== "web" ? "mx-2" : ""}`}>
-        <View className="flex-row gap-2 justify-center w-full">
-          <TextInputField
-            className="flex-1"
-            label="Payee"
-            value={group?.payee}
-            onChange={value => setGroup({ ...group, payee: value })}
-          />
-          <TextInputField
-            className="flex-1"
-            label="Description"
-            value={group?.description}
-            onChange={value => setGroup({ ...group, description: value })}
-          />
-          {/*TODO: IsVoid */}
-          <TextInputFieldWithIcon
-            className="flex-1"
-            label="Amount"
-            mode={mode}
-            setMode={setMode}
-            type={transaction?.type ?? "Expense"}
-            value={(maxAmount ?? 0).toString()}
-            onModeChange={() => {
-              // setMaxAmount(prev => (mode === "minus" ? Math.abs(prev) : Math.abs(prev) * -1));
-            }}
-            onChange={value => {
-              let numericAmount = value
-                .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
-                .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-                .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
-                .replace(/^0+(?=\d)/, ""); // Remove leading zeros
-
-              if (value.includes("-")) {
-                setMode("minus");
-                return;
-              }
-              if (value === "") return setMaxAmount(0);
-              if (!/^-?\d*\.?\d*$/.test(value)) {
-                return;
-              }
-              // setMaxAmount(numericAmount);
-              setMaxAmount(prev => {
-                return prev == 0 && numericAmount.toString().startsWith("0")
-                  ? numericAmount.slice(0, -1)
-                  : numericAmount;
-              });
-
-              // setMaxAmount(prev => {
-              //   return prev == 0 || !numericAmount.toString().startsWith("0")
-              //     ? numericAmount.slice(0, -1)
-              //     : numericAmount;
-              // });
-            }}
-            keyboardType="numeric"
-          />
-          <MyDateTimePicker
-            label="Date"
-            date={group.date}
-            onChange={({ date }) => setGroup({ ...group, date })}
-            isModal
-          />
-        </View>
-        <View className="flex-row gap-2 justify-center w-full relative">
-          <DropdownField
-            options={[
-              { id: "Income", label: "Income", value: "Income" },
-              { id: "Expense", label: "Expense", value: "Expense" },
-            ]}
-            selectedValue={group.type}
-            label="Type"
-            onSelect={value => setGroup({ ...group, type: value?.value ?? "Expense" })}
-          />
-          <AccountSelecterDropdown
-            isModal
-            selectedValue={group.accountid}
-            groupBy="group"
-            onSelect={value => setGroup({ ...group, accountid: value?.id || "" })}
-            accounts={accounts}
-          />
-        </View>
-
-        <TransactionsCreationList
-          group={group}
-          groupId={groupId}
-          setGroup={setGroup}
-          currentAmount={currentAmount}
-          setCurrentAmount={setCurrentAmount}
-          maxAmount={parseFloat(maxAmount.toString())}
-          categories={categories!}
-          mode={mode}
-        />
-        <TransactionsFooter
-          currentAmount={currentAmount}
-          maxAmount={parseFloat(maxAmount.toString())}
-          mode={mode}
-          onSubmit={handleSubmit}
+      <ScrollView className="flex-1">
+        <FormContainer
+          onSubmit={onSubmit}
+          isValid={isValid && isBalanced && !isSubmitting}
+          isLoading={isSubmitting}
+          submitLabel="Save Multiple Transactions"
+          showReset={isDirty}
           onReset={handleReset}
-        />
+        >
+          {/* Basic Information Section */}
+          <FormSection title="Transaction Group Details" description="Enter the common information for all transactions">
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+              <FormField
+                config={{
+                  name: 'payee',
+                  label: 'Payee',
+                  type: 'text',
+                  required: true,
+                  placeholder: 'Enter payee name',
+                }}
+                value={formState.data.payee}
+                error={formState.errors.payee}
+                touched={formState.touched.payee}
+                onChange={(value) => updateField('payee', value)}
+                onBlur={() => setFieldTouched('payee')}
+                className="flex-1"
+              />
+
+              <FormField
+                config={{
+                  name: 'description',
+                  label: 'Description',
+                  type: 'text',
+                  placeholder: 'Enter description',
+                }}
+                value={formState.data.description}
+                error={formState.errors.description}
+                touched={formState.touched.description}
+                onChange={(value) => updateField('description', value)}
+                onBlur={() => setFieldTouched('description')}
+                className="flex-1"
+              />
+            </View>
+
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+              {/* Total Amount with Mode Toggle */}
+              <View className="flex-1 flex-row items-center">
+                <Pressable
+                  className={`${
+                    mode === "plus" ? "bg-success-400" : "bg-danger-400"
+                  } border border-muted rounded-lg me-2 p-1.5`}
+                  onPress={handleModeToggle}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Toggle amount sign, currently ${mode}`}
+                >
+                  {mode === "minus" ? (
+                    <MyIcon name="Minus" size={24} className="text-gray-100" />
+                  ) : (
+                    <MyIcon name="Plus" size={24} className="text-gray-100" />
+                  )}
+                </Pressable>
+
+                <View className="flex-1">
+                  <FormField
+                    config={{
+                      name: 'totalAmount',
+                      label: 'Total Amount',
+                      type: 'number',
+                      required: true,
+                      placeholder: '0.00',
+                    }}
+                    value={maxAmount.toString()}
+                    onChange={handleMaxAmountChange}
+                    className="flex-1"
+                  />
+                </View>
+              </View>
+
+              <FormField
+                config={{
+                  name: 'date',
+                  label: 'Date',
+                  type: 'date',
+                  required: true,
+                }}
+                value={formState.data.date}
+                error={formState.errors.date}
+                touched={formState.touched.date}
+                onChange={(value) => {
+                  if (value) {
+                    const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
+                    updateField('date', formattedDate);
+                  }
+                }}
+                onBlur={() => setFieldTouched('date')}
+                className="flex-1"
+              />
+            </View>
+
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+              <FormField
+                config={{
+                  name: 'type',
+                  label: 'Type',
+                  type: 'select',
+                  required: true,
+                  options: transactionTypeOptions,
+                }}
+                value={formState.data.type}
+                error={formState.errors.type}
+                touched={formState.touched.type}
+                onChange={(value) => updateField('type', value)}
+                onBlur={() => setFieldTouched('type')}
+                className="flex-1"
+              />
+
+              <FormField
+                config={{
+                  name: 'accountid',
+                  label: 'Account',
+                  type: 'select',
+                  required: true,
+                  options: accountOptions,
+                }}
+                value={formState.data.accountid}
+                error={formState.errors.accountid}
+                touched={formState.touched.accountid}
+                onChange={(value) => updateField('accountid', value)}
+                onBlur={() => setFieldTouched('accountid')}
+                className="flex-1"
+              />
+            </View>
+          </FormSection>
+
+          {/* Transactions List Section */}
+          <FormSection title="Individual Transactions" description="Break down the total amount into individual transactions">
+            <TransactionsCreationList
+              formState={formState}
+              updateField={updateField}
+              setFieldTouched={setFieldTouched}
+              maxAmount={maxAmount}
+              currentAmount={currentAmount}
+              categoryOptions={categoryOptions}
+              mode={mode}
+            />
+          </FormSection>
+
+          {/* Summary Section */}
+          <FormSection title="Summary">
+            <TransactionsSummary
+              maxAmount={maxAmount}
+              currentAmount={currentAmount}
+              mode={mode}
+              isBalanced={isBalanced}
+            />
+          </FormSection>
+
+          {/* Display submission error if any */}
+          {error && (
+            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <Text className="text-red-700 text-sm">
+                Error: {error.message}
+              </Text>
+            </View>
+          )}
+        </FormContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const TransactionsCreationList = ({
-  group,
-  groupId,
-  categories,
+  formState,
+  updateField,
+  setFieldTouched,
   maxAmount,
   currentAmount,
-  setCurrentAmount,
-  setGroup,
+  categoryOptions,
   mode,
 }: {
-  group: MultiTransactionGroup;
-  groupId: string;
-  categories: any[];
+  formState: any;
+  updateField: (field: any, value: any) => void;
+  setFieldTouched: (field: any) => void;
   maxAmount: number;
   currentAmount: number;
-  setCurrentAmount: (amount: number | ((prev: number) => number)) => void;
-  setGroup: (group: MultiTransactionGroup | ((prev: MultiTransactionGroup) => MultiTransactionGroup)) => void;
+  categoryOptions: OptionItem[];
   mode: "plus" | "minus";
 }) => {
-  return (
-    <View className=" -z-10">
-      <AddNewTransaction
-        group={group}
-        setGroup={setGroup}
-        groupId={groupId}
-        currentAmount={currentAmount}
-        setCurrentAmount={setCurrentAmount}
-        maxAmount={maxAmount}
-        mode={mode}
-      />
+  const transactionIds = Object.keys(formState.data.transactions);
 
-      <ScrollView
-        className={`custom-scrollbar my-3 w-full -z-10 ${Platform.OS === "web" ? "max-h-[320px] h-[320px]" : "max-h-[380px] h-[380px]"}`}
+  // Add new transaction
+  const addNewTransaction = useCallback(() => {
+    const newTransactionId = GenerateUuid();
+    const remainingAmount = (mode === "minus" ? -maxAmount : maxAmount) - currentAmount;
+    
+    const newTransaction: MultipleTransactionItemData = {
+      name: "",
+      amount: Math.abs(remainingAmount),
+      categoryid: "",
+      notes: null,
+      tags: null,
+      groupid: formState.data.groupid,
+    };
+
+    updateField('transactions', {
+      ...formState.data.transactions,
+      [newTransactionId]: newTransaction,
+    });
+  }, [formState.data.transactions, formState.data.groupid, updateField, maxAmount, currentAmount, mode]);
+
+  return (
+    <View className="space-y-4">
+      {/* Add New Transaction Button */}
+      <Pressable
+        className="p-3 bg-primary-500 text-white rounded-md flex-row items-center justify-center"
+        onPress={addNewTransaction}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Add new transaction"
       >
-        <FlatList
-          data={Object.keys(group.transactions)}
-          keyExtractor={(item, index) => index + item}
-          renderItem={({ item, index }) => (
-            <TransactionCard
-              id={item}
-              transaction={group.transactions[item]}
-              categories={categories}
-              group={group}
-              setGroup={setGroup}
-              currentAmount={currentAmount}
-              setCurrentAmount={setCurrentAmount}
-              maxAmount={maxAmount}
-              mode={mode}
-            />
-          )}
-        />
+        <MyIcon name="Plus" size={20} className="text-white mr-2" />
+        <Text className="text-white font-medium">Add Transaction</Text>
+      </Pressable>
+
+      {/* Transactions List */}
+      <ScrollView
+        className={`${Platform.OS === "web" ? "max-h-[400px]" : "max-h-[450px]"}`}
+        showsVerticalScrollIndicator={true}
+      >
+        {transactionIds.map((transactionId, index) => (
+          <TransactionCard
+            key={transactionId}
+            id={transactionId}
+            transaction={formState.data.transactions[transactionId]}
+            formState={formState}
+            updateField={updateField}
+            setFieldTouched={setFieldTouched}
+            categoryOptions={categoryOptions}
+            maxAmount={maxAmount}
+            currentAmount={currentAmount}
+            mode={mode}
+            canDelete={transactionIds.length > 1}
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -303,277 +531,213 @@ const TransactionsCreationList = ({
 const TransactionCard = ({
   id,
   transaction,
-  categories,
-  group,
-  setGroup,
-  currentAmount,
-  setCurrentAmount,
+  formState,
+  updateField,
+  setFieldTouched,
+  categoryOptions,
   maxAmount,
-  mode, // global mode
+  currentAmount,
+  mode,
+  canDelete,
 }: {
   id: string;
-  transaction: MultiTransactionItem;
-  categories: any[];
-  currentAmount: number;
-  setCurrentAmount: (amount: number | ((prev: number) => number)) => void;
-  maxAmount: number;
-  group: MultiTransactionGroup;
-  setGroup: (group: MultiTransactionGroup | ((prev: MultiTransactionGroup) => MultiTransactionGroup)) => void;
-  mode: "plus" | "minus"; // global mode
-}) => {
-  const [currentMode, setCurrentMode] = useState<"plus" | "minus">(
-    transaction.amount === 0 ? mode : transaction.amount < 0 ? "minus" : "plus",
-  );
-
-  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
-  const currentMultiplier = currentMode === "minus" ? -1 : 1; // Current mode multiplier (positive or negative)
-
-  const calculateAmounts = (numericValue: any, stringValue?: any) => {
-    setGroup(prev => {
-      const prevAmount = parseFloat(prev.transactions[id].amount.toString()) || 0;
-      const difference = (numericValue - prevAmount).toFixed(2);
-      setCurrentAmount(prev => prev + parseFloat(difference)); // Update current amount based on the difference
-
-      return {
-        ...prev,
-        transactions: {
-          ...prev.transactions,
-          [id]: { ...prev.transactions[id], amount: stringValue ? stringValue : numericValue },
-        },
-      };
-    });
-  };
-
-  const handleAmountChange = (value: string) => {
-    if (!/^-?\d*\.?\d*$/.test(value)) {
-      return; // Reject invalid numeric input
-    }
-
-    if (!value.endsWith(".")) {
-      let numericValue = parseFloat(value);
-      if (isNaN(numericValue)) {
-        numericValue = 0;
-      }
-      // Update amount based on currentMode
-      numericValue = Math.abs(numericValue) * currentMultiplier;
-
-      // Respect the global mode and ensure the maxAmount respects the global mode
-
-      const remainingAmount =
-        maxAmount * globalMultiplier - currentAmount + parseFloat(transaction.amount.toString()) + numericValue;
-
-      // Adjust the numeric value based on remaining amount
-      if (Math.abs(numericValue) > Math.abs(remainingAmount) && currentMode === mode) {
-        numericValue = currentMultiplier * remainingAmount;
-        numericValue = parseFloat(numericValue.toFixed(2));
-      }
-
-      // Update group and current amount
-      calculateAmounts(numericValue);
-    } else {
-      const sign = currentMultiplier === -1 ? "-" : "";
-      const newAmount = sign + value;
-
-      calculateAmounts(parseFloat(newAmount), newAmount);
-    }
-  };
-
-  // Handle mode toggle (switch between plus/minus)
-  const handleModeToggle = () => {
-    setCurrentMode(prevMode => {
-      const newMode = prevMode === "plus" ? "minus" : "plus"; // Toggle between plus and minus
-
-      // Update the amount based on the new mode
-      const newAmount = transaction.amount * -1;
-
-      setGroup(prev => ({
-        ...prev,
-        transactions: {
-          ...prev.transactions,
-          [id]: { ...prev.transactions[id], amount: newAmount },
-        },
-      }));
-
-      setCurrentAmount(prev => prev - transaction.amount + newAmount); // Update current amount with new signed value
-
-      return newMode;
-    });
-  };
-
-  return (
-    <View
-      className={`bg-card border border-muted  p-3 my-2 w-full ${Platform.OS === "web" ? "flex-row gap-2 items-center justify-between" : "flex-col"}`}
-    >
-      <TextInputFieldWithIcon
-        className="flex-1"
-        label="Amount"
-        type="Expense"
-        value={
-          transaction.amount.toString().endsWith(".")
-            ? transaction.amount
-            : isNaN(transaction.amount)
-              ? "0"
-              : Math.abs(transaction.amount).toString()
-        } // Always display absolute value
-        onChange={value => {
-          let numericAmount = value
-            .replace(/[^0-9.-]/g, "") // Allow digits, minus sign, and decimal point
-            .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-            .replace(/(\d+)\.\.(\d+)/g, "$1.$2") // Keep only the first decimal point
-            .replace(/^0+(?=\d)/, ""); // Remove leading zeros
-
-          handleAmountChange(numericAmount);
-        }}
-        mode={currentMode}
-        setMode={handleModeToggle} // Pass the mode toggle handler
-        keyboardType="numeric"
-      />
-      <TextInputField
-        className="flex-1"
-        label="Name"
-        value={transaction?.name}
-        onChange={value =>
-          setGroup({ ...group, transactions: { ...group.transactions, [id]: { ...transaction, name: value } } })
-        }
-      />
-
-      <MyCategoriesDropdown
-        selectedValue={transaction.categoryid}
-        categories={categories}
-        onSelect={value => {
-          setGroup({
-            ...group,
-            transactions: { ...group.transactions, [id]: { ...transaction, categoryid: value?.id || "" } },
-          });
-        }}
-        isModal
-      />
-
-      <TextInputField
-        className="flex-1"
-        label="Notes"
-        value={transaction?.notes}
-        onChange={value =>
-          setGroup({ ...group, transactions: { ...group.transactions, [id]: { ...transaction, notes: value } } })
-        }
-      />
-      <TextInputField
-        className="flex-1"
-        label="Tags"
-        value={transaction?.tags?.join(",")}
-        onChange={value =>
-          setGroup({
-            ...group,
-            transactions: { ...group.transactions, [id]: { ...transaction, tags: value.split(",") } },
-          })
-        }
-      />
-      <Pressable
-        className="bg-danger-400 text-white rounded-md p-1.5 mt-4"
-        onPress={() => {
-          setGroup((prev: MultiTransactionGroup): MultiTransactionGroup => {
-            const { [id]: _, ...rest } = prev.transactions;
-            setCurrentAmount((prevAmount: number) => prevAmount - _.amount);
-            return { ...prev, transactions: rest };
-          });
-        }}
-      >
-        <Text className="text-center text-white" selectable={false}>
-          <MyIcon name="Trash" className="text-white" />
-        </Text>
-      </Pressable>
-    </View>
-  );
-};
-
-const TransactionsFooter = ({
-  maxAmount,
-  currentAmount,
-  mode,
-  onSubmit,
-  onReset,
-}: {
+  transaction: MultipleTransactionItemData;
+  formState: any;
+  updateField: (field: any, value: any) => void;
+  setFieldTouched: (field: any) => void;
+  categoryOptions: OptionItem[];
   maxAmount: number;
   currentAmount: number;
   mode: "plus" | "minus";
-  onSubmit: () => void;
-  onReset: () => void;
+  canDelete: boolean;
 }) => {
-  const isDisabled = currentAmount !== maxAmount * (mode === "minus" ? -1 : 1);
-  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
+  // Update a specific transaction field
+  const updateTransactionField = useCallback((field: keyof MultipleTransactionItemData, value: any) => {
+    const updatedTransactions = {
+      ...formState.data.transactions,
+      [id]: {
+        ...formState.data.transactions[id],
+        [field]: value,
+      },
+    };
+    updateField('transactions', updatedTransactions);
+  }, [formState.data.transactions, id, updateField]);
+
+  // Handle amount change with validation
+  const handleAmountChange = useCallback((value: string) => {
+    let cleanValue = value
+      .replace(/[^0-9.]/g, "")
+      .replace(/\.{2,}/g, ".")
+      .replace(/^0+(?=\d)/, "");
+
+    if (cleanValue.includes('.')) {
+      const parts = cleanValue.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    }
+
+    const numericAmount = parseFloat(cleanValue) || 0;
+    
+    // Calculate remaining amount available
+    const otherTransactionsTotal = Object.entries(formState.data.transactions)
+      .filter(([transactionId]) => transactionId !== id)
+      .reduce((total, [, trans]) => total + (trans.amount || 0), 0);
+    
+    const availableAmount = maxAmount - otherTransactionsTotal;
+    
+    // Limit to available amount
+    const finalAmount = Math.min(numericAmount, Math.max(0, availableAmount));
+    
+    updateTransactionField('amount', finalAmount);
+  }, [formState.data.transactions, id, maxAmount, updateTransactionField]);
+
+  // Handle transaction deletion
+  const handleDelete = useCallback(() => {
+    if (!canDelete) return;
+    
+    const { [id]: deletedTransaction, ...remainingTransactions } = formState.data.transactions;
+    updateField('transactions', remainingTransactions);
+  }, [canDelete, formState.data.transactions, id, updateField]);
+
   return (
-    <View className="flex-row items-center justify-between">
-      <View className="flex">
-        <Text className="text-center text-foreground">Total: {(globalMultiplier * maxAmount).toFixed(2)}$</Text>
-        <Text className="text-center text-foreground">Current Total: {currentAmount.toFixed(2) ?? 0.0}$</Text>
-        <Text className="text-center text-foreground">
-          Remaining: {(globalMultiplier * maxAmount - currentAmount).toFixed(2) ?? 0.0}$
-        </Text>
-      </View>
-      <View className="flex gap-2 items-center justify-center">
+    <View className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}>
+      {/* Amount Field */}
+      <FormField
+        config={{
+          name: 'amount',
+          label: 'Amount',
+          type: 'number',
+          required: true,
+          placeholder: '0.00',
+        }}
+        value={transaction.amount?.toString() || '0'}
+        onChange={handleAmountChange}
+        className={Platform.OS === "web" ? "flex-1" : ""}
+      />
+
+      {/* Name Field */}
+      <FormField
+        config={{
+          name: 'name',
+          label: 'Transaction Name',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter transaction name',
+        }}
+        value={transaction.name || ''}
+        onChange={(value) => updateTransactionField('name', value)}
+        onBlur={() => setFieldTouched(`transactions.${id}.name`)}
+        className={Platform.OS === "web" ? "flex-1" : ""}
+      />
+
+      {/* Category Field */}
+      <FormField
+        config={{
+          name: 'categoryid',
+          label: 'Category',
+          type: 'select',
+          required: true,
+          options: categoryOptions,
+        }}
+        value={transaction.categoryid || ''}
+        onChange={(value) => updateTransactionField('categoryid', value)}
+        onBlur={() => setFieldTouched(`transactions.${id}.categoryid`)}
+        className={Platform.OS === "web" ? "flex-1" : ""}
+      />
+
+      {/* Notes Field */}
+      <FormField
+        config={{
+          name: 'notes',
+          label: 'Notes',
+          type: 'textarea',
+          placeholder: 'Optional notes',
+        }}
+        value={transaction.notes || ''}
+        onChange={(value) => updateTransactionField('notes', value)}
+        onBlur={() => setFieldTouched(`transactions.${id}.notes`)}
+        className={Platform.OS === "web" ? "flex-1" : ""}
+      />
+
+      {/* Tags Field */}
+      <FormField
+        config={{
+          name: 'tags',
+          label: 'Tags',
+          type: 'multiselect',
+          placeholder: 'Enter tags separated by commas',
+        }}
+        value={transaction.tags}
+        onChange={(value) => updateTransactionField('tags', Array.isArray(value) ? value : value?.split(',').filter(Boolean))}
+        onBlur={() => setFieldTouched(`transactions.${id}.tags`)}
+        className={Platform.OS === "web" ? "flex-1" : ""}
+      />
+
+      {/* Delete Button */}
+      {canDelete && (
         <Pressable
-          className={`${isDisabled ? "bg-secondary" : "bg-primary"} px-4 py-2 align-center justify-center rounded-md`}
-          disabled={isDisabled}
-          onPress={onSubmit}
+          className="bg-red-500 hover:bg-red-600 rounded-md p-2 mt-2 self-start"
+          onPress={handleDelete}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Delete transaction"
         >
-          <Text className="text-center text-foreground" selectable={false}>
-            Submit
-          </Text>
+          <MyIcon name="Trash" size={20} className="text-white" />
         </Pressable>
-        <Pressable className="bg-danger-400 px-5 py-2 align-center justify-center rounded-md" onPress={onReset}>
-          <Text className="text-foreground font-medium text-md" selectable={false}>
-            Reset
-          </Text>
-        </Pressable>
-      </View>
+      )}
     </View>
   );
 };
-const AddNewTransaction = ({
-  group,
-  setGroup,
-  groupId,
-  currentAmount,
-  setCurrentAmount,
-  maxAmount,
-  mode,
-}: {
-  group: MultiTransactionGroup;
-  setGroup: (group: MultiTransactionGroup | ((prev: MultiTransactionGroup) => MultiTransactionGroup)) => void;
-  groupId: string;
-  currentAmount: number;
-  setCurrentAmount: (amount: number | ((prev: number) => number)) => void;
-  maxAmount: number;
-  mode: "plus" | "minus";
-}) => {
-  const globalMultiplier = mode === "minus" ? -1 : 1; // Global mode multiplier (positive or negative)
-  return (
-    <Pressable
-      className="p-2 bg-primary text-white rounded-md"
-      onPress={() => {
-        const newAmount = Number((globalMultiplier * maxAmount - currentAmount).toFixed(2));
-        setCurrentAmount((amount: number) => amount + newAmount);
 
-        setGroup({
-          ...group,
-          transactions: {
-            ...group.transactions,
-            [GenerateUuid()]: {
-              name: "",
-              amount: newAmount,
-              categoryid: "",
-              notes: null,
-              groupid: groupId,
-              tags: null,
-            },
-          },
-        });
-      }}
-    >
-      <Text className="text-center text-foreground" selectable={false}>
-        Add Transaction
-      </Text>
-    </Pressable>
+const TransactionsSummary = ({
+  maxAmount,
+  currentAmount,
+  mode,
+  isBalanced,
+}: {
+  maxAmount: number;
+  currentAmount: number;
+  mode: "plus" | "minus";
+  isBalanced: boolean;
+}) => {
+  const targetAmount = mode === "minus" ? -maxAmount : maxAmount;
+  const remainingAmount = targetAmount - currentAmount;
+
+  return (
+    <View className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <View className="space-y-2">
+        <View className="flex-row justify-between">
+          <Text className="text-foreground font-medium">Target Total:</Text>
+          <Text className="text-foreground font-bold">
+            {targetAmount.toFixed(2)}
+          </Text>
+        </View>
+        
+        <View className="flex-row justify-between">
+          <Text className="text-foreground font-medium">Current Total:</Text>
+          <Text className="text-foreground font-bold">
+            {currentAmount.toFixed(2)}
+          </Text>
+        </View>
+        
+        <View className="flex-row justify-between border-t border-gray-300 pt-2">
+          <Text className="text-foreground font-medium">Remaining:</Text>
+          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? 'text-green-600' : 'text-orange-600'}`}>
+            {remainingAmount.toFixed(2)}
+          </Text>
+        </View>
+
+        {/* Balance Status */}
+        <View className="mt-3 p-2 rounded-md bg-opacity-20" style={{
+          backgroundColor: isBalanced ? '#10b981' : '#f59e0b'
+        }}>
+          <Text className={`text-center font-medium ${isBalanced ? 'text-green-700' : 'text-orange-700'}`}>
+            {isBalanced ? '✓ Transactions are balanced' : '⚠ Transactions need to be balanced'}
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 };
 

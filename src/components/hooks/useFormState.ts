@@ -4,11 +4,11 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { 
-  FormState, 
-  ValidationSchema, 
+import {
+  FormState,
+  ValidationSchema,
   UseFormStateReturn,
-  FormFieldValue 
+  FormFieldValue
 } from '../../types/components/forms.types';
 import { validateForm, validateField } from '../../utils/form-validation';
 
@@ -36,7 +36,7 @@ export function useFormState<T extends Record<string, any>>(
     setFormState(prevState => {
       const newData = { ...prevState.data, [field]: value };
       const newTouched = { ...prevState.touched, [field]: true };
-      
+
       // Validate the field if validation schema exists
       let newErrors = { ...prevState.errors };
       if (validationSchema && validationSchema[field]) {
@@ -49,7 +49,7 @@ export function useFormState<T extends Record<string, any>>(
       }
 
       // Check if form is dirty (different from initial data)
-      const isDirty = Object.keys(newData).some(key => 
+      const isDirty = Object.keys(newData).some(key =>
         newData[key as keyof T] !== initialData[key as keyof T]
       );
 
@@ -79,7 +79,7 @@ export function useFormState<T extends Record<string, any>>(
     if (!validationSchema) return true;
 
     const validationResult = validateForm(formState.data, validationSchema);
-    
+
     setFormState(prevState => ({
       ...prevState,
       errors: validationResult.errors,
@@ -99,7 +99,7 @@ export function useFormState<T extends Record<string, any>>(
     if (!validationSchema || !validationSchema[field]) return true;
 
     const fieldValidation = validateField(field, formState.data[field], validationSchema[field]!, formState.data);
-    
+
     setFormState(prevState => {
       const newErrors = { ...prevState.errors };
       if (fieldValidation.isValid) {
@@ -132,11 +132,20 @@ export function useFormState<T extends Record<string, any>>(
     });
   }, [initialData]);
 
+  // Set initial form data (doesn't trigger dirty state)
+  const setInitialFormData = useCallback((data: Partial<T>) => {
+    setFormState(prevState => ({
+      ...prevState,
+      data: { ...prevState.data, ...data },
+      isDirty: false, // Explicitly set to false since this is initial data
+    }));
+  }, []);
+
   // Set form data (bulk update)
-  const setFormData = useCallback((data: Partial<T>) => {
+  const setFormData = useCallback((data: Partial<T>, options?: { preserveDirtyState?: boolean }) => {
     setFormState(prevState => {
       const newData = { ...prevState.data, ...data };
-      
+
       // Validate all updated fields if validation schema exists
       let newErrors = { ...prevState.errors };
       if (validationSchema) {
@@ -153,10 +162,12 @@ export function useFormState<T extends Record<string, any>>(
         });
       }
 
-      // Check if form is dirty
-      const isDirty = Object.keys(newData).some(key => 
-        newData[key as keyof T] !== initialData[key as keyof T]
-      );
+      // Check if form is dirty (unless preserveDirtyState is true)
+      const isDirty = options?.preserveDirtyState
+        ? prevState.isDirty
+        : Object.keys(newData).some(key =>
+          newData[key as keyof T] !== initialData[key as keyof T]
+        );
 
       // Check if form is valid
       const isValid = Object.keys(newErrors).length === 0;
@@ -183,6 +194,7 @@ export function useFormState<T extends Record<string, any>>(
     validateField: validateSingleField,
     resetForm,
     setFormData,
+    setInitialFormData,
     isDirty,
     isValid,
   };

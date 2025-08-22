@@ -217,7 +217,8 @@ export interface UseFormStateReturn<T> {
   validateForm: () => boolean;
   validateField: (field: keyof T) => boolean;
   resetForm: () => void;
-  setFormData: (data: Partial<T>) => void;
+  setFormData: (data: Partial<T>, options?: { preserveDirtyState?: boolean }) => void;
+  setInitialFormData: (data: Partial<T>) => void;
   isDirty: boolean;
   isValid: boolean;
 }
@@ -253,7 +254,9 @@ export interface UseFormSubmissionReturn<T> {
  */
 export interface AccountFormData extends Omit<Account, 'id' | 'createdat' | 'updatedat'> {
   id?: string;
-  running_balance?: number | null;
+  runningbalance?: number | null;
+  openBalance?: number | null;
+  addAdjustmentTransaction?: boolean;
 }
 
 /**

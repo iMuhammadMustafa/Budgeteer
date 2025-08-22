@@ -108,7 +108,7 @@ function FormFieldComponent<T>({
         return (
           <View>
             <DropdownField
-              label=""
+              label={label}
               selectedValue={value}
               options={options}
               onSelect={(item: OptionItem | null) => {
