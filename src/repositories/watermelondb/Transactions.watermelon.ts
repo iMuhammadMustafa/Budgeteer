@@ -87,9 +87,9 @@ export class TransactionWatermelonRepository
 
       // Fetch all accounts, categories, and groups for the tenant
       const [accounts, categories, groups] = await Promise.all([
-        db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
-        db.get("transactioncategories").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
-        db.get("transactiongroups").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get(TableNames.Accounts).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get(TableNames.TransactionCategories).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get(TableNames.TransactionGroups).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
       ]);
 
       // Build lookup maps
@@ -298,6 +298,9 @@ export class TransactionWatermelonRepository
             if (key !== "id" && value !== undefined) {
               // @ts-ignore
               record[key] = value;
+            }
+            if (key === "id") {
+              record._raw.id = value; // Manually set the ID for WatermelonDB
             }
           });
           try {

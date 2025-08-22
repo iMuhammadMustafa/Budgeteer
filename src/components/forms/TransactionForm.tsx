@@ -403,6 +403,7 @@ const useTransactionForm = ({ transaction }: any) => {
           }
         },
         onError: error => {
+          console.log(error);
           console.log({
             message: JSON.stringify(error),
             type: "error",
