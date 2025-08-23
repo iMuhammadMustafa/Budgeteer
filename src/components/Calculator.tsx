@@ -224,7 +224,7 @@ export default function CalculatorComponent({
   return (
     <>
       <Pressable
-        className="bg-white border border-muted rounded-md mx-2 p-1.5 mt-4 justify-center items-center"
+        className="bg-white border border-muted rounded-md mx-2 p-1.5 mt-5 justify-center items-center"
         onPress={() => setModalVisible(true)}
       >
         <MyIcon name="Calculator" size={30} className="text-black" />

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useEffect } from "react";
+import { memo, useCallback, useMemo, useEffect } from "react";
 import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
 
@@ -11,14 +11,14 @@ import { commonValidationRules, createCategoryNameValidation } from "@/src/utils
 import FormContainer from "./FormContainer";
 import FormField from "./FormField";
 import FormSection from "./FormSection";
-import TextInputField from "../TextInputField";
-import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
+import { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
-import Button from "../Button";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
-
+interface AccountCategoryFormProps {
+  category: AccountCategoryFormType;
+}
 // Define the form data type with only the fields we need for the form
 interface AccountCategoryFormData {
   name: string;
@@ -85,10 +85,6 @@ const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
   },
 ];
 
-interface AccountCategoryFormProps {
-  category: AccountCategoryFormType;
-}
-
 function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   // Initialize form data from props
   const initialFormData: AccountCategoryFormData = useMemo(() => {
@@ -107,16 +103,15 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
     };
     return formData;
   }, [category]);
-  const accountCategoryService = useAccountCategoryService();
 
   // Form state management
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState(initialFormData, validationSchema);
 
   // Update form data when category changes (for edit mode)
-  useEffect(() => {
-    setFormData(initialFormData);
-  }, [initialFormData, setFormData]);
+  // useEffect(() => {
+  //   setFormData(formState);
+  // }, [formState]);
 
   // Form submission handling
   const { mutate } = useAccountCategoryService().upsert();
@@ -215,7 +210,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
           <FormSection title="Category Details">
             {/* Render standard form fields */}
             {formFields.map(fieldConfig => (
-              <FormField
+              <FormField<AccountCategoryFormData>
                 key={String(fieldConfig.name)}
                 config={fieldConfig}
                 value={formState.data[fieldConfig.name]}

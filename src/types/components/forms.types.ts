@@ -3,8 +3,15 @@
  * This file contains base form types, validation interfaces, and error handling types
  */
 
-import { ReactNode } from 'react';
-import { Account, Transaction, TransactionCategory, TransactionGroup, AccountCategory, Configuration } from '../db/Tables.Types';
+import { ReactNode } from "react";
+import {
+  Account,
+  Transaction,
+  TransactionCategory,
+  TransactionGroup,
+  AccountCategory,
+  Configuration,
+} from "../db/Tables.Types";
 
 // ============================================================================
 // Base Form Interfaces
@@ -38,13 +45,15 @@ export interface FormState<T> {
 export interface FormFieldConfig<T> {
   name: keyof T;
   label: string;
-  type: 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switch' | 'multiselect';
+  type: "text" | "number" | "select" | "date" | "textarea" | "switch" | "multiselect";
   required?: boolean;
   validation?: ValidationRule[];
   placeholder?: string;
   options?: OptionItem[];
   disabled?: boolean;
   description?: string;
+  popUp?: boolean;
+  group?: string;
 }
 
 /**
@@ -77,7 +86,7 @@ export interface FormConfig<T> {
   fields: FormFieldConfig<T>[];
   sections?: FormSectionConfig[];
   validation: ValidationSchema<T>;
-  layout: 'single-column' | 'two-column' | 'responsive';
+  layout: "single-column" | "two-column" | "responsive";
   submitLabel?: string;
   showReset?: boolean;
 }
@@ -90,7 +99,7 @@ export interface FormConfig<T> {
  * Individual validation rule
  */
 export interface ValidationRule {
-  type: 'required' | 'minLength' | 'maxLength' | 'min' | 'max' | 'pattern' | 'email' | 'custom';
+  type: "required" | "minLength" | "maxLength" | "min" | "max" | "pattern" | "email" | "custom";
   value?: any;
   message: string;
   validator?: (value: any, formData?: any) => boolean;
@@ -126,7 +135,7 @@ export interface FormValidationResult<T> {
 /**
  * Form error types
  */
-export type FormErrorType = 'validation' | 'submission' | 'network' | 'server';
+export type FormErrorType = "validation" | "submission" | "network" | "server";
 
 /**
  * Individual form error
@@ -199,7 +208,7 @@ export interface FormSectionProps {
  */
 export interface ErrorMessageProps {
   error: string;
-  type?: 'field' | 'form' | 'global';
+  type?: "field" | "form" | "global";
   className?: string;
 }
 
@@ -252,7 +261,7 @@ export interface UseFormSubmissionReturn<T> {
 /**
  * Account form data type
  */
-export interface AccountFormData extends Omit<Account, 'id' | 'createdat' | 'updatedat'> {
+export interface AccountFormData extends Omit<Account, "id" | "createdat" | "updatedat"> {
   id?: string;
   runningbalance?: number | null;
   openBalance?: number | null;
@@ -262,7 +271,7 @@ export interface AccountFormData extends Omit<Account, 'id' | 'createdat' | 'upd
 /**
  * Transaction form data type
  */
-export interface TransactionFormData extends Omit<Transaction, 'id' | 'createdat' | 'updatedat'> {
+export interface TransactionFormData extends Omit<Transaction, "id" | "createdat" | "updatedat"> {
   id?: string;
   amount: number; // Always positive, sign handled by type
 }
@@ -270,28 +279,28 @@ export interface TransactionFormData extends Omit<Transaction, 'id' | 'createdat
 /**
  * Transaction Category form data type
  */
-export interface TransactionCategoryFormData extends Omit<TransactionCategory, 'id' | 'createdat' | 'updatedat'> {
+export interface TransactionCategoryFormData extends Omit<TransactionCategory, "id" | "createdat" | "updatedat"> {
   id?: string;
 }
 
 /**
  * Transaction Group form data type
  */
-export interface TransactionGroupFormData extends Omit<TransactionGroup, 'id' | 'createdat' | 'updatedat'> {
+export interface TransactionGroupFormData extends Omit<TransactionGroup, "id" | "createdat" | "updatedat"> {
   id?: string;
 }
 
 /**
  * Account Category form data type
  */
-export interface AccountCategoryFormData extends Omit<AccountCategory, 'id' | 'createdat' | 'updatedat'> {
+export interface AccountCategoryFormData extends Omit<AccountCategory, "id" | "createdat" | "updatedat"> {
   id?: string;
 }
 
 /**
  * Configuration form data type
  */
-export interface ConfigurationFormData extends Omit<Configuration, 'id' | 'createdat' | 'updatedat'> {
+export interface ConfigurationFormData extends Omit<Configuration, "id" | "createdat" | "updatedat"> {
   id?: string;
 }
 
@@ -329,12 +338,12 @@ export interface MultipleTransactionItemData {
 /**
  * Form operation modes
  */
-export type FormMode = 'create' | 'edit' | 'view' | 'duplicate';
+export type FormMode = "create" | "edit" | "view" | "duplicate";
 
 /**
  * Form submission states
  */
-export type FormSubmissionState = 'idle' | 'submitting' | 'success' | 'error';
+export type FormSubmissionState = "idle" | "submitting" | "success" | "error";
 
 // ============================================================================
 // Utility Types

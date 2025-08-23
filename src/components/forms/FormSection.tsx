@@ -1,6 +1,6 @@
-import React, { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { FormSectionProps } from '@/src/types/components/forms.types';
+import React, { memo, useState, useCallback, useMemo } from "react";
+import { View, Text, Pressable } from "react-native";
+import { FormSectionProps } from "@/src/types/components/forms.types";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -12,7 +12,7 @@ function FormSectionComponent({
   collapsible = false,
   defaultExpanded = true,
   description,
-  className = '',
+  className = "",
 }: FormSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -47,7 +47,7 @@ function FormSectionComponent({
               accessibilityHint={`Tap to ${isExpanded ? 'collapse' : 'expand'} this section`}
               accessibilityState={{ expanded: isExpanded }}
             >
-              <Text 
+              <Text
                 className="text-lg font-semibold text-foreground"
                 accessibilityRole="heading"
                 accessibilityLevel={2}
@@ -62,7 +62,7 @@ function FormSectionComponent({
               </Text>
             </Pressable>
           ) : (
-            <Text 
+            <Text
               className="text-lg font-semibold text-foreground mb-2"
               accessibilityRole="heading"
               accessibilityLevel={2}
@@ -86,11 +86,11 @@ function FormSectionComponent({
 
       {/* Section Content */}
       {(!collapsible || isExpanded) && (
-        <View 
+        <View
           className="space-y-2"
           accessible={true}
-          accessibilityRole="group"
-          accessibilityLabel={title ? `${title} section content` : 'Form section content'}
+          accessibilityRole="list"
+          accessibilityLabel={title ? `${title} section content` : "Form section content"}
           accessibilityDescribedBy={descriptionId}
         >
           {children}
