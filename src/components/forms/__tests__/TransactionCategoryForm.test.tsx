@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
 }));
 
 // Mock the dropdown and icon picker components
-jest.mock('../DropDownField', () => ({
+jest.mock('../../DropDownField', () => ({
   __esModule: true,
   default: ({ label, onSelect, selectedValue, options }: any) => (
     <div data-testid={`dropdown-${label.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -55,7 +55,7 @@ jest.mock('../DropDownField', () => ({
   ),
 }));
 
-jest.mock('../IconPicker', () => ({
+jest.mock('../../IconPicker', () => ({
   __esModule: true,
   default: ({ onSelect, initialIcon }: any) => (
     <div data-testid="icon-picker">

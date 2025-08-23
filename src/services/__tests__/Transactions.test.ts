@@ -6,10 +6,10 @@ import { updateTransaction } from "@/src/repositories/Transactions.repository";
 import { updateAccountBalance } from "@/src/repositories/Accounts.repository";
 
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
-jest.mock("@/src/repositories/Transactions.api", () => ({
+jest.mock("@/src/repositories/sqlite/Transactions.sqlite", () => ({
   updateTransaction: jest.fn(),
 }));
-jest.mock("@/src/repositories/Accounts.api", () => ({
+jest.mock("@/src/repositories/sqlite/Accounts.sqlite", () => ({
   updateAccountBalance: jest.fn(),
 }));
 

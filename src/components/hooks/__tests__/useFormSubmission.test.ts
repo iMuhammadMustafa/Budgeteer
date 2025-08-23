@@ -3,7 +3,7 @@
  * Tests submission handling, loading states, error handling, and edge cases
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useFormSubmission } from '../useFormSubmission';
 import { UseFormSubmissionOptions } from '../../../types/components/forms.types';
 

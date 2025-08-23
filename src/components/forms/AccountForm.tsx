@@ -20,7 +20,7 @@ import {
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
 
-export default function AccountForm({ account }: { account: AccountFormType }) {
+export default function AccountForm({ account }: { account: AccountFormData }) {
   const accountService = useAccountService();
   const accountCategoryService = useAccountCategoryService();
   const { data: accountCategories } = accountCategoryService.findAll();
@@ -411,7 +411,7 @@ export default function AccountForm({ account }: { account: AccountFormType }) {
 
 export type AccountFormType = AccountFormData;
 
-export const initialState: AccountFormType = {
+export const initialState: AccountFormData = {
   name: "",
   categoryid: "",
   balance: 0,

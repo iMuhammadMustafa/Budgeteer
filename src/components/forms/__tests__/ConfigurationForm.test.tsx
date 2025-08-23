@@ -10,7 +10,7 @@ import { useUpsertConfiguration } from '@/src/services/repositories/Configuratio
 import { ConfigurationFormData } from '@/src/types/components/forms.types';
 
 // Mock the configuration service
-jest.mock('@/src/services/repositories/Configurations.Service');
+jest.mock('@/src/services/Configurations.Service');
 const mockUseUpsertConfiguration = useUpsertConfiguration as jest.MockedFunction<typeof useUpsertConfiguration>;
 
 // Mock the auth provider

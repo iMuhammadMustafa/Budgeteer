@@ -251,7 +251,12 @@ export const notFutureDateValidator = (value: string): boolean => {
  */
 export const safeStringValidator = (value: string): boolean => {
   if (!value) return true;
-  const safePattern = /^[a-zA-Z0-9\s\-_.,!?()]+$/;
+  // Reject strings with HTML tags, newlines, tabs, and other dangerous characters
+  const dangerousPattern = /[<>\n\t\r]/;
+  if (dangerousPattern.test(value)) return false;
+  
+  // Allow only safe characters
+  const safePattern = /^[a-zA-Z0-9\s\-_.,!?()'":&@#$%]+$/;
   return safePattern.test(value);
 };
 
@@ -260,8 +265,19 @@ export const safeStringValidator = (value: string): boolean => {
  */
 export const numericStringValidator = (value: string): boolean => {
   if (!value) return true;
+  
+  // Reject strings with whitespace
+  if (/\s/.test(value)) return false;
+  
+  // Reject scientific notation, Infinity, and NaN
+  if (/[eE]/.test(value) || value === 'Infinity' || value === '-Infinity' || value === 'NaN') return false;
+  
+  // Must match a strict numeric pattern
+  const numericPattern = /^-?\d+(\.\d+)?$/;
+  if (!numericPattern.test(value)) return false;
+  
   const num = parseFloat(value);
-  return !isNaN(num) && isFinite(num) && value.trim() === num.toString();
+  return !isNaN(num) && isFinite(num);
 };
 
 // ============================================================================

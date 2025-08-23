@@ -8,7 +8,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TransactionForm, { initialTransactionState, TransactionFormType } from '../TransactionForm';
 import { TransactionFormData } from '@/src/types/components/forms.types';
-import dayjs from 'dayjs';
+
 
 // Mock dependencies
 jest.mock('expo-router', () => ({
@@ -59,7 +59,7 @@ jest.mock('@/src/repositories', () => ({
   getTransactionsByName: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('../SearchableDropdown', () => {
+jest.mock('../../SearchableDropdown', () => {
   return function MockSearchableDropdown({ onChange, onSelectItem, label }: any) {
     return (
       <div>
@@ -80,7 +80,7 @@ jest.mock('../SearchableDropdown', () => {
               accountid: '1',
               categoryid: '1',
               payee: 'Walmart',
-              date: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
+              date: new Date().toISOString(),
             }
           })}
         >

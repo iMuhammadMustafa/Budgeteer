@@ -4,6 +4,7 @@
  * Full hook testing would require a proper React testing environment
  */
 
+import { renderHook } from '@testing-library/react';
 import { useErrorDisplay } from '../useErrorDisplay';
 import { FormError } from '@/src/types/components/forms.types';
 import { 
@@ -84,17 +85,17 @@ describe('useErrorDisplay', () => {
         onMaxRetriesReached: jest.fn(),
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should work with default options', () => {
-      expect(() => useErrorDisplay()).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay())).not.toThrow();
     });
   });
 
   describe('Error State Management', () => {
     it('should initialize error state using createFormErrorState', () => {
-      useErrorDisplay();
+      renderHook(() => useErrorDisplay());
       
       expect(mockCreateFormErrorState).toHaveBeenCalled();
     });
@@ -112,7 +113,7 @@ describe('useErrorDisplay', () => {
 
       mockCreateFormErrorState.mockReturnValue(mockErrorState);
       
-      useErrorDisplay();
+      renderHook(() => useErrorDisplay());
       
       expect(mockCreateFormErrorState).toHaveBeenCalled();
     });
@@ -120,14 +121,14 @@ describe('useErrorDisplay', () => {
 
   describe('Error Recovery Logic', () => {
     it('should use isRecoverableError to determine retry capability', () => {
-      useErrorDisplay();
+      renderHook(() => useErrorDisplay());
       
       // The hook should use this utility when determining if errors can be retried
       expect(mockIsRecoverableError).toBeDefined();
     });
 
     it('should use getRetryDelay for retry timing', () => {
-      useErrorDisplay();
+      renderHook(() => useErrorDisplay());
       
       // The hook should use this utility for calculating retry delays
       expect(mockGetRetryDelay).toBeDefined();
@@ -140,7 +141,7 @@ describe('useErrorDisplay', () => {
         logErrors: true,
       };
 
-      useErrorDisplay(options);
+      renderHook(() => useErrorDisplay(options));
       
       // The hook should be ready to use logFormError
       expect(mockLogFormError).toBeDefined();
@@ -151,7 +152,7 @@ describe('useErrorDisplay', () => {
         reportErrors: true,
       };
 
-      useErrorDisplay(options);
+      renderHook(() => useErrorDisplay(options));
       
       // The hook should be ready to use reportFormError
       expect(mockReportFormError).toBeDefined();
@@ -162,7 +163,7 @@ describe('useErrorDisplay', () => {
         logErrors: false,
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should handle reporting disabled', () => {
@@ -170,7 +171,7 @@ describe('useErrorDisplay', () => {
         reportErrors: false,
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
   });
 
@@ -179,28 +180,28 @@ describe('useErrorDisplay', () => {
       const onRetry = jest.fn();
       const options = { onRetry };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should accept onMaxRetriesReached callback', () => {
       const onMaxRetriesReached = jest.fn();
       const options = { onMaxRetriesReached };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should handle async onRetry callback', () => {
       const onRetry = jest.fn().mockResolvedValue(undefined);
       const options = { onRetry };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should handle onRetry callback that rejects', () => {
       const onRetry = jest.fn().mockRejectedValue(new Error('Retry failed'));
       const options = { onRetry };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
   });
 
@@ -208,17 +209,17 @@ describe('useErrorDisplay', () => {
     it('should handle maxRetries option', () => {
       const options = { maxRetries: 5 };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should handle autoRetry option', () => {
       const options = { autoRetry: true };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
     });
 
     it('should use default values for missing options', () => {
-      expect(() => useErrorDisplay({})).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay({}))).not.toThrow();
     });
   });
 
@@ -228,7 +229,7 @@ describe('useErrorDisplay', () => {
         onRetry: jest.fn(),
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
       
       // Validation errors should not be recoverable
       expect(mockIsRecoverableError(mockValidationError)).toBe(false);
@@ -239,7 +240,7 @@ describe('useErrorDisplay', () => {
         onRetry: jest.fn(),
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
       
       // Network errors should be recoverable
       expect(mockIsRecoverableError(mockNetworkError)).toBe(true);
@@ -250,7 +251,7 @@ describe('useErrorDisplay', () => {
         onRetry: jest.fn(),
       };
 
-      expect(() => useErrorDisplay(options)).not.toThrow();
+      expect(() => renderHook(() => useErrorDisplay(options))).not.toThrow();
       
       // Server errors should be recoverable
       expect(mockIsRecoverableError(mockServerError)).toBe(true);
@@ -259,7 +260,7 @@ describe('useErrorDisplay', () => {
 
   describe('Integration with Form Error Utilities', () => {
     it('should integrate with all required form error utilities', () => {
-      useErrorDisplay();
+      renderHook(() => useErrorDisplay());
       
       expect(mockCreateFormErrorState).toBeDefined();
       expect(mockUpdateErrorState).toBeDefined();
@@ -276,7 +277,7 @@ describe('useErrorDisplay', () => {
         onRetry: jest.fn(),
       };
 
-      useErrorDisplay(options);
+      renderHook(() => useErrorDisplay(options));
       
       // Verify that the hook is set up to use the utilities
       expect(mockCreateFormErrorState).toHaveBeenCalled();

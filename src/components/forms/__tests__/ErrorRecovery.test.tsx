@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { render } from '@testing-library/react';
 import ErrorRecovery from '../ErrorRecovery';
 import { FormError } from '@/src/types/components/forms.types';
 import { isRecoverableError, getRetryDelay, getUserFriendlyErrorMessage } from '@/src/utils/form-errors';
@@ -42,7 +43,7 @@ describe('ErrorRecovery', () => {
         className: 'test-class',
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
   });
 
@@ -53,8 +54,8 @@ describe('ErrorRecovery', () => {
         onRetry: jest.fn(),
       };
 
-      const result = ErrorRecovery(props);
-      expect(result).toBeNull();
+      const { container } = render(<ErrorRecovery {...props} />);
+      expect(container.firstChild).toBeNull();
     });
 
     it('should render component when error is provided', () => {
@@ -63,9 +64,8 @@ describe('ErrorRecovery', () => {
         onRetry: jest.fn(),
       };
 
-      const result = ErrorRecovery(props);
-      expect(result).not.toBeNull();
-      expect(React.isValidElement(result)).toBe(true);
+      const { container } = render(<ErrorRecovery {...props} />);
+      expect(container.firstChild).not.toBeNull();
     });
   });
 
@@ -103,7 +103,7 @@ describe('ErrorRecovery', () => {
         maxRetries: 5,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
 
     it('should handle autoRetry prop', () => {
@@ -113,7 +113,7 @@ describe('ErrorRecovery', () => {
         autoRetry: true,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
 
     it('should handle onCancel callback', () => {
@@ -124,7 +124,7 @@ describe('ErrorRecovery', () => {
         onCancel,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
 
     it('should handle className prop', () => {
@@ -134,7 +134,7 @@ describe('ErrorRecovery', () => {
         className: 'custom-recovery-class',
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
   });
 
@@ -145,8 +145,8 @@ describe('ErrorRecovery', () => {
         onRetry: jest.fn(),
       };
 
-      const result = ErrorRecovery(props);
-      expect(result).not.toBeNull();
+      const { container } = render(<ErrorRecovery {...props} />);
+      expect(container.firstChild).not.toBeNull();
     });
 
     it('should handle server errors', () => {
@@ -155,8 +155,8 @@ describe('ErrorRecovery', () => {
         onRetry: jest.fn(),
       };
 
-      const result = ErrorRecovery(props);
-      expect(result).not.toBeNull();
+      const { container } = render(<ErrorRecovery {...props} />);
+      expect(container.firstChild).not.toBeNull();
     });
 
     it('should handle validation errors', () => {
@@ -165,8 +165,8 @@ describe('ErrorRecovery', () => {
         onRetry: jest.fn(),
       };
 
-      const result = ErrorRecovery(props);
-      expect(result).not.toBeNull();
+      const { container } = render(<ErrorRecovery {...props} />);
+      expect(container.firstChild).not.toBeNull();
     });
   });
 
@@ -178,7 +178,7 @@ describe('ErrorRecovery', () => {
         onRetry,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
       expect(typeof onRetry).toBe('function');
     });
 
@@ -189,7 +189,7 @@ describe('ErrorRecovery', () => {
         onRetry,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
 
     it('should handle onRetry callback that rejects', () => {
@@ -199,7 +199,7 @@ describe('ErrorRecovery', () => {
         onRetry,
       };
 
-      expect(() => ErrorRecovery(props)).not.toThrow();
+      expect(() => render(<ErrorRecovery {...props} />)).not.toThrow();
     });
   });
 });

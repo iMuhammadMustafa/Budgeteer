@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 
 // Mock the repository service
 const mockMutate = jest.fn();
-jest.mock('@/src/services/repositories/TransactionGroups.Service', () => ({
+jest.mock('@/src/services/TransactionGroups.Service', () => ({
   useUpsertTransactionGroup: () => ({
     mutate: mockMutate,
   }),

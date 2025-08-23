@@ -3,7 +3,7 @@
  * Tests hook behavior, validation, state management, and edge cases
  */
 
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react';
 import { useFormState } from '../useFormState';
 import { ValidationSchema } from '../../../types/components/forms.types';
 import { commonValidationRules } from '../../../utils/form-validation';

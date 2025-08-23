@@ -15,7 +15,8 @@ const MockFormContent = () => <Text>Form Content</Text>;
 describe('FormContainer', () => {
   describe('Component Structure', () => {
     it('should be a React component', () => {
-      expect(typeof FormContainer).toBe('function');
+      expect(typeof FormContainer).toBe('object'); // Memoized components are objects
+      expect(FormContainer.$$typeof).toBeDefined(); // React component symbol
     });
 
     it('should accept FormContainerProps', () => {
