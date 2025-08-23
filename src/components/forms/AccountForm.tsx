@@ -215,7 +215,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
           onReset={handleReset}
         >
           {/* Basic Information Section */}
-          <FormSection title="Basic Information" description="Enter the account's basic details">
+          <FormSection title="Basic Information" description="Enter the account's basic details" className="z-10">
             <FormField
               config={{
                 name: "name",
@@ -265,7 +265,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
               <View className="flex-1">
                 <IconPicker
                   onSelect={(icon: any) => updateField("icon", icon)}
-                  label="Icon"
                   initialIcon={formState.data.icon ?? "CircleHelp"}
                 />
               </View>
@@ -277,7 +276,11 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
           </FormSection>
 
           {/* Financial Information Section */}
-          <FormSection title="Financial Information" description="Set up the account's financial details">
+          <FormSection
+            title="Financial Information"
+            description="Set up the account's financial details"
+            className="-z-10"
+          >
             <FormField
               config={{
                 name: "currency",

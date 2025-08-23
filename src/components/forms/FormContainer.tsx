@@ -1,13 +1,13 @@
-import React, { memo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { FormContainerProps } from '@/src/types/components/forms.types';
-import Button from '../Button';
+import React, { memo, useCallback } from "react";
+import { View, Text, Pressable } from "react-native";
+import { FormContainerProps } from "@/src/types/components/forms.types";
+import Button from "../Button";
 
 /**
  * FormContainer component provides consistent layout, submission handling, and loading states
  * for all forms in the application. It includes form validation display, submit/reset buttons,
  * and responsive design with accessibility support.
- * 
+ *
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
  * - useCallback for event handlers to maintain referential equality
@@ -17,10 +17,10 @@ function FormContainerComponent({
   onSubmit,
   isValid,
   isLoading,
-  submitLabel = 'Save',
+  submitLabel = "Save",
   showReset = false,
   onReset,
-  className = '',
+  className = "",
 }: FormContainerProps) {
   const handleSubmit = useCallback(() => {
     if (!isLoading && isValid) {
@@ -34,36 +34,37 @@ function FormContainerComponent({
     }
   }, [isLoading, onReset]);
 
-  const handleKeyPress = useCallback((event: any) => {
-    // Handle Enter key for form submission
-    if (event.nativeEvent?.key === 'Enter' && !event.nativeEvent?.shiftKey) {
-      event.preventDefault();
-      handleSubmit();
-    }
-  }, [handleSubmit]);
+  const handleKeyPress = useCallback(
+    (event: any) => {
+      // Handle Enter key for form submission
+      if (event.nativeEvent?.key === "Enter" && !event.nativeEvent?.shiftKey) {
+        event.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
 
   return (
     <View
       className={`p-5 ${className}`}
       accessible={true}
-      accessibilityRole="form"
+      accessibilityRole="list"
       accessibilityLabel="Form container"
-      accessibilityState={{ 
+      accessibilityState={{
         busy: isLoading,
-        disabled: isLoading 
+        disabled: isLoading,
       }}
-      onKeyPress={handleKeyPress}
+      onKeyDown={handleKeyPress}
     >
       {/* Form Content */}
-      <View className="flex-1 mb-4">
-        {children}
-      </View>
+      <View className="flex-1 mb-4">{children}</View>
 
       {/* Form Actions */}
       <View className="flex-row justify-end space-x-3 mt-4">
         {showReset && onReset && (
           <Pressable
-            className="px-4 py-2 border border-gray-300 rounded-md bg-white"
+            className="p-3 flex justify-center items-center border border-gray-300 rounded-md bg-white"
             onPress={handleReset}
             disabled={isLoading}
             accessible={true}
@@ -71,26 +72,24 @@ function FormContainerComponent({
             accessibilityLabel="Reset form"
             accessibilityHint="Clears all form fields and resets to initial values"
           >
-            <Text className={`text-center font-medium ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
-              Reset
-            </Text>
+            <Text className={`text-center font-medium ${isLoading ? "text-gray-400" : "text-gray-700"}`}>Reset</Text>
           </Pressable>
         )}
 
         <Button
-          label={isLoading ? 'Saving...' : submitLabel}
+          label={isLoading ? "Saving..." : submitLabel}
           onPress={handleSubmit}
           isValid={isValid && !isLoading}
           accessibilityHint={
-            !isValid 
+            !isValid
               ? "Form has validation errors that need to be fixed before submission"
-              : isLoading 
+              : isLoading
                 ? "Form is currently being submitted"
                 : "Submit the form with current values"
           }
           accessibilityState={{
             busy: isLoading,
-            disabled: !isValid || isLoading
+            disabled: !isValid || isLoading,
           }}
         />
       </View>
@@ -127,6 +126,6 @@ const FormContainer = memo(FormContainerComponent, (prevProps, nextProps) => {
   );
 });
 
-FormContainer.displayName = 'FormContainer';
+FormContainer.displayName = "FormContainer";
 
 export default FormContainer;
