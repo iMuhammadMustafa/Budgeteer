@@ -254,7 +254,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection title="Group Details">
+          <FormSection title="Group Details" className="z-50">
             {/* Render standard form fields */}
             {formFields.map(fieldConfig => (
               <FormField
@@ -269,7 +269,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
             ))}
           </FormSection>
 
-          <FormSection title="Budget Settings">
+          <FormSection title="Budget Settings" className="z-40">
             {/* Budget Amount with custom handler */}
             <FormField
               config={budgetFields[0]}
@@ -295,11 +295,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
             {/* Icon and Color Selection */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
               <View className="flex-1">
-                <IconPicker
-                  onSelect={handleIconSelect}
-                  label="Icon"
-                  initialIcon={formState.data.icon ?? "CircleHelp"}
-                />
+                <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
               </View>
               <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
             </View>

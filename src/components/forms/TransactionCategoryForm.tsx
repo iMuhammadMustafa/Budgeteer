@@ -255,7 +255,11 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection title="Category Details" description="Basic information about the transaction category">
+          <FormSection
+            title="Category Details"
+            description="Basic information about the transaction category"
+            className="z-50"
+          >
             {/* Name field */}
             <FormField
               config={formFields[0]}
@@ -299,7 +303,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
             />
           </FormSection>
 
-          <FormSection title="Budget Settings" description="Configure budget amounts and frequency">
+          <FormSection title="Budget Settings" description="Configure budget amounts and frequency" className="z-40">
             {/* Budget Amount and Frequency in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-start justify-between`}>
               <View className={Platform.OS === "web" ? "flex-1" : "w-full mb-2"}>
@@ -329,20 +333,20 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
             </View>
           </FormSection>
 
-          <FormSection title="Appearance" description="Customize the visual appearance of this category">
+          <FormSection
+            title="Appearance"
+            description="Customize the visual appearance of this category"
+            className="z-30"
+          >
             {/* Icon and Color Selection in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
               <View className="flex-1">
-                <IconPicker
-                  onSelect={handleIconSelect}
-                  label="Icon"
-                  initialIcon={formState.data.icon ?? "CircleHelp"}
-                />
+                <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
                 {formState.touched.icon && formState.errors.icon && (
                   <Text className="text-red-500 text-sm mt-1">{formState.errors.icon}</Text>
                 )}
               </View>
-              <View>
+              <View className="flex-1">
                 <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
                 {formState.touched.color && formState.errors.color && (
                   <Text className="text-red-500 text-sm mt-1">{formState.errors.color}</Text>

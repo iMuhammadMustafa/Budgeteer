@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Account, Transaction } from "@/src/types/db/Tables.Types";
+import { Transaction } from "@/src/types/db/Tables.Types";
 import { TransactionFormData, ValidationSchema, OptionItem } from "@/src/types/components/forms.types";
 import { useFormState } from "../hooks/useFormState";
 import { useFormSubmission } from "../hooks/useFormSubmission";
@@ -16,7 +16,6 @@ import FormSection from "./FormSection";
 import SearchableDropdown from "../SearchableDropdown";
 import MyIcon from "@/src/utils/Icons.Helper";
 import CalculatorComponent from "../Calculator";
-import { getTransactionsByName } from "@/src/repositories";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.types";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";

@@ -81,7 +81,7 @@ function DropdownField({
         ) : (
           <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
             <Text selectable={false} className="-z-10">
-              {selectedItem ? selectedItem.label : label ? label : "Select"} 
+              {selectedItem ? selectedItem.label : label ? label : "Select"}
             </Text>
           </Pressable>
         )}
@@ -106,7 +106,7 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
       ) : (
         <View
           style={{ width: buttonLayout.width, top: buttonLayout.y + buttonLayout.height, left: buttonLayout.x }}
-          className="bg-card shadow-md rounded-md z-10 absolute"
+          className="bg-card shadow-md rounded-md z-100 absolute"
         >
           {children}
         </View>

@@ -9,7 +9,7 @@
     "dev": "expo start --web",
     "test": "jest ",
     "lint": "expo lint",
-    "dbtypes": "bunx supabase gen types typescript --project-id 'zqvlhiemckavdamziohj' > ./src/types/database.types.ts",
+    "dbtypes": "bunx supabase gen types typescript --project-id 'zqvlhiemckavdamziohj' > ./src/types/db/database.types.ts",
     "build-android": "eas build --profile preview --platform android",
     "build-web": "npx expo export -p web",
     "build-windows": "bun electron-builder/build-windows.js",
