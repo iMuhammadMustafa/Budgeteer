@@ -57,22 +57,52 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
     };
 
     switch (type) {
-      case 'text':
-      case 'number':
+      case "text":
         return (
           <TextInput
             {...baseAccessibilityProps}
             className={`text-black border rounded-md p-3 ${
-              hasError 
-                ? 'border-red-500 bg-red-50' 
-                : disabled 
-                  ? 'border-gray-200 bg-gray-100' 
-                  : 'border-gray-300 bg-white'
+              hasError
+                ? "border-red-500 bg-red-50"
+                : disabled
+                  ? "border-gray-200 bg-gray-100"
+                  : "border-gray-300 bg-white"
             }`}
-            value={value?.toString() || ''}
+            value={value === null || value === undefined ? "" : value.toString()}
             onChangeText={handleChange}
             onBlur={handleBlur}
-            keyboardType={type === 'number' ? 'numeric' : 'default'}
+            keyboardType="default"
+            placeholder={placeholder}
+            placeholderTextColor="#9ca3af"
+            editable={!disabled}
+            aria-disabled={disabled}
+          />
+        );
+      case "number":
+        return (
+          <TextInput
+            {...baseAccessibilityProps}
+            className={`text-black border rounded-md p-3 ${
+              hasError
+                ? "border-red-500 bg-red-50"
+                : disabled
+                  ? "border-gray-200 bg-gray-100"
+                  : "border-gray-300 bg-white"
+            }`}
+            value={value === null || value === undefined ? "" : value.toString()}
+            onChangeText={text => handleChange(text)}
+            onBlur={() => {
+              // Only coerce to number on blur if not empty
+              if (onBlur) {
+                if (value === "" || value === null || value === undefined) {
+                  onChange(null);
+                } else if (!isNaN(Number(value))) {
+                  onChange(Number(value));
+                }
+                onBlur();
+              }
+            }}
+            keyboardType="numeric"
             placeholder={placeholder}
             placeholderTextColor="#9ca3af"
             editable={!disabled}
@@ -106,13 +136,13 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       case "select":
         // Ensure selectedValue matches the type of option values
         return (
-          <View>
+          <View className="z-10">
             <DropdownField
               label={label}
-              selectedValue={value}
+              selectedValue={options.find(opt => opt.value === value) ? value : null}
               options={options}
               onSelect={(item: OptionItem | null) => {
-                handleChange(item?.value || null);
+                handleChange(item?.value ?? null);
                 handleBlur();
               }}
               isModal={config.popUp}
@@ -186,7 +216,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
   };
 
   return (
-    <View className={`my-2 ${className}`}>
+    <View className={`my-2 ${className} ${type === "select" ? "z-10" : "-z-10"}`}>
       {/* Field Label */}
       {label && type !== "switch" && (
         <Text className={`text-foreground mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
@@ -232,19 +262,20 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
 }
 
 // Memoize the component with custom comparison function for better performance
-const FormField = memo(FormFieldComponent, (prevProps, nextProps) => {
-  // Custom comparison to optimize re-renders
-  return (
-    prevProps.value === nextProps.value &&
-    prevProps.error === nextProps.error &&
-    prevProps.touched === nextProps.touched &&
-    prevProps.config === nextProps.config &&
-    prevProps.onChange === nextProps.onChange &&
-    prevProps.onBlur === nextProps.onBlur &&
-    prevProps.className === nextProps.className
-  );
-}) as typeof FormFieldComponent;
+// const FormField = memo(FormFieldComponent, (prevProps, nextProps) => {
+//   // Custom comparison to optimize re-renders
+//   return (
+//     prevProps.value === nextProps.value &&
+//     prevProps.error === nextProps.error &&
+//     prevProps.touched === nextProps.touched &&
+//     prevProps.config === nextProps.config &&
+//     prevProps.onChange === nextProps.onChange &&
+//     prevProps.onBlur === nextProps.onBlur &&
+//     prevProps.className === nextProps.className
+//   );
+// }) as typeof FormFieldComponent;
 
-FormField.displayName = 'FormField';
+// FormField.displayName = 'FormField';
+const FormField = memo(FormFieldComponent) as typeof FormFieldComponent;
 
 export default FormField;
