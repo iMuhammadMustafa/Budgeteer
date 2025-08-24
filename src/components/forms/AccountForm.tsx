@@ -308,7 +308,22 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
                   value={formState.data.balance?.toString()}
                   error={formState.errors.balance}
                   touched={formState.touched.balance}
-                  onChange={value => updateField("balance", Number(value) || 0)}
+                  onChange={value => updateField("balance", value)}
+                  onBlur={() => {
+                    const val = formState.data.balance;
+                    if (val === null || val === undefined) {
+                      updateField("balance", null);
+                    } else if (typeof val === "string") {
+                      const strVal: string = val;
+                      if (strVal.trim() === "") {
+                        updateField("balance", null);
+                      } else if (!isNaN(Number(strVal))) {
+                        updateField("balance", Number(strVal));
+                      }
+                    } else if (typeof val === "number") {
+                      updateField("balance", val);
+                    }
+                  }}
                 />
               </View>
 
