@@ -135,6 +135,8 @@ export function useAccountService(): IAccountService {
         // Clean up properties that shouldn't be sent to database
         (form as any).category = undefined;
         (form as any).runningbalance = undefined;
+        (form as any).addAdjustmentTransaction = undefined;
+        (form as any).openBalance = undefined;
 
         if (form.id && original) {
           return await updateAccountRepoHelper(

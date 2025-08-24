@@ -51,12 +51,17 @@ export const initialTransactionState: TransactionFormType = {
   transferid: "",
   transferaccountid: null,
   mode: "minus",
+  // Required TransactionFormData fields from DB
+  createdby: "",
+  updatedby: "",
+  tenantid: "",
+  isdeleted: false,
 };
 
 // Transaction type configurations
 const TRANSACTION_TYPE_CONFIG = {
-  Income: { mode: "plus", defaultName: "Income", requiresPayee: true },
-  Expense: { mode: "minus", defaultName: "Expense", requiresPayee: true },
+  Income: { mode: "plus", defaultName: "Income", requiresPayee: false },
+  Expense: { mode: "minus", defaultName: "Expense", requiresPayee: false },
   Transfer: { mode: "minus", defaultName: "Transfer", requiresPayee: false },
 } as const;
 
@@ -72,7 +77,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const [mode, setMode] = useState<"plus" | "minus">("minus");
 
   // Create validation schema with dynamic rules based on transaction type
-  const validationSchema: ValidationSchema<TransactionFormType> = useMemo(() => {
+  const getValidationSchema = (type: string): ValidationSchema<TransactionFormType> => {
     const baseSchema: ValidationSchema<TransactionFormType> = {
       name: [commonValidationRules.required("Transaction name is required")],
       amount: createAmountValidation(),
@@ -85,13 +90,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     };
 
     // Add conditional validation for payee based on transaction type
-    baseSchema.payee =
-      formState?.data?.type === "Transfer"
-        ? [] // Payee not required for transfers
-        : [commonValidationRules.required("Payee is required")];
+    // baseSchema.payee =
+    //   type === "Transfer"
+    //     ? [] // Payee not required for transfers
+    //     : [commonValidationRules.required("Payee is required")];
 
     // Add validation for transfer account
-    if (formState?.data?.type === "Transfer") {
+    if (type === "Transfer") {
       baseSchema.transferaccountid = [
         commonValidationRules.required("Destination account is required"),
         commonValidationRules.custom(
@@ -102,19 +107,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     }
 
     return baseSchema;
-  }, [formState?.data?.type]);
+  };
 
   // Initialize form data from props
   const initialFormData: TransactionFormType = useMemo(
     () => ({
       ...transaction,
       amount: Math.abs(transaction.amount ?? 0),
-      mode: transaction.amount && transaction.amount < 0 ? "minus" : "plus",
+      mode: transaction.amount && transaction.amount !== 0 ? (transaction.amount < 0 ? "minus" : "plus") : "minus",
     }),
     [transaction],
   );
 
   // Initialize form state with validation
+  const [transactionType, setTransactionType] = useState<string>(initialFormData.type);
+
+  const validationSchema = useMemo(() => getValidationSchema(transactionType), [transactionType]);
+
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<TransactionFormType>(initialFormData, validationSchema);
 
@@ -251,6 +260,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       updateField("type", type);
       setMode(typeConfig.mode);
       updateField("mode", typeConfig.mode);
+      setTransactionType(type);
 
       // Set default name if current name is empty or matches previous type
       if (
@@ -418,6 +428,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         value: item.id,
         icon: item.icon,
         color: item.color,
+        group: item.group!.name || "Uncategorized",
       }))
       .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically
   }, [categories]);
@@ -431,7 +442,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         id: item.id,
         label: item.name || "",
         value: item.id,
-        group: item.categoryname || "Other",
+        // Accounts do not have categoryname, fallback to "Other"
+        group: "Other",
       }))
       .sort((a, b) => {
         // Sort by group first, then by name
@@ -448,9 +460,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   }, [accountOptions, formState.data.accountid]);
 
   const transactionTypeOptions: OptionItem[] = [
-    { id: "income", label: "Income", value: "Income" },
-    { id: "expense", label: "Expense", value: "Expense" },
-    { id: "transfer", label: "Transfer", value: "Transfer" },
+    { id: "Income", label: "Income", value: "Income" },
+    { id: "Expense", label: "Expense", value: "Expense" },
+    { id: "Transfer", label: "Transfer", value: "Transfer" },
   ];
 
   const isEdit = !!transaction.id;
@@ -483,56 +495,53 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           </View>
 
           {/* Basic Information Section */}
-          <FormSection title="Transaction Details" description="Enter the transaction's basic information">
-            <SearchableDropdown
-              label="Name"
-              searchAction={getTransactionsByName}
-              initalValue={formState.data.name}
-              onSelectItem={onSelectItem}
-              onChange={val => updateField("name", val)}
-            />
+          <SearchableDropdown
+            label="Name"
+            searchAction={transactionService.findByName}
+            initalValue={transaction.name}
+            onSelectItem={onSelectItem}
+            onChange={val => updateField("name", val)}
+          />
 
-            {formState.data.type !== "Transfer" && (
-              <FormField
-                config={{
-                  name: "payee",
-                  label: "Payee",
-                  type: "text",
-                  placeholder: "Enter payee name",
-                  required:
-                    TRANSACTION_TYPE_CONFIG[formState.data.type as keyof typeof TRANSACTION_TYPE_CONFIG]?.requiresPayee,
-                }}
-                value={formState.data.payee}
-                error={formState.errors.payee}
-                touched={formState.touched.payee}
-                onChange={value => updateField("payee", value)}
-                onBlur={() => setFieldTouched("payee")}
-              />
-            )}
-
+          {formState.data.type !== "Transfer" && (
             <FormField
               config={{
-                name: "date",
-                label: "Date",
-                type: "date",
-                required: true,
+                name: "payee",
+                label: "Payee",
+                type: "text",
+                placeholder: "Enter payee name",
+                required: false,
               }}
-              value={formState.data.date}
-              error={formState.errors.date}
-              touched={formState.touched.date}
-              onChange={value => {
-                if (value) {
-                  const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
-                  updateField("date", formattedDate);
-                }
-              }}
-              onBlur={() => setFieldTouched("date")}
+              value={formState.data.payee}
+              error={formState.errors.payee}
+              touched={formState.touched.payee}
+              onChange={value => updateField("payee", value)}
+              onBlur={() => setFieldTouched("payee")}
             />
-          </FormSection>
+          )}
+
+          <FormField
+            config={{
+              name: "date",
+              label: "Date",
+              type: "date",
+              required: true,
+            }}
+            value={formState.data.date}
+            error={formState.errors.date}
+            touched={formState.touched.date}
+            onChange={value => {
+              if (value) {
+                const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
+                updateField("date", formattedDate);
+              }
+            }}
+            onBlur={() => setFieldTouched("date")}
+          />
 
           {/* Amount and Type Section */}
-          <FormSection title="Amount & Type" description="Set the transaction amount and type">
-            <View className="flex-row justify-center items-center mb-4">
+          <View className="flex-row justify-center items-center mb-4">
+            <View className="me-2 mt-5 justify-center items-center">
               <Pressable
                 className={`${
                   formState.data.type === "Transfer"
@@ -540,7 +549,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     : mode === "plus"
                       ? "bg-success-400"
                       : "bg-danger-400"
-                } border border-muted rounded-lg me-2 p-1.5`}
+                } border border-muted rounded-lg p-1.5`}
                 onPress={handleModeToggle}
                 accessible={true}
                 accessibilityRole="button"
@@ -552,27 +561,28 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   <MyIcon name="Plus" size={24} className="text-gray-100" />
                 )}
               </Pressable>
-
-              <View className="flex-1">
-                <FormField
-                  config={{
-                    name: "amount",
-                    label: "Amount",
-                    type: "number",
-                    required: true,
-                    placeholder: "0.00",
-                  }}
-                  value={formState.data.amount?.toString()}
-                  error={formState.errors.amount}
-                  touched={formState.touched.amount}
-                  onChange={handleAmountChange}
-                />
-              </View>
-
-              <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
+            </View>
+            <View className="flex-1">
+              <FormField
+                config={{
+                  name: "amount",
+                  label: "Amount",
+                  type: "number",
+                  required: true,
+                  placeholder: "0.00",
+                }}
+                value={formState.data.amount?.toString()}
+                error={formState.errors.amount}
+                touched={formState.touched.amount}
+                onChange={handleAmountChange}
+              />
             </View>
 
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-30`}>
+            <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
+          </View>
+
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-40`}>
+            <View className="flex-1">
               <FormField
                 config={{
                   name: "categoryid",
@@ -580,6 +590,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   type: "select",
                   required: true,
                   options: categoryOptions,
+                  group: "group.name",
                 }}
                 value={formState.data.categoryid}
                 error={formState.errors.categoryid}
@@ -587,7 +598,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 onChange={value => updateField("categoryid", value)}
                 onBlur={() => setFieldTouched("categoryid")}
               />
+            </View>
 
+            <View className="flex-1">
               <FormField
                 config={{
                   name: "type",
@@ -595,6 +608,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   type: "select",
                   required: true,
                   options: transactionTypeOptions,
+                  popUp: Platform.OS !== "web",
                 }}
                 value={formState.data.type}
                 error={formState.errors.type}
@@ -603,10 +617,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 onBlur={() => setFieldTouched("type")}
               />
             </View>
-          </FormSection>
+          </View>
 
           {/* Account Information Section */}
-          <FormSection title="Account Information" description="Select the accounts for this transaction">
+          <FormSection className="z-30">
             <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""} z-20`}>
               <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
                 <FormField
