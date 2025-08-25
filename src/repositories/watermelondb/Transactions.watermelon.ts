@@ -150,7 +150,7 @@ export class TransactionWatermelonRepository
 
       // Build TransactionsView array
       // Map to TransactionsView, then sort DESC for display
-      const views = transactions.map(transaction => {
+      let views = transactions.map(transaction => {
         const mapped = this.mapFromWatermelon(transaction);
         const account = accountMap.get(mapped.accountid) as Account | undefined;
         const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
@@ -194,7 +194,10 @@ export class TransactionWatermelonRepository
         if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
         return (b.id || "").localeCompare(a.id || "");
       });
-      return views;
+      // Pagination: slice the results if offset/limit provided
+      const offset = searchFilters.offset ?? 0;
+      const limit = searchFilters.limit ?? views.length;
+      return views.slice(offset, offset + limit);
     } catch (error) {
       throw new Error(`Failed to find records: ${error instanceof Error ? error.message : "Unknown error"}`);
     }

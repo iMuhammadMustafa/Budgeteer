@@ -4,8 +4,8 @@ export interface QueryFilters {
   startDate?: string;
   endDate?: string;
 
-  startIndex?: number;
-  endIndex?: number;
+  offset?: number;
+  limit?: number;
 }
 
 export interface TransactionFilters extends QueryFilters {
@@ -23,6 +23,6 @@ export interface TransactionFilters extends QueryFilters {
 }
 
 export const initalTransactionSearchParams: TransactionFilters = {
-  startIndex: 0,
-  endIndex: 20,
+  offset: 0,
+  limit: 20,
 };

@@ -230,27 +230,28 @@ export function useTransactionService(): ITransactionService {
 
   const findAllInfinite = (searchFilters: TransactionFilters) => {
     const normalizedFilters = Object.keys(searchFilters).length !== 0 ? searchFilters : initialSearchFilters;
+    const pageSize = 10;
     return useInfiniteQuery<TransactionsView[]>({
       queryKey: [ViewNames.TransactionsView, normalizedFilters, tenantId, "repo", "infinite"],
       initialPageParam: 0,
       queryFn: async ({ pageParam = 0 }) => {
         if (!tenantId) throw new Error("Tenant ID not found in session for infinite query");
+        const offset = (pageParam as number) * pageSize;
+        const limit = pageSize;
 
-        // For now, we'll use the regular findAll method and implement pagination later
-        // This is a simplified implementation - in production you'd want proper pagination
-        const allResults = await transactionRepo.findAll(normalizedFilters, tenantId);
-
-        // Simple pagination simulation
-        const pageSize = 10;
-        const startIndex = (pageParam as number) * pageSize;
-        const endIndex = startIndex + pageSize;
-
-        return allResults.slice(startIndex, endIndex);
+        const res = await transactionRepo.findAll(
+          {
+            ...normalizedFilters,
+            offset,
+            limit,
+          },
+          tenantId,
+        );
+        return res;
       },
       enabled: !!tenantId,
       getNextPageParam: (lastPage, allPages) => {
-        // If the last page is empty or has fewer items than pageSize, no more pages
-        if (lastPage.length === 0 || lastPage.length < 10) return undefined;
+        if (!lastPage || lastPage.length < pageSize) return undefined;
         return allPages.length;
       },
     });

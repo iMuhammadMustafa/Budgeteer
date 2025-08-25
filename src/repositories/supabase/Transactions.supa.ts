@@ -238,12 +238,12 @@ export class TransactionSupaRepository implements ITransactionRepository {
     }
 
     if (
-      searchFilters.startIndex !== undefined &&
-      searchFilters.startIndex >= 0 &&
-      searchFilters.endIndex !== undefined &&
-      searchFilters.endIndex >= 0
+      searchFilters.offset !== undefined &&
+      searchFilters.offset >= 0 &&
+      searchFilters.limit !== undefined &&
+      searchFilters.limit > 0
     ) {
-      query = query.range(searchFilters.startIndex, searchFilters.endIndex);
+      query = query.range(searchFilters.offset, searchFilters.offset + searchFilters.limit - 1);
     }
 
     return query;
