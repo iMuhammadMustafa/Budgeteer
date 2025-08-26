@@ -176,14 +176,14 @@ export default function Summary() {
     isLoading: isCurrentLoading,
     error: currentError,
     refetch: refetchCurrent,
-  } = statsService.getStatsMonthlyCategoriesTransactions(dateRange.current.start, dateRange.current.end);
+  } = statsService.getStatsMonthlyCategoriesTransactionsRaw(dateRange.current.start, dateRange.current.end);
 
   const {
     data: previousMonthData,
     isLoading: isPreviousLoading,
     error: previousError,
     refetch: refetchPrevious,
-  } = statsService.getStatsMonthlyCategoriesTransactions(dateRange.previous.start, dateRange.previous.end);
+  } = statsService.getStatsMonthlyCategoriesTransactionsRaw(dateRange.previous.start, dateRange.previous.end);
 
   const isLoading = isCurrentLoading || isPreviousLoading;
   const error = currentError || previousError;
@@ -581,8 +581,8 @@ export default function Summary() {
           )}
 
           {comparisonData.length > 0 ? (
-            <View className="w-full items-center  mb-6">
-              <View className="w-full max-w-2xl">
+            <View className="w-full items-center mb-6">
+              <View className="w-full">
                 <ExpenseComparison data={comparisonData} />
               </View>
             </View>

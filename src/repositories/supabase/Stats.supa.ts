@@ -62,29 +62,7 @@ export class StatsSupaRepository implements IStatsRepository {
 
     const { data, error } = await supabase
       .from(ViewNames.StatsMonthlyCategoriesTransactions)
-      .select(
-        `
-        groupid,
-        categoryid,
-        groupname,
-        categoryname,
-        sum,
-        type,
-        groupicon,
-        categoryicon,
-        groupbudgetamount,
-        categorybudgetamount,
-        date,
-        categorybudgetamount,
-        categorybudgetfrequency,
-        categorycolor,
-        categorydisplayorder,
-        categoryicon,
-        groupbudgetfrequency,
-        groupcolor,
-        groupdisplayorder
-      `,
-      )
+      .select()
       .eq("tenantid", tenantId)
       .in("type", ["Expense", "Adjustment"])
       .gte("date", formattedStartDate)

@@ -114,22 +114,19 @@ export default function ExpenseComparison({ data }: Props) {
   };
 
   return (
-    <View className="flex-1 w-full items-center justify-center">
+    <View className="flex-1 w-full items-center justify-center px-4">
       <ScrollView
         horizontal
-        className="w-full"
+        className="flex-1"
         showsHorizontalScrollIndicator={true}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "flex-start",
-          paddingHorizontal: 2,
-        }}
+        contentContainerClassName="items-center"
       >
         <View
           className="bg-background"
           style={{
-            width: Math.min(width - 10, categoryWidth + amountWidth * dates.length),
-            alignSelf: "flex-start",
+            minWidth: categoryWidth + amountWidth * dates.length,
+            maxWidth: width - 32,
+            alignSelf: "center",
           }}
         >
           {/* Header */}

@@ -44,6 +44,10 @@ export interface IStatsService {
       categories: (PieData & { id: string })[];
     }>
   >;
+  getStatsMonthlyCategoriesTransactionsRaw: (
+    startDate?: string,
+    endDate?: string,
+  ) => ReturnType<typeof useQuery<StatsMonthlyCategoriesTransactions[]>>;
   getStatsMonthlyAccountsTransactions: (
     startDate?: string,
     endDate?: string,
@@ -110,6 +114,18 @@ export function useStatsService(): IStatsService {
     });
   };
 
+  // New: Raw monthly categories transactions (no dashboard helper)
+  const getStatsMonthlyCategoriesTransactionsRaw = (startDate?: string, endDate?: string) => {
+    return useQuery<StatsMonthlyCategoriesTransactions[]>({
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, "raw", startDate, endDate, tenantId, "repo"],
+      queryFn: async () => {
+        if (!tenantId) throw new Error("Tenant ID not found in session");
+        return statsRepo.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
   const getStatsNetWorthGrowth = (startDate?: string, endDate?: string) => {
     return useQuery<LineChartPoint[]>({
       queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId, "repo"],
@@ -129,6 +145,7 @@ export function useStatsService(): IStatsService {
     getStatsMonthlyCategoriesTransactions,
     getStatsMonthlyAccountsTransactions,
     getStatsNetWorthGrowth,
+    getStatsMonthlyCategoriesTransactionsRaw,
 
     // Direct repository access
     statsRepo,
@@ -283,6 +300,11 @@ const getStatsNetWorthGrowthHelper = async (data: StatsNetWorthGrowth[]): Promis
 export const useGetStatsMonthlyCategoriesTransactions = (startDate: string, endDate: string) => {
   const service = useStatsService();
   return service.getStatsMonthlyCategoriesTransactions(startDate, endDate);
+};
+
+export const useGetStatsMonthlyCategoriesTransactionsRaw = (startDate: string, endDate: string) => {
+  const service = useStatsService();
+  return service.getStatsMonthlyCategoriesTransactionsRaw(startDate, endDate);
 };
 
 export const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false) => {
