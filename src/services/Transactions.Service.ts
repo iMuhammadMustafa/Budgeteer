@@ -124,14 +124,7 @@ export function useTransactionService(): ITransactionService {
   const createMultipleTransactionsRepo = () => {
     return useMutation({
       mutationFn: async (transactions: Inserts<TableNames.Transactions>[]) => {
-        const cleaned = transactions.map(t => {
-          if ("mode" in t) {
-            const { mode, ...rest } = t;
-            return rest;
-          }
-          return t;
-        });
-        return await transactionRepo.createMultipleTransactions(cleaned);
+        return await transactionRepo.createMultipleTransactions(transactions);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });

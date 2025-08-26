@@ -13,11 +13,11 @@ import {
 } from "react-native";
 import dayjs from "dayjs";
 import ExpenseComparison from "@/src/components/ExpenseComparison";
-import { useGetStatsMonthlyCategoriesTransactions } from "@/src/services//Stats.Service";
 import { Calendar } from "react-native-calendars";
 import { LinearGradient } from "expo-linear-gradient";
 import { RefreshCcw } from "lucide-react-native";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
+import { useStatsService } from "@/src/services/Stats.Service";
 
 type TimePeriod = "month" | "3months" | "year" | "custom";
 
@@ -80,16 +80,17 @@ const BudgetProgressBar = ({
           ${Math.abs(spent).toFixed(2)} / ${budget.toFixed(2)}
         </Text>
       </View>
-      <View className="h-2 bg-muted rounded-full overflow-hidden">
+      <View className="h-2 bg-muted rounded-full overflow-hidden flex-row">
         <LinearGradient
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{
-            width: `${usage * 100}%`,
+            flex: usage,
             height: "100%",
           }}
         />
+        <View style={{ flex: 1 - usage }} />
       </View>
     </View>
   );
@@ -107,6 +108,7 @@ export default function Summary() {
   const [firstSelectedMonth, setFirstSelectedMonth] = useState(previousMonth);
   const [secondSelectedMonth, setSecondSelectedMonth] = useState(currentMonth);
   const [refreshing, setRefreshing] = useState(false);
+  const statsService = useStatsService();
 
   // Get date ranges based on selected time period
   const getDateRange = () => {
@@ -174,14 +176,14 @@ export default function Summary() {
     isLoading: isCurrentLoading,
     error: currentError,
     refetch: refetchCurrent,
-  } = useGetStatsMonthlyCategoriesTransactions(dateRange.current.start, dateRange.current.end);
+  } = statsService.getStatsMonthlyCategoriesTransactions(dateRange.current.start, dateRange.current.end);
 
   const {
     data: previousMonthData,
     isLoading: isPreviousLoading,
     error: previousError,
     refetch: refetchPrevious,
-  } = useGetStatsMonthlyCategoriesTransactions(dateRange.previous.start, dateRange.previous.end);
+  } = statsService.getStatsMonthlyCategoriesTransactions(dateRange.previous.start, dateRange.previous.end);
 
   const isLoading = isCurrentLoading || isPreviousLoading;
   const error = currentError || previousError;
@@ -210,42 +212,51 @@ export default function Summary() {
   };
 
   // Function to transform data into the required format for ExpenseComparison
-  const transformDataForComparison = () => {
-    // Check if we have the necessary data from both periods
+  type ExpenseComparisonData = {
+    date: string;
+    transactions: {
+      category: string;
+      group: string;
+      amount: number;
+      categoryIcon?: string;
+      groupIcon?: string;
+      categoryBudget?: number;
+      groupBudget?: number;
+    }[];
+  };
+
+  /**
+   * Transforms current and previous month data into the format required by ExpenseComparison.
+   * Returns an array with two objects: previous and current period data.
+   */
+  const transformDataForComparison = (): ExpenseComparisonData[] => {
     if (!Array.isArray(currentMonthData) || !Array.isArray(previousMonthData)) return [];
 
     // Get all unique categories from both datasets
     const allCategories = new Set<string>();
-    const allGroups = new Set<string>();
 
-    // Track categories by their full names to handle potential name conflicts
     currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
-      if (item.groupname && item.categoryname) {
+      if (item.groupname && item.categoryname && item.type === "Expense") {
         allCategories.add(`${item.groupname}:${item.categoryname}`);
-        allGroups.add(item.groupname);
       }
     });
 
     previousMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
-      if (item.groupname && item.categoryname) {
+      if (item.groupname && item.categoryname && item.type === "Expense") {
         allCategories.add(`${item.groupname}:${item.categoryname}`);
-        allGroups.add(item.groupname);
       }
     });
 
-    // Create comparison data
-    const comparisonData = [
+    // Create comparison data for previous and current periods
+    const comparisonData: ExpenseComparisonData[] = [
       {
         date: dateRange.previous.label,
         transactions: Array.from(allCategories).map((fullCategory: string) => {
           const [groupName, categoryName] = fullCategory.split(":");
-
-          // Find the matching data in the previous month
           const categoryData = previousMonthData.find(
             (item: StatsMonthlyCategoriesTransactions) =>
-              item.groupname === groupName && item.categoryname === categoryName,
+              item.groupname === groupName && item.categoryname === categoryName && item.type === "Expense",
           );
-
           return {
             category: categoryName,
             group: groupName,
@@ -261,13 +272,10 @@ export default function Summary() {
         date: dateRange.current.label,
         transactions: Array.from(allCategories).map((fullCategory: string) => {
           const [groupName, categoryName] = fullCategory.split(":");
-
-          // Find the matching data in the current month
           const categoryData = currentMonthData.find(
             (item: StatsMonthlyCategoriesTransactions) =>
-              item.groupname === groupName && item.categoryname === categoryName,
+              item.groupname === groupName && item.categoryname === categoryName && item.type === "Expense",
           );
-
           return {
             category: categoryName,
             group: groupName,
@@ -284,14 +292,19 @@ export default function Summary() {
     return comparisonData;
   };
 
-  // Calculate budget usage for groups and categories
-  const calculateBudgetUsage = () => {
+  /**
+   * Calculates budget usage for groups and categories for the current month.
+   * Returns two objects: groupBudgets and categoryBudgets.
+   */
+  const calculateBudgetUsage = (): {
+    groupBudgets: { [key: string]: { spent: number; budget: number } };
+    categoryBudgets: { [key: string]: { spent: number; budget: number } };
+  } => {
     const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
     const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
 
     if (!Array.isArray(currentMonthData)) return { groupBudgets, categoryBudgets };
 
-    // Process categories data
     currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
       if (item.groupname && item.categoryname) {
         // Add to group totals

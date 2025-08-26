@@ -1,7 +1,6 @@
 import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Tab } from "@/src/components/MyTabs";
-import { useListRecurrings, useDeleteRecurring, useExecuteRecurringAction } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Recurring } from "@/src/types/db/Tables.Types";
 import dayjs from "dayjs";
@@ -10,12 +9,14 @@ import { router, Href } from "expo-router";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useState } from "react";
+import { useRecurringService } from "@/src/services/Recurrings.Service";
 
 export default function RecurringsScreen() {
   const { session } = useAuth();
   const tenantId = session?.user?.user_metadata?.tenantid;
+  const recurringsService = useRecurringService();
 
-  const { mutate: executeRecurring, isPending: isApplying } = useExecuteRecurringAction();
+  const { mutate: executeRecurring, isPending: isApplying } = recurringsService.executeRecurringAction();
 
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
@@ -38,9 +39,6 @@ export default function RecurringsScreen() {
           setAmountInput("");
           setPendingRecurring(null);
           setMode("minus");
-        },
-        onError: (error: Error) => {
-          console.error("Error executing recurring:", item.id, error.message);
         },
       },
     );
@@ -101,8 +99,8 @@ export default function RecurringsScreen() {
       <Tab
         title="Recurring Recurrings"
         queryKey={[TableNames.Recurrings, tenantId]}
-        useGet={() => useListRecurrings()}
-        useDelete={useDeleteRecurring}
+        useGet={recurringsService.findAll}
+        useDelete={recurringsService.delete}
         upsertUrl={"/Recurrings/Upsert?id=" as any}
         selectable={true}
         customRenderItem={renderRecurringItem}

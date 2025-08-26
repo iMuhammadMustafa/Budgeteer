@@ -443,7 +443,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         label: item.name || "",
         value: item.id,
         // Accounts do not have categoryname, fallback to "Other"
-        group: "Other",
+        group: item.category?.name ?? "Other",
       }))
       .sort((a, b) => {
         // Sort by group first, then by name
@@ -630,6 +630,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     type: "select",
                     required: true,
                     options: accountOptions,
+                    group: "category.name",
                   }}
                   value={formState.data.accountid}
                   error={formState.errors.accountid}

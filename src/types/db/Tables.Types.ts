@@ -7,7 +7,7 @@ export type Inserts<T extends keyof Database["public"]["Tables"]> = Database["pu
 export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
 
 // Tables
-export type Account = Tables<"accounts"> & { runningbalance?: number | null };
+export type Account = Tables<"accounts"> & { runningbalance?: number | null; category?: AccountCategory };
 export type AccountCategory = Tables<"accountcategories">;
 
 export type Transaction = Tables<"transactions">;

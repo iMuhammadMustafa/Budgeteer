@@ -123,7 +123,15 @@ export class TransactionSupaRepository implements ITransactionRepository {
   }
 
   async createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]> {
-    const { data, error } = await supabase.from(TableNames.Transactions).insert(transactions).select();
+    //TODO Clean this
+    const cleaned = transactions.map(t => {
+      if ("mode" in t) {
+        const { mode, ...rest } = t;
+        return rest;
+      }
+      return t;
+    });
+    const { data, error } = await supabase.from(TableNames.Transactions).insert(cleaned).select();
 
     if (error) throw error;
     return data;
