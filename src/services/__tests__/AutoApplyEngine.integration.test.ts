@@ -1,19 +1,19 @@
-import dayjs from 'dayjs';
-import { AutoApplyEngine } from '../AutoApplyEngine';
-import { Recurring, AutoApplyResult } from '@/src/types/recurring';
-import { RecurringType } from '@/src/types/enums/recurring';
+import dayjs from "dayjs";
+import { AutoApplyEngine } from "../AutoApplyEngine";
+import { Recurring, AutoApplyResult } from "@/src/types/recurring";
+import { RecurringType } from "@/src/types/components/recurring";
 
 // Mock UUID
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
 
-describe('AutoApplyEngine Integration Tests', () => {
+describe("AutoApplyEngine Integration Tests", () => {
   let mockRecurringRepo: any;
   let mockTransactionRepo: any;
   let mockAccountRepo: any;
   let autoApplyEngine: AutoApplyEngine;
 
-  const tenantId = 'test-tenant-id';
-  const userId = 'test-user-id';
+  const tenantId = "test-tenant-id";
+  const userId = "test-user-id";
 
   beforeEach(() => {
     mockRecurringRepo = {
@@ -35,29 +35,25 @@ describe('AutoApplyEngine Integration Tests', () => {
       findById: jest.fn(),
     };
 
-    autoApplyEngine = new AutoApplyEngine(
-      mockRecurringRepo,
-      mockTransactionRepo,
-      mockAccountRepo
-    );
+    autoApplyEngine = new AutoApplyEngine(mockRecurringRepo, mockTransactionRepo, mockAccountRepo);
   });
 
-  describe('End-to-End Auto-Apply Workflow', () => {
-    it('should successfully process a complete auto-apply workflow', async () => {
+  describe("End-to-End Auto-Apply Workflow", () => {
+    it("should successfully process a complete auto-apply workflow", async () => {
       // Setup test data
       const dueRecurring: Recurring = {
-        id: 'recurring-123',
-        name: 'Monthly Salary',
-        description: 'Monthly salary payment',
+        id: "recurring-123",
+        name: "Monthly Salary",
+        description: "Monthly salary payment",
         amount: 5000,
-        sourceaccountid: 'checking-account',
-        categoryid: 'salary-category',
-        type: 'Income',
+        sourceaccountid: "checking-account",
+        categoryid: "salary-category",
+        type: "Income",
         isactive: true,
         autoapplyenabled: true,
         recurringtype: RecurringType.Standard,
         intervalmonths: 1,
-        nextoccurrencedate: dayjs().subtract(1, 'day').format('YYYY-MM-DD'), // Due yesterday
+        nextoccurrencedate: dayjs().subtract(1, "day").format("YYYY-MM-DD"), // Due yesterday
         isamountflexible: false,
         isdateflexible: false,
         failedattempts: 0,
@@ -68,14 +64,14 @@ describe('AutoApplyEngine Integration Tests', () => {
         updatedby: userId,
         updatedat: dayjs().toISOString(),
         isdeleted: false,
-        payeename: 'Employer',
-        notes: 'Monthly salary',
-        recurrencerule: 'FREQ=MONTHLY;INTERVAL=1',
+        payeename: "Employer",
+        notes: "Monthly salary",
+        recurrencerule: "FREQ=MONTHLY;INTERVAL=1",
       } as Recurring;
 
       // Mock repository responses
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([dueRecurring]);
-      mockTransactionRepo.create.mockResolvedValue({ id: 'new-transaction-id' });
+      mockTransactionRepo.create.mockResolvedValue({ id: "new-transaction-id" });
       mockAccountRepo.updateAccountBalance.mockResolvedValue(undefined);
       mockRecurringRepo.updateNextOccurrenceDates.mockResolvedValue(undefined);
       mockRecurringRepo.resetFailedAttempts.mockResolvedValue(undefined);
@@ -93,55 +89,57 @@ describe('AutoApplyEngine Integration Tests', () => {
       expect(mockRecurringRepo.findDueRecurringTransactions).toHaveBeenCalledWith(tenantId, expect.any(Date));
       expect(mockTransactionRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Monthly Salary',
+          name: "Monthly Salary",
           amount: 5000,
-          accountid: 'checking-account',
-          type: 'Income'
+          accountid: "checking-account",
+          type: "Income",
         }),
-        tenantId
+        tenantId,
       );
-      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith('checking-account', 5000, tenantId);
-      expect(mockRecurringRepo.updateNextOccurrenceDates).toHaveBeenCalledWith([{
-        id: 'recurring-123',
-        nextDate: expect.any(Date)
-      }]);
+      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith("checking-account", 5000, tenantId);
+      expect(mockRecurringRepo.updateNextOccurrenceDates).toHaveBeenCalledWith([
+        {
+          id: "recurring-123",
+          nextDate: expect.any(Date),
+        },
+      ]);
       expect(mockRecurringRepo.updateEnhanced).toHaveBeenCalledWith(
-        'recurring-123',
+        "recurring-123",
         expect.objectContaining({
           lastautoappliedat: expect.any(String),
-          updatedby: userId
-        })
+          updatedby: userId,
+        }),
       );
     });
 
-    it('should handle mixed success and failure scenarios', async () => {
+    it("should handle mixed success and failure scenarios", async () => {
       const successfulRecurring: Recurring = createMockRecurring({
-        id: 'success-recurring',
-        name: 'Successful Transaction',
-        autoapplyenabled: true
+        id: "success-recurring",
+        name: "Successful Transaction",
+        autoapplyenabled: true,
       });
 
       const failedRecurring: Recurring = createMockRecurring({
-        id: 'failed-recurring',
-        name: 'Failed Transaction',
+        id: "failed-recurring",
+        name: "Failed Transaction",
         autoapplyenabled: true,
-        isactive: false // This will cause validation failure
+        isactive: false, // This will cause validation failure
       });
 
       const pendingRecurring: Recurring = createMockRecurring({
-        id: 'pending-recurring',
-        name: 'Pending Transaction',
-        autoapplyenabled: false // This will be marked as pending
+        id: "pending-recurring",
+        name: "Pending Transaction",
+        autoapplyenabled: false, // This will be marked as pending
       });
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([
         successfulRecurring,
         failedRecurring,
-        pendingRecurring
+        pendingRecurring,
       ]);
 
       // Mock successful transaction creation for the first one
-      mockTransactionRepo.create.mockResolvedValue({ id: 'transaction-id' });
+      mockTransactionRepo.create.mockResolvedValue({ id: "transaction-id" });
       mockAccountRepo.updateAccountBalance.mockResolvedValue(undefined);
       mockRecurringRepo.updateNextOccurrenceDates.mockResolvedValue(undefined);
       mockRecurringRepo.resetFailedAttempts.mockResolvedValue(undefined);
@@ -151,23 +149,23 @@ describe('AutoApplyEngine Integration Tests', () => {
       const result = await autoApplyEngine.checkAndApplyDueTransactions(tenantId, userId);
 
       expect(result.appliedCount).toBe(1); // Only successful one
-      expect(result.failedCount).toBe(1);  // Failed validation
+      expect(result.failedCount).toBe(1); // Failed validation
       expect(result.pendingCount).toBe(1); // Auto-apply disabled
     });
 
-    it('should handle transfer transactions correctly', async () => {
+    it("should handle transfer transactions correctly", async () => {
       const transferRecurring: Recurring = createMockRecurring({
         recurringtype: RecurringType.Transfer,
         amount: 1000,
-        sourceaccountid: 'checking-account',
-        transferaccountid: 'savings-account',
-        autoapplyenabled: true
+        sourceaccountid: "checking-account",
+        transferaccountid: "savings-account",
+        autoapplyenabled: true,
       });
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([transferRecurring]);
       mockTransactionRepo.createMultipleTransactions.mockResolvedValue([
-        { id: 'primary-transaction-id' },
-        { id: 'transfer-transaction-id' }
+        { id: "primary-transaction-id" },
+        { id: "transfer-transaction-id" },
       ]);
       mockAccountRepo.updateAccountBalance.mockResolvedValue(undefined);
       mockRecurringRepo.updateNextOccurrenceDates.mockResolvedValue(undefined);
@@ -179,32 +177,32 @@ describe('AutoApplyEngine Integration Tests', () => {
       expect(result.appliedCount).toBe(1);
       expect(mockTransactionRepo.createMultipleTransactions).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ amount: 1000, accountid: 'checking-account' }),
-          expect.objectContaining({ amount: -1000, accountid: 'savings-account' })
-        ])
+          expect.objectContaining({ amount: 1000, accountid: "checking-account" }),
+          expect.objectContaining({ amount: -1000, accountid: "savings-account" }),
+        ]),
       );
       expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledTimes(2);
-      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith('checking-account', 1000, tenantId);
-      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith('savings-account', -1000, tenantId);
+      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith("checking-account", 1000, tenantId);
+      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith("savings-account", -1000, tenantId);
     });
 
-    it('should handle credit card payments correctly', async () => {
+    it("should handle credit card payments correctly", async () => {
       const creditCardRecurring: Recurring = createMockRecurring({
         recurringtype: RecurringType.CreditCardPayment,
-        sourceaccountid: 'checking-account',
-        categoryid: 'credit-card-account',
-        autoapplyenabled: true
+        sourceaccountid: "checking-account",
+        categoryid: "credit-card-account",
+        autoapplyenabled: true,
       });
 
       const mockCreditCardAccount = {
-        id: 'credit-card-account',
-        name: 'Credit Card',
-        balance: -750 // $750 debt
+        id: "credit-card-account",
+        name: "Credit Card",
+        balance: -750, // $750 debt
       };
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([creditCardRecurring]);
       mockAccountRepo.findById.mockResolvedValue(mockCreditCardAccount);
-      mockTransactionRepo.create.mockResolvedValue({ id: 'payment-transaction-id' });
+      mockTransactionRepo.create.mockResolvedValue({ id: "payment-transaction-id" });
       mockAccountRepo.updateAccountBalance.mockResolvedValue(undefined);
       mockRecurringRepo.updateNextOccurrenceDates.mockResolvedValue(undefined);
       mockRecurringRepo.resetFailedAttempts.mockResolvedValue(undefined);
@@ -216,23 +214,23 @@ describe('AutoApplyEngine Integration Tests', () => {
       expect(mockTransactionRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 750, // Payment amount equals debt
-          accountid: 'checking-account'
+          accountid: "checking-account",
         }),
-        tenantId
+        tenantId,
       );
-      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith('checking-account', 750, tenantId);
-      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith('credit-card-account', -750, tenantId);
+      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith("checking-account", 750, tenantId);
+      expect(mockAccountRepo.updateAccountBalance).toHaveBeenCalledWith("credit-card-account", -750, tenantId);
     });
   });
 
-  describe('Error Recovery and Resilience', () => {
-    it('should handle database errors gracefully', async () => {
+  describe("Error Recovery and Resilience", () => {
+    it("should handle database errors gracefully", async () => {
       const recurringWithError: Recurring = createMockRecurring({
-        autoapplyenabled: true
+        autoapplyenabled: true,
       });
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([recurringWithError]);
-      mockTransactionRepo.create.mockRejectedValue(new Error('Database connection failed'));
+      mockTransactionRepo.create.mockRejectedValue(new Error("Database connection failed"));
       mockRecurringRepo.incrementFailedAttempts.mockResolvedValue(undefined);
 
       const result = await autoApplyEngine.checkAndApplyDueTransactions(tenantId, userId);
@@ -242,15 +240,15 @@ describe('AutoApplyEngine Integration Tests', () => {
       expect(mockRecurringRepo.incrementFailedAttempts).toHaveBeenCalledWith([recurringWithError.id]);
     });
 
-    it('should disable auto-apply after max failed attempts', async () => {
+    it("should disable auto-apply after max failed attempts", async () => {
       const recurringWithMaxFailures: Recurring = createMockRecurring({
         autoapplyenabled: true,
         failedattempts: 2, // One more failure will hit the max
-        maxfailedattempts: 3
+        maxfailedattempts: 3,
       });
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([recurringWithMaxFailures]);
-      mockTransactionRepo.create.mockRejectedValue(new Error('Persistent failure'));
+      mockTransactionRepo.create.mockRejectedValue(new Error("Persistent failure"));
       mockRecurringRepo.incrementFailedAttempts.mockResolvedValue(undefined);
       mockRecurringRepo.updateAutoApplyStatus.mockResolvedValue(undefined);
 
@@ -262,14 +260,11 @@ describe('AutoApplyEngine Integration Tests', () => {
     });
   });
 
-  describe('Configuration and Settings', () => {
-    it('should respect global auto-apply disabled setting', async () => {
-      const engine = new AutoApplyEngine(
-        mockRecurringRepo,
-        mockTransactionRepo,
-        mockAccountRepo,
-        { globalEnabled: false }
-      );
+  describe("Configuration and Settings", () => {
+    it("should respect global auto-apply disabled setting", async () => {
+      const engine = new AutoApplyEngine(mockRecurringRepo, mockTransactionRepo, mockAccountRepo, {
+        globalEnabled: false,
+      });
 
       const result = await engine.checkAndApplyDueTransactions(tenantId, userId);
 
@@ -277,22 +272,17 @@ describe('AutoApplyEngine Integration Tests', () => {
       expect(mockRecurringRepo.findDueRecurringTransactions).not.toHaveBeenCalled();
     });
 
-    it('should respect batch size limits', async () => {
-      const engine = new AutoApplyEngine(
-        mockRecurringRepo,
-        mockTransactionRepo,
-        mockAccountRepo,
-        { maxBatchSize: 2 }
-      );
+    it("should respect batch size limits", async () => {
+      const engine = new AutoApplyEngine(mockRecurringRepo, mockTransactionRepo, mockAccountRepo, { maxBatchSize: 2 });
 
       const recurrings = [
-        createMockRecurring({ id: '1', autoapplyenabled: true }),
-        createMockRecurring({ id: '2', autoapplyenabled: true }),
-        createMockRecurring({ id: '3', autoapplyenabled: true })
+        createMockRecurring({ id: "1", autoapplyenabled: true }),
+        createMockRecurring({ id: "2", autoapplyenabled: true }),
+        createMockRecurring({ id: "3", autoapplyenabled: true }),
       ];
 
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue(recurrings);
-      mockTransactionRepo.create.mockResolvedValue({ id: 'transaction-id' });
+      mockTransactionRepo.create.mockResolvedValue({ id: "transaction-id" });
       mockAccountRepo.updateAccountBalance.mockResolvedValue(undefined);
       mockRecurringRepo.updateNextOccurrenceDates.mockResolvedValue(undefined);
       mockRecurringRepo.resetFailedAttempts.mockResolvedValue(undefined);
@@ -308,31 +298,31 @@ describe('AutoApplyEngine Integration Tests', () => {
 // Helper function to create mock recurring transactions
 function createMockRecurring(overrides: Partial<Recurring> = {}): Recurring {
   return {
-    id: 'recurring-123',
-    name: 'Test Recurring',
-    description: 'Test Description',
+    id: "recurring-123",
+    name: "Test Recurring",
+    description: "Test Description",
     amount: 100,
-    sourceaccountid: 'account-123',
-    categoryid: 'category-123',
-    type: 'Expense',
+    sourceaccountid: "account-123",
+    categoryid: "category-123",
+    type: "Expense",
     isactive: true,
     autoapplyenabled: true,
     recurringtype: RecurringType.Standard,
     intervalmonths: 1,
-    nextoccurrencedate: dayjs().format('YYYY-MM-DD'),
+    nextoccurrencedate: dayjs().format("YYYY-MM-DD"),
     isamountflexible: false,
     isdateflexible: false,
     failedattempts: 0,
     maxfailedattempts: 3,
-    tenantid: 'test-tenant',
-    createdby: 'test-user',
+    tenantid: "test-tenant",
+    createdby: "test-user",
     createdat: dayjs().toISOString(),
-    updatedby: 'test-user',
+    updatedby: "test-user",
     updatedat: dayjs().toISOString(),
     isdeleted: false,
-    payeename: 'Test Payee',
-    notes: 'Test Notes',
-    recurrencerule: 'FREQ=MONTHLY;INTERVAL=1',
-    ...overrides
+    payeename: "Test Payee",
+    notes: "Test Notes",
+    recurrencerule: "FREQ=MONTHLY;INTERVAL=1",
+    ...overrides,
   } as Recurring;
 }

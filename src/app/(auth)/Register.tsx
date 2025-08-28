@@ -4,6 +4,14 @@ import { Link, router } from "expo-router";
 import supabase from "@/src/providers/Supabase";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 
+const initailRegisterState = {
+  id: GenerateUuid(),
+  email: "",
+  password: "",
+  confirmPassword: "",
+  tenantId: "",
+};
+
 export default function Register() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initailRegisterState);
@@ -73,11 +81,3 @@ export default function Register() {
     </SafeAreaView>
   );
 }
-
-const initailRegisterState = {
-  id: GenerateUuid(),
-  email: "",
-  password: "",
-  confirmPassword: "",
-  tenantId: "",
-};

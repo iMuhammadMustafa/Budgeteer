@@ -1,200 +1,113 @@
-import { useState } from "react";
-import { Alert, SafeAreaView, Text, TextInput, Pressable, View } from "react-native";
-import { Link, router } from "expo-router";
-import supabase from "@/src/providers/Supabase";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
-import { useAuth } from "@/src/providers/AuthProvider";
-import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { SafeAreaView, Text, TextInput, Pressable, View } from "react-native";
+import { Link } from "expo-router";
 import { StorageMode } from "@/src/types/StorageMode";
-import { WATERMELONDB_DEFAULTS } from "@/src/database/constants";
-
-type LoginMode = {
-  id: StorageMode;
-  title: string;
-  description: string;
-  icon: string;
-  requiresAuth: boolean;
-};
-
-const LOGIN_MODES: LoginMode[] = [
-  {
-    id: StorageMode.Cloud,
-    title: "Login with Username and Password",
-    description: "Connect to cloud database with full sync",
-    icon: "☁️",
-    requiresAuth: true,
-  },
-  {
-    id: StorageMode.Demo,
-    title: "Demo Mode",
-    description: "Try the app with sample data",
-    icon: "🎮",
-    requiresAuth: false,
-  },
-  {
-    id: StorageMode.Local,
-    title: "Local Mode",
-    description: "Store data locally on your device",
-    icon: "💾",
-    requiresAuth: false,
-  },
-];
+import useAuthViewModel from "./useAuthViewModel";
 
 export default function Login() {
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(initialUserState);
-  const [selectedMode, setSelectedMode] = useState<StorageMode | null>(null);
-  // const { setDemo } = useDemoMode();
-  const { setSession } = useAuth();
-  const { setStorageMode } = useStorageMode();
+  const {
+    handleModeSelection,
+    handleBackToModeSelection,
+    signInWithEmail,
+    loading,
+    user,
+    selectedMode,
+    onEmailChange,
+    onPasswordChange,
+    isValid,
+  } = useAuthViewModel();
 
-  const signInWithEmail = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: user?.email,
-      password: user?.password,
-    });
-
-    if (error) {
-      Alert.alert(error.message);
-      setLoading(false);
-      return;
-    }
-
-    // Set cloud mode and navigate
-    await setStorageMode(StorageMode.Cloud);
-    // setDemo(false);
-    setLoading(false);
-    router.replace("/(drawer)/Accounts");
-  };
-
-  const handleModeSelection = async (mode: StorageMode) => {
-    if (mode === StorageMode.Cloud) {
-      setSelectedMode(StorageMode.Cloud);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      console.log(`Initializing ${mode} mode...`);
-
-      // Set the storage mode with proper error handling
-      await setStorageMode(mode);
-
-      if (mode === StorageMode.Demo) {
-        // Create demo session
-        if (setSession) {
-          await setSession({
-            user: {
-              id: WATERMELONDB_DEFAULTS.userId,
-              email: "demo@demo.com",
-              user_metadata: {
-                tenantid: WATERMELONDB_DEFAULTS.tenantId,
-                full_name: "Demo User",
-              },
-              app_metadata: {},
-              aud: "authenticated",
-              created_at: new Date().toISOString(),
-            },
-            access_token: "demo-access-token",
-            refresh_token: "demo-refresh-token",
-            expires_in: 3600,
-            token_type: "bearer",
-          });
-        }
-      } else if (mode === StorageMode.Local) {
-        // Create local session
-        await setSession({
-          user: {
-            id: WATERMELONDB_DEFAULTS.userId,
-            email: "local@local.com",
-            user_metadata: {
-              tenantid: WATERMELONDB_DEFAULTS.tenantId,
-              full_name: "Local User",
-            },
-            app_metadata: {},
-            aud: "authenticated",
-            created_at: new Date().toISOString(),
-          },
-          access_token: "local-access-token",
-          refresh_token: "local-refresh-token",
-          expires_in: 3600,
-          token_type: "bearer",
-        });
-      }
-
-      console.log(`Successfully initialized ${mode} mode`);
-      router.replace("/(drawer)/(tabs)/Dashboard");
-    } catch (error) {
-      console.error(`Failed to initialize ${mode} mode:`, error);
-
-      let errorMessage = `Failed to initialize ${mode} mode`;
-
-      // Provide more specific error messages based on error type
-      if (error instanceof Error) {
-        if (error.message.includes("IndexedDB")) {
-          errorMessage =
-            "Local storage is not supported in this browser. Please try a different browser or use demo mode.";
-        } else if (error.message.includes("SQLite")) {
-          errorMessage = "Local storage is not available on this device. Please try demo mode instead.";
-        } else if (error.message.includes("Network")) {
-          errorMessage =
-            "Network connection required for cloud mode. Please check your connection or try local/demo mode.";
-        } else {
-          errorMessage = `${errorMessage}: ${error.message}`;
-        }
-      }
-
-      Alert.alert("Storage Initialization Error", errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackToModeSelection = () => {
-    setSelectedMode(null);
-    setUser(initialUserState);
-  };
-
-  const isValid = !!(user.email && user.password && !loading);
-
-  // Show mode selection screen
   if (!selectedMode) {
-    return (
-      <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
-        <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
-        <Text className="text-foreground text-lg mb-8 text-center opacity-70">
-          Choose how you'd like to use the app
-        </Text>
-
-        <View className="space-y-4">
-          {LOGIN_MODES.map(mode => (
-            <Pressable
-              key={mode.id}
-              className="p-6 border border-primary rounded-lg bg-white shadow-sm"
-              onPress={() => handleModeSelection(mode.id)}
-              disabled={loading}
-            >
-              <View className="flex-row items-center mb-2">
-                <Text className="text-2xl mr-3">{mode.icon}</Text>
-                <Text className="text-foreground text-xl font-semibold flex-1">{mode.title}</Text>
-              </View>
-              <Text className="text-foreground opacity-70 ml-8">{mode.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {loading && (
-          <View className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
-          </View>
-        )}
-      </SafeAreaView>
-    );
+    return <ModeSelectionComponent loading={loading} handleModeSelection={handleModeSelection} />;
   }
 
-  // Show cloud login form
+  return (
+    <LoginForm
+      loading={loading}
+      user={user}
+      onEmailChange={onEmailChange}
+      onPasswordChange={onPasswordChange}
+      handleBackToModeSelection={handleBackToModeSelection}
+      signInWithEmail={signInWithEmail}
+      isValid={isValid}
+    />
+  );
+}
+
+function ModeSelectionComponent({
+  loading,
+  handleModeSelection,
+}: {
+  loading: boolean;
+  handleModeSelection: (mode: StorageMode) => void;
+}) {
+  const LOGIN_MODES = [
+    {
+      id: StorageMode.Cloud,
+      title: "Login with Username and Password",
+      description: "Connect to cloud database with full sync",
+      icon: "☁️",
+    },
+    {
+      id: StorageMode.Demo,
+      title: "Demo Mode",
+      description: "Try the app with sample data",
+      icon: "🎮",
+    },
+    {
+      id: StorageMode.Local,
+      title: "Local Mode",
+      description: "Store data locally on your device",
+      icon: "💾",
+    },
+  ];
+
+  return (
+    <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
+      <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
+      <Text className="text-foreground text-lg mb-8 text-center opacity-70">Choose how you'd like to use the app</Text>
+
+      <View className="space-y-4">
+        {LOGIN_MODES.map(mode => (
+          <Pressable
+            key={mode.id}
+            className="p-6 border border-primary rounded-lg bg-white shadow-sm"
+            onPress={() => handleModeSelection(mode.id)}
+            disabled={loading}
+          >
+            <View className="flex-row items-center mb-2">
+              <Text className="text-2xl mr-3">{mode.icon}</Text>
+              <Text className="text-foreground text-xl font-semibold flex-1">{mode.title}</Text>
+            </View>
+            <Text className="text-foreground opacity-70 ml-8">{mode.description}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {loading && (
+        <View className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+function LoginForm({
+  loading,
+  user,
+  onTextChange,
+
+  handleBackToModeSelection,
+  signInWithEmail,
+  isValid,
+}: {
+  loading: boolean;
+  user: { email: string; password: string };
+  onTextChange: (field: "email" | "password", value: string) => void;
+  handleBackToModeSelection: () => void;
+  signInWithEmail: () => void;
+  isValid: boolean;
+}) {
   return (
     <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
       <Pressable onPress={handleBackToModeSelection} className="mb-4">
@@ -211,7 +124,7 @@ export default function Login() {
       <TextInput
         placeholder="Email"
         className="p-4 mb-4 border border-primary rounded-lg text-lg bg-white"
-        onChangeText={text => setUser({ ...user, email: text })}
+        onChangeText={text => onTextChange("email", text)}
         value={user.email}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -220,7 +133,7 @@ export default function Login() {
         placeholder="Password"
         secureTextEntry
         className="p-4 mb-4 border border-primary rounded-lg text-lg bg-white"
-        onChangeText={text => setUser({ ...user, password: text })}
+        onChangeText={text => onTextChange("password", text)}
         value={user.password}
       />
       <Pressable
@@ -247,7 +160,3 @@ export default function Login() {
     </SafeAreaView>
   );
 }
-const initialUserState = {
-  email: "",
-  password: "",
-};

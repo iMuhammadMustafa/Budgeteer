@@ -14,13 +14,7 @@
     "build-web": "npx expo export -p web",
     "build-windows": "bun electron-builder/build-windows.js",
     "increment-version": "bun scripts/increment-version.js",
-    "update-native": "bun run increment-version && eas update --channel preview --message ",
-    "validate:migration": "node scripts/validate-migration.js --all",
-    "validate:migration:supabase": "node scripts/validate-migration.js --supabase",
-    "validate:migration:watermelon": "node scripts/validate-migration.js --watermelon",
-    "generate:test-data": "node scripts/test-migration-data.js --generate",
-    "validate:test-data": "node scripts/test-migration-data.js --validate",
-    "migration:help": "echo 'Migration commands: validate:migration, generate:test-data, validate:test-data'"
+    "update-native": "bun run increment-version && eas update --channel preview --message "
   },
   "jest": {
     "preset": "jest-expo",
