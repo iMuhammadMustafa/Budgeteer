@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
-import useDashboard from "./useDashboard";
+import useDashboard from "./useDashboardViewModel";
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
 import Line from "@/src/components/Charts/Line";
