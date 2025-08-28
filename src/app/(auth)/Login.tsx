@@ -11,8 +11,7 @@ export default function Login() {
     loading,
     user,
     selectedMode,
-    onEmailChange,
-    onPasswordChange,
+    onTextChange,
     isValid,
   } = useAuthViewModel();
 
@@ -24,8 +23,7 @@ export default function Login() {
     <LoginForm
       loading={loading}
       user={user}
-      onEmailChange={onEmailChange}
-      onPasswordChange={onPasswordChange}
+      onTextChange={onTextChange}
       handleBackToModeSelection={handleBackToModeSelection}
       signInWithEmail={signInWithEmail}
       isValid={isValid}
