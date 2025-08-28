@@ -21,7 +21,6 @@ export default function useTransactions() {
   const params = useLocalSearchParams() as TransactionFilters;
 
   const transactionService = useTransactionService();
-  // const { data: transactions, status, error, isLoading } = useGetTransactions(params ?? initialSearchFilters);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
     transactionService.findAllInfinite(params);
   const transactions = data?.pages.flatMap(page => page);

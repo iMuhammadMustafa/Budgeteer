@@ -266,6 +266,7 @@ export interface AccountFormData extends Omit<Account, "id" | "createdat" | "upd
   runningbalance?: number | null;
   openBalance?: number | null;
   addAdjustmentTransaction?: boolean;
+  statementdate?: number | null;
 }
 
 /**

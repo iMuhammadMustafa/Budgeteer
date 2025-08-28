@@ -8,6 +8,9 @@ export { TransactionCategorySupaRepository } from "./supabase/TransactionCategor
 export { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 export { TransactionSupaRepository } from "./supabase/Transactions.supa";
 
+// WatermelonDB Repository classes
+export { RecurringWatermelonRepository } from "./watermelondb/Recurrings.watermelon";
+
 // Repository interfaces
 export * from "./interfaces/IRepository";
 export * from "./interfaces/IAccountCategoryRepository";
@@ -18,13 +21,3 @@ export * from "./interfaces/IStatsRepository";
 export * from "./interfaces/ITransactionCategoryRepository";
 export * from "./interfaces/ITransactionGroupRepository";
 export * from "./interfaces/ITransactionRepository";
-
-// Legacy function exports for backward compatibility
-export * from "./supabase/AccountCategories.supa";
-export * from "./supabase/Accounts.supa";
-export * from "./supabase/Configurations.supa";
-export * from "./supabase/Recurrings.api.supa";
-export * from "./supabase/Stats.supa";
-export * from "./supabase/TransactionCategories.supa";
-export * from "./supabase/TransactionGroups.supa";
-export * from "./supabase/Transactions.supa";

@@ -1,16 +1,12 @@
-import { Text, View, Pressable, Modal, TextInput, Platform, FlatList } from "react-native";
+import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Tab } from "@/src/components/MyTabs";
 import { TableNames } from "@/src/types/db/TableNames";
 import { Recurring } from "@/src/types/recurring";
 import dayjs from "dayjs";
 import MyIcon from "@/src/utils/Icons.Helper";
-import { router, Href } from "expo-router";
-import { useAuth } from "@/src/providers/AuthProvider";
-import { queryClient } from "@/src/providers/QueryProvider";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRecurringService } from "@/src/services/Recurring.Service";
-import { IntervalDisplay } from "@/src/components/recurring/IntervalDisplay";
 import {
   RecurringFilters,
   filterRecurringTransactions,

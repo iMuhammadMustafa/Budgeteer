@@ -30,6 +30,17 @@ export default class Recurring extends Model {
   @field("createdby") createdby?: string;
   @field("updatedby") updatedby?: string;
 
+  // Enhanced recurring fields
+  @field("intervalmonths") intervalmonths?: number;
+  @field("autoapplyenabled") autoapplyenabled?: boolean;
+  @field("transferaccountid") transferaccountid?: string;
+  @field("isamountflexible") isamountflexible?: boolean;
+  @field("isdateflexible") isdateflexible?: boolean;
+  @field("recurringtype") recurringtype?: string;
+  @field("lastautoappliedat") lastautoappliedat?: string;
+  @field("failedattempts") failedattempts?: number;
+  @field("maxfailedattempts") maxfailedattempts?: number;
+
   @date("createdat") createdat!: Date;
   @date("updatedat") updatedat!: Date;
 

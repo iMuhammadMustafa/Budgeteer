@@ -204,6 +204,74 @@ export class TransactionSupaRepository implements ITransactionRepository {
     return data || [];
   }
 
+  /**
+   * Finds transactions for a specific account within a date range
+   * Used for statement balance calculations
+   */
+  async findByAccountInDateRange(
+    accountId: string,
+    startDate: Date,
+    endDate: Date,
+    tenantId: string,
+  ): Promise<TransactionsView[]> {
+    const { data, error } = await supabase
+      .from(ViewNames.TransactionsView)
+      .select("*")
+      .eq("tenantid", tenantId)
+      .eq("accountid", accountId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  /**
+   * Gets the account balance at a specific date
+   * Calculates balance by summing all transactions up to that date
+   */
+  async getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number> {
+    // Use a stored procedure or RPC function for better performance
+    // For now, we'll use a simple aggregation query
+    const { data, error } = await supabase.rpc("get_account_balance_at_date", {
+      p_account_id: accountId,
+      p_date: date.toISOString(),
+      p_tenant_id: tenantId,
+    });
+
+    if (error) {
+      // Fallback to manual calculation if RPC doesn't exist
+      console.warn("RPC function not available, using fallback calculation:", error.message);
+      return await this.getAccountBalanceAtDateFallback(accountId, date, tenantId);
+    }
+
+    return data || 0;
+  }
+
+  /**
+   * Fallback method for calculating account balance at date
+   * Uses client-side aggregation if RPC function is not available
+   */
+  private async getAccountBalanceAtDateFallback(accountId: string, date: Date, tenantId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from(TableNames.Transactions)
+      .select("amount")
+      .eq("tenantid", tenantId)
+      .eq("accountid", accountId)
+      .eq("isdeleted", false)
+      .lte("date", date.toISOString());
+
+    if (error) throw new Error(error.message);
+
+    // Sum all amounts
+    const totalAmount = (data || []).reduce((sum, transaction) => {
+      return sum + (transaction.amount || 0);
+    }, 0);
+
+    return totalAmount;
+  }
+
   private buildQuery = (searchFilters: TransactionFilters, tenantId: string, isCount = false) => {
     let query = supabase.from(ViewNames.TransactionsView).select().eq("tenantid", tenantId);
 
@@ -257,77 +325,3 @@ export class TransactionSupaRepository implements ITransactionRepository {
     return query;
   };
 }
-
-// Legacy functions for backward compatibility (can be removed after migration)
-export const getAllTransactions = async (tenantId: string) => {
-  const { data, error } = await supabase
-    .from(ViewNames.TransactionsView)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false);
-
-  if (error) throw new Error(error.message);
-
-  return data;
-};
-
-export const getTransactions = async (searchFilters: TransactionFilters, tenantId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.findAll(searchFilters, tenantId);
-};
-
-const buildQuery = (searchFilters: TransactionFilters, tenantId: string, isCount = false) => {
-  const repository = new TransactionSupaRepository();
-  return repository["buildQuery"](searchFilters, tenantId, isCount);
-};
-
-export const getTransactionFullyById = async (transactionid: string, tenantId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.findById(transactionid, tenantId);
-};
-
-export const getTransactionById = async (transactionid: string, tenantId: string) => {
-  const { data, error } = await supabase
-    .from(TableNames.Transactions)
-    .select()
-    .eq("tenantid", tenantId)
-    .eq("isdeleted", false)
-    .eq("transactionid", transactionid)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-};
-export const createTransaction = async (transaction: Inserts<TableNames.Transactions>) => {
-  const repository = new TransactionSupaRepository();
-  return repository.create(transaction);
-};
-
-export const createTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
-  const repository = new TransactionSupaRepository();
-  return repository.createMultipleTransactions(transactions);
-};
-
-export const createMultipleTransactions = async (transactions: Inserts<TableNames.Transactions>[]) => {
-  const repository = new TransactionSupaRepository();
-  return repository.createMultipleTransactions(transactions);
-};
-
-export const updateTransaction = async (transaction: Updates<TableNames.Transactions>) => {
-  const repository = new TransactionSupaRepository();
-  return repository.update(transaction.id!, transaction);
-};
-
-export const updateTransferTransaction = async (transaction: Updates<TableNames.Transactions>) => {
-  const repository = new TransactionSupaRepository();
-  return repository.updateTransferTransaction(transaction);
-};
-
-export const deleteTransaction = async (id: string, userId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.softDelete(id);
-};
-
-export const restoreTransaction = async (id: string, userId: string) => {
-  const repository = new TransactionSupaRepository();
-  return repository.restore(id);
-};

@@ -20,8 +20,7 @@ export class TransactionWatermelonRepository
     Updates<TableNames.Transactions>,
     TransactionType
   >
-  implements ITransactionRepository
-{
+  implements ITransactionRepository {
   protected tableName = TableNames.Transactions;
   protected modelClass = Transaction;
 
@@ -538,5 +537,153 @@ export class TransactionWatermelonRepository
       endDate,
     };
     return this.findAll(filters, tenantId);
+  }
+
+  /**
+   * Finds transactions for a specific account within a date range
+   * Used for statement balance calculations
+   */
+  async findByAccountInDateRange(
+    accountId: string,
+    startDate: Date,
+    endDate: Date,
+    tenantId: string
+  ): Promise<TransactionsView[]> {
+    try {
+      const db = await this.getDb();
+      const conditions = [
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
+        Q.where("accountid", accountId),
+        Q.where("date", Q.gte(startDate.toISOString())),
+        Q.where("date", Q.lte(endDate.toISOString()))
+      ];
+
+      const query = db.get(this.tableName).query(...conditions);
+      const results = await query;
+      const transactions = results as Transaction[];
+
+      // Fetch related data for building TransactionsView
+      const [accounts, categories, groups] = await Promise.all([
+        db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactioncategories").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+        db.get("transactiongroups").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
+      ]);
+
+      const accountMap = new Map();
+      for (const acc of accounts) accountMap.set(acc.id, acc);
+      const categoryMap = new Map();
+      for (const cat of categories) categoryMap.set(cat.id, cat);
+      const groupMap = new Map();
+      for (const grp of groups) groupMap.set(grp.id, grp);
+
+      // Calculate running balances
+      const transactionsByAccount: Record<string, Transaction[]> = { [accountId]: transactions };
+      const runningBalances: Record<string, Record<string, number>> = {};
+
+      // Sort transactions for running balance calculation
+      const txArr = [...transactions];
+      txArr.sort((a, b) => {
+        const da = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (da !== 0) return da;
+        const ca = new Date(a.createdat).getTime() - new Date(b.createdat).getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(a.updatedat).getTime() - new Date(b.updatedat).getTime();
+        if (ua !== 0) return ua;
+        if ((a.type || "") !== (b.type || "")) return (a.type || "").localeCompare(b.type || "");
+        return (a.id || "").localeCompare(b.id || "");
+      });
+
+      let running = 0;
+      runningBalances[accountId] = {};
+      for (const tx of txArr) {
+        if (!tx.isvoid && !tx.isdeleted) {
+          running += tx.amount;
+        }
+        runningBalances[accountId][tx.id] = running;
+      }
+
+      // Map to TransactionsView and sort DESC for display
+      const views = transactions.map(transaction => {
+        const mapped = this.mapFromWatermelon(transaction);
+        const account = accountMap.get(mapped.accountid) as Account | undefined;
+        const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
+        const group = category && category.groupid ? (groupMap.get(category.groupid) as TransactionGroup | undefined) : null;
+
+        return {
+          accountid: mapped.accountid,
+          accountname: account ? account.name : null,
+          amount: mapped.amount,
+          balance: account ? account.balance : null,
+          categoryid: mapped.categoryid,
+          categoryname: category ? category.name : null,
+          createdat: mapped.createdat,
+          currency: account ? account.currency : null,
+          date: mapped.date,
+          groupicon: group ? group.icon : null,
+          groupid: group ? group.id : null,
+          groupname: group ? group.name : null,
+          icon: category ? category.icon : null,
+          id: mapped.id,
+          isvoid: mapped.isvoid,
+          name: mapped.name,
+          payee: mapped.payee,
+          runningbalance: runningBalances[accountId]?.[mapped.id] ?? null,
+          tenantid: mapped.tenantid,
+          transferaccountid: mapped.transferaccountid,
+          transferid: mapped.transferid,
+          type: mapped.type,
+          updatedat: mapped.updatedat,
+        } as TransactionsView;
+      });
+
+      // Sort DESC by date
+      views.sort((a, b) => {
+        const da = new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime();
+        if (da !== 0) return da;
+        const ca = new Date(b.createdat ?? "").getTime() - new Date(a.createdat ?? "").getTime();
+        if (ca !== 0) return ca;
+        const ua = new Date(b.updatedat ?? "").getTime() - new Date(a.updatedat ?? "").getTime();
+        if (ua !== 0) return ua;
+        if ((b.type || "") !== (a.type || "")) return (b.type || "").localeCompare(a.type || "");
+        return (b.id || "").localeCompare(a.id || "");
+      });
+
+      return views;
+    } catch (error) {
+      throw new Error(`Failed to find transactions by account in date range: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Gets the account balance at a specific date
+   * Calculates balance by summing all transactions up to that date
+   */
+  async getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number> {
+    try {
+      const db = await this.getDb();
+      const conditions = [
+        Q.where("tenantid", tenantId),
+        Q.where("isdeleted", false),
+        Q.where("accountid", accountId),
+        Q.where("date", Q.lte(date.toISOString()))
+      ];
+
+      const query = db.get(this.tableName).query(...conditions);
+      const results = await query;
+      const transactions = results as Transaction[];
+
+      // Sum all transaction amounts up to the specified date
+      let totalAmount = 0;
+      for (const transaction of transactions) {
+        if (!transaction.isvoid && !transaction.isdeleted) {
+          totalAmount += transaction.amount || 0;
+        }
+      }
+
+      return totalAmount;
+    } catch (error) {
+      throw new Error(`Failed to get account balance at date: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }

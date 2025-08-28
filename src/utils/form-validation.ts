@@ -254,7 +254,7 @@ export const safeStringValidator = (value: string): boolean => {
   // Reject strings with HTML tags, newlines, tabs, and other dangerous characters
   const dangerousPattern = /[<>\n\t\r]/;
   if (dangerousPattern.test(value)) return false;
-  
+
   // Allow only safe characters
   const safePattern = /^[a-zA-Z0-9\s\-_.,!?()'":&@#$%]+$/;
   return safePattern.test(value);
@@ -265,17 +265,17 @@ export const safeStringValidator = (value: string): boolean => {
  */
 export const numericStringValidator = (value: string): boolean => {
   if (!value) return true;
-  
+
   // Reject strings with whitespace
   if (/\s/.test(value)) return false;
-  
+
   // Reject scientific notation, Infinity, and NaN
-  if (/[eE]/.test(value) || value === 'Infinity' || value === '-Infinity' || value === 'NaN') return false;
-  
+  if (/[eE]/.test(value) || value === "Infinity" || value === "-Infinity" || value === "NaN") return false;
+
   // Must match a strict numeric pattern
   const numericPattern = /^-?\d+(\.\d+)?$/;
   if (!numericPattern.test(value)) return false;
-  
+
   const num = parseFloat(value);
   return !isNaN(num) && isFinite(num);
 };
@@ -347,7 +347,7 @@ export const createDescriptionValidation = (required = false): ValidationRule[] 
  * Debounces validation to improve performance
  */
 export const createDebouncedValidator = <T>(validator: (data: T) => FormValidationResult<T>, delay = 300) => {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: any;
 
   return (data: T): Promise<FormValidationResult<T>> => {
     return new Promise(resolve => {
@@ -376,7 +376,7 @@ export const hasValidationErrors = <T>(errors: Partial<Record<keyof T, string>>)
 /**
  * Gets the first validation error from a form
  */
-export const getFirstValidationError = <T>(errors: Partial<Record<keyof T, string>>): string | undefined => {
+export const getFirstValidationError = <T>(errors: Partial<Record<keyof T, string>>): string | {} | undefined => {
   for (const error of Object.values(errors)) {
     if (error) return error;
   }

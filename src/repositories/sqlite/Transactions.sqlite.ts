@@ -59,6 +59,8 @@ interface ITransactionRepositoryMethods {
   findByDate(date: string, tenantId: string): Promise<TransactionsView[]>;
   findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]>;
   findByMonth(month: string, tenantId: string): Promise<TransactionsView[]>;
+  findByAccountInDateRange(accountId: string, startDate: Date, endDate: Date, tenantId: string): Promise<TransactionsView[]>;
+  getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number>;
 }
 
 export class TransactionSQLiteRepository 
@@ -399,6 +401,61 @@ export class TransactionSQLiteRepository
       return result[0] as TransactionsView || null;
     } catch (error) {
       throw new Error(`Failed to find transaction by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Finds transactions for a specific account within a date range
+   * Used for statement balance calculations
+   */
+  async findByAccountInDateRange(
+    accountId: string, 
+    startDate: Date, 
+    endDate: Date, 
+    tenantId: string
+  ): Promise<TransactionsView[]> {
+    try {
+      const query = await this.buildTransactionsViewQuery();
+      const result = await query
+        .where(and(
+          eq(transactions.tenantid, tenantId),
+          eq(transactions.isdeleted, false),
+          eq(transactions.accountid, accountId),
+          gte(transactions.date, startDate.toISOString()),
+          lte(transactions.date, endDate.toISOString())
+        ))
+        .orderBy(desc(transactions.date));
+
+      return result as TransactionsView[];
+    } catch (error) {
+      throw new Error(`Failed to find transactions by account in date range: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Gets the account balance at a specific date
+   * Calculates balance by summing all transactions up to that date
+   */
+  async getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number> {
+    try {
+      const db = await this.getDb();
+      
+      // Get all transactions for this account up to the specified date
+      const result = await db
+        .select({
+          totalAmount: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`
+        })
+        .from(transactions)
+        .where(and(
+          eq(transactions.tenantid, tenantId),
+          eq(transactions.isdeleted, false),
+          eq(transactions.accountid, accountId),
+          lte(transactions.date, date.toISOString())
+        ));
+
+      return result[0]?.totalAmount || 0;
+    } catch (error) {
+      throw new Error(`Failed to get account balance at date: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

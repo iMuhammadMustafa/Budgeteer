@@ -1,10 +1,11 @@
 import { memo, useEffect, useState } from "react";
-import { View, Text, ScrollView, Platform, Pressable, SafeAreaView, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Platform, Pressable, SafeAreaView, RefreshControl, Modal } from "react-native";
 import { Href, Link, router } from "expo-router";
 
 import MyIcon from "@/src/utils/Icons.Helper";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { queryClient } from "@/src/providers/QueryProvider";
+import { RecurringFiltersComponent } from "@/src/components/recurring/RecurringFilters";
 
 // export const Tab = memo(TabComponent, (prevProps, nextProps) => {
 //   return prevProps.items === nextProps.items;
@@ -22,7 +23,20 @@ export function Tab({
   customDetails,
   Footer,
   customRenderItem, // Added new prop
-}: TabProps) {
+  groupBy,
+  setGroupBy,
+  customFilter,
+  customGroupBy,
+  filters,
+  setFilters,
+}: TabProps & {
+  groupBy?: "autoApply" | "recurringType" | "status" | null;
+  setGroupBy?: (v: "autoApply" | "recurringType" | "status" | null) => void;
+  customFilter?: (items: any[]) => any[];
+  customGroupBy?: (items: any[]) => Record<string, any[]>;
+  filters?: any;
+  setFilters?: (filters: any) => void;
+}) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
@@ -62,26 +76,93 @@ export function Tab({
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
 
+  // Apply customFilter if provided
+  let filteredData = data;
+  if (typeof customFilter === "function" && Array.isArray(data)) {
+    filteredData = customFilter(data);
+  }
+
+  // Apply customGroupBy if provided
+  let groupedData: Record<string, any[]> | null = null;
+  if (typeof customGroupBy === "function" && Array.isArray(filteredData)) {
+    groupedData = customGroupBy(filteredData);
+  } else if (groupedBy && Array.isArray(filteredData)) {
+    groupedData = (filteredData as any[]).reduce(
+      (acc: Record<string, any[]>, item: any) => {
+        const groupValue = getNestedValue(item, groupedBy) || "Uncategorized";
+        (acc[groupValue] = acc[groupValue] || []).push(item);
+        return acc;
+      },
+      {} as Record<string, any[]>,
+    );
+  }
+
+  // State for filter modal
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh} />
+      <PageHeader title={title} upsertLink={[upsertUrl]} refreshQueries={handleRefresh}>
+        {typeof setFilters === "function" && typeof filters !== "undefined" && (
+          <>
+            <Pressable onPress={() => setFilterModalVisible(true)} className="p-2 rounded-md bg-gray-100 ml-2">
+              <MyIcon name="Filter" size={20} className="text-foreground" />
+            </Pressable>
+            {/* Modal for filters */}
+            <Modal
+              visible={filterModalVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setFilterModalVisible(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(0,0,0,0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: 12,
+                    padding: 16,
+                    minWidth: 280,
+                    maxWidth: "90%",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.1,
+                    shadowRadius: 10,
+                    elevation: 5,
+                  }}
+                >
+                  <RecurringFiltersComponent filters={filters} onFiltersChange={setFilters} className="bg-white" />
+                  <Pressable
+                    onPress={() => setFilterModalVisible(false)}
+                    className="mt-2 p-2 rounded bg-gray-200 items-center"
+                  >
+                    <Text className="text-gray-700">Close</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Modal>
+          </>
+        )}
+        {typeof groupBy !== "undefined" && typeof setGroupBy === "function" && (
+          <Pressable
+            onPress={() => setGroupBy(groupBy ? null : "status")}
+            className={`p-2 rounded-md ${groupBy ? "bg-primary-100" : "bg-gray-100"} ml-2`}
+          >
+            <MyIcon name="Group" size={20} className={groupBy ? "text-primary-600" : "text-gray-600"} />
+          </Pressable>
+        )}
+      </PageHeader>
       <ScrollView
         className="flex-1"
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />}
       >
-        {groupedBy && data
-          ? (
-              Object.entries(
-                (data as any[]).reduce(
-                  (acc: Record<string, any[]>, item: any) => {
-                    const groupValue = getNestedValue(item, groupedBy) || "Uncategorized";
-                    (acc[groupValue] = acc[groupValue] || []).push(item);
-                    return acc;
-                  },
-                  {} as Record<string, any[]>,
-                ),
-              ) as Array<[string, any[]]>
-            ).map(([groupName, itemsInGroup]) => (
+        {groupedData
+          ? Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
               <View key={groupName}>
                 <Text className="font-bold text-lg p-2 px-4 bg-card text-foreground">{groupName}</Text>
                 {itemsInGroup.map((item: any) =>
@@ -108,7 +189,8 @@ export function Tab({
                 )}
               </View>
             ))
-          : data?.map((item: any) =>
+          : Array.isArray(filteredData) &&
+            filteredData.map((item: any) =>
               customRenderItem ? (
                 customRenderItem(
                   item,
@@ -157,15 +239,18 @@ export function PageHeader({
   title,
   upsertLink,
   refreshQueries,
+  children,
 }: {
   title: string;
   refreshQueries: () => void;
   upsertLink: Array<Href>;
+  children?: React.ReactNode;
 }) {
   return (
     <View className="flex-row justify-between items-center p-2 px-4 bg-background">
       <Text className="font-bold text-foreground">{title}</Text>
       <View className="flex-row gap-2 items-center">
+        {children}
         {refreshQueries && (
           <Pressable onPress={refreshQueries}>
             <MyIcon name="RefreshCw" className="text-foreground" size={20} />
@@ -235,7 +320,7 @@ type TabProps = {
   title: string;
   isLoading?: boolean;
   error?: any;
-  useDelete: () => { mutate: (id: string) => void };
+  useDelete: () => void;
   upsertUrl: Href;
   selectable?: boolean;
   items?: TabItemType[];
@@ -247,6 +332,10 @@ type TabProps = {
   groupedBy?: string;
   Footer?: React.ReactNode;
   customRenderItem?: (item: any, isSelected: boolean, onLongPress: () => void, onPress: () => void) => React.ReactNode; // Added to props type
+  customFilter?: (items: any[]) => any[];
+  customGroupBy?: (items: any[]) => Record<string, any[]>;
+  filters?: any;
+  setFilters?: (filters: any) => void;
 };
 
 type TabItemType = {

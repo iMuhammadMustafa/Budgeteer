@@ -23,4 +23,8 @@ export interface ITransactionRepository
   findByDate(date: string, tenantId: string): Promise<TransactionsView[]>;
   findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]>;
   findByMonth(month: string, tenantId: string): Promise<TransactionsView[]>;
+  
+  // Statement balance calculation methods
+  findByAccountInDateRange(accountId: string, startDate: Date, endDate: Date, tenantId: string): Promise<TransactionsView[]>;
+  getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number>;
 }

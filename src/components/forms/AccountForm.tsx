@@ -14,11 +14,7 @@ import { ColorsPickerDropdown } from "../DropDownField";
 import IconPicker from "../IconPicker";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
-import {
-  createAccountNameValidation,
-  commonValidationRules,
-  createDescriptionValidation,
-} from "@/src/utils/form-validation";
+import { createAccountNameValidation, commonValidationRules } from "@/src/utils/form-validation";
 
 export default function AccountForm({ account }: { account: AccountFormData }) {
   const accountService = useAccountService();
@@ -28,7 +24,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   const { mutate: updateAccount } = accountService.upsert();
   const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
 
-  // Initialize form data from props
   const initialFormData: AccountFormData = useMemo(
     () => ({
       ...account,
@@ -38,35 +33,29 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     [account, openTransaction],
   );
 
-  // Create validation schema
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
     () => ({
       name: createAccountNameValidation(),
       categoryid: [commonValidationRules.required("Category is required")],
-      balance: [
-        commonValidationRules.required("Balance is required"),
-        commonValidationRules.min(0, "Balance cannot be negative"),
+      balance: [commonValidationRules.required("Balance is required")],
+      statementdate: [
+        {
+          type: "custom",
+          message: "Statement date must be between 1 and 31",
+          validator: (value: any) => (value ? value >= 1 && value <= 31 : true),
+        },
       ],
-      currency: [
-        commonValidationRules.required("Currency is required"),
-        commonValidationRules.minLength(3, "Currency must be at least 3 characters"),
-        commonValidationRules.maxLength(3, "Currency must be exactly 3 characters"),
-      ],
-      notes: createDescriptionValidation(false),
     }),
     [],
   );
 
-  // Initialize form state with validation
   const { formState, updateField, validateForm, resetForm, setInitialFormData, isValid, isDirty } =
     useFormState<AccountFormData>(initialFormData, validationSchema);
 
-  // Update form data when initial data changes (for edit mode)
   useEffect(() => {
     setInitialFormData(initialFormData);
   }, [initialFormData, setInitialFormData]);
 
-  // Handle form submission
   const handleSubmit = useCallback(
     async (data: AccountFormData) => {
       // Handle open balance update if needed
@@ -77,7 +66,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
         });
       }
 
-      // Submit account data
       await new Promise<void>((resolve, reject) => {
         updateAccount(
           {
@@ -101,7 +89,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     [updateAccount, updateOpenBalance, openTransaction, account],
   );
 
-  // Form submission hook
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
     onSuccess: () => {
       console.log("Account saved successfully");
@@ -111,14 +98,12 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     },
   });
 
-  // Handle form submission
   const onSubmit = useCallback(() => {
     if (validateForm()) {
       submit(formState.data);
     }
   }, [validateForm, submit, formState.data]);
 
-  // Handle running balance sync
   const handleSyncRunningBalance = useCallback(() => {
     if (account.runningbalance !== null && account.runningbalance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
@@ -133,7 +118,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     }
   }, [account, updateAccount]);
 
-  // Handle open balance changes (treated as separate form)
   const handleOpenBalanceChange = useCallback(
     (value: any) => {
       const openBalanceValue = Number(value) || 0;
@@ -201,6 +185,12 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   const needsRunningBalanceSync = useMemo(
     () => account.id && formState.data.runningbalance !== undefined && account.runningbalance !== account.balance,
     [account.id, account.runningbalance, account.balance, formState.data.runningbalance],
+  );
+
+  // Check if selected category is a liability (for statement date field)
+  const isLiabilityAccount = useMemo(
+    () => accountCategories?.find(cat => cat.id === formState.data.categoryid)?.type === "Liability",
+    [accountCategories, formState.data.categoryid],
   );
 
   return (
@@ -370,6 +360,39 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
               </View>
             )}
 
+            {/* Statement Date (for liability accounts - credit cards) */}
+            {isLiabilityAccount && (
+              <FormField
+                config={{
+                  name: "statementdate",
+                  label: "Statement Date",
+                  type: "number",
+                  placeholder: "15",
+                  description: "Day of month (1-31) when credit card statement closes. Leave empty if not applicable.",
+                  validation: [
+                    {
+                      type: "custom",
+                      message: "Statement date must be between 1 and 31",
+                      validator: (value: any) => (value ? value >= 1 && value <= 31 : true),
+                    },
+                  ],
+                }}
+                value={formState.data.statementdate?.toString() ?? ""}
+                error={formState.errors.statementdate}
+                touched={formState.touched.statementdate}
+                onChange={value => {
+                  const numValue = value ? Number(value) : null;
+                  updateField("statementdate", numValue);
+                }}
+                onBlur={() => {
+                  const val = formState.data.statementdate;
+                  if (val === null || val === undefined || val === 0) {
+                    updateField("statementdate", null);
+                  }
+                }}
+              />
+            )}
+
             {/* Open Balance (for existing accounts with opening transaction) */}
             {openTransaction && (
               <View className="border border-gray-200 rounded-md p-3 bg-gray-50">
@@ -427,8 +450,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   );
 }
 
-export type AccountFormType = AccountFormData;
-
 export const initialState: AccountFormData = {
   name: "",
   categoryid: "",
@@ -440,6 +461,7 @@ export const initialState: AccountFormData = {
   color: "info-100",
   displayorder: 0,
   owner: "",
+  statementdate: null,
   tenantid: "",
   isdeleted: false,
   createdby: null,
