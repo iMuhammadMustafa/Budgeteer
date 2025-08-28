@@ -15,7 +15,7 @@ jest.mock("@/src/providers/Supabase", () => ({
 }));
 
 import { RecurringSupaRepository } from "../supabase/Recurrings.api.supa";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 
 // Simple test to verify the enhanced methods exist
 describe("Enhanced Recurring Repository - Simple Tests", () => {

@@ -3,7 +3,7 @@
  * Tests the core service functionality without external dependencies
  */
 
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import {
   validateRecurring,
   validateTransferRecurring,

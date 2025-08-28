@@ -6,7 +6,7 @@ import {
   ValidationResult,
   RecurringValidationError,
 } from "@/src/types/recurring";
-import { RecurringType, VALIDATION_MESSAGES, RECURRING_CONSTANTS } from "@/src/types/enums/recurring";
+import { RecurringType, VALIDATION_MESSAGES, RECURRING_CONSTANTS } from "@/src/types/recurring";
 import dayjs from "dayjs";
 
 /**
@@ -118,7 +118,11 @@ export function validateRecurring(data: Partial<Recurring>): ValidationResult {
   }
 
   // Validate amount requirements (credit card payments can have null amounts)
-  if (!data.isamountflexible && data.recurringtype !== RecurringType.CreditCardPayment && (data.amount === undefined || data.amount === null)) {
+  if (
+    !data.isamountflexible &&
+    data.recurringtype !== RecurringType.CreditCardPayment &&
+    (data.amount === undefined || data.amount === null)
+  ) {
     errors.push(new RecurringValidationError("amount", "required", data.amount, VALIDATION_MESSAGES.AMOUNT_REQUIRED));
   }
 

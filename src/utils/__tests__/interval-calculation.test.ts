@@ -10,7 +10,7 @@ import {
   getIntervalOption,
   COMMON_INTERVALS,
 } from "../interval-calculation";
-import { RECURRING_CONSTANTS } from "@/src/types/components/recurring";
+import { RECURRING_CONSTANTS } from "@/src/types/recurring";
 
 describe("interval-calculation", () => {
   describe("calculateNextOccurrence", () => {

@@ -91,14 +91,12 @@ const AccountsRoute = () => {
     setSourceAccountId(null);
   };
 
-  // "Pay Off" handler
   const handlePayOff = () => {
     if (modalState.account) {
       setAmount(Math.abs(Number(modalState.account.balance)).toString());
     }
   };
 
-  // Submit transfer
   const handleTransfer = () => {
     if (!modalState.account || !sourceAccountId || !amount || isNaN(Number(amount))) return;
     const amt = Math.abs(Number(amount));
@@ -117,13 +115,11 @@ const AccountsRoute = () => {
     setSourceAccountId(null);
   };
 
-  // Custom render for each account row
   const customRenderItem = (item: any, isSelected: boolean, onLongPress: () => void, onPress: () => void) => (
-    <View key={item.id} className="flex-row p-2 px-4">
+    <View key={item.id} className={`flex-row p-2 px-4 ${isSelected ? "bg-gray-200" : ""}`}>
       <Pressable className={`flex-1`} onLongPress={onLongPress} onPress={onPress}>
         <View className="flex-row items-center">
           <View className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.iconColor}`}>
-            {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
             {item.icon && <MyIcon name={item.icon} size={18} className="color-card-foreground" />}
           </View>
           <View className="flex-1">
@@ -141,37 +137,14 @@ const AccountsRoute = () => {
     </View>
   );
 
-  return (
-    <>
-      <Tab
-        title="Accounts"
-        queryKey={[TableNames.Accounts]}
-        useGet={accountService.findAll}
-        customMapping={(item: any) => ({
-          ...item,
-          details: item.balance.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD", // TODO: Make currency dynamic
-          }),
-        })}
-        customDetails={item =>
-          `Balance: ${item.balance.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD", // TODO: Make currency dynamic
-          })}`
-        }
-        useDelete={accountService.delete}
-        upsertUrl={"/Accounts/Upsert?accountId="}
-        groupedBy={"category.name"}
-        Footer={<FooterContent />}
-        customRenderItem={customRenderItem}
-      />
+  const accountTransferModal = () => {
+    return (
       <MyModal
         isOpen={modalState.open}
         setIsOpen={(open: boolean) => setModalState({ open, account: open ? modalState.account : null })}
       >
         <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
-        <Button label="Pay Off" onPress={handlePayOff} />
+
         <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
         <AccountSelecterDropdown
           label="Source"
@@ -181,13 +154,32 @@ const AccountsRoute = () => {
           isModal={true}
           groupBy="group"
         />
-
-        <Button
-          label={isCreating ? "Transferring..." : "Submit Transfer"}
-          onPress={handleTransfer}
-          isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
-        />
+        <View className="flex-row gap-4">
+          <Button
+            label={isCreating ? "Transferring..." : "Submit Transfer"}
+            onPress={handleTransfer}
+            isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
+            className="flex-1"
+          />
+          <Button label="Pay Off" onPress={handlePayOff} className="flex-1" />
+        </View>
       </MyModal>
+    );
+  };
+
+  return (
+    <>
+      <Tab
+        title="Accounts"
+        queryKey={[TableNames.Accounts]}
+        onGet={accountService.findAll}
+        onDelete={accountService.delete}
+        upsertUrl={"/Accounts/Upsert?accountId="}
+        groupedBy={"category.name"}
+        Footer={<FooterContent />}
+        customRenderItem={customRenderItem}
+      />
+      {accountTransferModal()}
     </>
   );
 };
@@ -198,8 +190,8 @@ const AccountsCategoriesRoute = () => {
     <Tab
       title="Categories"
       queryKey={[TableNames.AccountCategories]}
-      useGet={accountCategoryService.findAll}
-      useDelete={accountCategoryService.delete}
+      onGet={accountCategoryService.findAll}
+      onDelete={accountCategoryService.delete}
       upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
     />
   );

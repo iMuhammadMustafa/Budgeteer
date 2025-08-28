@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { AutoApplyEngine } from "../AutoApplyEngine";
 import { Recurring, AutoApplyResult } from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 
 // Mock UUID
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));

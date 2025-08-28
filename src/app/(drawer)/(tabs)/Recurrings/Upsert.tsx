@@ -5,8 +5,6 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Recurring, RecurringInsert, RecurringUpdate } from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/enums/recurring";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useRecurringService } from "@/src/services/Recurring.Service";
@@ -22,6 +20,8 @@ import { useTransactionService } from "@/src/services/Transactions.Service";
 import { IntervalSelector } from "@/src/components/recurring/IntervalDisplay";
 import { RecurringTransferForm } from "@/src/components/recurring/RecurringTransferForm";
 import { RecurringCreditCardForm } from "@/src/components/recurring/RecurringCreditCardForm";
+import { RecurringInsert, RecurringUpdate } from "@/src/types/db/sqllite/schema";
+import { RecurringType } from "@/src/types/recurring";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -323,18 +323,17 @@ export default function RecurringUpsertScreen() {
             />
           </>
         )}
-        {formData.type !== "Transfer" &&
-          formData.recurringType !== RecurringType.Transfer && (
-            <MyCategoriesDropdown
-              label="Category"
-              selectedValue={formData.categoryid}
-              categories={categories}
-              onSelect={category => handleTextChange("categoryid", category?.id || null)}
-              isModal={Platform.OS !== "web"}
-              showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
-              onClear={() => handleTextChange("categoryid", null)}
-            />
-          )}
+        {formData.type !== "Transfer" && formData.recurringType !== RecurringType.Transfer && (
+          <MyCategoriesDropdown
+            label="Category"
+            selectedValue={formData.categoryid}
+            categories={categories}
+            onSelect={category => handleTextChange("categoryid", category?.id || null)}
+            isModal={Platform.OS !== "web"}
+            showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
+            onClear={() => handleTextChange("categoryid", null)}
+          />
+        )}
         <TextInputField
           label="Payee Name (Optional)"
           value={formData.payeename ?? ""}

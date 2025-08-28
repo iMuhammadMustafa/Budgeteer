@@ -11,28 +11,31 @@ import { Suspense } from "react";
 import { ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StorageModeProvider } from "../providers/StorageModeProvider";
+import NotificationsProvider from "../providers/NotificationsProvider";
 
 export default function RootLayout() {
   return (
     <Suspense fallback={<ActivityIndicator />}>
-      <ThemeProvider>
-        <StorageModeProvider>
-          <AuthProvider>
-            <QueryProvider>
-              {/* <SafeAreaProvider> */}
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <Stack>
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                </Stack>
-              </GestureHandlerRootView>
-              {/* </SafeAreaProvider> */}
-              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-            </QueryProvider>
-          </AuthProvider>
-        </StorageModeProvider>
-      </ThemeProvider>
+      <NotificationsProvider>
+        <ThemeProvider>
+          <StorageModeProvider>
+            <AuthProvider>
+              <QueryProvider>
+                {/* <SafeAreaProvider> */}
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <Stack>
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                  </Stack>
+                </GestureHandlerRootView>
+                {/* </SafeAreaProvider> */}
+                {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+              </QueryProvider>
+            </AuthProvider>
+          </StorageModeProvider>
+        </ThemeProvider>
+      </NotificationsProvider>
     </Suspense>
   );
 }

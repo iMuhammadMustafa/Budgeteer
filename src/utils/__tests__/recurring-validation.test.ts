@@ -8,7 +8,7 @@ import {
   validateExecutionContext,
   validateDate,
 } from "../recurring-validation";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import { CreateTransferRequest, CreateCreditCardPaymentRequest, Recurring } from "@/src/types/recurring";
 import dayjs from "dayjs";
 

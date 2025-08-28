@@ -1,5 +1,5 @@
 import { Session } from "@supabase/supabase-js";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import { CreateTransferRequest, CreateCreditCardPaymentRequest } from "@/src/types/recurring";
 import { validateTransferRecurring, validateCreditCardPaymentRecurring } from "@/src/utils/recurring-validation";
 

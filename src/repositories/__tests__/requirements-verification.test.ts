@@ -24,7 +24,7 @@ jest.mock("@/src/providers/Supabase", () => ({
 
 import { RecurringSupaRepository } from "../supabase/Recurrings.api.supa";
 import { RecurringWatermelonRepository } from "../watermelondb/Recurrings.watermelon";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import { IRecurringRepository } from "../interfaces/IRecurringRepository";
 
 describe("Enhanced Recurring Repository - Requirements Verification", () => {

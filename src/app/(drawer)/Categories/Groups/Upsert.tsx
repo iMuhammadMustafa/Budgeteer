@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import TransactionGroupForm, {
   TransactionGroupFormType,
   initialState,
@@ -13,14 +13,6 @@ export default function Upsert() {
 
   const transactionGroupService = useTransactionGroupService();
   const { data, isLoading, error } = transactionGroupService.findById(groupId);
-
-  const navigation = useNavigation();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: groupId ? "Edit TransactionGroup" : "Add TransactionGroup",
-    });
-  }, []);
 
   useEffect(() => {
     if (groupId && data) {

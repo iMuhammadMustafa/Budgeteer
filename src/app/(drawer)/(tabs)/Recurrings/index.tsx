@@ -156,8 +156,8 @@ export default function RecurringsScreen() {
         <Tab
           title="Recurring Transactions"
           queryKey={[TableNames.Recurrings]}
-          useGet={recurringsService.findAll}
-          useDelete={recurringsService.delete}
+          onGet={recurringsService.findAll}
+          onDelete={recurringsService.delete}
           upsertUrl="/Recurrings/Upsert?id="
           selectable={true}
           customRenderItem={renderRecurringItem}

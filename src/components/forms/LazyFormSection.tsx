@@ -3,41 +3,41 @@
  * Lazy loads form sections to improve initial render performance
  */
 
-import React, { memo, Suspense, lazy, useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { FormSectionProps } from '@/src/types/components/forms.types';
+import React, { memo, Suspense, lazy, useState, useCallback, useEffect } from "react";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { FormSectionProps } from "@/src/types/components/forms.types";
 
-interface LazyFormSectionProps extends Omit<FormSectionProps, 'children'> {
+interface LazyFormSectionProps extends Omit<FormSectionProps, "children"> {
   /**
    * Function that returns a promise resolving to the section content
    */
   loadContent: () => Promise<React.ComponentType<any>>;
-  
+
   /**
    * Props to pass to the loaded component
    */
   contentProps?: any;
-  
+
   /**
    * Whether to load content immediately or wait for user interaction
    */
   loadImmediately?: boolean;
-  
+
   /**
    * Custom loading component
    */
   loadingComponent?: React.ComponentType;
-  
+
   /**
    * Custom error component
    */
   errorComponent?: React.ComponentType<{ error: Error; retry: () => void }>;
-  
+
   /**
    * Callback when content is loaded
    */
   onContentLoaded?: () => void;
-  
+
   /**
    * Callback when loading fails
    */
@@ -61,10 +61,7 @@ const DefaultErrorComponent = memo(({ error, retry }: { error: Error; retry: () 
   <View className="p-4 border border-red-300 rounded-md bg-red-50">
     <Text className="text-red-700 font-medium mb-2">Failed to load section</Text>
     <Text className="text-red-600 text-sm mb-3">{error.message}</Text>
-    <Pressable
-      onPress={retry}
-      className="px-3 py-2 bg-red-600 rounded-md"
-    >
+    <Pressable onPress={retry} className="px-3 py-2 bg-red-600 rounded-md">
       <Text className="text-white text-sm font-medium">Retry</Text>
     </Pressable>
   </View>
@@ -85,7 +82,7 @@ function LazyFormSectionComponent({
   errorComponent: ErrorComponent = DefaultErrorComponent,
   onContentLoaded,
   onLoadError,
-  className = '',
+  className = "",
 }: LazyFormSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +103,7 @@ function LazyFormSectionComponent({
       setIsLoaded(true);
       onContentLoaded?.();
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to load content');
+      const error = err instanceof Error ? err : new Error("Failed to load content");
       setError(error);
       onLoadError?.(error);
     } finally {
@@ -140,7 +137,7 @@ function LazyFormSectionComponent({
     loadSectionContent();
   }, [loadSectionContent]);
 
-  const sectionId = title ? `lazy-section-${title.toLowerCase().replace(/\s+/g, '-')}` : undefined;
+  const sectionId = title ? `lazy-section-${title.toLowerCase().replace(/\s+/g, "-")}` : undefined;
   const descriptionId = description ? `${sectionId}-description` : undefined;
 
   return (
@@ -154,11 +151,11 @@ function LazyFormSectionComponent({
               className="flex-row items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-200"
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={`${title} section, ${isExpanded ? 'expanded' : 'collapsed'}`}
-              accessibilityHint={`Tap to ${isExpanded ? 'collapse' : 'expand'} this section`}
+              accessibilityLabel={`${title} section, ${isExpanded ? "expanded" : "collapsed"}`}
+              accessibilityHint={`Tap to ${isExpanded ? "collapse" : "expand"} this section`}
               accessibilityState={{ expanded: isExpanded }}
             >
-              <Text 
+              <Text
                 className="text-lg font-semibold text-foreground"
                 accessibilityRole="heading"
                 accessibilityLevel={2}
@@ -167,17 +164,14 @@ function LazyFormSectionComponent({
               </Text>
               <View className="flex-row items-center">
                 {isLoading && <ActivityIndicator size="small" color="#6b7280" className="mr-2" />}
-                <Text 
-                  className="text-gray-600 text-lg"
-                  accessibilityHidden={true}
-                >
-                  {isExpanded ? '−' : '+'}
+                <Text className="text-gray-600 text-lg" accessibilityHidden={true}>
+                  {isExpanded ? "−" : "+"}
                 </Text>
               </View>
             </Pressable>
           ) : (
             <View className="flex-row items-center">
-              <Text 
+              <Text
                 className="text-lg font-semibold text-foreground mb-2 flex-1"
                 accessibilityRole="heading"
                 accessibilityLevel={2}
@@ -192,22 +186,18 @@ function LazyFormSectionComponent({
 
       {/* Section Description */}
       {description && (
-        <Text 
-          id={descriptionId}
-          className="text-gray-600 text-sm mb-3"
-          accessibilityRole="text"
-        >
+        <Text id={descriptionId} className="text-gray-600 text-sm mb-3" accessibilityRole="text">
           {description}
         </Text>
       )}
 
       {/* Section Content */}
       {(!collapsible || isExpanded) && (
-        <View 
+        <View
           className="space-y-2"
           accessible={true}
-          accessibilityRole="group"
-          accessibilityLabel={title ? `${title} section content` : 'Form section content'}
+          accessibilityRole="list"
+          accessibilityLabel={title ? `${title} section content` : "Form section content"}
           accessibilityDescribedBy={descriptionId}
         >
           {error ? (
@@ -226,9 +216,7 @@ function LazyFormSectionComponent({
               accessibilityRole="button"
               accessibilityLabel="Load section content"
             >
-              <Text className="text-center text-gray-700 font-medium">
-                Tap to load content
-              </Text>
+              <Text className="text-center text-gray-700 font-medium">Tap to load content</Text>
             </Pressable>
           ) : null}
         </View>
@@ -251,7 +239,7 @@ const LazyFormSection = memo(LazyFormSectionComponent, (prevProps, nextProps) =>
   );
 });
 
-LazyFormSection.displayName = 'LazyFormSection';
+LazyFormSection.displayName = "LazyFormSection";
 
 export default LazyFormSection;
 
@@ -263,17 +251,19 @@ export function createLazyFormSection<T = any>(
   options: {
     displayName?: string;
     preload?: boolean;
-  } = {}
+  } = {},
 ) {
-  const { displayName = 'LazyFormSection', preload = false } = options;
+  const { displayName = "LazyFormSection", preload = false } = options;
 
   let preloadedComponent: React.ComponentType<T> | null = null;
 
   // Preload if requested
   if (preload) {
-    importFunction().then(module => {
-      preloadedComponent = module.default;
-    }).catch(console.error);
+    importFunction()
+      .then(module => {
+        preloadedComponent = module.default;
+      })
+      .catch(console.error);
   }
 
   const loadContent = async (): Promise<React.ComponentType<T>> => {
@@ -286,7 +276,7 @@ export function createLazyFormSection<T = any>(
     return module.default;
   };
 
-  const LazySection = (props: Omit<LazyFormSectionProps, 'loadContent'> & { contentProps?: T }) => (
+  const LazySection = (props: Omit<LazyFormSectionProps, "loadContent"> & { contentProps?: T }) => (
     <LazyFormSection {...props} loadContent={loadContent} />
   );
 

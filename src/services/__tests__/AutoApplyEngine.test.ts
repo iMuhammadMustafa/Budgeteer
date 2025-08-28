@@ -4,7 +4,7 @@ import { AutoApplyEngine, IAutoApplyEngine } from "../AutoApplyEngine";
 // Mock UUID
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
 import { Recurring, AutoApplyResult, DEFAULT_AUTO_APPLY_SETTINGS } from "@/src/types/recurring";
-import { RecurringType, RECURRING_CONSTANTS } from "@/src/types/components/recurring";
+import { RecurringType, RECURRING_CONSTANTS } from "@/src/types/recurring";
 import { IRecurringRepository } from "@/src/repositories/interfaces/IRecurringRepository";
 import { ITransactionRepository } from "@/src/repositories/interfaces/ITransactionRepository";
 import { IAccountRepository } from "@/src/repositories/interfaces/IAccountRepository";

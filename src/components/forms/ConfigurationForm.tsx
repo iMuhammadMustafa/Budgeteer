@@ -10,9 +10,7 @@ import { ConfigurationFormData, ValidationSchema, FormFieldConfig } from "@/src/
 import { commonValidationRules } from "@/src/utils/form-validation";
 import { Configuration } from "@/src/types/db/Tables.Types";
 
-export type ConfigurationFormType = ConfigurationFormData;
-
-export const initialState: ConfigurationFormType = {
+export const initialState: ConfigurationFormData = {
   table: "",
   type: "",
   key: "",
@@ -23,8 +21,7 @@ export const initialState: ConfigurationFormType = {
   tenantid: "",
 };
 
-// Validation schema for configuration form
-const validationSchema: ValidationSchema<ConfigurationFormType> = {
+const validationSchema: ValidationSchema<ConfigurationFormData> = {
   table: [
     commonValidationRules.required("Table name is required"),
     commonValidationRules.minLength(2, "Table name must be at least 2 characters"),
@@ -46,8 +43,7 @@ const validationSchema: ValidationSchema<ConfigurationFormType> = {
   ],
 };
 
-// Field configurations
-const fieldConfigs: FormFieldConfig<ConfigurationFormType>[] = [
+const fieldConfigs: FormFieldConfig<ConfigurationFormData>[] = [
   {
     name: "table",
     label: "Table",
@@ -83,36 +79,31 @@ const fieldConfigs: FormFieldConfig<ConfigurationFormType>[] = [
 ];
 
 interface ConfigurationFormProps {
-  configuration?: ConfigurationFormType;
+  configuration?: ConfigurationFormData;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export default function ConfigurationForm({ configuration, onSuccess, onCancel }: ConfigurationFormProps) {
-  // Initialize form data with provided configuration or default state
+export default function ConfigurationForm({ configuration, onSuccess }: ConfigurationFormProps) {
   const initialData = useMemo(
     () => (configuration ? { ...initialState, ...configuration } : initialState),
     [configuration],
   );
 
-  // Form state management
   const { formState, updateField, setFieldTouched, validateForm, resetForm, isValid } = useFormState(
     initialData,
     validationSchema,
   );
 
-  // Mutation hook for API calls
-  const [formData, setFormData] = useState<ConfigurationFormType>(configuration || initialState);
   const configService = useConfigurationService();
   const { mutate, isPending, error: mutationError } = configService.upsert();
 
-  // Form submission handling
   const {
     submit,
     isSubmitting,
     error: submissionError,
   } = useFormSubmission(
-    async (data: ConfigurationFormType) => {
+    async (data: ConfigurationFormData) => {
       return new Promise<void>((resolve, reject) => {
         mutate(
           {
@@ -155,12 +146,12 @@ export default function ConfigurationForm({ configuration, onSuccess, onCancel }
   };
 
   // Handle field changes with validation
-  const handleFieldChange = (fieldName: keyof ConfigurationFormType, value: any) => {
+  const handleFieldChange = (fieldName: keyof ConfigurationFormData, value: any) => {
     updateField(fieldName, value);
   };
 
   // Handle field blur events
-  const handleFieldBlur = (fieldName: keyof ConfigurationFormType) => {
+  const handleFieldBlur = (fieldName: keyof ConfigurationFormData) => {
     setFieldTouched(fieldName);
   };
 
@@ -182,34 +173,35 @@ export default function ConfigurationForm({ configuration, onSuccess, onCancel }
       <View
         className="space-y-4"
         accessible={true}
-        accessibilityRole="group"
+        accessibilityRole="list"
         accessibilityLabel="Configuration form fields"
       >
-        {fieldConfigs.map(config => (
-          <FormField
-            key={String(config.name)}
-            config={config}
-            value={formState.data[config.name]}
-            error={formState.errors[config.name]}
-            touched={formState.touched[config.name]}
-            onChange={value => handleFieldChange(config.name, value)}
-            onBlur={() => handleFieldBlur(config.name)}
-          />
-        ))}
+        <>
+          {fieldConfigs.map(config => (
+            <FormField
+              key={String(config.name)}
+              config={config}
+              value={formState.data[config.name]}
+              error={formState.errors[config.name]}
+              touched={formState.touched[config.name]}
+              onChange={value => handleFieldChange(config.name, value)}
+              onBlur={() => handleFieldBlur(config.name)}
+            />
+          ))}
 
-        {/* Display form-level errors */}
-        {currentError && (
-          <View
-            className="p-3 bg-red-50 border border-red-200 rounded-md"
-            accessible={true}
-            accessibilityRole="alert"
-            accessibilityLiveRegion="polite"
-          >
-            <Text className="text-red-700 text-sm">
-              {currentError instanceof Error ? currentError.message : String(currentError)}
-            </Text>
-          </View>
-        )}
+          {currentError && (
+            <View
+              className="p-3 bg-red-50 border border-red-200 rounded-md"
+              accessible={true}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              <Text className="text-red-700 text-sm">
+                {currentError instanceof Error ? currentError.message : String(currentError)}
+              </Text>
+            </View>
+          )}
+        </>
       </View>
     </FormContainer>
   );

@@ -7,7 +7,7 @@ jest.mock("@/src/utils/UUID.Helper", () => ({
 
 import { CreditCardPaymentService } from "../CreditCardPaymentService";
 import { CreateCreditCardPaymentRequest, Recurring } from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import { Account, Transaction } from "@/src/types/db/Tables.Types";
 import dayjs from "dayjs";
 

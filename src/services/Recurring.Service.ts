@@ -7,9 +7,6 @@ import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { TableNames } from "@/src/types/db/TableNames";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import {
-  Recurring,
-  RecurringInsert,
-  RecurringUpdate,
   CreateTransferRequest,
   CreateCreditCardPaymentRequest,
   ExecutionOverrides,
@@ -18,7 +15,6 @@ import {
   AutoApplyStatus,
   ApplyResult,
 } from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/enums/recurring";
 import {
   validateTransferRecurring,
   validateCreditCardPaymentRecurring,
@@ -27,6 +23,8 @@ import {
 } from "@/src/utils/recurring-validation";
 import { calculateNextOccurrence } from "@/src/utils/interval-calculation";
 import { CreditCardPaymentService } from "./CreditCardPaymentService";
+import { Recurring } from "../database/models";
+import { RecurringInsert, RecurringUpdate } from "../types/db/sqllite/schema";
 
 // Helper function to convert snake_case fields to camelCase for validation
 function convertToValidationFormat(data: any): any {
@@ -44,18 +42,14 @@ function convertToValidationFormat(data: any): any {
 export interface IRecurringService {
   // CRUD operations
   create: () => ReturnType<typeof useMutation<Recurring, Error, RecurringInsert>>;
-  update: () => ReturnType<
-    typeof useMutation<Recurring | null, Error, { id: string; updates: RecurringUpdate }>
-  >;
+  update: () => ReturnType<typeof useMutation<Recurring | null, Error, { id: string; updates: RecurringUpdate }>>;
   delete: () => ReturnType<typeof useMutation<void, Error, { id: string }>>;
   findAll: (filters?: RecurringFilters) => ReturnType<typeof useQuery<Recurring[]>>;
   findById: (id?: string) => ReturnType<typeof useQuery<Recurring | null>>;
 
   // Specialized creation methods
   createRecurringTransfer: () => ReturnType<typeof useMutation<Recurring, Error, CreateTransferRequest>>;
-  createCreditCardPayment: () => ReturnType<
-    typeof useMutation<Recurring, Error, CreateCreditCardPaymentRequest>
-  >;
+  createCreditCardPayment: () => ReturnType<typeof useMutation<Recurring, Error, CreateCreditCardPaymentRequest>>;
 
   // Execution methods
   executeRecurring: () => ReturnType<
@@ -180,14 +174,7 @@ export function useRecurringService(): IRecurringService {
   const executeRecurring = () => {
     return useMutation({
       mutationFn: async ({ id, overrides }: { id: string; overrides?: ExecutionOverrides }) => {
-        return await executeRecurringHelper(
-          id,
-          overrides,
-          session,
-          recurringRepo,
-          transactionRepo,
-          accountRepo,
-        );
+        return await executeRecurringHelper(id, overrides, session, recurringRepo, transactionRepo, accountRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });

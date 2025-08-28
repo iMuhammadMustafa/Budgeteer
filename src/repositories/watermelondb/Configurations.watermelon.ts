@@ -19,12 +19,26 @@ export class ConfigurationWatermelonRepository
   protected tableName = TableNames.Configurations;
   protected modelClass = Configuration;
 
-  // Implementation of the abstract mapping method
   protected mapFromWatermelon(model: Configuration): ConfigurationType {
     return mapConfigurationFromWatermelon(model);
   }
+  protected mapFieldsForDatabase(data: Record<string, any>): Record<string, any> {
+    const mapped: Record<string, any> = {};
 
-  // Specialized method for Configuration repository
+    Object.entries(data).forEach(([key, value]) => {
+      switch (key) {
+        case "table":
+          mapped["tablename"] = value;
+          break;
+        default:
+          mapped[key] = value;
+      }
+    });
+    console.log("Mapped fields for database:", mapped);
+
+    return mapped;
+  }
+
   async getConfiguration(table: string, type: string, key: string, tenantId?: string): Promise<ConfigurationType> {
     try {
       const db = await this.getDb();

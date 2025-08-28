@@ -4,7 +4,7 @@
  */
 
 import { CreditCardPaymentService } from "../CreditCardPaymentService";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 
 // Mock repositories
 const mockAccountRepo = {

@@ -1,8 +1,64 @@
-import { Recurring, RecurringInsert, RecurringUpdate } from "./db/sqllite/schema";
-import { RecurringType, RECURRING_CONSTANTS } from "./enums/recurring";
+export enum RecurringType {
+  Standard = "Standard",
+  Transfer = "Transfer",
+  CreditCardPayment = "CreditCardPayment",
+}
 
-// Consolidated recurring transaction types - no more "Enhanced" prefix
-export type { Recurring, RecurringInsert, RecurringUpdate };
+export enum AutoApplyAction {
+  RETRY_LATER = "RETRY_LATER",
+  SKIP_AND_RESCHEDULE = "SKIP_AND_RESCHEDULE",
+  DISABLED_AUTO_APPLY = "DISABLED_AUTO_APPLY",
+}
+
+// Constants for validation rules
+export const RECURRING_CONSTANTS = {
+  INTERVAL_MONTHS: {
+    MIN: 1,
+    MAX: 24,
+    DEFAULT: 1,
+  },
+  FAILED_ATTEMPTS: {
+    MIN: 1,
+    MAX: 10,
+    DEFAULT: 3,
+  },
+  AMOUNT: {
+    MIN: 0.01,
+  },
+  AUTO_APPLY: {
+    DEFAULT_ENABLED: false,
+    MAX_BATCH_SIZE: 50,
+    TIMEOUT_MS: 30000,
+    RETRY_ATTEMPTS: 3,
+  },
+} as const;
+
+// Recurring type display names and descriptions
+export const RECURRING_TYPE_LABELS: Record<RecurringType, string> = {
+  [RecurringType.Standard]: "Standard Transaction",
+  [RecurringType.Transfer]: "Account Transfer",
+  [RecurringType.CreditCardPayment]: "Credit Card Payment",
+};
+
+export const RECURRING_TYPE_DESCRIPTIONS: Record<RecurringType, string> = {
+  [RecurringType.Standard]: "Regular income or expense transaction",
+  [RecurringType.Transfer]: "Transfer money between your accounts",
+  [RecurringType.CreditCardPayment]: "Automatically pay credit card statement balance",
+};
+
+// Validation error messages
+export const VALIDATION_MESSAGES = {
+  INTERVAL_MONTHS_RANGE: `Interval months must be between ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN} and ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX}`,
+  TRANSFER_ACCOUNT_REQUIRED: "Transfer account is required for transfer transactions",
+  TRANSFER_ACCOUNTS_DIFFERENT: "Transfer account must be different from source account",
+  AMOUNT_REQUIRED: "Amount is required when amount is not flexible",
+  AMOUNT_MIN: `Amount must be at least ${RECURRING_CONSTANTS.AMOUNT.MIN}`,
+  DATE_REQUIRED: "Next occurrence date is required when date is not flexible",
+  BOTH_FLEXIBLE: "Both amount and date can be flexible for maximum execution flexibility",
+  MAX_FAILED_ATTEMPTS_RANGE: `Max failed attempts must be between ${RECURRING_CONSTANTS.FAILED_ATTEMPTS.MIN} and ${RECURRING_CONSTANTS.FAILED_ATTEMPTS.MAX}`,
+  SOURCE_ACCOUNT_REQUIRED: "Source account is required for credit card payments",
+  INVALID_RECURRING_TYPE: "Invalid recurring transaction type",
+} as const;
 
 // Validation constraints
 export const RecurringValidationRules = {
@@ -10,29 +66,29 @@ export const RecurringValidationRules = {
     min: RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN,
     max: RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX,
     required: true,
-    type: 'integer' as const
+    type: "integer" as const,
   },
   recurringType: {
     required: true,
-    enum: Object.values(RecurringType) as readonly RecurringType[]
+    enum: Object.values(RecurringType) as readonly RecurringType[],
   },
   transferAccountId: {
     requiredIf: (data: Partial<Recurring>) => data.recurringtype === RecurringType.Transfer,
-    mustBeDifferentFrom: 'sourceaccountid' as const
+    mustBeDifferentFrom: "sourceaccountid" as const,
   },
   amount: {
     requiredIf: (data: Partial<Recurring>) => !data.isamountflexible,
-    min: RECURRING_CONSTANTS.AMOUNT.MIN
+    min: RECURRING_CONSTANTS.AMOUNT.MIN,
   },
   nextOccurrenceDate: {
     requiredIf: (data: Partial<Recurring>) => !data.isdateflexible,
-    futureDate: true
+    futureDate: true,
   },
   maxFailedAttempts: {
     min: RECURRING_CONSTANTS.FAILED_ATTEMPTS.MIN,
     max: RECURRING_CONSTANTS.FAILED_ATTEMPTS.MAX,
-    default: RECURRING_CONSTANTS.FAILED_ATTEMPTS.DEFAULT
-  }
+    default: RECURRING_CONSTANTS.FAILED_ATTEMPTS.DEFAULT,
+  },
 } as const;
 
 // Helper type for validation
@@ -40,7 +96,7 @@ export type ValidationRule<T = any> = {
   required?: boolean;
   min?: number;
   max?: number;
-  type?: 'integer' | 'string' | 'boolean' | 'date';
+  type?: "integer" | "string" | "boolean" | "date";
   enum?: readonly T[];
   requiredIf?: (data: Partial<Recurring>) => boolean;
   mustBeDifferentFrom?: string;
@@ -83,7 +139,7 @@ export const DEFAULT_AUTO_APPLY_SETTINGS: AutoApplySettings = {
   globalEnabled: true,
   maxBatchSize: RECURRING_CONSTANTS.AUTO_APPLY.MAX_BATCH_SIZE,
   timeoutMs: RECURRING_CONSTANTS.AUTO_APPLY.TIMEOUT_MS,
-  retryAttempts: RECURRING_CONSTANTS.AUTO_APPLY.RETRY_ATTEMPTS
+  retryAttempts: RECURRING_CONSTANTS.AUTO_APPLY.RETRY_ATTEMPTS,
 };
 
 // Execution types
@@ -104,12 +160,12 @@ export interface ExecutionPreview {
 }
 
 // Request types for specialized creation
-export interface CreateTransferRequest extends Omit<RecurringInsert, 'recurringtype'> {
+export interface CreateTransferRequest extends Omit<RecurringInsert, "recurringtype"> {
   transferaccountid: string;
   recurringtype: RecurringType.Transfer;
 }
 
-export interface CreateCreditCardPaymentRequest extends Omit<RecurringInsert, 'recurringtype' | 'amount'> {
+export interface CreateCreditCardPaymentRequest extends Omit<RecurringInsert, "recurringtype" | "amount"> {
   recurringtype: RecurringType.CreditCardPayment;
   sourceaccountid: string; // Payment source account
   categoryid: string; // Should reference a liability account category
@@ -140,10 +196,10 @@ export class RecurringValidationError extends Error {
     public field: string,
     public rule: string,
     public value: any,
-    message: string
+    message: string,
   ) {
     super(message);
-    this.name = 'RecurringValidationError';
+    this.name = "RecurringValidationError";
   }
 }
 
@@ -153,6 +209,15 @@ export interface ValidationResult {
 }
 
 export interface ErrorHandlingResult {
-  action: 'RETRY_LATER' | 'SKIP_AND_RESCHEDULE' | 'DISABLED_AUTO_APPLY';
+  action: AutoApplyAction;
   message: string;
 }
+
+// NOTE: Do not re-export imported types. Import these directly where needed:
+// import { Recurring, RecurringInsert, RecurringUpdate } from "../db/sqllite/schema";
+
+// Forward declaration for Recurring types used in function signatures above
+// (Replace with direct imports in usage sites)
+type Recurring = any;
+type RecurringInsert = any;
+type RecurringUpdate = any;

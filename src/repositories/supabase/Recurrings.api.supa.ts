@@ -4,10 +4,8 @@ import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
 import { IRecurringRepository } from "../interfaces/IRecurringRepository";
-import { 
-  RecurringFilters
-} from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/enums/recurring";
+import { RecurringFilters } from "@/src/types/recurring";
+import { RecurringType } from "@/src/types/recurring";
 
 export class RecurringSupaRepository implements IRecurringRepository {
   async findAll(filters?: any, tenantId?: string): Promise<Recurring[]> {
@@ -128,13 +126,13 @@ export class RecurringSupaRepository implements IRecurringRepository {
     if (!tenantId) throw new Error("Tenant ID is required");
 
     const checkDate = asOfDate || new Date();
-    
+
     let query = supabase
       .from(TableNames.Recurrings)
       .select(
         `*, 
          source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`
+         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
       )
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
@@ -154,7 +152,7 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .select(
         `*, 
          source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`
+         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
       )
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
@@ -173,7 +171,7 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .select(
         `*, 
          source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`
+         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
       )
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
@@ -193,7 +191,7 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .select(
         `*, 
          source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`
+         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
       )
       .eq("tenantid", tenantId)
       .eq("isdeleted", false);
@@ -225,20 +223,20 @@ export class RecurringSupaRepository implements IRecurringRepository {
     if (updates.length === 0) return;
 
     // Use a transaction to update multiple records
-    const updatePromises = updates.map(update => 
+    const updatePromises = updates.map(update =>
       supabase
         .from(TableNames.Recurrings)
         .update({
           nextoccurrencedate: update.nextDate.toISOString(),
-          updatedat: dayjs().toISOString()
+          updatedat: dayjs().toISOString(),
         })
-        .eq("id", update.id)
+        .eq("id", update.id),
     );
 
     const results = await Promise.allSettled(updatePromises);
-    
+
     // Check for any failures
-    const failures = results.filter(result => result.status === 'rejected');
+    const failures = results.filter(result => result.status === "rejected");
     if (failures.length > 0) {
       throw new Error(`Failed to update ${failures.length} recurring transactions`);
     }
@@ -248,20 +246,20 @@ export class RecurringSupaRepository implements IRecurringRepository {
     if (recurringIds.length === 0) return;
 
     // Use RPC function for atomic increment or fallback to individual updates
-    const updatePromises = recurringIds.map(id => 
+    const updatePromises = recurringIds.map(id =>
       supabase
         .from(TableNames.Recurrings)
         .update({
-          failedattempts: supabase.rpc('increment_failed_attempts', { recurring_id: id }),
-          updatedat: dayjs().toISOString()
+          failedattempts: supabase.rpc("increment_failed_attempts", { recurring_id: id }),
+          updatedat: dayjs().toISOString(),
         })
-        .eq("id", id)
+        .eq("id", id),
     );
 
     const results = await Promise.allSettled(updatePromises);
-    
+
     // Check for any failures
-    const failures = results.filter(result => result.status === 'rejected');
+    const failures = results.filter(result => result.status === "rejected");
     if (failures.length > 0) {
       throw new Error(`Failed to increment failed attempts for ${failures.length} recurring transactions`);
     }
@@ -270,20 +268,20 @@ export class RecurringSupaRepository implements IRecurringRepository {
   async resetFailedAttempts(recurringIds: string[]): Promise<void> {
     if (recurringIds.length === 0) return;
 
-    const updatePromises = recurringIds.map(id => 
+    const updatePromises = recurringIds.map(id =>
       supabase
         .from(TableNames.Recurrings)
         .update({
           failedattempts: 0,
-          updatedat: dayjs().toISOString()
+          updatedat: dayjs().toISOString(),
         })
-        .eq("id", id)
+        .eq("id", id),
     );
 
     const results = await Promise.allSettled(updatePromises);
-    
+
     // Check for any failures
-    const failures = results.filter(result => result.status === 'rejected');
+    const failures = results.filter(result => result.status === "rejected");
     if (failures.length > 0) {
       throw new Error(`Failed to reset failed attempts for ${failures.length} recurring transactions`);
     }
@@ -306,13 +304,11 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .from(TableNames.Recurrings)
       .update({
         autoapplyenabled: enabled,
-        updatedat: dayjs().toISOString()
+        updatedat: dayjs().toISOString(),
       })
       .eq("id", recurringId)
       .eq("tenantid", tenantId);
 
     if (error) throw error;
   }
-
-
 }

@@ -1,5 +1,5 @@
-import { TransactionFilters } from "@/src/repositories/TransactionFilters";
-import { Account, TransactionCategory, TransactionsView } from "../db/Tables.Types";
+import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { Account, TransactionCategory, TransactionsView } from "@/src/types/db/Tables.Types";
 
 export type TransactionsPageHeaderProps = {
   selectedTransactions: TransactionsView[];

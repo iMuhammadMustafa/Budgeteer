@@ -1,5 +1,5 @@
 import { Recurring, CreateCreditCardPaymentRequest, ExecutionPreview } from "@/src/types/recurring";
-import { RecurringType, VALIDATION_MESSAGES } from "@/src/types/enums/recurring";
+import { RecurringType, VALIDATION_MESSAGES } from "@/src/types/recurring";
 import { Account, Transaction, Inserts } from "@/src/types/db/Tables.Types";
 import { TableNames } from "@/src/types/db/TableNames";
 import { IAccountRepository, ITransactionRepository, IRecurringRepository } from "@/src/repositories";

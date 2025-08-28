@@ -5,10 +5,8 @@ import { TableNames } from "@/src/types/db/TableNames";
 import { mapRecurringFromWatermelon } from "./TypeMappers";
 import { BaseWatermelonRepository } from "./BaseWatermelonRepository";
 import { Q } from "@nozbe/watermelondb";
-import { 
-  RecurringFilters
-} from "@/src/types/recurring";
-import { RecurringType as RecurringTypeEnum } from "@/src/types/enums/recurring";
+import { RecurringFilters } from "@/src/types/recurring";
+import { RecurringType as RecurringTypeEnum } from "@/src/types/recurring";
 
 export class RecurringWatermelonRepository
   extends BaseWatermelonRepository<
@@ -223,7 +221,7 @@ export class RecurringWatermelonRepository
   // Helper method to map WatermelonDB model to Recurring with relationships
   private async mapToRecurring(model: Recurring): Promise<Recurring> {
     const db = await this.getDb();
-    
+
     // Fetch the related source account
     const accountQuery = db
       .get(TableNames.Accounts)
@@ -303,7 +301,7 @@ export class RecurringWatermelonRepository
         Q.where(tenantField, tenantId),
         Q.where(softDeleteField, false),
         Q.where("isactive", true),
-        Q.where("nextoccurrencedate", Q.lte(checkDate.getTime()))
+        Q.where("nextoccurrencedate", Q.lte(checkDate.getTime())),
       ];
 
       const query = db.get(this.tableName).query(...conditions);
@@ -315,11 +313,13 @@ export class RecurringWatermelonRepository
         recurrings.push(mapped);
       }
 
-      return recurrings.sort((a, b) => 
-        new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime()
+      return recurrings.sort(
+        (a, b) => new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime(),
       );
     } catch (error) {
-      throw new Error(`Failed to find due recurring transactions: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to find due recurring transactions: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -332,7 +332,7 @@ export class RecurringWatermelonRepository
       const conditions = [
         Q.where(tenantField, tenantId),
         Q.where(softDeleteField, false),
-        Q.where("autoapplyenabled", enabled)
+        Q.where("autoapplyenabled", enabled),
       ];
 
       const query = db.get(this.tableName).query(...conditions);
@@ -344,11 +344,13 @@ export class RecurringWatermelonRepository
         recurrings.push(mapped);
       }
 
-      return recurrings.sort((a, b) => 
-        new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime()
+      return recurrings.sort(
+        (a, b) => new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime(),
       );
     } catch (error) {
-      throw new Error(`Failed to find recurring transactions by auto-apply status: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to find recurring transactions by auto-apply status: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -361,7 +363,7 @@ export class RecurringWatermelonRepository
       const conditions = [
         Q.where(tenantField, tenantId),
         Q.where(softDeleteField, false),
-        Q.where("recurringtype", type)
+        Q.where("recurringtype", type),
       ];
 
       const query = db.get(this.tableName).query(...conditions);
@@ -373,11 +375,13 @@ export class RecurringWatermelonRepository
         recurrings.push(mapped);
       }
 
-      return recurrings.sort((a, b) => 
-        new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime()
+      return recurrings.sort(
+        (a, b) => new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime(),
       );
     } catch (error) {
-      throw new Error(`Failed to find recurring transactions by type: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to find recurring transactions by type: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -421,10 +425,12 @@ export class RecurringWatermelonRepository
       return recurrings.sort((a, b) => {
         const dateComparison = new Date(a.nextoccurrencedate).getTime() - new Date(b.nextoccurrencedate).getTime();
         if (dateComparison !== 0) return dateComparison;
-        return (a.name || '').localeCompare(b.name || '');
+        return (a.name || "").localeCompare(b.name || "");
       });
     } catch (error) {
-      throw new Error(`Failed to find recurring transactions: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to find recurring transactions: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -434,13 +440,13 @@ export class RecurringWatermelonRepository
 
     try {
       const db = await this.getDb();
-      
+
       await db.write(async () => {
         for (const update of updates) {
           const query = db.get(this.tableName).query(Q.where("id", update.id));
           const results = await query;
           const model = results[0] as Recurring;
-          
+
           if (model) {
             await model.update((recurring: any) => {
               recurring.nextoccurrencedate = update.nextDate.getTime();
@@ -450,7 +456,9 @@ export class RecurringWatermelonRepository
         }
       });
     } catch (error) {
-      throw new Error(`Failed to update next occurrence dates: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to update next occurrence dates: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -459,13 +467,13 @@ export class RecurringWatermelonRepository
 
     try {
       const db = await this.getDb();
-      
+
       await db.write(async () => {
         for (const id of recurringIds) {
           const query = db.get(this.tableName).query(Q.where("id", id));
           const results = await query;
           const model = results[0] as Recurring;
-          
+
           if (model) {
             await model.update((recurring: any) => {
               recurring.failedattempts = (recurring.failedattempts || 0) + 1;
@@ -475,7 +483,9 @@ export class RecurringWatermelonRepository
         }
       });
     } catch (error) {
-      throw new Error(`Failed to increment failed attempts: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to increment failed attempts: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -484,13 +494,13 @@ export class RecurringWatermelonRepository
 
     try {
       const db = await this.getDb();
-      
+
       await db.write(async () => {
         for (const id of recurringIds) {
           const query = db.get(this.tableName).query(Q.where("id", id));
           const results = await query;
           const model = results[0] as Recurring;
-          
+
           if (model) {
             await model.update((recurring: any) => {
               recurring.failedattempts = 0;
@@ -528,7 +538,7 @@ export class RecurringWatermelonRepository
         const query = db.get(this.tableName).query(...conditions);
         const results = await query;
         const model = results[0] as Recurring;
-        
+
         if (model) {
           await model.update((recurring: any) => {
             recurring.autoapplyenabled = enabled;
@@ -539,9 +549,9 @@ export class RecurringWatermelonRepository
         }
       });
     } catch (error) {
-      throw new Error(`Failed to update auto-apply status: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to update auto-apply status: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
-
-
 }

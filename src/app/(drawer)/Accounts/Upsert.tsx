@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { AccountFormData } from "@/src/types/components/forms.index";
@@ -11,14 +11,6 @@ export default function Upsert() {
 
   const accountService = useAccountService();
   const { data, isLoading, error } = accountService.findById(accountId);
-
-  const navigation = useNavigation();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: accountId ? "Edit Account" : "Add Account",
-    });
-  }, []);
 
   useEffect(() => {
     if (accountId && data) {

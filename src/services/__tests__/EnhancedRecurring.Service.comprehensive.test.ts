@@ -1,5 +1,5 @@
 import { Session } from "@supabase/supabase-js";
-import { RecurringType } from "@/src/types/components/recurring";
+import { RecurringType } from "@/src/types/recurring";
 import {
   Recurring,
   RecurringInsert,

@@ -1,6 +1,6 @@
 import { SafeAreaView, Text, TextInput, Pressable, View } from "react-native";
 import { Link } from "expo-router";
-import { StorageMode } from "@/src/types/StorageMode";
+import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
 import useAuthViewModel from "./useAuthViewModel";
 
 export default function Login() {
@@ -38,34 +38,13 @@ function ModeSelectionComponent({
   loading: boolean;
   handleModeSelection: (mode: StorageMode) => void;
 }) {
-  const LOGIN_MODES = [
-    {
-      id: StorageMode.Cloud,
-      title: "Login with Username and Password",
-      description: "Connect to cloud database with full sync",
-      icon: "☁️",
-    },
-    {
-      id: StorageMode.Demo,
-      title: "Demo Mode",
-      description: "Try the app with sample data",
-      icon: "🎮",
-    },
-    {
-      id: StorageMode.Local,
-      title: "Local Mode",
-      description: "Store data locally on your device",
-      icon: "💾",
-    },
-  ];
-
   return (
     <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
       <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
       <Text className="text-foreground text-lg mb-8 text-center opacity-70">Choose how you'd like to use the app</Text>
 
       <View className="space-y-4">
-        {LOGIN_MODES.map(mode => (
+        {Object.values(StorageModeConfig).map(mode => (
           <Pressable
             key={mode.id}
             className="p-6 border border-primary rounded-lg bg-white shadow-sm"

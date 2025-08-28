@@ -150,12 +150,7 @@ export function useAutoApplyStartup(options: AutoApplyStartupOptions = {}) {
       : 0,
   };
 }
-
-/**
- * Simplified hook for basic auto-apply startup functionality
- * Automatically initializes on mount with default settings
- */
-export function useAutoApplyStartupSimple(options: AutoApplyStartupOptions = {}) {
+export function useAutoApplyRecurrings(options: AutoApplyStartupOptions = {}) {
   const autoApplyStartup = useAutoApplyStartup(options);
 
   useEffect(() => {
@@ -164,6 +159,19 @@ export function useAutoApplyStartupSimple(options: AutoApplyStartupOptions = {})
       console.error("[AutoApply Startup] Initialization failed:", error);
     });
   }, []);
+  useEffect(() => {
+    if (autoApplyStartup.isComplete && autoApplyStartup.hasResults) {
+      console.log("[AutoApply Startup] Initialization complete:", {
+        totalProcessed: autoApplyStartup.totalProcessed,
+        hasError: autoApplyStartup.hasError,
+      });
+    }
+  }, [
+    autoApplyStartup.isComplete,
+    autoApplyStartup.hasResults,
+    autoApplyStartup.totalProcessed,
+    autoApplyStartup.hasError,
+  ]);
 
   return autoApplyStartup;
 }

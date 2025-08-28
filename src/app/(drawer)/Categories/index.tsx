@@ -53,8 +53,8 @@ const FirstRoute = () => {
     <Tab
       title="Categories"
       queryKey={[TableNames.TransactionCategories]}
-      useGet={transactionCategoryService.findAll}
-      useDelete={transactionCategoryService.delete}
+      onGet={transactionCategoryService.findAll}
+      onDelete={transactionCategoryService.delete}
       upsertUrl={"/Categories/Upsert?categoryId="}
       groupedBy="group.name"
     />
@@ -63,13 +63,12 @@ const FirstRoute = () => {
 
 const SecondRoute = () => {
   const transactionGroupService = useTransactionGroupService();
-
   return (
     <Tab
       title="Groups"
       queryKey={[TableNames.TransactionGroups]}
-      useGet={transactionGroupService.findAll}
-      useDelete={transactionGroupService.softDelete}
+      onGet={transactionGroupService.findAll}
+      onDelete={transactionGroupService.softDelete}
       upsertUrl={"/Categories/Groups/Upsert?groupId="}
     />
   );
