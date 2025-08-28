@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { TabView, SceneMap } from "react-native-tab-view";
+import { TabView } from "react-native-tab-view";
 import { useLocalSearchParams } from "expo-router";
 
 import { TabBar, TabHeader } from "@/src/components/MyTabs";
