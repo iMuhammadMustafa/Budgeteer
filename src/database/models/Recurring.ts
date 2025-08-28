@@ -30,7 +30,6 @@ export default class Recurring extends Model {
   @field("createdby") createdby?: string;
   @field("updatedby") updatedby?: string;
 
-  // Enhanced recurring fields
   @field("intervalmonths") intervalmonths?: number;
   @field("autoapplyenabled") autoapplyenabled?: boolean;
   @field("transferaccountid") transferaccountid?: string;

@@ -6,7 +6,7 @@ jest.mock('@/src/utils/UUID.Helper', () => ({
 }));
 
 import { CreditCardPaymentService } from '../CreditCardPaymentService';
-import { CreateCreditCardPaymentRequest, EnhancedRecurring } from '@/src/types/enhanced-recurring';
+import { CreateCreditCardPaymentRequest, Recurring } from '@/src/types/recurring';
 import { RecurringType } from '@/src/types/enums/recurring';
 import { Account, Transaction } from '@/src/types/db/Tables.Types';
 import dayjs from 'dayjs';
@@ -114,7 +114,7 @@ describe('CreditCardPaymentService', () => {
         .mockResolvedValueOnce(mockSourceAccount) // First call for source account
         .mockResolvedValueOnce(mockLiabilityAccount); // Second call for liability account
 
-      const expectedRecurring: EnhancedRecurring = {
+      const expectedRecurring: Recurring = {
         ...validRequest,
         id: 'generated-id',
         type: 'Transfer',
@@ -124,9 +124,9 @@ describe('CreditCardPaymentService', () => {
         failedattempts: 0,
         isactive: true,
         isdeleted: false,
-      } as EnhancedRecurring;
+      } as Recurring;
 
-      mockRecurringRepo.createEnhanced.mockResolvedValue(expectedRecurring);
+      mockRecurringRepo.create.mockResolvedValue(expectedRecurring);
 
       // Act
       const result = await service.createCreditCardPayment(validRequest, tenantId, userId);
@@ -200,7 +200,7 @@ describe('CreditCardPaymentService', () => {
   });
 
   describe('executeCreditCardPayment', () => {
-    const mockRecurring: EnhancedRecurring = {
+    const mockRecurring: Recurring = {
       id: 'recurring-id',
       name: 'Credit Card Payment',
       sourceaccountid: 'source-account-id',
@@ -219,7 +219,7 @@ describe('CreditCardPaymentService', () => {
       tenantid: tenantId,
       createdby: userId,
       createdat: dayjs().toISOString(),
-    } as EnhancedRecurring;
+    } as Recurring;
 
     const mockSourceAccount: Account = {
       id: 'source-account-id',
@@ -418,7 +418,7 @@ describe('CreditCardPaymentService', () => {
   });
 
   describe('previewCreditCardPayment', () => {
-    const mockRecurring: EnhancedRecurring = {
+    const mockRecurring: Recurring = {
       id: 'recurring-id',
       name: 'Credit Card Payment',
       sourceaccountid: 'source-account-id',
@@ -437,7 +437,7 @@ describe('CreditCardPaymentService', () => {
       tenantid: tenantId,
       createdby: userId,
       createdat: dayjs().toISOString(),
-    } as EnhancedRecurring;
+    } as Recurring;
 
     const mockSourceAccount: Account = {
       id: 'source-account-id',
@@ -564,7 +564,7 @@ describe('CreditCardPaymentService', () => {
   });
 
   describe('handleInsufficientFunds', () => {
-    const mockRecurring: EnhancedRecurring = {
+    const mockRecurring: Recurring = {
       id: 'recurring-id',
       name: 'Credit Card Payment',
       sourceaccountid: 'source-account-id',
@@ -576,7 +576,7 @@ describe('CreditCardPaymentService', () => {
       tenantid: tenantId,
       createdby: userId,
       createdat: dayjs().toISOString(),
-    } as EnhancedRecurring;
+    } as Recurring;
 
     const mockSourceAccount: Account = {
       id: 'source-account-id',

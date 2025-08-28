@@ -46,28 +46,36 @@ describe('CreditCardPaymentService - Simple Tests', () => {
     });
 
     it('should calculate statement balance correctly', () => {
-      // Test statement balance calculation
-      const liabilityAccountBalance = 500; // Positive balance means debt
-      const statementBalance = Math.abs(liabilityAccountBalance);
+      // Test statement balance calculation - negative balance means debt
+      const liabilityAccountBalance = -500; // Negative balance means debt
+      const paymentAmount = Math.abs(Math.min(liabilityAccountBalance, 0));
       
-      expect(statementBalance).toBe(500);
-      expect(statementBalance).toBeGreaterThan(0);
+      expect(paymentAmount).toBe(500);
+      expect(paymentAmount).toBeGreaterThan(0);
     });
 
-    it('should skip payment when no balance exists', () => {
-      const liabilityAccountBalance = 0;
-      const paymentAmount = Math.abs(liabilityAccountBalance);
+    it('should skip payment when no balance exists or positive balance', () => {
+      const scenarios = [
+        { balance: 0, shouldSkip: true },
+        { balance: 100, shouldSkip: true }, // Positive balance (credit)
+        { balance: -500, shouldSkip: false }, // Negative balance (debt)
+      ];
       
-      expect(paymentAmount).toBe(0);
-      
-      if (paymentAmount <= 0) {
-        const result = {
-          transactions: [],
-          paymentAmount: 0
-        };
-        expect(result.transactions).toHaveLength(0);
-        expect(result.paymentAmount).toBe(0);
-      }
+      scenarios.forEach(scenario => {
+        const paymentAmount = Math.abs(Math.min(scenario.balance, 0));
+        const shouldSkip = scenario.balance >= 0;
+        
+        expect(shouldSkip).toBe(scenario.shouldSkip);
+        
+        if (shouldSkip) {
+          const result = {
+            transactions: [],
+            paymentAmount: 0
+          };
+          expect(result.transactions).toHaveLength(0);
+          expect(result.paymentAmount).toBe(0);
+        }
+      });
     });
 
     it('should validate interval months range', () => {
@@ -98,33 +106,47 @@ describe('CreditCardPaymentService - Simple Tests', () => {
 
     it('should handle payment amount calculation', () => {
       const scenarios = [
-        { balance: 500, expected: 500 },
-        { balance: 0, expected: 0 },
-        { balance: -100, expected: 100 }, // Negative balance (credit) becomes positive payment
+        { balance: -500, expected: 500 }, // Negative balance (debt) becomes positive payment
+        { balance: 0, expected: 0 }, // No balance, no payment
+        { balance: 100, expected: 0 }, // Positive balance (credit), no payment needed
       ];
 
       scenarios.forEach(scenario => {
-        const paymentAmount = Math.abs(scenario.balance);
+        const paymentAmount = Math.abs(Math.min(scenario.balance, 0));
         expect(paymentAmount).toBe(scenario.expected);
       });
     });
 
     it('should validate transaction creation parameters', () => {
-      const transactionData = {
+      const paymentAmount = 500;
+      const sourceTransaction = {
         name: 'Credit Card Payment - Test Card',
-        amount: -500, // Negative for source account (money going out)
+        amount: -Math.abs(paymentAmount), // Always negative for source account (money going out)
         accountid: 'source-account-id',
         transferaccountid: 'liability-account-id',
         type: 'Transfer',
         categoryid: 'category-id',
       };
 
-      expect(transactionData.name).toBeTruthy();
-      expect(transactionData.amount).toBeLessThan(0); // Should be negative for outgoing payment
-      expect(transactionData.accountid).toBeTruthy();
-      expect(transactionData.transferaccountid).toBeTruthy();
-      expect(transactionData.type).toBe('Transfer');
-      expect(transactionData.categoryid).toBeTruthy();
+      const liabilityTransaction = {
+        name: 'Credit Card Payment - Test Card',
+        amount: Math.abs(paymentAmount), // Always positive for liability account (reducing debt)
+        accountid: 'liability-account-id',
+        transferaccountid: 'source-account-id',
+        type: 'Transfer',
+        categoryid: 'category-id',
+      };
+
+      expect(sourceTransaction.name).toBeTruthy();
+      expect(sourceTransaction.amount).toBeLessThan(0); // Should be negative for outgoing payment
+      expect(sourceTransaction.accountid).toBeTruthy();
+      expect(sourceTransaction.transferaccountid).toBeTruthy();
+      expect(sourceTransaction.type).toBe('Transfer');
+      expect(sourceTransaction.categoryid).toBeTruthy();
+
+      expect(liabilityTransaction.amount).toBeGreaterThan(0); // Should be positive for reducing debt
+      expect(liabilityTransaction.accountid).toBeTruthy();
+      expect(liabilityTransaction.transferaccountid).toBeTruthy();
     });
   });
 
@@ -164,13 +186,12 @@ describe('CreditCardPaymentService - Simple Tests', () => {
     it('should determine when to skip vs execute payment', () => {
       const testCases = [
         { balance: 0, shouldSkip: true, reason: 'No balance to pay' },
-        { balance: 500, shouldSkip: false, reason: 'Has balance to pay' },
-        { balance: -100, shouldSkip: false, reason: 'Credit balance becomes payment' },
+        { balance: 100, shouldSkip: true, reason: 'Positive balance (credit available)' },
+        { balance: -500, shouldSkip: false, reason: 'Negative balance (debt to pay)' },
       ];
 
       testCases.forEach(testCase => {
-        const paymentAmount = Math.abs(testCase.balance);
-        const shouldSkip = paymentAmount <= 0;
+        const shouldSkip = testCase.balance >= 0;
         
         expect(shouldSkip).toBe(testCase.shouldSkip);
       });

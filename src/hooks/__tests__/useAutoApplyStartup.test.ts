@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useAutoApplyStartup, useAutoApplyStartupSimple } from '../useAutoApplyStartup';
 import { useAutoApplyService } from '@/src/services/AutoApply.Service';
 import { useNotifications } from '@/src/providers/NotificationsProvider';
-import { AutoApplyResult } from '@/src/types/enhanced-recurring';
+import { AutoApplyResult } from '@/src/types/recurring';
 
 // Mock dependencies
 jest.mock('@/src/services/AutoApply.Service');

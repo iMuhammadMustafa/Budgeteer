@@ -1,24 +1,24 @@
 import { 
-  EnhancedRecurring, 
+  Recurring, 
   RecurringValidationRules,
   CreateTransferRequest,
   CreateCreditCardPaymentRequest,
   DEFAULT_AUTO_APPLY_SETTINGS
-} from '../enhanced-recurring';
+} from '../recurring';
 import { RecurringType } from '../enums/recurring';
 import { 
   validateRecurring,
   validateTransferRecurring,
   validateCreditCardPaymentRecurring,
   validateIntervalMonths,
-  getDefaultEnhancedRecurringValues,
+  getDefaultRecurringValues,
   isRecurringDue,
   calculateNextOccurrence,
-  validateEnhancedRecurring,
-  isEnhancedRecurring
+  validateRecurring,
+  isRecurring
 } from '../../utils/recurring-validation';
 
-describe('Enhanced Recurring Transaction Types', () => {
+describe('Recurring Transaction Types', () => {
   describe('RecurringType Enum', () => {
     it('should have correct enum values', () => {
       expect(RecurringType.Standard).toBe('Standard');
@@ -43,7 +43,7 @@ describe('Enhanced Recurring Transaction Types', () => {
 
   describe('Default Values', () => {
     it('should provide correct default values', () => {
-      const defaults = getDefaultEnhancedRecurringValues();
+      const defaults = getDefaultRecurringValues();
       
       expect(defaults.intervalmonths).toBe(1);
       expect(defaults.autoapplyenabled).toBe(false);
@@ -67,8 +67,8 @@ describe('Enhanced Recurring Transaction Types', () => {
   });
 });
 
-describe('Enhanced Recurring Validation', () => {
-  const validRecurring: Partial<EnhancedRecurring> = {
+describe('Recurring Validation', () => {
+  const validRecurring: Partial<Recurring> = {
     id: 'test-id',
     name: 'Test Recurring',
     sourceaccountid: 'account-1',
@@ -127,7 +127,7 @@ describe('Enhanced Recurring Validation', () => {
 
   describe('Transfer Validation', () => {
     it('should validate a valid transfer recurring transaction', () => {
-      const transfer: Partial<EnhancedRecurring> = {
+      const transfer: Partial<Recurring> = {
         ...validRecurring,
         recurringtype: RecurringType.Transfer,
         transferaccountid: 'account-2'
@@ -161,7 +161,7 @@ describe('Enhanced Recurring Validation', () => {
 
   describe('Credit Card Payment Validation', () => {
     it('should validate a valid credit card payment recurring transaction', () => {
-      const payment: Partial<EnhancedRecurring> = {
+      const payment: Partial<Recurring> = {
         ...validRecurring,
         recurringtype: RecurringType.CreditCardPayment
       };
@@ -191,12 +191,12 @@ describe('Enhanced Recurring Validation', () => {
     });
 
     it('should check if recurring is due', () => {
-      const dueRecurring: EnhancedRecurring = {
+      const dueRecurring: Recurring = {
         ...validRecurring,
         nextoccurrencedate: new Date(Date.now() - 86400000).toISOString(), // Yesterday
         isactive: true,
         isdeleted: false
-      } as EnhancedRecurring;
+      } as Recurring;
 
       expect(isRecurringDue(dueRecurring)).toBe(true);
     });
@@ -218,8 +218,8 @@ describe('Enhanced Recurring Validation', () => {
       expect(nextDate.getDate()).toBe(29);
     });
 
-    it('should identify enhanced recurring transactions', () => {
-      const enhanced: EnhancedRecurring = {
+    it('should identify recurring transactions', () => {
+      const recurring: Recurring = {
         ...validRecurring,
         intervalmonths: 1,
         autoapplyenabled: false,
@@ -228,16 +228,16 @@ describe('Enhanced Recurring Validation', () => {
         recurringtype: RecurringType.Standard,
         failedattempts: 0,
         maxfailedattempts: 3
-      } as EnhancedRecurring;
+      } as Recurring;
 
-      expect(isEnhancedRecurring(enhanced)).toBe(true);
-      expect(isEnhancedRecurring({})).toBe(false);
+      expect(isRecurring(recurring)).toBe(true);
+      expect(isRecurring({})).toBe(false);
     });
   });
 
   describe('Comprehensive Validation', () => {
     it('should perform comprehensive validation', () => {
-      const result = validateEnhancedRecurring(validRecurring);
+      const result = validateRecurring(validRecurring);
       expect(result.isValid).toBe(true);
     });
 
@@ -251,7 +251,7 @@ describe('Enhanced Recurring Validation', () => {
         isdateflexible: true
       };
       
-      const result = validateEnhancedRecurring(invalid);
+      const result = validateRecurring(invalid);
       expect(result.isValid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(1);
     });

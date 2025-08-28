@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { RecurringType } from '@/src/types/enums/recurring';
-import { CreateTransferRequest, CreateCreditCardPaymentRequest } from '@/src/types/enhanced-recurring';
+import { CreateTransferRequest, CreateCreditCardPaymentRequest } from '@/src/types/recurring';
 import { 
   validateTransferRecurring, 
   validateCreditCardPaymentRecurring 
@@ -81,7 +81,7 @@ const mockSession: Session = {
 import { 
   createRecurringTransferHelper,
   createCreditCardPaymentHelper
-} from '../EnhancedRecurring.Service';
+} from '../Recurring.Service';
 
 describe('Enhanced Recurring Transfer Functionality', () => {
   beforeEach(() => {
@@ -276,7 +276,7 @@ describe('Enhanced Recurring Transfer Functionality', () => {
       mockAccountRepo.findById
         .mockResolvedValueOnce(mockSourceAccount)
         .mockResolvedValueOnce(mockDestinationAccount);
-      mockRecurringRepo.createEnhanced.mockResolvedValue(mockCreatedTransfer);
+      mockRecurringRepo.create.mockResolvedValue(mockCreatedTransfer);
 
       const transferRequest: CreateTransferRequest = {
         id: 'test-uuid',
@@ -310,7 +310,7 @@ describe('Enhanced Recurring Transfer Functionality', () => {
       // Assert
       expect(mockAccountRepo.findById).toHaveBeenCalledWith('source-account-id', 'test-tenant-id');
       expect(mockAccountRepo.findById).toHaveBeenCalledWith('destination-account-id', 'test-tenant-id');
-      expect(mockRecurringRepo.createEnhanced).toHaveBeenCalledWith(
+      expect(mockRecurringRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Monthly Savings Transfer',
           sourceaccountid: 'source-account-id',
@@ -422,7 +422,7 @@ describe('Enhanced Recurring Transfer Functionality', () => {
       };
 
       mockAccountRepo.findById.mockResolvedValue(mockSourceAccount);
-      mockRecurringRepo.createEnhanced.mockResolvedValue(mockCreatedPayment);
+      mockRecurringRepo.create.mockResolvedValue(mockCreatedPayment);
 
       const paymentRequest: CreateCreditCardPaymentRequest = {
         id: 'test-uuid',

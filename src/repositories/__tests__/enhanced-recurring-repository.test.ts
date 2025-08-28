@@ -3,7 +3,7 @@ import { RecurringWatermelonRepository } from '../watermelondb/Recurrings.waterm
 import { 
   RecurringFilters, 
   RecurringType 
-} from '@/src/types/enhanced-recurring';
+} from '@/src/types/recurring';
 import { TableNames } from '@/src/types/db/TableNames';
 
 // Mock Supabase

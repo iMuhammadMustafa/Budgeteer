@@ -1,6 +1,6 @@
 import { AutoApplyStartupService, createAutoApplyStartupService, DEFAULT_STARTUP_CONFIG } from '../AutoApplyStartupService';
 import { IAutoApplyService } from '../AutoApply.Service';
-import { AutoApplyResult } from '@/src/types/enhanced-recurring';
+import { AutoApplyResult } from '@/src/types/recurring';
 
 // Mock the auto-apply service
 const mockAutoApplyService: jest.Mocked<IAutoApplyService> = {

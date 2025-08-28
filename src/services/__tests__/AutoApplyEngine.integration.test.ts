@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { AutoApplyEngine } from '../AutoApplyEngine';
-import { EnhancedRecurring, AutoApplyResult } from '@/src/types/enhanced-recurring';
+import { Recurring, AutoApplyResult } from '@/src/types/recurring';
 import { RecurringType } from '@/src/types/enums/recurring';
 
 // Mock UUID
@@ -45,7 +45,7 @@ describe('AutoApplyEngine Integration Tests', () => {
   describe('End-to-End Auto-Apply Workflow', () => {
     it('should successfully process a complete auto-apply workflow', async () => {
       // Setup test data
-      const dueRecurring: EnhancedRecurring = {
+      const dueRecurring: Recurring = {
         id: 'recurring-123',
         name: 'Monthly Salary',
         description: 'Monthly salary payment',
@@ -71,7 +71,7 @@ describe('AutoApplyEngine Integration Tests', () => {
         payeename: 'Employer',
         notes: 'Monthly salary',
         recurrencerule: 'FREQ=MONTHLY;INTERVAL=1',
-      } as EnhancedRecurring;
+      } as Recurring;
 
       // Mock repository responses
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue([dueRecurring]);
@@ -115,20 +115,20 @@ describe('AutoApplyEngine Integration Tests', () => {
     });
 
     it('should handle mixed success and failure scenarios', async () => {
-      const successfulRecurring: EnhancedRecurring = createMockRecurring({
+      const successfulRecurring: Recurring = createMockRecurring({
         id: 'success-recurring',
         name: 'Successful Transaction',
         autoapplyenabled: true
       });
 
-      const failedRecurring: EnhancedRecurring = createMockRecurring({
+      const failedRecurring: Recurring = createMockRecurring({
         id: 'failed-recurring',
         name: 'Failed Transaction',
         autoapplyenabled: true,
         isactive: false // This will cause validation failure
       });
 
-      const pendingRecurring: EnhancedRecurring = createMockRecurring({
+      const pendingRecurring: Recurring = createMockRecurring({
         id: 'pending-recurring',
         name: 'Pending Transaction',
         autoapplyenabled: false // This will be marked as pending
@@ -156,7 +156,7 @@ describe('AutoApplyEngine Integration Tests', () => {
     });
 
     it('should handle transfer transactions correctly', async () => {
-      const transferRecurring: EnhancedRecurring = createMockRecurring({
+      const transferRecurring: Recurring = createMockRecurring({
         recurringtype: RecurringType.Transfer,
         amount: 1000,
         sourceaccountid: 'checking-account',
@@ -189,7 +189,7 @@ describe('AutoApplyEngine Integration Tests', () => {
     });
 
     it('should handle credit card payments correctly', async () => {
-      const creditCardRecurring: EnhancedRecurring = createMockRecurring({
+      const creditCardRecurring: Recurring = createMockRecurring({
         recurringtype: RecurringType.CreditCardPayment,
         sourceaccountid: 'checking-account',
         categoryid: 'credit-card-account',
@@ -227,7 +227,7 @@ describe('AutoApplyEngine Integration Tests', () => {
 
   describe('Error Recovery and Resilience', () => {
     it('should handle database errors gracefully', async () => {
-      const recurringWithError: EnhancedRecurring = createMockRecurring({
+      const recurringWithError: Recurring = createMockRecurring({
         autoapplyenabled: true
       });
 
@@ -243,7 +243,7 @@ describe('AutoApplyEngine Integration Tests', () => {
     });
 
     it('should disable auto-apply after max failed attempts', async () => {
-      const recurringWithMaxFailures: EnhancedRecurring = createMockRecurring({
+      const recurringWithMaxFailures: Recurring = createMockRecurring({
         autoapplyenabled: true,
         failedattempts: 2, // One more failure will hit the max
         maxfailedattempts: 3
@@ -306,7 +306,7 @@ describe('AutoApplyEngine Integration Tests', () => {
 });
 
 // Helper function to create mock recurring transactions
-function createMockRecurring(overrides: Partial<EnhancedRecurring> = {}): EnhancedRecurring {
+function createMockRecurring(overrides: Partial<Recurring> = {}): Recurring {
   return {
     id: 'recurring-123',
     name: 'Test Recurring',
@@ -334,5 +334,5 @@ function createMockRecurring(overrides: Partial<EnhancedRecurring> = {}): Enhanc
     notes: 'Test Notes',
     recurrencerule: 'FREQ=MONTHLY;INTERVAL=1',
     ...overrides
-  } as EnhancedRecurring;
+  } as Recurring;
 }

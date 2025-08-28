@@ -3,7 +3,7 @@ import { render, waitFor, act } from '@testing-library/react-native';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { useTheme } from '@/src/providers/ThemeProvider';
 import { useAutoApplyService } from '@/src/services/AutoApply.Service';
-import { AutoApplyResult } from '@/src/types/enhanced-recurring';
+import { AutoApplyResult } from '@/src/types/recurring';
 
 // Mock the drawer layout component since we're testing the startup integration
 const MockDrawerLayout = () => {

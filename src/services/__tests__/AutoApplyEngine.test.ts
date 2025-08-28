@@ -4,10 +4,10 @@ import { AutoApplyEngine, IAutoApplyEngine } from '../AutoApplyEngine';
 // Mock UUID
 jest.mock("uuid", () => ({ v7: () => "00000000-0000-0000-0000-000000000000" }));
 import { 
-  EnhancedRecurring, 
+  Recurring, 
   AutoApplyResult, 
   DEFAULT_AUTO_APPLY_SETTINGS 
-} from '@/src/types/enhanced-recurring';
+} from '@/src/types/recurring';
 import { RecurringType, RECURRING_CONSTANTS } from '@/src/types/enums/recurring';
 import { IRecurringRepository } from '@/src/repositories/interfaces/IRecurringRepository';
 import { ITransactionRepository } from '@/src/repositories/interfaces/ITransactionRepository';
@@ -64,7 +64,7 @@ describe('AutoApplyEngine', () => {
     });
 
     it('should process auto-apply enabled transactions and mark others as pending', async () => {
-      const dueTransactions: EnhancedRecurring[] = [
+      const dueTransactions: Recurring[] = [
         createMockRecurring({ id: '1', autoapplyenabled: true }),
         createMockRecurring({ id: '2', autoapplyenabled: false }),
         createMockRecurring({ id: '3', autoapplyenabled: true })
@@ -108,7 +108,7 @@ describe('AutoApplyEngine', () => {
 
   describe('getDueRecurringTransactions', () => {
     it('should call repository with correct parameters', async () => {
-      const mockTransactions: EnhancedRecurring[] = [createMockRecurring()];
+      const mockTransactions: Recurring[] = [createMockRecurring()];
       (mockRecurringRepo.findDueRecurringTransactions as jest.Mock).mockResolvedValue(mockTransactions);
 
       const asOfDate = new Date('2024-01-15');
@@ -119,7 +119,7 @@ describe('AutoApplyEngine', () => {
     });
 
     it('should use current date when asOfDate is not provided', async () => {
-      const mockTransactions: EnhancedRecurring[] = [createMockRecurring()];
+      const mockTransactions: Recurring[] = [createMockRecurring()];
       (mockRecurringRepo.findDueRecurringTransactions as jest.Mock).mockResolvedValue(mockTransactions);
 
       await autoApplyEngine.getDueRecurringTransactions(tenantId);
@@ -408,7 +408,7 @@ describe('AutoApplyEngine', () => {
 });
 
 // Helper function to create mock recurring transactions
-function createMockRecurring(overrides: Partial<EnhancedRecurring> = {}): EnhancedRecurring {
+function createMockRecurring(overrides: Partial<Recurring> = {}): Recurring {
   return {
     id: 'recurring-123',
     name: 'Test Recurring',
@@ -436,5 +436,5 @@ function createMockRecurring(overrides: Partial<EnhancedRecurring> = {}): Enhanc
     notes: 'Test Notes',
     recurrencerule: 'FREQ=MONTHLY;INTERVAL=1',
     ...overrides
-  } as EnhancedRecurring;
+  } as Recurring;
 }

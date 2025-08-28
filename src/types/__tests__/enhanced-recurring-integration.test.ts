@@ -1,8 +1,8 @@
-import { EnhancedRecurring, EnhancedRecurringInsert, EnhancedRecurringUpdate } from '../enhanced-recurring';
+import { Recurring, RecurringInsert, RecurringUpdate } from '../recurring';
 import { RecurringType } from '../enums/recurring';
 import { Recurring } from '../db/sqllite/schema';
 
-describe('Enhanced Recurring Integration Tests', () => {
+describe('Recurring Integration Tests', () => {
   describe('Type Compatibility', () => {
     it('should be compatible with base Recurring type', () => {
       const baseRecurring: Recurring = {
@@ -41,15 +41,15 @@ describe('Enhanced Recurring Integration Tests', () => {
         updatedby: null
       };
 
-      // Should be assignable to EnhancedRecurring
-      const enhanced: EnhancedRecurring = baseRecurring;
-      expect(enhanced.intervalmonths).toBe(1);
-      expect(enhanced.autoapplyenabled).toBe(false);
-      expect(enhanced.recurringtype).toBe('Standard');
+      // Should be assignable to Recurring
+      const recurring: Recurring = baseRecurring;
+      expect(recurring.intervalmonths).toBe(1);
+      expect(recurring.autoapplyenabled).toBe(false);
+      expect(recurring.recurringtype).toBe('Standard');
     });
 
-    it('should support enhanced insert operations', () => {
-      const insertData: EnhancedRecurringInsert = {
+    it('should support insert operations', () => {
+      const insertData: RecurringInsert = {
         name: 'New Recurring',
         sourceaccountid: 'account-1',
         categoryid: 'category-1',
@@ -73,8 +73,8 @@ describe('Enhanced Recurring Integration Tests', () => {
       expect(insertData.recurringtype).toBe(RecurringType.Standard);
     });
 
-    it('should support enhanced update operations', () => {
-      const updateData: EnhancedRecurringUpdate = {
+    it('should support update operations', () => {
+      const updateData: RecurringUpdate = {
         intervalmonths: 6,
         autoapplyenabled: true,
         transferaccountid: 'account-2',
@@ -90,7 +90,7 @@ describe('Enhanced Recurring Integration Tests', () => {
 
   describe('Transfer Recurring', () => {
     it('should create a valid transfer recurring transaction', () => {
-      const transfer: EnhancedRecurring = {
+      const transfer: Recurring = {
         id: 'transfer-id',
         name: 'Monthly Savings Transfer',
         sourceaccountid: 'checking-account',
@@ -134,7 +134,7 @@ describe('Enhanced Recurring Integration Tests', () => {
 
   describe('Credit Card Payment Recurring', () => {
     it('should create a valid credit card payment recurring transaction', () => {
-      const payment: EnhancedRecurring = {
+      const payment: Recurring = {
         id: 'payment-id',
         name: 'Credit Card Payment',
         sourceaccountid: 'checking-account',
@@ -179,7 +179,7 @@ describe('Enhanced Recurring Integration Tests', () => {
 
   describe('Custom Interval Recurring', () => {
     it('should create a valid quarterly recurring transaction', () => {
-      const quarterly: EnhancedRecurring = {
+      const quarterly: Recurring = {
         id: 'quarterly-id',
         name: 'Quarterly Insurance Payment',
         sourceaccountid: 'checking-account',
@@ -223,7 +223,7 @@ describe('Enhanced Recurring Integration Tests', () => {
 
   describe('Flexible Recurring Transactions', () => {
     it('should create a valid amount-flexible recurring transaction', () => {
-      const flexible: EnhancedRecurring = {
+      const flexible: Recurring = {
         id: 'flexible-id',
         name: 'Variable Utility Bill',
         sourceaccountid: 'checking-account',

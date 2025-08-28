@@ -1,9 +1,9 @@
 import { Session } from "@supabase/supabase-js";
 import { RecurringType } from '@/src/types/enums/recurring';
 import { 
-  EnhancedRecurring,
-  EnhancedRecurringInsert,
-  EnhancedRecurringUpdate,
+  Recurring,
+  RecurringInsert,
+  RecurringUpdate,
   CreateTransferRequest,
   CreateCreditCardPaymentRequest,
   ExecutionOverrides,
@@ -11,7 +11,7 @@ import {
   RecurringFilters,
   AutoApplyStatus,
   ApplyResult
-} from '@/src/types/enhanced-recurring';
+} from '@/src/types/recurring';
 
 // Mock environment variables
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -91,10 +91,10 @@ const mockSession: Session = {
 
 // Import helper functions for direct testing
 import { 
-  createEnhancedRecurringHelper,
-  executeRecurringTransferHelper,
+  createRecurringHelper,
+  executeRecurringHelper,
   executeTransferLogic
-} from '../EnhancedRecurring.Service';
+} from '../Recurring.Service';
 
 describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
     describe('Create Enhanced Recurring', () => {
       it('should create a standard recurring transaction successfully', async () => {
         // Arrange
-        const mockCreatedRecurring: EnhancedRecurring = {
+        const mockCreatedRecurring: Recurring = {
           id: 'test-uuid',
           name: 'Monthly Salary',
           sourceaccountid: 'checking-account-id',
@@ -128,9 +128,9 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           recurrencerule: 'FREQ=MONTHLY;INTERVAL=1'
         };
 
-        mockRecurringRepo.createEnhanced.mockResolvedValue(mockCreatedRecurring);
+        mockRecurringRepo.create.mockResolvedValue(mockCreatedRecurring);
 
-        const recurringData: EnhancedRecurringInsert = {
+        const recurringData: RecurringInsert = {
           id: 'test-uuid',
           name: 'Monthly Salary',
           sourceaccountid: 'checking-account-id',
@@ -151,14 +151,14 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
         };
 
         // Act
-        const result = await createEnhancedRecurringHelper(
+        const result = await createRecurringHelper(
           recurringData,
           mockSession,
           mockRecurringRepo
         );
 
         // Assert
-        expect(mockRecurringRepo.createEnhanced).toHaveBeenCalledWith(
+        expect(mockRecurringRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({
             name: 'Monthly Salary',
             sourceaccountid: 'checking-account-id',
@@ -175,7 +175,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
       it('should fail validation for invalid interval months', async () => {
         // Arrange
-        const invalidRecurringData: EnhancedRecurringInsert = {
+        const invalidRecurringData: RecurringInsert = {
           id: 'test-uuid',
           name: 'Invalid Recurring',
           sourceaccountid: 'checking-account-id',
@@ -196,7 +196,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
         };
 
         // Act & Assert
-        await expect(createEnhancedRecurringHelper(
+        await expect(createRecurringHelper(
           invalidRecurringData,
           mockSession,
           mockRecurringRepo
@@ -205,7 +205,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
       it('should allow validation when both amount and date are flexible', async () => {
         // Arrange
-        const validRecurringData: EnhancedRecurringInsert = {
+        const validRecurringData: RecurringInsert = {
           id: 'test-uuid',
           name: 'Fully Flexible Recurring',
           sourceaccountid: 'checking-account-id',
@@ -225,7 +225,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
         };
 
         // Act
-        const result = await createEnhancedRecurringHelper(
+        const result = await createRecurringHelper(
           validRecurringData,
           mockSession,
           mockRecurringRepo
@@ -243,7 +243,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
     describe('Execute Recurring Transaction', () => {
       it('should execute a standard recurring transaction successfully', async () => {
         // Arrange
-        const mockRecurring: EnhancedRecurring = {
+        const mockRecurring: Recurring = {
           id: 'recurring-id',
           name: 'Monthly Expense',
           sourceaccountid: 'checking-account-id',
@@ -273,13 +273,13 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           type: 'Asset'
         };
 
-        mockRecurringRepo.findByIdEnhanced.mockResolvedValue(mockRecurring);
+        mockRecurringRepo.findById.mockResolvedValue(mockRecurring);
         mockAccountRepo.findById.mockResolvedValue(mockAccount);
         mockTransactionRepo.create.mockResolvedValue({ id: 'transaction-id' });
-        mockRecurringRepo.updateEnhanced.mockResolvedValue(mockRecurring);
+        mockRecurringRepo.update.mockResolvedValue(mockRecurring);
 
         // Act
-        const result = await executeRecurringTransferHelper(
+        const result = await executeRecurringHelper(
           'recurring-id',
           undefined,
           mockSession,
@@ -305,7 +305,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           200,
           'test-tenant-id'
         );
-        expect(mockRecurringRepo.updateEnhanced).toHaveBeenCalledWith(
+        expect(mockRecurringRepo.update).toHaveBeenCalledWith(
           'recurring-id',
           expect.objectContaining({
             failedattempts: 0,
@@ -318,7 +318,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
       it('should execute a transfer with execution overrides', async () => {
         // Arrange
-        const mockRecurring: EnhancedRecurring = {
+        const mockRecurring: Recurring = {
           id: 'transfer-id',
           name: 'Monthly Transfer',
           sourceaccountid: 'checking-account-id',
@@ -362,7 +362,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           notes: 'Manual override'
         };
 
-        mockRecurringRepo.findByIdEnhanced.mockResolvedValue(mockRecurring);
+        mockRecurringRepo.findById.mockResolvedValue(mockRecurring);
         mockAccountRepo.findById
           .mockResolvedValueOnce(mockSourceAccount)
           .mockResolvedValueOnce(mockDestinationAccount);
@@ -370,10 +370,10 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           { id: 'debit-transaction-id' },
           { id: 'credit-transaction-id' }
         ]);
-        mockRecurringRepo.updateEnhanced.mockResolvedValue(mockRecurring);
+        mockRecurringRepo.update.mockResolvedValue(mockRecurring);
 
         // Act
-        const result = await executeRecurringTransferHelper(
+        const result = await executeRecurringHelper(
           'transfer-id',
           overrides,
           mockSession,
@@ -402,7 +402,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
       it('should fail execution when recurring is inactive', async () => {
         // Arrange
-        const mockInactiveRecurring: EnhancedRecurring = {
+        const mockInactiveRecurring: Recurring = {
           id: 'inactive-id',
           name: 'Inactive Recurring',
           sourceaccountid: 'checking-account-id',
@@ -425,10 +425,10 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           recurrencerule: 'FREQ=MONTHLY;INTERVAL=1'
         };
 
-        mockRecurringRepo.findByIdEnhanced.mockResolvedValue(mockInactiveRecurring);
+        mockRecurringRepo.findById.mockResolvedValue(mockInactiveRecurring);
 
         // Act
-        const result = await executeRecurringTransferHelper(
+        const result = await executeRecurringHelper(
           'inactive-id',
           undefined,
           mockSession,
@@ -445,7 +445,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
       it('should handle insufficient funds for transfer', async () => {
         // Arrange
-        const mockRecurring: EnhancedRecurring = {
+        const mockRecurring: Recurring = {
           id: 'transfer-id',
           name: 'Large Transfer',
           sourceaccountid: 'checking-account-id',
@@ -483,7 +483,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
           type: 'Asset'
         };
 
-        mockRecurringRepo.findByIdEnhanced.mockResolvedValue(mockRecurring);
+        mockRecurringRepo.findById.mockResolvedValue(mockRecurring);
         mockAccountRepo.findById
           .mockResolvedValueOnce(mockSourceAccount)
           .mockResolvedValueOnce(mockDestinationAccount);
@@ -543,7 +543,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
       const mockAutoApplyEnabled = [{ id: '1' }, { id: '3' }];
       const mockDueTransactions = [{ id: '1' }];
 
-      mockRecurringRepo.findAllEnhanced.mockResolvedValue(mockAllRecurring);
+      mockRecurringRepo.findAll.mockResolvedValue(mockAllRecurring);
       mockRecurringRepo.findByAutoApplyEnabled.mockResolvedValue(mockAutoApplyEnabled);
       mockRecurringRepo.findDueRecurringTransactions.mockResolvedValue(mockDueTransactions);
 
@@ -555,7 +555,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
   describe('Error Handling', () => {
     it('should increment failed attempts on execution error', async () => {
       // Arrange
-      const mockRecurring: EnhancedRecurring = {
+      const mockRecurring: Recurring = {
         id: 'error-recurring-id',
         name: 'Error Recurring',
         sourceaccountid: 'checking-account-id',
@@ -578,11 +578,11 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
         recurrencerule: 'FREQ=MONTHLY;INTERVAL=1'
       };
 
-      mockRecurringRepo.findByIdEnhanced.mockResolvedValue(mockRecurring);
+      mockRecurringRepo.findById.mockResolvedValue(mockRecurring);
       mockTransactionRepo.create.mockRejectedValue(new Error('Database error'));
 
       // Act
-      const result = await executeRecurringTransferHelper(
+      const result = await executeRecurringHelper(
         'error-recurring-id',
         undefined,
         mockSession,
@@ -599,7 +599,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
 
     it('should handle validation errors gracefully', async () => {
       // Arrange
-      const invalidRecurringData: EnhancedRecurringInsert = {
+      const invalidRecurringData: RecurringInsert = {
         id: 'test-uuid',
         name: '', // Invalid - empty name
         sourceaccountid: 'checking-account-id',
@@ -620,7 +620,7 @@ describe('Enhanced Recurring Service Layer - Comprehensive Tests', () => {
       };
 
       // Act & Assert
-      await expect(createEnhancedRecurringHelper(
+      await expect(createRecurringHelper(
         invalidRecurringData,
         mockSession,
         mockRecurringRepo

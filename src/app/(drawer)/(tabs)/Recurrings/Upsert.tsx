@@ -31,7 +31,6 @@ type RecurringFormType = Omit<RecurringInsert | RecurringUpdate, "recurrencerule
   interval: number;
   intervalMonths: number; // Custom monthly interval (1-24)
   type: RecurringTransactionType; // Added type field
-  destinationaccountid: string | null;
   transferaccountid?: string | null; // For transfer transactions
   recurringType: RecurringType; // Standard, Transfer, CreditCardPayment
   autoApplyEnabled: boolean; // Individual auto-apply setting
@@ -76,7 +75,6 @@ export const initialRecurringState: RecurringFormType = {
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
-  destinationaccountid: null,
   transferaccountid: null,
   recurringType: RecurringType.Standard, // Default to standard
   autoApplyEnabled: false, // Default to manual
@@ -258,7 +256,7 @@ export default function RecurringUpsertScreen() {
           </View>
         )}
 
-        {!formData.isAmountFlexible && (
+        {!formData.isAmountFlexible && formData.recurringType !== RecurringType.CreditCardPayment && (
           <TextInputField
             label="Amount"
             value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
@@ -271,7 +269,7 @@ export default function RecurringUpsertScreen() {
         {formData.recurringType === RecurringType.Transfer ? (
           <RecurringTransferForm
             sourceAccountId={formData.sourceaccountid || ""}
-            destinationAccountId={formData.transferaccountid || formData.destinationaccountid}
+            destinationAccountId={formData.transferaccountid || ""}
             amount={formData.amount ?? null}
             currencyCode={formData.currencycode || "USD"}
             accounts={accounts}
@@ -279,19 +277,21 @@ export default function RecurringUpsertScreen() {
             onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
             onDestinationAccountChange={accountId => {
               handleTextChange("transferaccountid", accountId);
-              handleTextChange("destinationaccountid", accountId);
             }}
-            onAmountChange={amount => handleTextChange("amount", amount)}
+            onAmountChange={amount => handleTextChange("amount", Math.abs(amount))}
             onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
           />
         ) : formData.recurringType === RecurringType.CreditCardPayment ? (
           <RecurringCreditCardForm
             sourceAccountId={formData.sourceaccountid || ""}
             creditCardAccountId={formData.transferaccountid || null}
+            categoryId={formData.categoryid || null}
             currencyCode={formData.currencycode || "USD"}
             accounts={accounts}
+            categories={categories}
             onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
             onCreditCardAccountChange={accountId => handleTextChange("transferaccountid", accountId)}
+            onCategoryChange={categoryId => handleTextChange("categoryid", categoryId)}
             onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
           />
         ) : (
@@ -324,15 +324,14 @@ export default function RecurringUpsertScreen() {
           </>
         )}
         {formData.type !== "Transfer" &&
-          formData.recurringType !== RecurringType.Transfer &&
-          formData.recurringType !== RecurringType.CreditCardPayment && (
+          formData.recurringType !== RecurringType.Transfer && (
             <MyCategoriesDropdown
               label="Category"
               selectedValue={formData.categoryid}
               categories={categories}
               onSelect={category => handleTextChange("categoryid", category?.id || null)}
               isModal={Platform.OS !== "web"}
-              showClearButton={!!formData.categoryid}
+              showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
               onClear={() => handleTextChange("categoryid", null)}
             />
           )}
@@ -433,13 +432,12 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         type: (recurringToEdit.type as RecurringTransactionType) || "Expense", // Set type, default if not present
         frequency: freq,
         interval: interv,
-        intervalMonths: recurringToEdit.interval_months || interv, // Use correct snake_case field
-        recurringType: recurringToEdit.recurring_type || RecurringType.Standard, // Use correct snake_case field
-        autoApplyEnabled: recurringToEdit.auto_apply_enabled || false, // Use correct snake_case field
-        isAmountFlexible: recurringToEdit.is_amount_flexible || false, // Use correct snake_case field
-        isDateFlexible: recurringToEdit.is_date_flexible || false, // Use correct snake_case field
-        transferaccountid: recurringToEdit.transfer_account_id || null, // Use correct snake_case field
-        destinationaccountid: recurringToEdit.destinationaccountid || null,
+        intervalMonths: recurringToEdit.intervalmonths || interv,
+        recurringType: recurringToEdit.recurringtype || RecurringType.Standard,
+        autoApplyEnabled: recurringToEdit.autoapplyenabled || false,
+        isAmountFlexible: recurringToEdit.isamountflexible || false,
+        isDateFlexible: recurringToEdit.isdateflexible || false,
+        transferaccountid: recurringToEdit.transferaccountid || null,
         nextoccurrencedate: dayjs(recurringToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
         enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
       });
@@ -461,12 +459,13 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
           newState.type = "Transfer";
           newState.categoryid = null; // Transfers don't have categories
         } else if (value === RecurringType.CreditCardPayment) {
-          newState.type = "Expense"; // Credit card payments are expenses
-          newState.categoryid = null; // Credit card payments don't need categories
+          newState.type = "Transfer"; // Credit card payments are transfers
+          newState.isAmountFlexible = true; // Credit card payments always have flexible amounts
+          newState.amount = null; // Clear amount as it will be calculated at execution
+          // Keep categoryid as it's required for credit card payments
         } else {
           // Standard recurring transaction
           newState.transferaccountid = null;
-          newState.destinationaccountid = null;
         }
       }
 
@@ -475,7 +474,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         if (value === "Transfer") {
           newState.categoryid = null; // Transfers don't have categories
         } else {
-          newState.destinationaccountid = null; // Other types don't have a destination account
+          newState.transferaccountid = null; // Other types don't have a destination account
         }
       }
 
@@ -590,13 +589,13 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
       isactive: formData.isactive,
       tenantid: formData.tenantid,
 
-      // Enhanced fields (using correct snake_case)
-      interval_months: formData.intervalMonths,
-      recurring_type: formData.recurringType,
-      auto_apply_enabled: formData.autoApplyEnabled,
-      is_amount_flexible: formData.isAmountFlexible,
-      is_date_flexible: formData.isDateFlexible,
-      transfer_account_id: formData.transferaccountid,
+      // Enhanced fields (using correct lowercase names)
+      intervalmonths: formData.intervalMonths,
+      recurringtype: formData.recurringType,
+      autoapplyenabled: formData.autoApplyEnabled,
+      isamountflexible: formData.isAmountFlexible,
+      isdateflexible: formData.isDateFlexible,
+      transferaccountid: formData.transferaccountid,
     };
 
     // Clean up undefined properties before sending to API
