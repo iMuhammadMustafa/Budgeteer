@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  GestureResponderEvent,
   LayoutChangeEvent,
   Pressable,
   Text,
@@ -100,7 +101,8 @@ export default function SearchableDropdown({
     setTextLayout({ height, width, top: y });
   };
 
-  const handleOutsidePress = () => {
+  const handleOutsidePress = (e: GestureResponderEvent) => {
+    e.stopPropagation();
     if (suggestions.length === 0 && onPress) {
       let values = onPress() as SearchableDropdownItem[];
       setSuggestions(values);
@@ -113,7 +115,7 @@ export default function SearchableDropdown({
 
   return (
     <>
-      <Pressable onPress={handleOutsidePress} style={{ flex: 1 }}>
+      <Pressable onPress={handleOutsidePress} className="flex-1 cursor-default">
         <View className={`my-1 ${className ?? ""} `}>
           <Text className="text-foreground">{label}</Text>
           <TextInput

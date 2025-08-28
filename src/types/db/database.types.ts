@@ -24,6 +24,7 @@ export type Database = {
           id: string
           isdeleted: boolean
           name: string
+          statementdate: number | null
           tenantid: string
           type: Database["public"]["Enums"]["accounttypes"]
           updatedat: string | null
@@ -38,6 +39,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           name: string
+          statementdate?: number | null
           tenantid?: string
           type?: Database["public"]["Enums"]["accounttypes"]
           updatedat?: string | null
@@ -52,6 +54,7 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           name?: string
+          statementdate?: number | null
           tenantid?: string
           type?: Database["public"]["Enums"]["accounttypes"]
           updatedat?: string | null
@@ -202,69 +205,96 @@ export type Database = {
       recurrings: {
         Row: {
           amount: number | null
+          autoapplyenabled: boolean | null
           categoryid: string | null
           createdat: string | null
           createdby: string | null
           currencycode: string
           description: string | null
           enddate: string | null
+          failedattempts: number | null
           id: string
+          intervalmonths: number | null
           isactive: boolean | null
+          isamountflexible: boolean | null
+          isdateflexible: boolean | null
           isdeleted: boolean | null
+          lastautoappliedat: string | null
           lastexecutedat: string | null
+          maxfailedattempts: number | null
           name: string
-          nextoccurrencedate: string
+          nextoccurrencedate: string | null
           notes: string | null
           payeename: string | null
           recurrencerule: string
+          recurringtype: Database["public"]["Enums"]["recurringtypes"] | null
           sourceaccountid: string
           tenantid: string
+          transferaccountid: string | null
           type: Database["public"]["Enums"]["transactiontypes"]
           updatedat: string | null
           updatedby: string | null
         }
         Insert: {
           amount?: number | null
+          autoapplyenabled?: boolean | null
           categoryid?: string | null
           createdat?: string | null
           createdby?: string | null
           currencycode?: string
           description?: string | null
           enddate?: string | null
+          failedattempts?: number | null
           id?: string
+          intervalmonths?: number | null
           isactive?: boolean | null
+          isamountflexible?: boolean | null
+          isdateflexible?: boolean | null
           isdeleted?: boolean | null
+          lastautoappliedat?: string | null
           lastexecutedat?: string | null
+          maxfailedattempts?: number | null
           name: string
-          nextoccurrencedate: string
+          nextoccurrencedate?: string | null
           notes?: string | null
           payeename?: string | null
           recurrencerule: string
+          recurringtype?: Database["public"]["Enums"]["recurringtypes"] | null
           sourceaccountid: string
           tenantid: string
+          transferaccountid?: string | null
           type?: Database["public"]["Enums"]["transactiontypes"]
           updatedat?: string | null
           updatedby?: string | null
         }
         Update: {
           amount?: number | null
+          autoapplyenabled?: boolean | null
           categoryid?: string | null
           createdat?: string | null
           createdby?: string | null
           currencycode?: string
           description?: string | null
           enddate?: string | null
+          failedattempts?: number | null
           id?: string
+          intervalmonths?: number | null
           isactive?: boolean | null
+          isamountflexible?: boolean | null
+          isdateflexible?: boolean | null
           isdeleted?: boolean | null
+          lastautoappliedat?: string | null
           lastexecutedat?: string | null
+          maxfailedattempts?: number | null
           name?: string
-          nextoccurrencedate?: string
+          nextoccurrencedate?: string | null
           notes?: string | null
           payeename?: string | null
           recurrencerule?: string
+          recurringtype?: Database["public"]["Enums"]["recurringtypes"] | null
           sourceaccountid?: string
           tenantid?: string
+          transferaccountid?: string | null
           type?: Database["public"]["Enums"]["transactiontypes"]
           updatedat?: string | null
           updatedby?: string | null
@@ -308,6 +338,27 @@ export type Database = {
           {
             foreignKeyName: "recurrings_sourceaccountid_fkey"
             columns: ["sourceaccountid"]
+            isOneToOne: false
+            referencedRelation: "view_accounts_with_runningbalance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrings_transfer_account_id_fkey"
+            columns: ["transferaccountid"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrings_transfer_account_id_fkey"
+            columns: ["transferaccountid"]
+            isOneToOne: false
+            referencedRelation: "transactionsview"
+            referencedColumns: ["accountid"]
+          },
+          {
+            foreignKeyName: "recurrings_transfer_account_id_fkey"
+            columns: ["transferaccountid"]
             isOneToOne: false
             referencedRelation: "view_accounts_with_runningbalance"
             referencedColumns: ["id"]
@@ -1106,6 +1157,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_account_balance_at_date: {
+        Args: { p_account_id: string; p_date: string; p_tenant_id: string }
+        Returns: number
+      }
       get_monthly_net_worth: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: {
@@ -1124,6 +1179,7 @@ export type Database = {
     }
     Enums: {
       accounttypes: "Asset" | "Liability"
+      recurringtypes: "Standard" | "Transfer" | "CreditCardPayment"
       transactionstatuses: "Clear" | "Void"
       transactiontypes:
         | "Expense"
@@ -1260,6 +1316,7 @@ export const Constants = {
   public: {
     Enums: {
       accounttypes: ["Asset", "Liability"],
+      recurringtypes: ["Standard", "Transfer", "CreditCardPayment"],
       transactionstatuses: ["Clear", "Void"],
       transactiontypes: [
         "Expense",

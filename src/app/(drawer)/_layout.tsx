@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
@@ -16,6 +17,9 @@ import {
   initializeMockDataInLocalStorage,
   resetMockDataInLocalStorage,
 } from "@/src/repositories/__mock__/mockDataLocalStorage";
+import NotificationsProvider from "@/src/providers/NotificationsProvider";
+import Notification from "@/src/components/Notification";
+import { useAutoApplyStartupSimple } from "@/src/hooks/useAutoApplyStartup";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -25,21 +29,25 @@ export default function DrawerLayout() {
   if (!isSessionLoading && (!session || !session.user)) router.navigate("/Login");
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <Drawer
-        screenOptions={{
-          drawerType: "slide",
-          headerTintColor: isDarkMode ? "white" : "black",
-          headerRight: () => <ThemeToggler toggleTheme={toggleTheme} isDarkMode={isDarkMode} />,
-        }}
-        drawerContent={props => <DrawerContent {...props} />}
-      >
-        {DashboardScreen}
-        {AccountsScreen}
-        {CategoriesScreen}
-        {SettingsScreen}
-      </Drawer>
-    </GestureHandlerRootView>
+    <NotificationsProvider>
+      <GestureHandlerRootView className="flex-1">
+        <Drawer
+          screenOptions={{
+            drawerType: "slide",
+            headerTintColor: isDarkMode ? "white" : "black",
+            headerRight: () => <ThemeToggler toggleTheme={toggleTheme} isDarkMode={isDarkMode} />,
+          }}
+          drawerContent={props => <DrawerContent {...props} />}
+        >
+          {DashboardScreen}
+          {AccountsScreen}
+          {CategoriesScreen}
+          {SettingsScreen}
+        </Drawer>
+        <Notification />
+        <AutoApplyStartupManager />
+      </GestureHandlerRootView>
+    </NotificationsProvider>
   );
 }
 
@@ -101,7 +109,36 @@ function ThemeToggler({ toggleTheme, isDarkMode }: { toggleTheme: () => void; is
   );
 }
 
-import { useEffect } from "react";
+/**
+ * Component responsible for managing auto-apply functionality on app startup
+ * This component is invisible but handles the initialization and monitoring of auto-apply
+ */
+function AutoApplyStartupManager() {
+  const autoApplyStartup = useAutoApplyStartupSimple({
+    enableLogging: true,
+    skipOnError: true,
+    delayMs: 2000, // 2 second delay to allow app to fully load
+    enableNotifications: true,
+  });
+
+  // Log startup progress for debugging
+  useEffect(() => {
+    if (autoApplyStartup.isComplete && autoApplyStartup.hasResults) {
+      console.log("[AutoApply Startup] Initialization complete:", {
+        totalProcessed: autoApplyStartup.totalProcessed,
+        hasError: autoApplyStartup.hasError,
+      });
+    }
+  }, [
+    autoApplyStartup.isComplete,
+    autoApplyStartup.hasResults,
+    autoApplyStartup.totalProcessed,
+    autoApplyStartup.hasError,
+  ]);
+
+  // This component doesn't render anything visible
+  return null;
+}
 
 function DrawerContent(props: any) {
   // const { isDemo } = useDemoMode();

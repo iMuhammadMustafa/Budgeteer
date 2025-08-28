@@ -2,7 +2,7 @@ import { appSchema, tableSchema } from "@nozbe/watermelondb";
 import { TableNames } from "../types/db/TableNames";
 
 export const schema = appSchema({
-  version: 1, // Reset to version 1 to avoid migration issues
+  version: 2, // Updated for enhanced recurring transactions
   tables: [
     tableSchema({
       name: TableNames.AccountCategories,
@@ -125,6 +125,7 @@ export const schema = appSchema({
         { name: "name", type: "string" },
         { name: "sourceaccountid", type: "string", isIndexed: true },
         { name: "categoryid", type: "string", isOptional: true, isIndexed: true },
+        // Amount is nullable when amount flexible
         { name: "amount", type: "number", isOptional: true },
         { name: "type", type: "string" }, // Expense, Income, Transfer, Adjustment, Initial, Refund
         { name: "description", type: "string", isOptional: true },
@@ -132,10 +133,23 @@ export const schema = appSchema({
         { name: "notes", type: "string", isOptional: true },
         { name: "currencycode", type: "string" },
         { name: "recurrencerule", type: "string" },
-        { name: "nextoccurrencedate", type: "string" },
+        // Next occurrence date is nullable when date flexible
+        { name: "nextoccurrencedate", type: "string", isOptional: true },
         { name: "enddate", type: "string", isOptional: true },
         { name: "lastexecutedat", type: "string", isOptional: true },
         { name: "isactive", type: "boolean" },
+        
+        // Recurring transaction fields (using lowercase to match Supabase conventions)
+        { name: "intervalmonths", type: "number" },
+        { name: "autoapplyenabled", type: "boolean" },
+        { name: "transferaccountid", type: "string", isOptional: true, isIndexed: true },
+        { name: "isamountflexible", type: "boolean" },
+        { name: "isdateflexible", type: "boolean" },
+        { name: "recurringtype", type: "string" }, // Standard, Transfer, CreditCardPayment
+        { name: "lastautoappliedat", type: "string", isOptional: true },
+        { name: "failedattempts", type: "number" },
+        { name: "maxfailedattempts", type: "number" },
+        
         { name: "tenantid", type: "string" },
         { name: "isdeleted", type: "boolean" },
         { name: "createdat", type: "number" },

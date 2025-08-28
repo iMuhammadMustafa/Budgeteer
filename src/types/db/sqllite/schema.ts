@@ -21,6 +21,12 @@ export const TransactionStatuses = {
   Void: "Void",
 } as const;
 
+export const RecurringTypes = {
+  Standard: "Standard",
+  Transfer: "Transfer",
+  CreditCardPayment: "CreditCardPayment",
+} as const;
+
 // Account Categories table
 export const accountCategories = sqliteTable("accountcategories", {
   id: text("id").primaryKey(),
@@ -52,6 +58,8 @@ export const accounts = sqliteTable("accounts", {
   notes: text("notes"),
   owner: text("owner"),
   displayorder: integer("displayorder").notNull().default(0),
+  // Credit card statement date tracking (only for Liability type accounts)
+  statementdate: integer("statementdate"), // Day of month (1-31) when statement closes
   tenantid: text("tenantid").notNull(),
   isdeleted: integer("isdeleted", { mode: "boolean" }).notNull().default(false),
   createdat: text("createdat").notNull(),
@@ -152,6 +160,7 @@ export const recurrings = sqliteTable("recurrings", {
     .notNull()
     .references(() => accounts.id),
   categoryid: text("categoryid").references(() => transactionCategories.id),
+  // Amount is nullable when amount flexible
   amount: real("amount"),
   type: text("type", { enum: ["Expense", "Income", "Transfer", "Adjustment", "Initial", "Refund"] }).notNull(),
   description: text("description"),
@@ -159,10 +168,25 @@ export const recurrings = sqliteTable("recurrings", {
   notes: text("notes"),
   currencycode: text("currencycode").notNull().default("USD"),
   recurrencerule: text("recurrencerule").notNull(),
-  nextoccurrencedate: text("nextoccurrencedate").notNull(),
+  // Next occurrence date is nullable when date flexible
+  nextoccurrencedate: text("nextoccurrencedate"),
   enddate: text("enddate"),
   lastexecutedat: text("lastexecutedat"),
   isactive: integer("isactive", { mode: "boolean" }).default(true),
+  
+  // Enhanced recurring transaction fields (using lowercase to match Supabase conventions)
+  intervalmonths: integer("intervalmonths").default(1),
+  autoapplyenabled: integer("autoapplyenabled", { mode: "boolean" }).default(false),
+  transferaccountid: text("transferaccountid").references(() => accounts.id),
+  isamountflexible: integer("isamountflexible", { mode: "boolean" }).default(false),
+  isdateflexible: integer("isdateflexible", { mode: "boolean" }).default(false),
+  recurringtype: text("recurringtype", { 
+    enum: ["Standard", "Transfer", "CreditCardPayment"] 
+  }).default("Standard"),
+  lastautoappliedat: text("lastautoappliedat"),
+  failedattempts: integer("failedattempts").default(0),
+  maxfailedattempts: integer("maxfailedattempts").default(3),
+  
   tenantid: text("tenantid").notNull(),
   isdeleted: integer("isdeleted", { mode: "boolean" }).default(false),
   createdat: text("createdat"),

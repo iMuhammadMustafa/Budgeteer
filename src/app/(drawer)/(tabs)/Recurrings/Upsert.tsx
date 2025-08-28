@@ -1,15 +1,15 @@
-import { use, useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, SafeAreaView, ScrollView, Text, Pressable, View, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import * as Haptics from "expo-haptics";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-import { Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { Recurring, RecurringInsert, RecurringUpdate } from "@/src/types/recurring";
+import { RecurringType } from "@/src/types/enums/recurring";
 import { TableNames } from "@/src/types/db/TableNames";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
-import { useCreateRecurring, useUpdateRecurring, useRecurringService } from "@/src/services/Recurrings.Service";
+import { useRecurringService } from "@/src/services/Recurring.Service";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";
@@ -19,21 +19,28 @@ import { SearchableDropdownItem, OptionItem } from "@/src/types/components/Dropd
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
+import { IntervalSelector } from "@/src/components/recurring/IntervalDisplay";
+import { RecurringTransferForm } from "@/src/components/recurring/RecurringTransferForm";
+import { RecurringCreditCardForm } from "@/src/components/recurring/RecurringCreditCardForm";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Define RecurringType, assuming these are the valid types
-export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
-
-type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
+type RecurringFormType = Omit<RecurringInsert | RecurringUpdate, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
+  intervalMonths: number; // Custom monthly interval (1-24)
   type: RecurringTransactionType; // Added type field
   destinationaccountid: string | null;
+  transferaccountid?: string | null; // For transfer transactions
+  recurringType: RecurringType; // Standard, Transfer, CreditCardPayment
+  autoApplyEnabled: boolean; // Individual auto-apply setting
+  isAmountFlexible: boolean; // Allow transactions without predefined amount
+  isDateFlexible: boolean; // Allow transactions without predefined date
   recurrencerule?: string; // Will be constructed
 };
 
+export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
 export type RecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 const recurrenceFrequencyOptions: OptionItem[] = [
@@ -50,6 +57,12 @@ const recurringTypeOptions: OptionItem[] = [
   { id: "Transfer", label: "Transfer", value: "Transfer" },
 ];
 
+const recurringCategoryOptions: OptionItem[] = [
+  { id: RecurringType.Standard, label: "Standard Transaction", value: RecurringType.Standard },
+  { id: RecurringType.Transfer, label: "Account Transfer", value: RecurringType.Transfer },
+  { id: RecurringType.CreditCardPayment, label: "Credit Card Payment", value: RecurringType.CreditCardPayment },
+];
+
 export const initialRecurringState: RecurringFormType = {
   name: "",
   description: undefined,
@@ -58,11 +71,17 @@ export const initialRecurringState: RecurringFormType = {
   // recurrencerule: "FREQ=MONTHLY;INTERVAL=1", // Default to monthly - will be constructed
   frequency: "MONTHLY",
   interval: 1,
+  intervalMonths: 1, // Default to monthly
   enddate: undefined,
   amount: 0,
   currencycode: "USD",
   sourceaccountid: "",
   destinationaccountid: null,
+  transferaccountid: null,
+  recurringType: RecurringType.Standard, // Default to standard
+  autoApplyEnabled: false, // Default to manual
+  isAmountFlexible: false, // Default to fixed amount
+  isDateFlexible: false, // Default to fixed date
   categoryid: undefined,
   payeename: undefined,
   notes: undefined,
@@ -102,18 +121,20 @@ export default function RecurringUpsertScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
-        <Text className="text-2xl font-bold text-foreground mb-5">
-          {isEdit ? "Edit Recurring" : "Create Recurring"}
+        <Text className="text-xl  text-foreground mb-5 text-center">
+          {isEdit ? "Edit Recurring Transaction" : "Create Recurring Transaction"}
         </Text>
 
         {!isEdit && (
-          <SearchableDropdown
-            label="Blueprint Transaction (Optional)"
-            placeholder="Search transaction by name..."
-            searchAction={transactionService.findByName}
-            onSelectItem={handleBlueprintTransactionSelect}
-            onChange={() => {}} // Required, but selection handles logic
-          />
+          <View className="mb-2">
+            <SearchableDropdown
+              label="Blueprint Transaction (Optional)"
+              placeholder="Search transaction by name..."
+              searchAction={transactionService.findByName}
+              onSelectItem={handleBlueprintTransactionSelect}
+              onChange={() => {}}
+            />
+          </View>
         )}
 
         <TextInputField
@@ -129,42 +150,87 @@ export default function RecurringUpsertScreen() {
           placeholder="e.g., Monthly apartment rent"
           multiline
         />
-        <DropdownField
-          label="Type"
-          options={recurringTypeOptions}
-          selectedValue={formData.type}
-          onSelect={(item: OptionItem | null) => {
-            if (item) {
-              handleTextChange("type", item.id as RecurringTransactionType);
-            }
-          }}
-          isModal={Platform.OS !== "web"}
-        />
-        <MyDateTimePicker
-          label="Next Occurrence Date"
-          date={dayjs(formData.nextoccurrencedate)}
-          onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
-        />
+        <View className="z-50">
+          <DropdownField
+            label="Recurring Category"
+            options={recurringCategoryOptions}
+            selectedValue={formData.recurringType}
+            onSelect={(item: OptionItem | null) => {
+              if (item) {
+                handleTextChange("recurringType", item.id as RecurringType);
+              }
+            }}
+            isModal={Platform.OS !== "web"}
+          />
+        </View>
+
+        <View className=" z-40">
+          <DropdownField
+            label="Transaction Type"
+            options={recurringTypeOptions}
+            selectedValue={formData.type}
+            onSelect={(item: OptionItem | null) => {
+              if (item) {
+                handleTextChange("type", item.id as RecurringTransactionType);
+              }
+            }}
+            isModal={Platform.OS !== "web"}
+          />
+        </View>
+        <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
+          <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
+          <Switch
+            value={!!formData.isDateFlexible}
+            onValueChange={value => handleSwitchChange("isDateFlexible", value)}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={!!formData.isDateFlexible ? "#f5dd4b" : "#f4f3f4"}
+          />
+        </View>
+
+        {!formData.isDateFlexible && (
+          <MyDateTimePicker
+            label="Next Occurrence Date"
+            date={dayjs(formData.nextoccurrencedate)}
+            onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
+          />
+        )}
         {/* Recurrence Rule Inputs */}
-        <DropdownField
-          label="Frequency"
-          options={recurrenceFrequencyOptions}
-          selectedValue={formData.frequency}
-          onSelect={(item: OptionItem | null) => {
-            // Handle null item
-            if (item) {
-              handleTextChange("frequency", item.id as RecurrenceFrequency);
-            }
-          }}
-          isModal={Platform.OS !== "web"}
-        />
-        <TextInputField
-          label="Interval"
-          value={formData.interval.toString()}
-          onChange={text => handleTextChange("interval", parseInt(text, 10) || 1)}
-          keyboardType="numeric"
-          placeholder="e.g., 1"
-        />
+        {!formData.isDateFlexible && (
+          <>
+            <View className="z-30">
+              <DropdownField
+                label="Frequency"
+                options={recurrenceFrequencyOptions}
+                selectedValue={formData.frequency}
+                onSelect={(item: OptionItem | null) => {
+                  // Handle null item
+                  if (item) {
+                    handleTextChange("frequency", item.id as RecurrenceFrequency);
+                  }
+                }}
+                isModal={Platform.OS !== "web"}
+              />
+            </View>
+            <TextInputField
+              label="Interval"
+              value={formData.interval.toString()}
+              onChange={text => handleTextChange("interval", parseInt(text, 10) || 1)}
+              keyboardType="numeric"
+              placeholder="e.g., 1"
+            />
+
+            {formData.frequency === "MONTHLY" && (
+              <View className="my-3">
+                <Text className="text-foreground font-medium mb-2">Custom Monthly Interval</Text>
+                <IntervalSelector
+                  value={formData.intervalMonths}
+                  onChange={intervalMonths => handleTextChange("intervalMonths", intervalMonths)}
+                  className="border border-gray-300 rounded-md p-2"
+                />
+              </View>
+            )}
+          </>
+        )}
         <MyDateTimePicker
           label="End Date (Optional)"
           date={formData.enddate ? dayjs(formData.enddate) : null}
@@ -172,58 +238,104 @@ export default function RecurringUpsertScreen() {
           showClearButton={!!formData.enddate}
           onClear={() => handleDateChange("enddate", null)}
         />
-        <TextInputField
-          label="Amount"
-          value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
-          onChange={text => handleTextChange("amount", parseFloat(text) || 0)}
-          keyboardType="numeric"
-          placeholder="e.g., 1200.50"
-        />
-        <TextInputField
-          label="Currency Code"
-          value={formData.currencycode}
-          onChange={text => handleTextChange("currencycode", text.toUpperCase())}
-          placeholder="e.g., USD"
-          maxLength={3}
-        />
-        <AccountSelecterDropdown
-          label="Source Account"
-          selectedValue={formData.sourceaccountid}
-          onSelect={account => {
-            if (account) {
-              // Check if account is not null
-              handleTextChange("sourceaccountid", account.id);
-            }
-          }}
-          accounts={accounts}
-          isModal={Platform.OS !== "web"}
-          groupBy="category.name"
-        />
-        {formData.type === "Transfer" && (
-          <AccountSelecterDropdown
-            label="Destination Account"
-            selectedValue={formData.destinationaccountid}
-            onSelect={account => {
-              if (account) {
-                handleTextChange("destinationaccountid", account.id);
-              }
-            }}
+        <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
+          <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
+          <Switch
+            value={!!formData.isAmountFlexible}
+            onValueChange={value => handleSwitchChange("isAmountFlexible", value)}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={!!formData.isAmountFlexible ? "#f5dd4b" : "#f4f3f4"}
+          />
+        </View>
+
+        {formData.isDateFlexible && formData.isAmountFlexible && (
+          <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
+            <Text className="text-blue-800 font-medium mb-2">Fully Flexible Transaction</Text>
+            <Text className="text-blue-600 text-sm">
+              This recurring transaction is fully flexible - you can execute it at any time with any amount. Perfect for
+              irregular expenses or income that vary in timing and amount.
+            </Text>
+          </View>
+        )}
+
+        {!formData.isAmountFlexible && (
+          <TextInputField
+            label="Amount"
+            value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
+            onChange={text => handleTextChange("amount", parseFloat(text) || 0)}
+            keyboardType="numeric"
+            placeholder="e.g., 1200.50"
+          />
+        )}
+        {/* Conditional rendering based on recurring type */}
+        {formData.recurringType === RecurringType.Transfer ? (
+          <RecurringTransferForm
+            sourceAccountId={formData.sourceaccountid || ""}
+            destinationAccountId={formData.transferaccountid || formData.destinationaccountid}
+            amount={formData.amount ?? null}
+            currencyCode={formData.currencycode || "USD"}
             accounts={accounts}
-            isModal={Platform.OS !== "web"}
-            groupBy="category.name"
+            isAmountFlexible={formData.isAmountFlexible}
+            onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
+            onDestinationAccountChange={accountId => {
+              handleTextChange("transferaccountid", accountId);
+              handleTextChange("destinationaccountid", accountId);
+            }}
+            onAmountChange={amount => handleTextChange("amount", amount)}
+            onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
           />
-        )}
-        {formData.type !== "Transfer" && (
-          <MyCategoriesDropdown
-            label="Category (Optional)"
-            selectedValue={formData.categoryid}
-            categories={categories}
-            onSelect={category => handleTextChange("categoryid", category?.id || null)}
-            isModal={Platform.OS !== "web"}
-            showClearButton={!!formData.categoryid}
-            onClear={() => handleTextChange("categoryid", null)}
+        ) : formData.recurringType === RecurringType.CreditCardPayment ? (
+          <RecurringCreditCardForm
+            sourceAccountId={formData.sourceaccountid || ""}
+            creditCardAccountId={formData.transferaccountid || null}
+            currencyCode={formData.currencycode || "USD"}
+            accounts={accounts}
+            onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
+            onCreditCardAccountChange={accountId => handleTextChange("transferaccountid", accountId)}
+            onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
           />
+        ) : (
+          // Standard recurring transaction form
+          <>
+            <TextInputField
+              label="Currency Code"
+              value={formData.currencycode}
+              onChange={text => handleTextChange("currencycode", text.toUpperCase())}
+              placeholder="e.g., USD"
+              maxLength={3}
+            />
+            <AccountSelecterDropdown
+              label="Source Account"
+              selectedValue={formData.sourceaccountid}
+              onSelect={accountOption => {
+                if (accountOption) {
+                  handleTextChange("sourceaccountid", accountOption.id);
+                  // Auto-set currency based on account
+                  const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
+                  if (selectedAccount?.currency) {
+                    handleTextChange("currencycode", selectedAccount.currency);
+                  }
+                }
+              }}
+              accounts={accounts}
+              isModal={Platform.OS !== "web"}
+              groupBy="category.name"
+            />
+          </>
         )}
+        {formData.type !== "Transfer" &&
+          formData.recurringType !== RecurringType.Transfer &&
+          formData.recurringType !== RecurringType.CreditCardPayment && (
+            <MyCategoriesDropdown
+              label="Category"
+              selectedValue={formData.categoryid}
+              categories={categories}
+              onSelect={category => handleTextChange("categoryid", category?.id || null)}
+              isModal={Platform.OS !== "web"}
+              showClearButton={!!formData.categoryid}
+              onClear={() => handleTextChange("categoryid", null)}
+            />
+          )}
         <TextInputField
           label="Payee Name (Optional)"
           value={formData.payeename ?? ""}
@@ -237,6 +349,16 @@ export default function RecurringUpsertScreen() {
           placeholder="Any additional notes"
           multiline
         />
+        <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
+          <Text className="text-foreground">Auto-Apply on Startup</Text>
+          <Switch
+            value={!!formData.autoApplyEnabled}
+            onValueChange={value => handleSwitchChange("autoApplyEnabled", value)}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={!!formData.autoApplyEnabled ? "#f5dd4b" : "#f4f3f4"}
+          />
+        </View>
+
         <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
           <Text className="text-foreground">Is Active</Text>
           <Switch
@@ -276,15 +398,15 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
   const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const reucorringService = useRecurringService();
+  const recurringService = useRecurringService();
   const transactionCategoriesService = useTransactionCategoryService();
   const accountsService = useAccountService();
-  const { data: recurringToEdit, isLoading: isLoadingRecurring } = reucorringService.findById(recurringIdToEdit);
+  const { data: recurringToEdit, isLoading: isLoadingRecurring } = recurringService.findById(recurringIdToEdit);
   const { data: categories, isLoading: isLoadingCategories } = transactionCategoriesService.findAll();
   const { data: accounts, isLoading: isLoadingAccounts } = accountsService.findAll();
 
-  const { mutate: createRecurring } = useCreateRecurring();
-  const { mutate: updateRecurring } = useUpdateRecurring();
+  const { mutate: createRecurring } = recurringService.create();
+  const { mutate: updateRecurring } = recurringService.update();
 
   const isEdit = !!recurringIdToEdit;
   const isLoading = isLoadingRecurring || isLoadingCategories || isLoadingAccounts;
@@ -296,8 +418,8 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
       let interv = 1;
       if (recurringToEdit.recurrencerule) {
         const parts = recurringToEdit.recurrencerule.split(";");
-        const freqPart = parts.find(p => p.startsWith("FREQ="));
-        const intervalPart = parts.find(p => p.startsWith("INTERVAL="));
+        const freqPart = parts.find((p: string) => p.startsWith("FREQ="));
+        const intervalPart = parts.find((p: string) => p.startsWith("INTERVAL="));
         if (freqPart) {
           freq = freqPart.split("=")[1] as RecurrenceFrequency;
         }
@@ -311,6 +433,13 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         type: (recurringToEdit.type as RecurringTransactionType) || "Expense", // Set type, default if not present
         frequency: freq,
         interval: interv,
+        intervalMonths: recurringToEdit.interval_months || interv, // Use correct snake_case field
+        recurringType: recurringToEdit.recurring_type || RecurringType.Standard, // Use correct snake_case field
+        autoApplyEnabled: recurringToEdit.auto_apply_enabled || false, // Use correct snake_case field
+        isAmountFlexible: recurringToEdit.is_amount_flexible || false, // Use correct snake_case field
+        isDateFlexible: recurringToEdit.is_date_flexible || false, // Use correct snake_case field
+        transferaccountid: recurringToEdit.transfer_account_id || null, // Use correct snake_case field
+        destinationaccountid: recurringToEdit.destinationaccountid || null,
         nextoccurrencedate: dayjs(recurringToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
         enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
       });
@@ -321,10 +450,27 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
   const handleTextChange = (
     name: keyof RecurringFormType,
-    value: string | number | boolean | null | string[] | RecurrenceFrequency | RecurringTransactionType,
+    value: string | number | boolean | null | string[] | RecurrenceFrequency | RecurringTransactionType | RecurringType,
   ) => {
     setFormData(prev => {
       const newState = { ...prev, [name]: value };
+
+      // Handle recurring type changes
+      if (name === "recurringType") {
+        if (value === RecurringType.Transfer) {
+          newState.type = "Transfer";
+          newState.categoryid = null; // Transfers don't have categories
+        } else if (value === RecurringType.CreditCardPayment) {
+          newState.type = "Expense"; // Credit card payments are expenses
+          newState.categoryid = null; // Credit card payments don't need categories
+        } else {
+          // Standard recurring transaction
+          newState.transferaccountid = null;
+          newState.destinationaccountid = null;
+        }
+      }
+
+      // Handle transaction type changes
       if (name === "type") {
         if (value === "Transfer") {
           newState.categoryid = null; // Transfers don't have categories
@@ -332,6 +478,19 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
           newState.destinationaccountid = null; // Other types don't have a destination account
         }
       }
+
+      // Handle flexible amount/date changes
+      if (name === "isAmountFlexible" && value === true) {
+        newState.amount = null; // Clear amount if flexible
+      }
+
+      if (name === "isDateFlexible" && value === true) {
+        newState.nextoccurrencedate = ""; // Clear date if flexible
+        newState.frequency = "MONTHLY"; // Reset to default
+        newState.interval = 1;
+        newState.intervalMonths = 1;
+      }
+
       return newState;
     });
   };
@@ -343,8 +502,27 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
     setFormData(prev => ({ ...prev, [name]: isoDateString ? dayjs(isoDateString).format("YYYY-MM-DD") : null }));
   };
 
-  const handleSwitchChange = (name: keyof Pick<RecurringFormType, "isactive">, value: boolean) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleSwitchChange = (
+    name: keyof Pick<RecurringFormType, "isactive" | "autoApplyEnabled" | "isAmountFlexible" | "isDateFlexible">,
+    value: boolean,
+  ) => {
+    setFormData(prev => {
+      const newState = { ...prev, [name]: value };
+
+      // Handle flexible amount/date changes
+      if (name === "isAmountFlexible" && value === true) {
+        newState.amount = null; // Clear amount if flexible
+      }
+
+      if (name === "isDateFlexible" && value === true) {
+        newState.nextoccurrencedate = ""; // Clear date if flexible
+        newState.frequency = "MONTHLY"; // Reset to default
+        newState.interval = 1;
+        newState.intervalMonths = 1;
+      }
+
+      return newState;
+    });
   };
 
   const handleBlueprintTransactionSelect = async (selected: SearchableDropdownItem) => {
@@ -363,7 +541,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
             // Assuming blueprintTransaction.type exists and is compatible with RecurringTransactionType
             type: (blueprintTransaction.type as RecurringTransactionType) || prev.type,
             currencycode:
-              accounts?.find(acc => acc.id === blueprintTransaction.accountid)?.currency || prev.currencycode,
+              accounts?.find((acc: any) => acc.id === blueprintTransaction.accountid)?.currency || prev.currencycode,
             sourceaccountid: blueprintTransaction.accountid || prev.sourceaccountid,
             categoryid: blueprintTransaction.categoryid || prev.categoryid,
             payeename: blueprintTransaction.payee || prev.payeename,
@@ -387,14 +565,38 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
     }
     setIsSubmitting(true);
 
-    // Construct recurrencerule from frequency and interval
-    const recurrenceRule = `FREQ=${formData.frequency};INTERVAL=${formData.interval}`;
+    // Construct recurrencerule from frequency and interval (only if not date flexible)
+    const recurrenceRule = formData.isDateFlexible
+      ? ""
+      : `FREQ=${formData.frequency};INTERVAL=${formData.intervalMonths || formData.interval}`;
 
     // Prepare data for submission, ensuring correct types and removing form-specific fields
-    const { frequency, interval, ...restOfFormData } = formData;
-    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
-      ...restOfFormData,
+    const dataToSubmitApi: RecurringInsert | RecurringUpdate = {
+      // Core fields
+      name: formData.name,
+      description: formData.description,
+      type: formData.type,
+      nextoccurrencedate: formData.isDateFlexible
+        ? "2099-12-31"
+        : formData.nextoccurrencedate || dayjs().format("YYYY-MM-DD"),
       recurrencerule: recurrenceRule,
+      enddate: formData.enddate,
+      amount: formData.isAmountFlexible ? null : formData.amount,
+      currencycode: formData.currencycode,
+      sourceaccountid: formData.sourceaccountid,
+      categoryid: formData.categoryid,
+      payeename: formData.payeename,
+      notes: formData.notes,
+      isactive: formData.isactive,
+      tenantid: formData.tenantid,
+
+      // Enhanced fields (using correct snake_case)
+      interval_months: formData.intervalMonths,
+      recurring_type: formData.recurringType,
+      auto_apply_enabled: formData.autoApplyEnabled,
+      is_amount_flexible: formData.isAmountFlexible,
+      is_date_flexible: formData.isDateFlexible,
+      transfer_account_id: formData.transferaccountid,
     };
 
     // Clean up undefined properties before sending to API
@@ -406,24 +608,24 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
     if (isEdit && recurringIdToEdit) {
       updateRecurring(
-        { form: dataToSubmitApi as Updates<TableNames.Recurrings> },
+        { id: recurringIdToEdit, updates: dataToSubmitApi as RecurringUpdate },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
             queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, recurringIdToEdit, tenantId] });
             router.back();
           },
-          onError: e => console.error("Error updating recurring:", e),
+          onError: (e: any) => console.error("Error updating recurring:", e),
           onSettled: () => setIsSubmitting(false),
         },
       );
     } else {
-      createRecurring(dataToSubmitApi as Inserts<TableNames.Recurrings>, {
+      createRecurring(dataToSubmitApi as RecurringInsert, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();
         },
-        onError: e => console.error("Error creating recurring:", e),
+        onError: (e: any) => console.error("Error creating recurring:", e),
         onSettled: () => setIsSubmitting(false),
       });
     }

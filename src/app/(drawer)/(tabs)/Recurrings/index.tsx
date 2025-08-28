@@ -1,28 +1,41 @@
-import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native";
+import { Text, View, Pressable, Modal, TextInput, Platform, FlatList } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Tab } from "@/src/components/MyTabs";
 import { TableNames } from "@/src/types/db/TableNames";
-import { Recurring } from "@/src/types/db/Tables.Types";
+import { Recurring } from "@/src/types/recurring";
 import dayjs from "dayjs";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { router, Href } from "expo-router";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
-import { useState } from "react";
-import { useRecurringService } from "@/src/services/Recurrings.Service";
+import { useState, useMemo } from "react";
+import { useRecurringService } from "@/src/services/Recurring.Service";
+import { IntervalDisplay } from "@/src/components/recurring/IntervalDisplay";
+import {
+  RecurringFilters,
+  filterRecurringTransactions,
+  groupRecurringTransactions,
+} from "@/src/components/recurring/RecurringFilters";
+import {
+  RecurringStatusBadges,
+  getRecurringIcon,
+  parseRecurringData,
+} from "@/src/components/recurring/RecurringStatusBadges";
 
 export default function RecurringsScreen() {
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
   const recurringsService = useRecurringService();
 
-  const { mutate: executeRecurring, isPending: isApplying } = recurringsService.executeRecurringAction();
+  const { mutate: executeRecurring, isPending: isApplying } = recurringsService.executeRecurring();
 
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingRecurring, setPendingRecurring] = useState<Recurring | null>(null);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [amountInput, setAmountInput] = useState<string>("");
+
+  // State for filters and grouping
+  const [filters, setFilters] = useState<RecurringFilters>({});
+  const [groupBy, setGroupBy] = useState<"autoApply" | "recurringType" | "status" | null>(null);
 
   const handleExecuteRecurring = (item: Recurring, amountOverride?: number) => {
     let finalAmount = item.amount;
@@ -32,7 +45,13 @@ export default function RecurringsScreen() {
     }
 
     executeRecurring(
-      { item, amount: finalAmount ?? 0 },
+      {
+        id: item.id,
+        overrides: {
+          amount: finalAmount ?? undefined,
+          date: new Date().toISOString(),
+        },
+      },
       {
         onSuccess: () => {
           setModalVisible(false);
@@ -45,20 +64,55 @@ export default function RecurringsScreen() {
   };
 
   const customRecurringDetails = (item: Recurring) => {
-    let details = `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")} | Amount: ${item.amount} ${item.currencycode}`;
-    if (item.recurrencerule) {
-      const parts = item.recurrencerule.split(";");
-      const freq = parts.find(p => p.startsWith("FREQ="))?.split("=")[1];
-      const interval = parts.find(p => p.startsWith("INTERVAL="))?.split("=")[1];
-      if (freq) {
-        details += ` | Every ${interval || 1} ${freq.toLowerCase().slice(0, -2)}(s)`;
+    // Use enhanced fields directly from the database
+    const autoApplyEnabled = item.autoapplyenabled || false;
+    const isAmountFlexible = item.isamountflexible || false;
+    const isDateFlexible = item.isdateflexible || false;
+    const recurringType = item.recurringtype || "Standard";
+    const intervalMonths = item.intervalmonths || 1;
+
+    let details = "";
+
+    // Show next occurrence or flexible date indicator
+    if (isDateFlexible && isAmountFlexible) {
+      details += "Fully Flexible (Date & Amount)";
+    } else if (isDateFlexible) {
+      details += "Flexible Date";
+    } else {
+      details += `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")}`;
+    }
+
+    // Show amount or flexible amount indicator (only if not already shown as fully flexible)
+    if (!isDateFlexible || !isAmountFlexible) {
+      if (isAmountFlexible) {
+        details += " | Flexible Amount";
+      } else {
+        details += ` | Amount: ${item.amount} ${item.currencycode}`;
       }
     }
+
+    // Show recurring type if not standard
+    if (recurringType !== "Standard") {
+      details += ` | ${recurringType}`;
+    }
+
+    // Show auto-apply status
+    if (autoApplyEnabled) {
+      details += " | Auto-Apply";
+    }
+
+    // Show custom interval if not monthly
+    if (intervalMonths > 1) {
+      details += ` | Every ${intervalMonths} months`;
+    }
+
     return details;
   };
 
-  // Custom render function for list items to include the "Apply Transaction" button
   const renderRecurringItem = (item: Recurring, isSelected: boolean, onLongPress: () => void, onPress: () => void) => {
+    const recurringData = parseRecurringData(item);
+    const iconData = getRecurringIcon(item);
+
     return (
       <Pressable
         key={item.id}
@@ -66,18 +120,24 @@ export default function RecurringsScreen() {
         onLongPress={onLongPress}
         onPress={onPress}
       >
-        <View className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-primary-500`}>
-          <MyIcon name="BellRing" size={18} className="text-white" />
-        </View>
         <View className="flex-1">
-          <Text className="text-md text-foreground font-semibold">{item.name}</Text>
-          <Text className="text-sm text-muted-foreground">{customRecurringDetails(item)}</Text>
-          {item.description && <Text className="text-xs text-muted-foreground mt-1">{item.description}</Text>}
+          <View className="flex-row items-center justify-between mb-1">
+            <Text className="text-md text-foreground font-semibold flex-1">{item.name}</Text>
+          </View>
+          <Text className="text-sm text-muted-foreground mb-2">{customRecurringDetails(item)}</Text>
+          <RecurringStatusBadges recurring={item} />
+          {item.description && <Text className="text-xs text-muted-foreground mt-2">{item.description}</Text>}
         </View>
         <Pressable
           onPress={e => {
             e.stopPropagation();
-            if (!item.amount || item.amount === 0) {
+            // Show modal if amount is flexible OR if both amount and date are flexible
+            if (
+              !item.amount ||
+              item.amount === 0 ||
+              item.isamountflexible ||
+              (item.isamountflexible && item.isdateflexible)
+            ) {
               setPendingRecurring(item);
               setMode(item.type === "Income" ? "plus" : "minus");
               setModalVisible(true);
@@ -86,7 +146,7 @@ export default function RecurringsScreen() {
             }
           }}
           disabled={isApplying}
-          className="p-2  rounded-md ml-2"
+          className="p-2 rounded-md ml-2"
         >
           <MyIcon name="Check" size={20} className="text-foreground" />
         </Pressable>
@@ -96,19 +156,26 @@ export default function RecurringsScreen() {
 
   return (
     <>
-      <Tab
-        title="Recurring Recurrings"
-        queryKey={[TableNames.Recurrings, tenantId]}
-        useGet={recurringsService.findAll}
-        useDelete={recurringsService.delete}
-        upsertUrl={"/Recurrings/Upsert?id=" as any}
-        selectable={true}
-        customRenderItem={renderRecurringItem}
-      />
+      <View className="flex-1 bg-background">
+        <Tab
+          title="Recurring Transactions"
+          queryKey={[TableNames.Recurrings]}
+          useGet={recurringsService.findAll}
+          useDelete={recurringsService.delete}
+          upsertUrl="/Recurrings/Upsert?id="
+          selectable={true}
+          customRenderItem={renderRecurringItem}
+          customFilter={(items: Recurring[]) => filterRecurringTransactions(items, filters)}
+          customGroupBy={groupBy ? (items: Recurring[]) => groupRecurringTransactions(items, groupBy) : undefined}
+          groupBy={groupBy}
+          setGroupBy={setGroupBy}
+          filters={filters}
+          setFilters={setFilters}
+        />
+      </View>
       <Modal
         visible={modalVisible}
         transparent
-        animationType="slide"
         onRequestClose={() => {
           setModalVisible(false);
           setAmountInput("");
@@ -117,11 +184,20 @@ export default function RecurringsScreen() {
         }}
       >
         <View className="flex-1 bg-black/40 justify-center items-center">
-          <View className="bg-white rounded-xl p-6 w-4/5 items-center">
-            <Text className="text-lg font-bold mb-4">Enter Amount</Text>
+          <View className="bg-card rounded-xl p-6 w-4/5 items-center">
+            <Text className="text-lg font-bold mb-2 text-foreground">
+              {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible
+                ? "Execute Flexible Transaction"
+                : "Enter Amount"}
+            </Text>
+            {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible && (
+              <Text className="text-sm text-foreground mb-4 text-center">
+                This transaction will be executed today with the amount you specify
+              </Text>
+            )}
             <View className="w-full flex-row items-center mb-3">
               <TextInput
-                className="flex-1 border border-gray-300 rounded-md p-2 text-base mr-2"
+                className="flex-1 border border-gray-300 bg-white rounded-md p-2 text-base mr-2"
                 keyboardType="numeric"
                 value={amountInput}
                 onChangeText={setAmountInput}
@@ -152,7 +228,7 @@ export default function RecurringsScreen() {
             </View>
             <View className="flex-row justify-between w-full">
               <Pressable
-                className="flex-1 p-3 rounded-md items-center mx-1 bg-gray-300"
+                className="flex-1 p-3 rounded-md items-center mx-1 bg-secondary"
                 onPress={() => {
                   setModalVisible(false);
                   setAmountInput("");
@@ -162,7 +238,7 @@ export default function RecurringsScreen() {
                 <Text className="font-bold text-white">Cancel</Text>
               </Pressable>
               <Pressable
-                className="flex-1 p-3 rounded-md items-center mx-1 bg-blue-600"
+                className="flex-1 p-3 rounded-md items-center mx-1 bg-primary"
                 onPress={() => {
                   if (pendingRecurring && amountInput) {
                     const amount = parseFloat(amountInput);
