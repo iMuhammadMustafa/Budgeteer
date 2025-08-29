@@ -1,107 +1,166 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { useStatsService } from "@/src/services/Stats.Service";
-import { useTransactionService } from "@/src/services/Transactions.Service";
-import { useAuth } from "@/src/providers/AuthProvider";
+import { TransactionsView } from "@/src/types/db/Tables.Types";
+import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
+import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { router } from "expo-router";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const today = dayjs();
+type SelectionType = "calendar" | "pie" | "bar";
 
-const startOfCurrentMonth = dayjs().startOf("month").format("YYYY-MM-DD");
-const endOfCurrentMonth = dayjs().endOf("month").format("YYYY-MM-DD");
-
-const startOfCurrentYear = dayjs().startOf("year").toISOString();
-const endOfCurrentYear = dayjs().endOf("year").toISOString();
+type SelectionState = {
+  type: SelectionType | null;
+  data: any;
+  transactions: TransactionsView[];
+  isLoading: boolean;
+};
 
 export default function useDashboard() {
   const statsService = useStatsService();
-  const transactionService = useTransactionService();
-  const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const dateRanges = statsService.getDateRanges();
+
+  const [selection, setSelection] = useState<SelectionState>({
+    type: null,
+    data: null,
+    transactions: [],
+    isLoading: false,
+  });
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.getStatsDailyTransactions(
-    startOfCurrentMonth,
-    endOfCurrentMonth,
+    dateRanges.currentMonth.start,
+    dateRanges.currentMonth.end,
     true,
   );
+
   const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
-    statsService.getStatsMonthlyCategoriesTransactions(startOfCurrentMonth, endOfCurrentMonth);
+    statsService.getStatsMonthlyCategoriesTransactions(dateRanges.currentMonth.start, dateRanges.currentMonth.end);
+
   const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } =
-    statsService.getStatsMonthlyTransactionsTypes(startOfCurrentYear, endOfCurrentYear);
+    statsService.getStatsMonthlyTransactionsTypes(dateRanges.currentYear.start, dateRanges.currentYear.end);
 
   const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.getStatsNetWorthGrowth(
-    startOfCurrentYear,
-    endOfCurrentYear,
+    dateRanges.currentYear.start,
+    dateRanges.currentYear.end,
   );
 
-  const weeklyTransactionTypesData = useMemo(() => {
-    return dailyTransactionsThisMonth?.barsData;
-  }, [dailyTransactionsThisMonth]);
+  const dashboardData = useMemo(
+    () => ({
+      weeklyTransactionTypesData: dailyTransactionsThisMonth?.barsData,
+      dailyTransactionTypesData: dailyTransactionsThisMonth?.calendarData,
+      monthlyCategories: monthlyTransactionsGroupsAndCategories.categories,
+      monthlyGroups: monthlyTransactionsGroupsAndCategories.groups,
+      yearlyTransactionsTypes,
+      netWorthGrowth,
+    }),
+    [dailyTransactionsThisMonth, monthlyTransactionsGroupsAndCategories, yearlyTransactionsTypes, netWorthGrowth],
+  );
 
-  const dailyTransactionTypesData = useMemo(() => {
-    return dailyTransactionsThisMonth?.calendarData;
-  }, [dailyTransactionsThisMonth]);
+  const isLoading = isWeeklyLoading && isMonthlyLoading && isYearlyLoading && isNetWorthLoading;
 
-  const monthlyCategories = useMemo(() => {
-    return monthlyTransactionsGroupsAndCategories.categories;
-  }, [monthlyTransactionsGroupsAndCategories]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    statsService.refreshAllQueries();
+    setTimeout(() => setRefreshing(false), 1000);
+  }, [statsService.refreshAllQueries]);
 
-  const monthlyGroups = useMemo(() => {
-    return monthlyTransactionsGroupsAndCategories.groups;
-  }, [monthlyTransactionsGroupsAndCategories]);
-
-  // Helper functions to fetch data directly from repository
-  const fetchTransactionsForDate = async (date: string): Promise<TransactionsView[]> => {
+  const handleDayPress = async (day: any) => {
     try {
-      if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.repo.findByDate(date, tenantId);
+      const localDate = dayjs(day.dateString).local();
+      const dateString = localDate.format("YYYY-MM-DD");
+
+      setSelection({
+        type: "calendar",
+        data: { date: dateString, label: localDate.format("MMM D, YYYY") },
+        transactions: [],
+        isLoading: true,
+      });
+
+      const startOfDay = dayjs(dateString).utc().startOf("day").toISOString();
+      const endOfDay = dayjs(dateString).endOf("day").toISOString();
+      const transactions = await statsService.fetchTransactions({ startDate: startOfDay, endDate: endOfDay });
+
+      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
-      return [];
+      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
     }
   };
 
-  const fetchTransactionsForCategory = async (
-    categoryId: string,
-    type: "category" | "group",
-  ): Promise<TransactionsView[]> => {
+  const handlePiePress = async (item: PieData, type: "category" | "group") => {
     try {
-      if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.repo.findByCategory(categoryId, type, tenantId);
+      setSelection({
+        type: "pie",
+        data: { item, type, label: `${type === "category" ? "Category" : "Group"}: ${item.x}` },
+        transactions: [],
+        isLoading: true,
+      });
+
+      const startOfMonth = dayjs().utc().startOf("month").toISOString();
+      const endOfMonth = dayjs().utc().endOf("month").toISOString();
+      let filters: TransactionFilters = { startDate: startOfMonth, endDate: endOfMonth };
+      if (type === "category") {
+        filters.categoryid = item.id;
+      } else {
+        filters.groupid = item.id;
+      }
+      const transactions = await statsService.fetchTransactions(filters);
+
+      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
     } catch (error) {
       console.error("Error fetching transactions for category:", error);
-      return [];
+      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
     }
   };
 
-  const fetchTransactionsForMonthAndType = async (month: string): Promise<TransactionsView[]> => {
+  const handleBarPress = async (item: DoubleBarPoint) => {
     try {
-      if (!tenantId) throw new Error("Tenant ID not found");
-      return await transactionService.repo.findByMonth(month, tenantId);
+      setSelection({
+        type: "bar",
+        data: { item, label: `Month: ${item.x}` },
+        transactions: [],
+        isLoading: true,
+      });
+
+      const startOfMonth = dayjs(item.x).utc().startOf("month").toISOString();
+      const endOfMonth = dayjs(item.x).endOf("month").toISOString();
+      const transactions = await statsService.fetchTransactions({ startDate: startOfMonth, endDate: endOfMonth });
+
+      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
     } catch (error) {
       console.error("Error fetching transactions for month:", error);
-      return [];
+      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
+    }
+  };
+
+  const handleBackToOverview = () => {
+    setSelection({ type: null, data: null, transactions: [], isLoading: false });
+  };
+
+  const handleTransactionPress = (transaction: any) => {
+    if (transaction.id) {
+      router.push({
+        pathname: "/AddTransaction",
+        params: { id: transaction.id },
+      });
     }
   };
 
   return {
-    weeklyTransactionTypesData,
-    dailyTransactionTypesData,
-    yearlyTransactionsTypes,
-    monthlyCategories,
-    monthlyGroups,
-    netWorthGrowth,
-    isWeeklyLoading,
-    isMonthlyLoading,
-    isYearlyLoading,
-    isNetWorthLoading,
-    fetchTransactionsForDate,
-    fetchTransactionsForCategory,
-    fetchTransactionsForMonthAndType,
+    ...dashboardData,
+    isLoading,
+    selection,
+    refreshing,
+    onRefresh,
+    handleDayPress,
+    handlePiePress,
+    handleBarPress,
+    handleTransactionPress,
+    handleBackToOverview,
   };
 }

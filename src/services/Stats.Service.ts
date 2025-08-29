@@ -1,3 +1,4 @@
+import { queryClient } from "@/src/providers/QueryProvider";
 import { useQuery } from "@tanstack/react-query";
 import { ViewNames } from "@/src/types/db/TableNames";
 import {
@@ -7,7 +8,9 @@ import {
   StatsMonthlyTransactionsTypes,
   StatsNetWorthGrowth,
   TransactionType,
+  TransactionsView,
 } from "@/src/types/db/Tables.Types";
+import { TransactionFilters } from "../types/apis/TransactionFilters";
 import {
   BarDataType,
   DoubleBarPoint,
@@ -53,6 +56,12 @@ export interface IStatsService {
     endDate?: string,
   ) => ReturnType<typeof useQuery<StatsMonthlyAccountsTransactions[]>>;
   getStatsNetWorthGrowth: (startDate?: string, endDate?: string) => ReturnType<typeof useQuery<LineChartPoint[]>>;
+  fetchTransactions: (filters: TransactionFilters) => Promise<TransactionsView[]>;
+  refreshAllQueries: () => void;
+  getDateRanges: () => {
+    currentMonth: { start: string; end: string };
+    currentYear: { start: string; end: string };
+  };
   statsRepo: any;
 }
 
@@ -61,6 +70,7 @@ export function useStatsService(): IStatsService {
   const tenantId = session?.user?.user_metadata?.tenantid;
   const { dbContext } = useStorageMode();
   const statsRepo = dbContext.StatsRepository();
+  const transactionRepo = dbContext.TransactionRepository();
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const getStatsDailyTransactions = (
@@ -137,17 +147,38 @@ export function useStatsService(): IStatsService {
       enabled: !!tenantId,
     });
   };
+  const fetchTransactions = (filters: TransactionFilters) => {
+    return transactionRepo.findAll(filters, tenantId);
+  };
+
+  const refreshAllQueries = () => {
+    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsDailyTransactions] });
+    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] });
+    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyTransactionsTypes] });
+    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsNetWorthGrowth] });
+  };
+
+  const getDateRanges = () => ({
+    currentMonth: {
+      start: dayjs().utc().startOf("month").format("YYYY-MM-DD"),
+      end: dayjs().utc().endOf("month").format("YYYY-MM-DD"),
+    },
+    currentYear: {
+      start: dayjs().utc().startOf("year").toISOString(),
+      end: dayjs().utc().endOf("year").toISOString(),
+    },
+  });
 
   return {
-    // Repository-based methods (new)
     getStatsDailyTransactions,
     getStatsMonthlyTransactionsTypes,
     getStatsMonthlyCategoriesTransactions,
     getStatsMonthlyAccountsTransactions,
     getStatsNetWorthGrowth,
     getStatsMonthlyCategoriesTransactionsRaw,
-
-    // Direct repository access
+    fetchTransactions,
+    refreshAllQueries,
+    getDateRanges,
     statsRepo,
   };
 }

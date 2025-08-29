@@ -2,6 +2,9 @@ import { Stack } from "expo-router";
 // import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@/global.css";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
 import ThemeProvider from "@/src/providers/ThemeProvider";
 import AuthProvider from "@/src/providers/AuthProvider";
@@ -12,6 +15,9 @@ import { ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StorageModeProvider } from "../providers/StorageModeProvider";
 import NotificationsProvider from "../providers/NotificationsProvider";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function RootLayout() {
   return (
