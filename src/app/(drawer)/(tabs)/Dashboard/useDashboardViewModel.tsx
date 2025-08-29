@@ -1,15 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import { useStatsService } from "@/src/services/Stats.Service";
 import { TransactionsView } from "@/src/types/db/Tables.Types";
 import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { router } from "expo-router";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 type SelectionType = "calendar" | "pie" | "bar";
 
@@ -81,8 +76,8 @@ export default function useDashboard() {
         isLoading: true,
       });
 
-      const startOfDay = dayjs(dateString).utc().startOf("day").toISOString();
-      const endOfDay = dayjs(dateString).endOf("day").toISOString();
+      const startOfDay = dayjs(day.dateString).utc().startOf("day").toISOString();
+      const endOfDay = dayjs(day.dateString).utc().endOf("day").toISOString();
       const transactions = await statsService.fetchTransactions({ startDate: startOfDay, endDate: endOfDay });
 
       setSelection(prev => ({ ...prev, transactions, isLoading: false }));
