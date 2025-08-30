@@ -176,6 +176,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             },
             {
               onSuccess: () => {
+                resetForm();
                 router.navigate("/Transactions");
                 resolve();
               },
@@ -208,6 +209,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   const onSubmit = useCallback(() => {
     if (validateForm()) {
       submit(formState.data);
+      resetForm();
     }
   }, [validateForm, submit, formState.data]);
 
@@ -346,16 +348,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   // Enhanced amount change handling with better validation
   const handleAmountChange = useCallback(
     (value: string) => {
-      // Clean and validate the input
+      // Allow user to type a trailing decimal (e.g., "3.")
       let cleanValue = value
-        .replace(/[^0-9.-]/g, "") // Allow only digits, minus sign, and decimal point
-        .replace(/(?!^)-/g, "") // Remove any minus sign that isn't at the start
-        .replace(/\.{2,}/g, ".") // Replace multiple decimal points with single
-        .replace(/^0+(?=\d)/, ""); // Remove leading zeros
+        .replace(/[^0-9.-]/g, "")
+        .replace(/(?!^)-/g, "")
+        .replace(/\.{2,}/g, ".")
+        .replace(/^0+(?=\d)/, "");
 
-      // Handle negative input (changes mode)
       if (cleanValue.startsWith("-")) {
-        // Only allow mode change for non-transfer transactions
         if (formState.data.type !== "Transfer" && formState.data.type !== "Income") {
           setMode("minus");
           updateField("mode", "minus");
@@ -363,7 +363,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         cleanValue = cleanValue.replace("-", "");
       }
 
-      // Ensure only one decimal point
+      // Only allow one decimal point
       const decimalIndex = cleanValue.indexOf(".");
       if (decimalIndex !== -1) {
         const beforeDecimal = cleanValue.substring(0, decimalIndex);
@@ -371,7 +371,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         cleanValue = beforeDecimal + "." + afterDecimal;
       }
 
-      // Limit decimal places to 2
+      // Limit decimal places to 2, but allow trailing decimal
       if (cleanValue.includes(".")) {
         const parts = cleanValue.split(".");
         if (parts[1] && parts[1].length > 2) {
@@ -379,16 +379,28 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         }
       }
 
-      const numericAmount = parseFloat(cleanValue) || 0;
-
-      // Validate maximum amount
-      if (numericAmount > 999999999.99) {
-        return; // Don't update if amount is too large
+      // Allow empty or just "." input
+      if (cleanValue === "" || cleanValue === ".") {
+        updateField("amount", cleanValue);
+        return;
       }
 
-      updateField("amount", numericAmount);
+      // Allow trailing decimal (e.g., "3.")
+      if (/^\d+\.$/.test(cleanValue)) {
+        updateField("amount", cleanValue);
+        return;
+      }
+
+      // Validate maximum amount
+      const numericAmount = parseFloat(cleanValue);
+      if (!isNaN(numericAmount) && numericAmount > 999999999.99) {
+        return;
+      }
+
+      // If valid number or decimal, update as string to preserve input
+      updateField("amount", cleanValue);
     },
-    [updateField, formState.data.type],
+    [updateField, formState.data.type, setMode],
   );
 
   // Enhanced calculator result handling

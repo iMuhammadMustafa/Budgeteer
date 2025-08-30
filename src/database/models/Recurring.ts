@@ -13,7 +13,7 @@ export default class Recurring extends Model {
 
   @field("name") name!: string;
   @field("sourceaccountid") sourceaccountid!: string;
-  @field("categoryid") categoryid?: string;
+  @field("categoryid") categoryid!: string;
   @field("amount") amount?: number;
   @field("type") type!: string; // Expense, Income, Transfer, Adjustment, Initial, Refund
   @field("description") description?: string;
@@ -44,7 +44,7 @@ export default class Recurring extends Model {
   @date("updatedat") updatedat!: Date;
 
   @relation(TableNames.Accounts, "sourceaccountid") sourceAccount!: Account;
-  @relation(TableNames.TransactionCategories, "categoryid") category?: TransactionCategory;
+  @relation(TableNames.TransactionCategories, "categoryid") category!: TransactionCategory;
 }
 
 export type RecurringModel = Recurring;

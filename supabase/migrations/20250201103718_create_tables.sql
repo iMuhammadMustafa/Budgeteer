@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS recurrings (
     amount numeric(12, 2),
     currencycode char(3) NOT NULL DEFAULT 'USD',
     sourceaccountid uuid NOT NULL REFERENCES accounts(id),
-    categoryid uuid REFERENCES TransactionCategories(id),
+    categoryid uuid NOT NULL REFERENCES TransactionCategories(id),
     payeename text,
     notes text,
     isactive boolean DEFAULT true,

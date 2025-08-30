@@ -124,7 +124,7 @@ export const schema = appSchema({
       columns: [
         { name: "name", type: "string" },
         { name: "sourceaccountid", type: "string", isIndexed: true },
-        { name: "categoryid", type: "string", isOptional: true, isIndexed: true },
+        { name: "categoryid", type: "string", isIndexed: true },
         // Amount is nullable when amount flexible
         { name: "amount", type: "number", isOptional: true },
         { name: "type", type: "string" }, // Expense, Income, Transfer, Adjustment, Initial, Refund
@@ -138,7 +138,7 @@ export const schema = appSchema({
         { name: "enddate", type: "string", isOptional: true },
         { name: "lastexecutedat", type: "string", isOptional: true },
         { name: "isactive", type: "boolean" },
-        
+
         // Recurring transaction fields (using lowercase to match Supabase conventions)
         { name: "intervalmonths", type: "number" },
         { name: "autoapplyenabled", type: "boolean" },
@@ -149,7 +149,7 @@ export const schema = appSchema({
         { name: "lastautoappliedat", type: "string", isOptional: true },
         { name: "failedattempts", type: "number" },
         { name: "maxfailedattempts", type: "number" },
-        
+
         { name: "tenantid", type: "string" },
         { name: "isdeleted", type: "boolean" },
         { name: "createdat", type: "number" },

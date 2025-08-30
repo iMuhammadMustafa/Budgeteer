@@ -6,6 +6,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   coalesce(sum(amount), 0) as sum,
   tenantid
   FROM transactions
+  where isdeleted = false
   GROUP BY
   type,
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
