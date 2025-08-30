@@ -13,8 +13,6 @@ export default function Index() {
     <SafeAreaView className="flex-1 bg-background-100">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="flex-1 justify-center items-center">
-          {/* Landing Page */}
-          {/* <Landing session={session} /> */}
           <BudgeteerLanding session={session} router={router} />
         </View>
       </ScrollView>

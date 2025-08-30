@@ -16,8 +16,6 @@ import { SearchableDropdownItem, OptionItem } from "@/src/types/components/Dropd
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { RecurringTransferForm } from "@/src/components/recurring/RecurringTransferForm";
-import { RecurringCreditCardForm } from "@/src/components/recurring/RecurringCreditCardForm";
 import { RecurringType } from "@/src/types/recurring";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { Inserts, Updates } from "@/src/types/db/Tables.Types";
@@ -125,10 +123,6 @@ export default function RecurringUpsertScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
-        <Text className="text-xl  text-foreground mb-5 text-center">
-          {isEdit ? "Edit Recurring Transaction" : "Create Recurring Transaction"}
-        </Text>
-
         {!isEdit && (
           <View className="mb-2">
             <SearchableDropdown
@@ -168,7 +162,7 @@ export default function RecurringUpsertScreen() {
           />
         </View>
 
-        {formData.recurringType === RecurringType.Standard ? (
+        {formData.recurringType === RecurringType.Standard && (
           <View className=" z-40">
             <DropdownField
               label="Transaction Type"
@@ -182,7 +176,7 @@ export default function RecurringUpsertScreen() {
               isModal={Platform.OS !== "web"}
             />
           </View>
-        ) : null}
+        )}
 
         <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
           <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
@@ -195,15 +189,12 @@ export default function RecurringUpsertScreen() {
         </View>
 
         {!formData.isDateFlexible && (
-          <MyDateTimePicker
-            label="Next Occurrence Date"
-            date={dayjs(formData.nextoccurrencedate)}
-            onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
-          />
-        )}
-        {/* Recurrence Rule Inputs */}
-        {!formData.isDateFlexible && (
           <>
+            <MyDateTimePicker
+              label="Next Occurrence Date"
+              date={dayjs(formData.nextoccurrencedate)}
+              onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
+            />
             <View className="z-30">
               <DropdownField
                 label="Frequency"
@@ -225,26 +216,8 @@ export default function RecurringUpsertScreen() {
               keyboardType="numeric"
               placeholder="e.g., 1"
             />
-
-            {/* {formData.frequency === "MONTHLY" && (
-              <View className="my-3">
-                <Text className="text-foreground font-medium mb-2">Custom Monthly Interval</Text>
-                <IntervalSelector
-                  value={formData.intervalMonths}
-                  onChange={intervalMonths => handleTextChange("intervalMonths", intervalMonths)}
-                  className="border border-gray-300 rounded-md p-2"
-                />
-              </View>
-            )} */}
           </>
         )}
-        <MyDateTimePicker
-          label="End Date (Optional)"
-          date={formData.enddate ? dayjs(formData.enddate) : null}
-          onChange={isoDateString => handleDateChange("enddate", isoDateString)}
-          showClearButton={!!formData.enddate}
-          onClear={() => handleDateChange("enddate", null)}
-        />
         <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
           <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
           <Switch
@@ -255,17 +228,7 @@ export default function RecurringUpsertScreen() {
           />
         </View>
 
-        {formData.isDateFlexible && formData.isAmountFlexible && (
-          <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
-            <Text className="text-blue-800 font-medium mb-2">Fully Flexible Transaction</Text>
-            <Text className="text-blue-600 text-sm">
-              This recurring transaction is fully flexible - you can execute it at any time with any amount. Perfect for
-              irregular expenses or income that vary in timing and amount.
-            </Text>
-          </View>
-        )}
-
-        {!formData.isAmountFlexible && formData.recurringType !== RecurringType.CreditCardPayment && (
+        {!formData.isAmountFlexible && (
           <View className="flex-row justify-center items-center mb-4">
             <View className="me-2 mt-5 justify-center items-center">
               <Pressable
@@ -295,64 +258,53 @@ export default function RecurringUpsertScreen() {
             />
           </View>
         )}
-        {/* Conditional rendering based on recurring type */}
-        {formData.recurringType === RecurringType.Transfer ? (
-          <RecurringTransferForm
-            sourceAccountId={formData.sourceaccountid || ""}
-            destinationAccountId={formData.transferaccountid || ""}
-            amount={formData.amount ?? null}
-            currencyCode={formData.currencycode || "USD"}
-            accounts={accounts}
-            isAmountFlexible={formData.isAmountFlexible}
-            onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
-            onDestinationAccountChange={accountId => {
-              handleTextChange("transferaccountid", accountId);
-            }}
-            onAmountChange={amount => handleTextChange("amount", Math.abs(amount))}
-            onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
-          />
-        ) : formData.recurringType === RecurringType.CreditCardPayment ? (
-          <RecurringCreditCardForm
-            sourceAccountId={formData.sourceaccountid || ""}
-            creditCardAccountId={formData.transferaccountid || null}
-            categoryId={formData.categoryid || null}
-            currencyCode={formData.currencycode || "USD"}
-            accounts={accounts}
-            categories={categories}
-            onSourceAccountChange={accountId => handleTextChange("sourceaccountid", accountId)}
-            onCreditCardAccountChange={accountId => handleTextChange("transferaccountid", accountId)}
-            onCategoryChange={categoryId => handleTextChange("categoryid", categoryId)}
-            onCurrencyCodeChange={currencyCode => handleTextChange("currencycode", currencyCode.toUpperCase())}
-          />
-        ) : (
-          // Standard recurring transaction form
+
+        <AccountSelecterDropdown
+          label="Source Account"
+          selectedValue={formData.sourceaccountid}
+          onSelect={accountOption => {
+            if (accountOption) {
+              handleTextChange("sourceaccountid", accountOption.id);
+              // Auto-set currency based on account
+              const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
+              if (selectedAccount?.currency) {
+                handleTextChange("currencycode", selectedAccount.currency);
+              }
+            }
+          }}
+          accounts={accounts}
+          isModal={Platform.OS !== "web"}
+          groupBy="category.name"
+        />
+
+        {formData.recurringType === RecurringType.Transfer && (
           <>
-            <TextInputField
-              label="Currency Code"
-              value={formData.currencycode}
-              onChange={text => handleTextChange("currencycode", text.toUpperCase())}
-              placeholder="e.g., USD"
-              maxLength={3}
-            />
             <AccountSelecterDropdown
-              label="Source Account"
-              selectedValue={formData.sourceaccountid}
-              onSelect={accountOption => {
-                if (accountOption) {
-                  handleTextChange("sourceaccountid", accountOption.id);
-                  // Auto-set currency based on account
-                  const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
-                  if (selectedAccount?.currency) {
-                    handleTextChange("currencycode", selectedAccount.currency);
-                  }
-                }
-              }}
+              label="To Account (Destination)"
+              selectedValue={formData.transferaccountid}
+              onSelect={account => handleTextChange("transferaccountid", account?.id || null)}
               accounts={accounts}
               isModal={Platform.OS !== "web"}
               groupBy="category.name"
             />
+
+            {formData.sourceaccountid &&
+              formData.transferaccountid &&
+              formData.sourceaccountid === formData.transferaccountid && (
+                <View className="bg-red-50 p-4 rounded-md border border-red-200">
+                  <Text className="text-red-800 font-medium">Invalid Configuration</Text>
+                  <Text className="text-red-600 text-sm">Source and destination accounts must be different.</Text>
+                </View>
+              )}
           </>
         )}
+        {/* // <TextInputField
+            //   label="Currency Code"
+            //   value={formData.currencycode}
+            //   onChange={text => handleTextChange("currencycode", text.toUpperCase())}
+            //   placeholder="e.g., USD"
+            //   maxLength={3}
+            // /> */}
 
         <MyCategoriesDropdown
           label="Category"
@@ -376,32 +328,17 @@ export default function RecurringUpsertScreen() {
           placeholder="Any additional notes"
           multiline
         />
-        <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
-          <Text className="text-foreground">Auto-Apply on Startup</Text>
-          <Switch
-            value={!!formData.autoApplyEnabled}
-            onValueChange={value => handleSwitchChange("autoApplyEnabled", value)}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={!!formData.autoApplyEnabled ? "#f5dd4b" : "#f4f3f4"}
-          />
-        </View>
-
-        <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
-          <Text className="text-foreground">Is Active</Text>
-          <Switch
-            value={!!formData.isactive} // Ensure boolean value
-            onValueChange={value => handleSwitchChange("isactive", value)}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={!!formData.isactive ? "#f5dd4b" : "#f4f3f4"} // Ensure boolean value
-          />
-        </View>
+        {formData.isDateFlexible && formData.isAmountFlexible && (
+          <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
+            <Text className="text-blue-800 font-medium mb-2">Fully Flexible Transaction</Text>
+            <Text className="text-blue-600 text-sm">
+              This recurring transaction is fully flexible - you can execute it at any time with any amount. Perfect for
+              irregular expenses or income that vary in timing and amount.
+            </Text>
+          </View>
+        )}
 
         <View className="flex-row text-center justify-around items-center gap-5 mt-5 mb-10">
-          <Pressable className="bg-gray-500 px-8 py-3 rounded-md" onPress={handleCancel} disabled={isSubmitting}>
-            <Text className="text-white font-medium text-lg" selectable={false}>
-              Cancel
-            </Text>
-          </Pressable>
           <Pressable className="bg-primary px-8 py-3 rounded-md" disabled={isSubmitting} onPress={handleSubmit}>
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
@@ -548,11 +485,11 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
   const handleBlueprintTransactionSelect = async (selected: SearchableDropdownItem) => {
     if (selected && selected.item) {
-      console.log("Selected Transaction ID:", selected.item);
+      // console.log("Selected Transaction ID:", selected.item);
       try {
         setIsSubmitting(true); // Use submitting state for loading indicator
         const blueprintTransaction = selected.item;
-        console.log("Blueprint Transaction:", blueprintTransaction);
+        // console.log("Blueprint Transaction:", blueprintTransaction);
         let amount = blueprintTransaction.amount;
         if (amount) {
           setMode(amount > 0 ? "plus" : "minus");

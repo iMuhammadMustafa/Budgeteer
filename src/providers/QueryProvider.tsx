@@ -17,7 +17,7 @@ export const queryClient = new QueryClient({
       refetchOnReconnect: false,
       // refetchOnMount: false,
       gcTime: 1000 * 60 * 60 * 24, // 24 hours
-      staleTime: 2000,
+      staleTime: 1000 * 60 * 5,
       retry: 0,
     },
   },
@@ -35,6 +35,7 @@ export default function QueryProvider({ children }: PropsWithChildren) {
   const { storageMode } = useStorageMode();
 
   useEffect(() => {
+    console.log(storageMode)
     // Clear cache when switching storage modes to prevent stale data
     // This ensures fresh data is loaded from the new storage source
     queryClient.clear();
@@ -45,6 +46,7 @@ export default function QueryProvider({ children }: PropsWithChildren) {
       client={queryClient}
       persistOptions={{ persister: asyncStoragePersister }}
       onSuccess={() => {
+        console.log("Invalidated?")
         // resume mutations after initial restore from localStorage was successful
         queryClient.resumePausedMutations().then(() => {
           queryClient.invalidateQueries();

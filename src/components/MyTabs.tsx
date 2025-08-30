@@ -5,7 +5,7 @@ import { Href, Link, router } from "expo-router";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { queryClient } from "@/src/providers/QueryProvider";
-import { RecurringFiltersComponent } from "@/src/components/recurring/RecurringFilters";
+import { RecurringFiltersComponent } from "@/src/components/RecurringFilters";
 import { useMutation } from "@tanstack/react-query";
 
 type TabProps = {

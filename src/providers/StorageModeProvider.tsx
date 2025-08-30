@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState, useMemo } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { initializeWatermelonDB, isWatermelonDBReady } from "@/src/database";
 import { seedWatermelonDB } from "@/src/database/seed";
@@ -27,7 +27,7 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
     return storageMode === StorageMode.Local ? isWatermelonDBReady() : true;
   }, [storageMode]);
 
-  const setStorageMode = async (mode: StorageMode) => {
+  const setStorageMode = useCallback(async (mode: StorageMode) => {
     setIsInitializing(true);
     try {
       // Initialize WatermelonDB if switching to Local mode
@@ -50,7 +50,7 @@ export function StorageModeProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsInitializing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Initialize with saved storage mode or default to Cloud

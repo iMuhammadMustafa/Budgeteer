@@ -112,7 +112,7 @@ export default function BudgeteerLanding({ session, router }) {
 
           <Pressable
             className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
-            onPress={() => (session && session.user ? router.replace("/Dashboard") : router.replace("/Login"))}
+            onPress={() => (session && session.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
           >
             <Text className="text-primary-600 text-base md:text-lg font-bold">
               {session && session.user ? "Go to Dashboard" : "Start Your Journey"}
@@ -157,7 +157,7 @@ export default function BudgeteerLanding({ session, router }) {
 
           <Pressable
             className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
-            onPress={() => (session && session.user ? router.replace("/Dashboard") : router.replace("/Login"))}
+            onPress={() => (session && session.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
           >
             <Text className="text-primary-600 text-base md:text-lg font-bold">
               {session && session.user ? "Open Dashboard" : "Get Started Free"}

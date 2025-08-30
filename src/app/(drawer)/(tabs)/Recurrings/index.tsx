@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { useState } from "react";
 import { useRecurringService } from "@/src/services/Recurring.Service";
-import { RecurringStatusBadges } from "@/src/components/recurring/RecurringStatusBadges";
+import { RecurringStatusBadges } from "@/src/components/RecurringStatusBadges";
 import { Recurring } from "@/src/types/db/Tables.Types";
 
 export default function RecurringsScreen() {
@@ -46,53 +46,8 @@ export default function RecurringsScreen() {
     );
   };
 
-  const customRecurringDetails = (item: Recurring) => {
-    // Use enhanced fields directly from the database
-    const autoApplyEnabled = item.autoapplyenabled || false;
-    const isAmountFlexible = item.isamountflexible || false;
-    const isDateFlexible = item.isdateflexible || false;
-    const recurringType = item.recurringtype || "Standard";
-    const intervalMonths = item.intervalmonths || 1;
-
-    let details = "";
-
-    // Show next occurrence or flexible date indicator
-    if (isDateFlexible && isAmountFlexible) {
-      details += "Fully Flexible (Date & Amount)";
-    } else if (isDateFlexible) {
-      details += "Flexible Date";
-    } else {
-      details += `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")}`;
-    }
-
-    // Show amount or flexible amount indicator (only if not already shown as fully flexible)
-    if (!isDateFlexible || !isAmountFlexible) {
-      if (isAmountFlexible) {
-        details += " | Flexible Amount";
-      } else {
-        details += ` | Amount: ${item.amount} ${item.currencycode}`;
-      }
-    }
-
-    // Show recurring type if not standard
-    if (recurringType !== "Standard") {
-      details += ` | ${recurringType}`;
-    }
-
-    // Show auto-apply status
-    if (autoApplyEnabled) {
-      details += " | Auto-Apply";
-    }
-
-    // Show custom interval if not monthly
-    if (intervalMonths > 1) {
-      details += ` | Every ${intervalMonths} months`;
-    }
-
-    return details;
-  };
-
   const renderRecurringItem = (item: Recurring, isSelected: boolean, onLongPress: () => void, onPress: () => void) => {
+    // console.log(customRecurringDetails(item));
     return (
       <Pressable
         key={item.id}
@@ -239,3 +194,48 @@ export default function RecurringsScreen() {
     </>
   );
 }
+
+const customRecurringDetails = (item: Recurring) => {
+  const autoApplyEnabled = item.autoapplyenabled || false;
+  const isAmountFlexible = item.isamountflexible || false;
+  const isDateFlexible = item.isdateflexible || false;
+  const recurringType = item.recurringtype || "Standard";
+  const intervalMonths = item.intervalmonths || 1;
+
+  let details = "";
+
+  // Show next occurrence or flexible date indicator
+  if (isDateFlexible && isAmountFlexible) {
+    details += "Fully Flexible (Date & Amount)";
+  } else if (isDateFlexible) {
+    details += "Flexible Date";
+  } else {
+    details += `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")}`;
+  }
+
+  // Show amount or flexible amount indicator (only if not already shown as fully flexible)
+  if (!isDateFlexible || !isAmountFlexible) {
+    if (isAmountFlexible) {
+      details += " | Flexible Amount";
+    } else {
+      details += ` | Amount: ${item.amount} ${item.currencycode}`;
+    }
+  }
+
+  // Show recurring type if not standard
+  if (recurringType !== "Standard") {
+    details += ` | ${recurringType}`;
+  }
+
+  // Show auto-apply status
+  if (autoApplyEnabled) {
+    details += " | Auto-Apply";
+  }
+
+  // Show custom interval if not monthly
+  if (intervalMonths > 1) {
+    details += ` | Every ${intervalMonths} months`;
+  }
+
+  return details;
+};

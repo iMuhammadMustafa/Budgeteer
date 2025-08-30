@@ -24,7 +24,10 @@ export default function DrawerLayout() {
   // });
 
   if (isSessionLoading) return <ActivityIndicator />;
-  if (!isSessionLoading && (!session || !session.user)) router.navigate("/Login");
+  if (!isSessionLoading && (!session || !session.user)) {
+    console.log("No session found");
+    router.navigate("/Login")
+  };
 
   return (
     <>
