@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAutoApplyService } from "@/src/services/AutoApply.Service";
 import { useNotifications } from "@/src/providers/NotificationsProvider";
-import { AutoApplyResult } from "@/src/types/recurring";
 import {
   AutoApplyStartupService,
   AutoApplyStartupConfig,

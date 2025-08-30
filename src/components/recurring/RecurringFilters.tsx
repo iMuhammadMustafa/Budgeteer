@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import MyIcon from "@/src/utils/Icons.Helper";
-import { Recurring } from "@/src/types/recurring";
+import { Recurring } from "@/src/types/db/Tables.Types";
 
 export interface RecurringFilters {
   autoApplyEnabled?: boolean | null;
@@ -196,7 +196,7 @@ export const filterRecurringTransactions = (recurrings: Recurring[], filters: Re
  */
 export const groupRecurringTransactions = (
   recurrings: Recurring[],
-  groupBy: "autoApply" | "recurringType" | "status",
+  groupBy: "autoApply" | "recurringType" | "status" | "isdateflexible",
 ): { [key: string]: Recurring[] } => {
   const groups: { [key: string]: Recurring[] } = {};
 
@@ -207,6 +207,7 @@ export const groupRecurringTransactions = (
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
+  console.log(sortedRecurrings);
   sortedRecurrings.forEach(recurring => {
     let groupKey = "";
 
@@ -221,6 +222,8 @@ export const groupRecurringTransactions = (
           : recurringType === "Transfer"
             ? "Account Transfers"
             : "Standard Transactions";
+    } else if (groupBy === "isdateflexible") {
+      groupKey = recurring.isdateflexible ? "Flexible" : "Recurring";
     } else if (groupBy === "status") {
       groupKey = recurring.isactive ? "Active" : "Inactive";
     }

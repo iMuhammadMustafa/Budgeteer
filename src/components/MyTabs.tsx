@@ -28,8 +28,8 @@ type TabProps = {
   customGroupBy?: (items: any[]) => Record<string, any[]>;
   filters?: any;
   setFilters?: (filters: any) => void;
-  groupBy?: "autoApply" | "recurringType" | "status" | null;
-  setGroupBy?: (v: "autoApply" | "recurringType" | "status" | null) => void;
+  groupBy?: "autoApply" | "recurringType" | "status" | "isdateflexible" | null;
+  setGroupBy?: (v: "autoApply" | "recurringType" | "status" | "isdateflexible" | null) => void;
 };
 
 type TabItemType = {

@@ -2,7 +2,6 @@ import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native"
 import * as Haptics from "expo-haptics";
 import { Tab } from "@/src/components/MyTabs";
 import { TableNames } from "@/src/types/db/TableNames";
-import { Recurring } from "@/src/types/recurring";
 import dayjs from "dayjs";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { useState } from "react";
@@ -17,6 +16,7 @@ import {
   getRecurringIcon,
   parseRecurringData,
 } from "@/src/components/recurring/RecurringStatusBadges";
+import { Recurring } from "@/src/types/db/Tables.Types";
 
 export default function RecurringsScreen() {
   const recurringsService = useRecurringService();
@@ -31,7 +31,9 @@ export default function RecurringsScreen() {
 
   // State for filters and grouping
   const [filters, setFilters] = useState<RecurringFilters>({});
-  const [groupBy, setGroupBy] = useState<"autoApply" | "recurringType" | "status" | null>(null);
+  const [groupBy, setGroupBy] = useState<"autoApply" | "recurringType" | "status" | "isdateflexible" | null>(
+    "isdateflexible",
+  );
 
   const handleExecuteRecurring = (item: Recurring, amountOverride?: number) => {
     let finalAmount = item.amount;
@@ -42,7 +44,7 @@ export default function RecurringsScreen() {
 
     executeRecurring(
       {
-        id: item.id,
+        recurring: item,
         overrides: {
           amount: finalAmount ?? undefined,
           date: new Date().toISOString(),
@@ -126,7 +128,7 @@ export default function RecurringsScreen() {
         </View>
         <Pressable
           onPress={e => {
-            e.stopPropagation();
+            // e.stopPropagation();
             // Show modal if amount is flexible OR if both amount and date are flexible
             if (
               !item.amount ||

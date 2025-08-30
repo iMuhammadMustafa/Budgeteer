@@ -1,6 +1,4 @@
 import {
-  Recurring,
-  RecurringInsert,
   CreateTransferRequest,
   CreateCreditCardPaymentRequest,
   ValidationResult,
@@ -8,6 +6,7 @@ import {
 } from "@/src/types/recurring";
 import { RecurringType, VALIDATION_MESSAGES, RECURRING_CONSTANTS } from "@/src/types/recurring";
 import dayjs from "dayjs";
+import { Recurring } from "../types/db/Tables.Types";
 
 /**
  * Validate recurring transaction data
@@ -302,31 +301,21 @@ export function validateAccountBalance(
   return { isValid: true };
 }
 
-/**
- * Validate recurring transaction execution context
- */
-export function validateExecutionContext(
-  recurring: Recurring,
-  overrideAmount?: number,
-): { isValid: boolean; errors: string[] } {
+export function validateExecutionContext(recurring: Recurring, overrideAmount?: number): void {
   const errors: string[] = [];
 
-  // Check if recurring is active
   if (!recurring.isactive) {
     errors.push("Recurring transaction is not active");
   }
 
-  // Check if recurring is deleted
   if (recurring.isdeleted) {
     errors.push("Recurring transaction has been deleted");
   }
 
-  // Check if amount is provided when required
   if (!recurring.isamountflexible && !overrideAmount && !recurring.amount) {
     errors.push("Amount is required for execution");
   }
 
-  // Check if recurring has exceeded max failed attempts
   if (
     recurring.failedattempts &&
     recurring.maxfailedattempts &&
@@ -337,15 +326,13 @@ export function validateExecutionContext(
     );
   }
 
-  // Check if end date has passed
   if (recurring.enddate && dayjs().isAfter(dayjs(recurring.enddate))) {
     errors.push("Recurring transaction end date has passed");
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  if (errors.length !== 0) {
+    throw new Error(`Execution validation failed: ${errors.join(", ")}`);
+  }
 }
 
 /**

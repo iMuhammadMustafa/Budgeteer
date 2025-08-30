@@ -1,3 +1,6 @@
+import { TableNames } from "./db/TableNames";
+import { Inserts, Recurring } from "./db/Tables.Types";
+
 export enum RecurringType {
   Standard = "Standard",
   Transfer = "Transfer",
@@ -160,12 +163,13 @@ export interface ExecutionPreview {
 }
 
 // Request types for specialized creation
-export interface CreateTransferRequest extends Omit<RecurringInsert, "recurringtype"> {
+export interface CreateTransferRequest extends Omit<Inserts<TableNames.Recurrings>, "recurringtype"> {
   transferaccountid: string;
   recurringtype: RecurringType.Transfer;
 }
 
-export interface CreateCreditCardPaymentRequest extends Omit<RecurringInsert, "recurringtype" | "amount"> {
+export interface CreateCreditCardPaymentRequest
+  extends Omit<Inserts<TableNames.Recurrings>, "recurringtype" | "amount"> {
   recurringtype: RecurringType.CreditCardPayment;
   sourceaccountid: string; // Payment source account
   categoryid: string; // Should reference a liability account category
@@ -212,12 +216,3 @@ export interface ErrorHandlingResult {
   action: AutoApplyAction;
   message: string;
 }
-
-// NOTE: Do not re-export imported types. Import these directly where needed:
-// import { Recurring, RecurringInsert, RecurringUpdate } from "../db/sqllite/schema";
-
-// Forward declaration for Recurring types used in function signatures above
-// (Replace with direct imports in usage sites)
-type Recurring = any;
-type RecurringInsert = any;
-type RecurringUpdate = any;

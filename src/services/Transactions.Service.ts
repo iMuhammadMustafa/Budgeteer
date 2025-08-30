@@ -33,9 +33,6 @@ export interface ITransactionService
   getByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   createMultipleTransactionsRepo: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   updateTransferTransactionRepo: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
-  findByDate: (date: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
-  findByCategory: (categoryId: string, type: "category" | "group") => ReturnType<typeof useQuery<TransactionsView[]>>;
-  findByMonth: (month: string) => ReturnType<typeof useQuery<TransactionsView[]>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -191,36 +188,6 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
-  const findByDate = (date: string) => {
-    return useQuery<TransactionsView[]>({
-      queryKey: [TableNames.Transactions, "byDate", date, tenantId, "repo"],
-      queryFn: async () => {
-        return transactionRepo.findByDate(date, tenantId);
-      },
-      enabled: !!tenantId && !!date,
-    });
-  };
-
-  const findByCategory = (categoryId: string, type: "category" | "group") => {
-    return useQuery<TransactionsView[]>({
-      queryKey: [TableNames.Transactions, "byCategory", categoryId, type, tenantId, "repo"],
-      queryFn: async () => {
-        return transactionRepo.findByCategory(categoryId, type, tenantId);
-      },
-      enabled: !!tenantId && !!categoryId,
-    });
-  };
-
-  const findByMonth = (month: string) => {
-    return useQuery<TransactionsView[]>({
-      queryKey: [TableNames.Transactions, "byMonth", month, tenantId, "repo"],
-      queryFn: async () => {
-        return transactionRepo.findByMonth(month, tenantId);
-      },
-      enabled: !!tenantId && !!month,
-    });
-  };
-
   const findAllInfinite = (searchFilters: TransactionFilters) => {
     const normalizedFilters = Object.keys(searchFilters).length !== 0 ? searchFilters : initialSearchFilters;
     const pageSize = 10;
@@ -295,9 +262,6 @@ export function useTransactionService(): ITransactionService {
     delete: deleteObj,
     softDelete: deleteObj,
     restore,
-    findByDate,
-    findByCategory,
-    findByMonth,
 
     repo: transactionRepo,
   };

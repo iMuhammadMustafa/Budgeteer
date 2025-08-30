@@ -17,13 +17,8 @@ dayjs.extend(utc);
  */
 export function calculateNextOccurrence(currentDate: Date, intervalMonths: number): Date {
   // Validate interval months
-  if (
-    intervalMonths < RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN ||
-    intervalMonths > RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX
-  ) {
-    throw new Error(
-      `Interval months must be between ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN} and ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX}`,
-    );
+  if (intervalMonths < 1 || intervalMonths > 24) {
+    throw new Error(`Interval months must be between 1 and 24`);
   }
 
   const current = dayjs.utc(currentDate);

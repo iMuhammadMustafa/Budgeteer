@@ -4,13 +4,8 @@ import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { TableNames, ViewNames } from "@/src/types/db/TableNames";
 import { AutoApplyEngine, IAutoApplyEngine } from "./AutoApplyEngine";
-import { 
-  AutoApplyResult, 
-  AutoApplySettings, 
-  Recurring,
-  ApplyResult,
-  BatchApplyResult
-} from "@/src/types/recurring";
+import { AutoApplyResult, AutoApplySettings, ApplyResult, BatchApplyResult } from "@/src/types/recurring";
+import { Recurring } from "../types/db/Tables.Types";
 
 /**
  * Service interface for auto-apply functionality
@@ -21,12 +16,12 @@ export interface IAutoApplyService {
   getDueRecurringTransactions: (asOfDate?: Date) => ReturnType<typeof useQuery<Recurring[]>>;
   applyRecurringTransaction: () => ReturnType<typeof useMutation<ApplyResult, Error, { recurringId: string }>>;
   batchApplyTransactions: () => ReturnType<typeof useMutation<BatchApplyResult, Error, { recurringIds: string[] }>>;
-  
+
   // Configuration management
   setAutoApplyEnabled: () => ReturnType<typeof useMutation<void, Error, { recurringId: string; enabled: boolean }>>;
   getAutoApplySettings: () => ReturnType<typeof useQuery<AutoApplySettings>>;
   updateAutoApplySettings: () => ReturnType<typeof useMutation<void, Error, Partial<AutoApplySettings>>>;
-  
+
   // Engine instance for direct access if needed
   engine: IAutoApplyEngine;
 }
@@ -37,18 +32,18 @@ export interface IAutoApplyService {
 export function useAutoApplyService(): IAutoApplyService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
-  
+
   const tenantId = session?.user?.user_metadata?.tenantid;
   const userId = session?.user?.id;
   if (!tenantId) throw new Error("Tenant ID not found in session");
-  
+
   const { dbContext } = useStorageMode();
-  
+
   // Create auto-apply engine instance
   const engine = new AutoApplyEngine(
     dbContext.RecurringRepository(),
     dbContext.TransactionRepository(),
-    dbContext.AccountRepository()
+    dbContext.AccountRepository(),
   );
 
   /**
@@ -59,19 +54,21 @@ export function useAutoApplyService(): IAutoApplyService {
       mutationFn: async (): Promise<AutoApplyResult> => {
         return await engine.checkAndApplyDueTransactions(tenantId, userId);
       },
-      onSuccess: async (result) => {
+      onSuccess: async result => {
         // Invalidate relevant queries after successful auto-apply
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
           queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] })
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] }),
         ]);
-        
-        console.log(`Auto-apply completed: ${result.appliedCount} applied, ${result.failedCount} failed, ${result.pendingCount} pending`);
+
+        console.log(
+          `Auto-apply completed: ${result.appliedCount} applied, ${result.failedCount} failed, ${result.pendingCount} pending`,
+        );
       },
-      onError: (error) => {
+      onError: error => {
         console.error("Error in auto-apply process:", error);
         throw error;
       },
@@ -101,11 +98,11 @@ export function useAutoApplyService(): IAutoApplyService {
         // First get the recurring transaction
         const recurringRepo = dbContext.RecurringRepository();
         const recurring = await recurringRepo.findById(recurringId, tenantId);
-        
+
         if (!recurring) {
           throw new Error(`Recurring transaction not found: ${recurringId}`);
         }
-        
+
         return await engine.applyRecurringTransaction(recurring, tenantId, userId);
       },
       onSuccess: async (result, variables) => {
@@ -116,9 +113,9 @@ export function useAutoApplyService(): IAutoApplyService {
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
           queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] })
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] }),
         ]);
-        
+
         if (result.success) {
           console.log(`Successfully applied recurring transaction: ${variables.recurringId}`);
         } else {
@@ -141,18 +138,18 @@ export function useAutoApplyService(): IAutoApplyService {
         // Get all recurring transactions
         const recurringRepo = dbContext.RecurringRepository();
         const recurrings: Recurring[] = [];
-        
+
         for (const id of recurringIds) {
           const recurring = await recurringRepo.findById(id, tenantId);
           if (recurring) {
             recurrings.push(recurring);
           }
         }
-        
+
         if (recurrings.length === 0) {
           throw new Error("No valid recurring transactions found for batch processing");
         }
-        
+
         return await engine.batchApplyTransactions(recurrings, tenantId, userId);
       },
       onSuccess: async (result, variables) => {
@@ -162,13 +159,15 @@ export function useAutoApplyService(): IAutoApplyService {
           queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
           queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] })
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] }),
         ]);
-        
-        console.log(`Batch apply completed: ${result.summary.appliedCount} applied, ${result.summary.failedCount} failed`);
+
+        console.log(
+          `Batch apply completed: ${result.summary.appliedCount} applied, ${result.summary.failedCount} failed`,
+        );
       },
       onError: (error, variables) => {
-        console.error(`Error in batch apply for transactions ${variables.recurringIds.join(', ')}:`, error);
+        console.error(`Error in batch apply for transactions ${variables.recurringIds.join(", ")}:`, error);
         throw error;
       },
     });
@@ -187,10 +186,12 @@ export function useAutoApplyService(): IAutoApplyService {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] }),
           queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, variables.recurringId, tenantId] }),
-          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] })
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-due-transactions"] }),
         ]);
-        
-        console.log(`Auto-apply ${variables.enabled ? 'enabled' : 'disabled'} for recurring transaction: ${variables.recurringId}`);
+
+        console.log(
+          `Auto-apply ${variables.enabled ? "enabled" : "disabled"} for recurring transaction: ${variables.recurringId}`,
+        );
       },
       onError: (error, variables) => {
         console.error(`Error updating auto-apply status for ${variables.recurringId}:`, error);
@@ -225,7 +226,7 @@ export function useAutoApplyService(): IAutoApplyService {
         await queryClient.invalidateQueries({ queryKey: ["auto-apply-settings"] });
         console.log("Auto-apply settings updated successfully");
       },
-      onError: (error) => {
+      onError: error => {
         console.error("Error updating auto-apply settings:", error);
         throw error;
       },
@@ -240,7 +241,7 @@ export function useAutoApplyService(): IAutoApplyService {
     setAutoApplyEnabled,
     getAutoApplySettings,
     updateAutoApplySettings,
-    engine
+    engine,
   };
 }
 
@@ -253,40 +254,40 @@ export const initializeAutoApplyOnStartup = async (
   options: {
     enableLogging?: boolean;
     skipOnError?: boolean;
-  } = {}
+  } = {},
 ): Promise<AutoApplyResult | null> => {
   const { enableLogging = true, skipOnError = true } = options;
-  
+
   try {
     if (enableLogging) {
       console.log("Initializing auto-apply on app startup...");
     }
-    
+
     // Get the mutation function
     const checkAndApplyMutation = autoApplyService.checkAndApplyDueTransactions();
-    
+
     // Execute the auto-apply check
     const result = await new Promise<AutoApplyResult>((resolve, reject) => {
       checkAndApplyMutation.mutate(undefined, {
-        onSuccess: (data) => resolve(data),
-        onError: (error) => reject(error)
+        onSuccess: data => resolve(data),
+        onError: error => reject(error),
       });
     });
-    
+
     if (enableLogging) {
       console.log("Auto-apply startup completed:", {
         applied: result.appliedCount,
         failed: result.failedCount,
-        pending: result.pendingCount
+        pending: result.pendingCount,
       });
     }
-    
+
     return result;
   } catch (error) {
     if (enableLogging) {
       console.error("Auto-apply startup failed:", error);
     }
-    
+
     if (skipOnError) {
       return null; // Don't block app startup on auto-apply errors
     } else {
@@ -300,13 +301,13 @@ export const initializeAutoApplyOnStartup = async (
  */
 export function useAutoApplyMonitoring() {
   const autoApplyService = useAutoApplyService();
-  
+
   const dueTransactions = autoApplyService.getDueRecurringTransactions();
   const settings = autoApplyService.getAutoApplySettings();
-  
+
   const autoApplyEnabled = dueTransactions.data?.filter(t => t.autoapplyenabled) || [];
   const pendingTransactions = dueTransactions.data?.filter(t => !t.autoapplyenabled) || [];
-  
+
   return {
     dueTransactions: dueTransactions.data || [],
     autoApplyEnabled,
@@ -317,6 +318,6 @@ export function useAutoApplyMonitoring() {
     refetch: () => {
       dueTransactions.refetch();
       settings.refetch();
-    }
+    },
   };
 }

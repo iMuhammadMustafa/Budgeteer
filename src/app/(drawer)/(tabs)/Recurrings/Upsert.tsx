@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, SafeAreaView, ScrollView, Text, Pressable, View, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import dayjs from "dayjs";
@@ -7,7 +7,7 @@ import timezone from "dayjs/plugin/timezone";
 
 import { TableNames } from "@/src/types/db/TableNames";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
-import { useRecurringService } from "@/src/services/Recurring.Service";
+import { parseRecurrenceRule, RecurrenceFrequency, useRecurringService } from "@/src/services/Recurring.Service";
 import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";
@@ -17,16 +17,16 @@ import { SearchableDropdownItem, OptionItem } from "@/src/types/components/Dropd
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { IntervalSelector } from "@/src/components/recurring/IntervalDisplay";
 import { RecurringTransferForm } from "@/src/components/recurring/RecurringTransferForm";
 import { RecurringCreditCardForm } from "@/src/components/recurring/RecurringCreditCardForm";
-import { RecurringInsert, RecurringUpdate } from "@/src/types/db/sqllite/schema";
 import { RecurringType } from "@/src/types/recurring";
+import MyIcon from "@/src/utils/Icons.Helper";
+import { Inserts, Updates } from "@/src/types/db/Tables.Types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-type RecurringFormType = Omit<RecurringInsert | RecurringUpdate, "recurrencerule"> & {
+type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
   intervalMonths: number; // Custom monthly interval (1-24)
@@ -40,7 +40,6 @@ type RecurringFormType = Omit<RecurringInsert | RecurringUpdate, "recurrencerule
 };
 
 export type RecurringTransactionType = "Expense" | "Income" | "Transfer";
-export type RecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 const recurrenceFrequencyOptions: OptionItem[] = [
   // Ensure it's OptionItem[]
@@ -59,7 +58,7 @@ const recurringTypeOptions: OptionItem[] = [
 const recurringCategoryOptions: OptionItem[] = [
   { id: RecurringType.Standard, label: "Standard Transaction", value: RecurringType.Standard },
   { id: RecurringType.Transfer, label: "Account Transfer", value: RecurringType.Transfer },
-  { id: RecurringType.CreditCardPayment, label: "Credit Card Payment", value: RecurringType.CreditCardPayment },
+  // { id: RecurringType.CreditCardPayment, label: "Credit Card Payment", value: RecurringType.CreditCardPayment },
 ];
 
 export const initialRecurringState: RecurringFormType = {
@@ -98,6 +97,8 @@ export const initialRecurringState: RecurringFormType = {
 export default function RecurringUpsertScreen() {
   const { id: recurringIdToEdit } = useLocalSearchParams<{ id?: string }>();
   const {
+    mode,
+    setMode,
     formData,
     setFormData,
     isEdit,
@@ -112,7 +113,13 @@ export default function RecurringUpsertScreen() {
     handleSubmit,
     handleCancel,
   } = useRecurringForm(recurringIdToEdit);
+
   const transactionService = useTransactionService();
+
+  const handleModeToggle = useCallback(() => {
+    const newMode = mode === "plus" ? "minus" : "plus";
+    setMode(newMode);
+  }, [mode]);
 
   if (isLoading) return <ActivityIndicator className="flex-1 justify-center items-center" />;
 
@@ -162,19 +169,22 @@ export default function RecurringUpsertScreen() {
           />
         </View>
 
-        <View className=" z-40">
-          <DropdownField
-            label="Transaction Type"
-            options={recurringTypeOptions}
-            selectedValue={formData.type}
-            onSelect={(item: OptionItem | null) => {
-              if (item) {
-                handleTextChange("type", item.id as RecurringTransactionType);
-              }
-            }}
-            isModal={Platform.OS !== "web"}
-          />
-        </View>
+        {formData.recurringType === RecurringType.Standard ? (
+          <View className=" z-40">
+            <DropdownField
+              label="Transaction Type"
+              options={recurringTypeOptions}
+              selectedValue={formData.type}
+              onSelect={(item: OptionItem | null) => {
+                if (item) {
+                  handleTextChange("type", item.id as RecurringTransactionType);
+                }
+              }}
+              isModal={Platform.OS !== "web"}
+            />
+          </View>
+        ) : null}
+
         <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
           <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
           <Switch
@@ -217,7 +227,7 @@ export default function RecurringUpsertScreen() {
               placeholder="e.g., 1"
             />
 
-            {formData.frequency === "MONTHLY" && (
+            {/* {formData.frequency === "MONTHLY" && (
               <View className="my-3">
                 <Text className="text-foreground font-medium mb-2">Custom Monthly Interval</Text>
                 <IntervalSelector
@@ -226,7 +236,7 @@ export default function RecurringUpsertScreen() {
                   className="border border-gray-300 rounded-md p-2"
                 />
               </View>
-            )}
+            )} */}
           </>
         )}
         <MyDateTimePicker
@@ -257,13 +267,34 @@ export default function RecurringUpsertScreen() {
         )}
 
         {!formData.isAmountFlexible && formData.recurringType !== RecurringType.CreditCardPayment && (
-          <TextInputField
-            label="Amount"
-            value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
-            onChange={text => handleTextChange("amount", parseFloat(text) || 0)}
-            keyboardType="numeric"
-            placeholder="e.g., 1200.50"
-          />
+          <View className="flex-row justify-center items-center mb-4">
+            <View className="me-2 mt-5 justify-center items-center">
+              <Pressable
+                className={`${
+                  formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-danger-400"
+                } border border-muted rounded-lg p-1.5`}
+                onPress={handleModeToggle}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Toggle amount sign, currently ${mode}`}
+              >
+                {mode === "minus" ? (
+                  <MyIcon name="Minus" size={24} className="text-gray-100" />
+                ) : (
+                  <MyIcon name="Plus" size={24} className="text-gray-100" />
+                )}
+              </Pressable>
+            </View>
+
+            <TextInputField
+              label="Amount"
+              value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
+              onChange={text => handleTextChange("amount", parseFloat(text) || 0)}
+              keyboardType="numeric"
+              placeholder="e.g., 1200.50"
+              className="flex-1"
+            />
+          </View>
         )}
         {/* Conditional rendering based on recurring type */}
         {formData.recurringType === RecurringType.Transfer ? (
@@ -395,6 +426,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
 
   const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState<"plus" | "minus">("minus");
 
   const recurringService = useRecurringService();
   const transactionCategoriesService = useTransactionCategoryService();
@@ -403,28 +435,14 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
   const { data: categories, isLoading: isLoadingCategories } = transactionCategoriesService.findAll();
   const { data: accounts, isLoading: isLoadingAccounts } = accountsService.findAll();
 
-  const { mutate: createRecurring } = recurringService.create();
-  const { mutate: updateRecurring } = recurringService.update();
+  const { mutate: upsertRecurring } = recurringService.upsert();
 
   const isEdit = !!recurringIdToEdit;
   const isLoading = isLoadingRecurring || isLoadingCategories || isLoadingAccounts;
 
   useEffect(() => {
     if (isEdit && recurringToEdit) {
-      // Parse recurrencerule
-      let freq: RecurrenceFrequency = "MONTHLY";
-      let interv = 1;
-      if (recurringToEdit.recurrencerule) {
-        const parts = recurringToEdit.recurrencerule.split(";");
-        const freqPart = parts.find((p: string) => p.startsWith("FREQ="));
-        const intervalPart = parts.find((p: string) => p.startsWith("INTERVAL="));
-        if (freqPart) {
-          freq = freqPart.split("=")[1] as RecurrenceFrequency;
-        }
-        if (intervalPart) {
-          interv = parseInt(intervalPart.split("=")[1], 10) || 1;
-        }
-      }
+      const { freq, interval: interv } = parseRecurrenceRule(recurringToEdit.recurrencerule);
 
       setFormData({
         ...(recurringToEdit as any), // Cast to any to allow additional form fields like frequency, interval
@@ -441,7 +459,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
       });
     } else if (!isEdit) {
-      setFormData({ ...initialRecurringState, tenantid: tenantId || "" }); // Ensure tenantId is set if available
+      setFormData({ ...initialRecurringState });
     }
   }, [recurringToEdit, isEdit]);
 
@@ -474,6 +492,13 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
           newState.categoryid = null; // Transfers don't have categories
         } else {
           newState.transferaccountid = null; // Other types don't have a destination account
+        }
+      }
+      if (name === "type") {
+        if (value === "Income") {
+          setMode("plus");
+        } else {
+          setMode("minus");
         }
       }
 
@@ -530,6 +555,11 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
         setIsSubmitting(true); // Use submitting state for loading indicator
         const blueprintTransaction = selected.item;
         console.log("Blueprint Transaction:", blueprintTransaction);
+        let amount = blueprintTransaction.amount;
+        if (amount) {
+          setMode(amount > 0 ? "plus" : "minus");
+        }
+
         if (blueprintTransaction) {
           setFormData(prev => ({
             ...prev,
@@ -556,39 +586,31 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
   };
 
   const handleSubmit = () => {
-    if (!tenantId || !userId) {
-      console.error("User or Tenant ID not found for submission.");
-      // Optionally show user feedback
-      return;
-    }
     setIsSubmitting(true);
 
-    // Construct recurrencerule from frequency and interval (only if not date flexible)
     const recurrenceRule = formData.isDateFlexible
-      ? ""
+      ? null
       : `FREQ=${formData.frequency};INTERVAL=${formData.intervalMonths || formData.interval}`;
 
-    // Prepare data for submission, ensuring correct types and removing form-specific fields
-    const dataToSubmitApi: RecurringInsert | RecurringUpdate = {
-      // Core fields
+    const amount = mode === "plus" ? formData.amount : -(formData.amount ?? 0);
+
+    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
       name: formData.name,
       description: formData.description,
       type: formData.type,
       nextoccurrencedate: formData.isDateFlexible
         ? "2099-12-31"
         : formData.nextoccurrencedate || dayjs().format("YYYY-MM-DD"),
-      recurrencerule: recurrenceRule,
+      recurrencerule: recurrenceRule!,
       enddate: formData.enddate,
-      amount: formData.isAmountFlexible ? null : formData.amount,
+      amount: formData.isAmountFlexible ? null : amount,
       currencycode: formData.currencycode,
       sourceaccountid: formData.sourceaccountid,
       categoryid: formData.categoryid,
       payeename: formData.payeename,
       notes: formData.notes,
       isactive: formData.isactive,
-      tenantid: formData.tenantid,
 
-      // Enhanced fields (using correct lowercase names)
       intervalmonths: formData.intervalMonths,
       recurringtype: formData.recurringType,
       autoapplyenabled: formData.autoApplyEnabled,
@@ -597,36 +619,18 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
       transferaccountid: formData.transferaccountid,
     };
 
-    // Clean up undefined properties before sending to API
-    Object.keys(dataToSubmitApi).forEach(key => {
-      if (dataToSubmitApi[key as keyof typeof dataToSubmitApi] === undefined) {
-        delete dataToSubmitApi[key as keyof typeof dataToSubmitApi];
-      }
-    });
-
-    if (isEdit && recurringIdToEdit) {
-      updateRecurring(
-        { id: recurringIdToEdit, updates: dataToSubmitApi as RecurringUpdate },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
-            queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, recurringIdToEdit, tenantId] });
-            router.back();
-          },
-          onError: (e: any) => console.error("Error updating recurring:", e),
-          onSettled: () => setIsSubmitting(false),
-        },
-      );
-    } else {
-      createRecurring(dataToSubmitApi as RecurringInsert, {
+    upsertRecurring(
+      {
+        form: dataToSubmitApi,
+        original: recurringToEdit ?? undefined,
+      },
+      {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings, tenantId] });
           router.back();
         },
-        onError: (e: any) => console.error("Error creating recurring:", e),
         onSettled: () => setIsSubmitting(false),
-      });
-    }
+      },
+    );
   };
 
   const handleCancel = () => {
@@ -647,5 +651,7 @@ const useRecurringForm = (recurringIdToEdit?: string) => {
     handleBlueprintTransactionSelect,
     handleSubmit,
     handleCancel,
+    mode,
+    setMode,
   };
 };
