@@ -1,7 +1,5 @@
-import { useEffect } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
+import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
@@ -11,25 +9,19 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
 import MyIcon from "@/src/utils/Icons.Helper";
-import Button from "@/src/components/Button";
-import { useDemoMode } from "@/src/providers/DemoModeProvider";
-import {
-  initializeMockDataInLocalStorage,
-  resetMockDataInLocalStorage,
-} from "@/src/repositories/__mock__/mockDataLocalStorage";
+import { resetMockDataInLocalStorage } from "@/src/repositories/__mock__/mockDataLocalStorage";
 import Notification from "@/src/components/Notification";
-import { useAutoApplyRecurrings } from "@/src/hooks/useAutoApplyStartup";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
   const { session, isSessionLoading } = useAuth();
 
-  useAutoApplyRecurrings({
-    enableLogging: true,
-    skipOnError: true,
-    delayMs: 2000,
-    enableNotifications: true,
-  });
+  // useAutoApplyRecurrings({
+  //   enableLogging: true,
+  //   skipOnError: true,
+  //   delayMs: 2000,
+  //   enableNotifications: true,
+  // });
 
   if (isSessionLoading) return <ActivityIndicator />;
   if (!isSessionLoading && (!session || !session.user)) router.navigate("/Login");

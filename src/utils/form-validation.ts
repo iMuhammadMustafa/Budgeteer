@@ -9,6 +9,7 @@ import {
   FormValidationResult,
   ValidationSchema,
 } from "../types/components/forms.types";
+import { RecurringType } from "../types/recurring";
 
 // ============================================================================
 // Built-in Validators
@@ -338,6 +339,60 @@ export const createDescriptionValidation = (required = false): ValidationRule[] 
 
   return rules;
 };
+
+/**
+ * Creates validation rules for recurring transactions
+ */
+export const createRecurringValidation = (): ValidationRule[] => [
+  // intervalmonths: must be between 1 and 24 if present
+  commonValidationRules.custom(
+    (value, formData) =>
+      value === undefined || value === null || (typeof value === "number" && value >= 1 && value <= 24),
+    "Interval months must be between 1 and 24",
+  ),
+
+  // recurringtype: must be a valid RecurringType
+  commonValidationRules.custom(
+    value => value === undefined || value === null || Object.values(RecurringType).includes(value),
+    "Invalid recurring type",
+  ),
+
+  // transferaccountid: required if recurringtype is Transfer
+  commonValidationRules.custom(
+    (_value, formData) => formData?.recurringtype !== RecurringType.Transfer || !!formData?.transferaccountid,
+    "Transfer account is required for transfers",
+  ),
+
+  // transferaccountid: must be different from sourceaccountid if both are present
+  commonValidationRules.custom(
+    (_value, formData) =>
+      !formData?.transferaccountid ||
+      !formData?.sourceaccountid ||
+      formData.transferaccountid !== formData.sourceaccountid,
+    "Source account and transfer account must be different",
+  ),
+
+  // categoryid: required
+  commonValidationRules.custom(
+    (_value, formData) => !!formData?.categoryid,
+    "Category is required for credit card payments",
+  ),
+
+  // amount: required if not flexible and not a credit card payment
+  commonValidationRules.custom(
+    (_value, formData) =>
+      formData?.isamountflexible ||
+      formData?.recurringtype === RecurringType.CreditCardPayment ||
+      (formData.amount !== undefined && formData.amount !== null),
+    "Amount is required",
+  ),
+
+  // nextoccurrencedate: required if not flexible
+  commonValidationRules.custom(
+    (_value, formData) => formData?.isdateflexible || !!formData?.nextoccurrencedate,
+    "Date is required",
+  ),
+];
 
 // ============================================================================
 // Utility Functions

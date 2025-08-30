@@ -7,7 +7,6 @@ import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { TableNames } from "@/src/types/db/TableNames";
 import GenerateUuid from "@/src/utils/UUID.Helper";
 import { ExecutionOverrides, RecurringFilters, ApplyResult, RecurringType } from "@/src/types/recurring";
-import { validateRecurring, validateExecutionContext } from "@/src/utils/recurring-validation";
 import { Inserts, Recurring, Updates } from "@/src/types/db/Tables.Types";
 import { IService } from "./IService";
 import { IRecurringRepository } from "@/src/repositories";
@@ -178,10 +177,10 @@ const createRecurringHelper = async (
   const userId = session.user.id;
   const tenantId = session.user.user_metadata.tenantid;
 
-  const validation = validateRecurring(formData);
-  if (!validation.isValid) {
-    throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(", ")}`);
-  }
+  // const validation = validateRecurring(formData);
+  // if (!validation.isValid) {
+  //   throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(", ")}`);
+  // }
 
   const recurringData: Inserts<TableNames.Recurrings> = {
     ...formData,
@@ -209,10 +208,10 @@ const updateRecurringHelper = async (
   const userId = session.user.id;
   const tenantId = session.user.user_metadata.tenantid;
 
-  const validation = validateRecurring(form);
-  if (!validation.isValid) {
-    throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(", ")}`);
-  }
+  // const validation = validateRecurring(form);
+  // if (!validation.isValid) {
+  //   throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(", ")}`);
+  // }
 
   const dataToUpdate: Updates<TableNames.Recurrings> = {
     ...form,
@@ -272,14 +271,14 @@ export const executeRecurringHelper = async (
     let transferTransaction: Inserts<TableNames.Transactions> = {
       ...transaction,
       id: transferTransactionId,
-      accountid: transaction.transferaccountid!,
+      accountid: recurring.transferaccountid!,
       transferaccountid: transaction.accountid,
       amount: -(transaction.amount ?? 0),
       transferid: transaction.id,
       date: dayjs(transaction.date).add(-1, "second").toISOString(),
     };
 
-    if (recurring.recurringtype === RecurringType.Transfer && transaction.transferaccountid) {
+    if (recurring.recurringtype === RecurringType.Transfer && recurring.transferaccountid) {
       transaction.transferid = transferTransactionId;
       transaction.transferaccountid = recurring.transferaccountid;
       transactions.push(transferTransaction);
@@ -298,8 +297,8 @@ export const executeRecurringHelper = async (
 
     await transactionRepo.createMultipleTransactions(transactions, tenantId);
     await accountRepo.updateAccountBalance(recurring.sourceaccountid, transaction.amount, tenantId);
-    if (recurring.recurringtype === RecurringType.Transfer) {
-      await accountRepo.updateAccountBalance(recurring.transferaccountid!, transferTransaction.amount, tenantId);
+    if (recurring.recurringtype === RecurringType.Transfer && recurring.transferaccountid) {
+      await accountRepo.updateAccountBalance(recurring.transferaccountid, transferTransaction.amount, tenantId);
     }
 
     let updateData: any = {
@@ -385,3 +384,36 @@ export const parseRecurrenceRule = (rule: string): { freq: RecurrenceFrequency; 
   const interval = parseInt(parts.find(p => p.startsWith("INTERVAL="))?.split("=")[1] || "1", 10);
   return { freq: freq as RecurrenceFrequency, interval };
 };
+export function validateExecutionContext(recurring: Recurring, overrideAmount?: number): void {
+  const errors: string[] = [];
+
+  if (!recurring.isactive) {
+    errors.push("Recurring transaction is not active");
+  }
+
+  if (recurring.isdeleted) {
+    errors.push("Recurring transaction has been deleted");
+  }
+
+  if (!recurring.isamountflexible && !overrideAmount && !recurring.amount) {
+    errors.push("Amount is required for execution");
+  }
+
+  if (
+    recurring.failedattempts &&
+    recurring.maxfailedattempts &&
+    recurring.failedattempts >= recurring.maxfailedattempts
+  ) {
+    errors.push(
+      `Recurring transaction has exceeded maximum failed attempts (${recurring.failedattempts}/${recurring.maxfailedattempts})`,
+    );
+  }
+
+  if (recurring.enddate && dayjs().isAfter(dayjs(recurring.enddate))) {
+    errors.push("Recurring transaction end date has passed");
+  }
+
+  if (errors.length !== 0) {
+    throw new Error(`Execution validation failed: ${errors.join(", ")}`);
+  }
+}

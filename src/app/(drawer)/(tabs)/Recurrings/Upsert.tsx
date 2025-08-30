@@ -12,7 +12,6 @@ import SearchableDropdown from "@/src/components/SearchableDropdown";
 import MyDateTimePicker from "@/src/components/MyDateTimePicker";
 import TextInputField from "@/src/components/TextInputField";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "@/src/components/DropDownField"; // Added DropdownField
-import { queryClient } from "@/src/providers/QueryProvider";
 import { SearchableDropdownItem, OptionItem } from "@/src/types/components/DropdownField.types"; // Added OptionItem
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
@@ -354,17 +353,16 @@ export default function RecurringUpsertScreen() {
             />
           </>
         )}
-        {formData.type !== "Transfer" && formData.recurringType !== RecurringType.Transfer && (
-          <MyCategoriesDropdown
-            label="Category"
-            selectedValue={formData.categoryid}
-            categories={categories}
-            onSelect={category => handleTextChange("categoryid", category?.id || null)}
-            isModal={Platform.OS !== "web"}
-            showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
-            onClear={() => handleTextChange("categoryid", null)}
-          />
-        )}
+
+        <MyCategoriesDropdown
+          label="Category"
+          selectedValue={formData.categoryid}
+          categories={categories}
+          onSelect={category => handleTextChange("categoryid", category?.id || null)}
+          isModal={Platform.OS !== "web"}
+          showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
+          onClear={() => handleTextChange("categoryid", null)}
+        />
         <TextInputField
           label="Payee Name (Optional)"
           value={formData.payeename ?? ""}

@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, Platform } from 'react-native';
-import { AccountSelecterDropdown } from '@/src/components/DropDownField';
-import TextInputField from '@/src/components/TextInputField';
-import { Account } from '@/src/types/db/Tables.Types';
+import React from "react";
+import { View, Text, Platform } from "react-native";
+import { AccountSelecterDropdown } from "@/src/components/DropDownField";
+import TextInputField from "@/src/components/TextInputField";
+import { Account } from "@/src/types/db/Tables.Types";
 
 interface RecurringTransferFormProps {
   sourceAccountId: string;
@@ -40,9 +40,9 @@ export const RecurringTransferForm: React.FC<RecurringTransferFormProps> = ({
       <View className="bg-blue-50 p-4 rounded-md border border-blue-200">
         <Text className="text-blue-800 font-medium mb-2">Transfer Configuration</Text>
         <Text className="text-blue-600 text-sm">
-          This will create a recurring transfer between two of your accounts. 
-          Each execution will subtract the amount from the source account and add it to the destination account.
-          The amount is always treated as positive regardless of input.
+          This will create a recurring transfer between two of your accounts. Each execution will subtract the amount
+          from the source account and add it to the destination account. The amount is always treated as positive
+          regardless of input.
         </Text>
       </View>
 
@@ -76,7 +76,7 @@ export const RecurringTransferForm: React.FC<RecurringTransferFormProps> = ({
         groupBy="category.name"
       />
 
-      {!isAmountFlexible && (
+      {/* {!isAmountFlexible && (
         <TextInputField
           label="Transfer Amount"
           value={(amount ?? 0).toString()}
@@ -88,7 +88,7 @@ export const RecurringTransferForm: React.FC<RecurringTransferFormProps> = ({
           keyboardType="numeric"
           placeholder="e.g., 500.00"
         />
-      )}
+      )} */}
 
       <TextInputField
         label="Currency Code"
@@ -101,9 +101,7 @@ export const RecurringTransferForm: React.FC<RecurringTransferFormProps> = ({
       {sourceAccountId && destinationAccountId && sourceAccountId === destinationAccountId && (
         <View className="bg-red-50 p-4 rounded-md border border-red-200">
           <Text className="text-red-800 font-medium">Invalid Configuration</Text>
-          <Text className="text-red-600 text-sm">
-            Source and destination accounts must be different.
-          </Text>
+          <Text className="text-red-600 text-sm">Source and destination accounts must be different.</Text>
         </View>
       )}
     </View>

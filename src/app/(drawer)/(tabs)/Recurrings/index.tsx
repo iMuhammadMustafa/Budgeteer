@@ -6,16 +6,7 @@ import dayjs from "dayjs";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { useState } from "react";
 import { useRecurringService } from "@/src/services/Recurring.Service";
-import {
-  RecurringFilters,
-  filterRecurringTransactions,
-  groupRecurringTransactions,
-} from "@/src/components/recurring/RecurringFilters";
-import {
-  RecurringStatusBadges,
-  getRecurringIcon,
-  parseRecurringData,
-} from "@/src/components/recurring/RecurringStatusBadges";
+import { RecurringStatusBadges } from "@/src/components/recurring/RecurringStatusBadges";
 import { Recurring } from "@/src/types/db/Tables.Types";
 
 export default function RecurringsScreen() {
@@ -28,12 +19,6 @@ export default function RecurringsScreen() {
   const [pendingRecurring, setPendingRecurring] = useState<Recurring | null>(null);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [amountInput, setAmountInput] = useState<string>("");
-
-  // State for filters and grouping
-  const [filters, setFilters] = useState<RecurringFilters>({});
-  const [groupBy, setGroupBy] = useState<"autoApply" | "recurringType" | "status" | "isdateflexible" | null>(
-    "isdateflexible",
-  );
 
   const handleExecuteRecurring = (item: Recurring, amountOverride?: number) => {
     let finalAmount = item.amount;
@@ -108,9 +93,6 @@ export default function RecurringsScreen() {
   };
 
   const renderRecurringItem = (item: Recurring, isSelected: boolean, onLongPress: () => void, onPress: () => void) => {
-    const recurringData = parseRecurringData(item);
-    const iconData = getRecurringIcon(item);
-
     return (
       <Pressable
         key={item.id}
@@ -163,12 +145,7 @@ export default function RecurringsScreen() {
           upsertUrl="/Recurrings/Upsert?id="
           selectable={true}
           customRenderItem={renderRecurringItem}
-          customFilter={(items: Recurring[]) => filterRecurringTransactions(items, filters)}
-          customGroupBy={groupBy ? (items: Recurring[]) => groupRecurringTransactions(items, groupBy) : undefined}
-          groupBy={groupBy}
-          setGroupBy={setGroupBy}
-          filters={filters}
-          setFilters={setFilters}
+          // customFilterComponent={<RecurringFiltersComponent filters={filters} onFiltersChange={setFilters} />}
         />
       </View>
       <Modal

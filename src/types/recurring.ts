@@ -15,11 +15,6 @@ export enum AutoApplyAction {
 
 // Constants for validation rules
 export const RECURRING_CONSTANTS = {
-  INTERVAL_MONTHS: {
-    MIN: 1,
-    MAX: 24,
-    DEFAULT: 1,
-  },
   FAILED_ATTEMPTS: {
     MIN: 1,
     MAX: 10,
@@ -51,7 +46,7 @@ export const RECURRING_TYPE_DESCRIPTIONS: Record<RecurringType, string> = {
 
 // Validation error messages
 export const VALIDATION_MESSAGES = {
-  INTERVAL_MONTHS_RANGE: `Interval months must be between ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN} and ${RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX}`,
+  INTERVAL_MONTHS_RANGE: `Interval months must be between ${1} and ${24}`,
   TRANSFER_ACCOUNT_REQUIRED: "Transfer account is required for transfer transactions",
   TRANSFER_ACCOUNTS_DIFFERENT: "Transfer account must be different from source account",
   AMOUNT_REQUIRED: "Amount is required when amount is not flexible",
@@ -66,8 +61,8 @@ export const VALIDATION_MESSAGES = {
 // Validation constraints
 export const RecurringValidationRules = {
   intervalMonths: {
-    min: RECURRING_CONSTANTS.INTERVAL_MONTHS.MIN,
-    max: RECURRING_CONSTANTS.INTERVAL_MONTHS.MAX,
+    min: 1,
+    max: 24,
     required: true,
     type: "integer" as const,
   },
