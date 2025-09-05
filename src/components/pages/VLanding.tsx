@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React from "react";
 import { View, Text, Pressable, ScrollView, Dimensions } from "react-native";
 import { Svg, Path, Circle, Rect, Defs, LinearGradient, Stop } from "react-native-svg";
@@ -58,7 +59,8 @@ const StatCard = ({ number, label }) => (
   </View>
 );
 
-export default function BudgeteerLanding({ session, router }) {
+export default function BudgeteerLanding() {
+  const session = null;
   const features = [
     {
       icon: "💳",
@@ -112,10 +114,10 @@ export default function BudgeteerLanding({ session, router }) {
 
           <Pressable
             className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
-            onPress={() => (session && session.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
+            onPress={() => (session && session?.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
           >
             <Text className="text-primary-600 text-base md:text-lg font-bold">
-              {session && session.user ? "Go to Dashboard" : "Start Your Journey"}
+              {session && session?.user ? "Go to Dashboard" : "Start Your Journey"}
             </Text>
           </Pressable>
         </View>
@@ -157,10 +159,10 @@ export default function BudgeteerLanding({ session, router }) {
 
           <Pressable
             className="bg-card px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg active:scale-95"
-            onPress={() => (session && session.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
+            onPress={() => (session && session?.user ? router.navigate("/Dashboard") : router.navigate("/Login"))}
           >
             <Text className="text-primary-600 text-base md:text-lg font-bold">
-              {session && session.user ? "Open Dashboard" : "Get Started Free"}
+              {session && session?.user ? "Open Dashboard" : "Get Started Free"}
             </Text>
           </Pressable>
         </View>
