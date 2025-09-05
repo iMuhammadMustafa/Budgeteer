@@ -1,7 +1,9 @@
+import { useAuth } from "@/src/providers/AuthProvider";
 import { router } from "expo-router";
 import React from "react";
 import { View, Text, Pressable, ScrollView, Dimensions } from "react-native";
 import { Svg, Path, Circle, Rect, Defs, LinearGradient, Stop } from "react-native-svg";
+import { ActivityIndicator } from "react-native-web";
 
 const { width } = Dimensions.get("window");
 
@@ -60,7 +62,8 @@ const StatCard = ({ number, label }) => (
 );
 
 export default function BudgeteerLanding() {
-  const session = null;
+  const { session, isSessionLoading } = useAuth();
+
   const features = [
     {
       icon: "💳",
@@ -93,6 +96,7 @@ export default function BudgeteerLanding() {
       description: "Get alerts for budget limits, bill reminders, and spending insights",
     },
   ];
+  if (isSessionLoading) return <ActivityIndicator />;
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
