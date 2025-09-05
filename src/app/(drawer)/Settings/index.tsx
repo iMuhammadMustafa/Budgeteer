@@ -32,11 +32,11 @@ export default function Settings() {
   if (error) return <Text>Error: {error.message}</Text>;
   return (
     <View className="flex-1 p-4">
-      <StorageModeSelection
+      {/* <StorageModeSelection
         storageMode={storageMode}
         handleStorageModeChange={handleStorageModeChange}
         isInitializing={isInitializing}
-      />
+      /> */}
 
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-xl font-bold">Configurations</Text>
