@@ -4,24 +4,30 @@ import supabase from "./Supabase";
 import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
 import { useStorageMode } from "./StorageModeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
+import { clearDemoData } from "@/src/database/demoSeed";
 
 type AuthType = {
   session: Session | null;
   user?: Session["user"];
   isSessionLoading: boolean;
+  isDemoLoaded: boolean;
   setSession: (session: Session | null) => void;
+  setIsDemoLoaded: (isDemoLoaded: boolean) => void;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthType>({
   session: null,
   isSessionLoading: true,
+  isDemoLoaded: false,
   setSession: () => {},
+  setIsDemoLoaded: () => {},
   logout: () => Promise.resolve(),
 });
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
+  const [isDemoLoaded, setIsDemoLoaded] = useState<boolean>(false);
   const { storageMode, setStorageMode } = useStorageMode();
   const user = session?.user;
   const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -41,6 +47,21 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   // Logout function that handles both cloud and local sessions
   const logout = async () => {
     try {
+      // Clean up demo data if demo mode was active
+      if (isDemoLoaded) {
+        const timestamp = new Date().toISOString();
+        console.log(`[AUTH ${timestamp}] Demo mode logout initiated - cleaning up demo data...`);
+        try {
+          await clearDemoData();
+          console.log(`[AUTH ${timestamp}] Demo data cleaned up successfully during logout`);
+        } catch (error) {
+          console.error(`[AUTH ERROR ${timestamp}] Failed to clean up demo data during logout:`, error);
+          // Continue with logout even if cleanup fails
+        }
+        setIsDemoLoaded(false);
+        console.log(`[AUTH ${timestamp}] Demo mode deactivated during logout`);
+      }
+
       // Sign out from Supabase if in cloud mode
       if (storageMode === StorageMode.Cloud) {
         await supabase.auth.signOut();
@@ -111,7 +132,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   }, [setStorageMode, storageMode]);
 
   return (
-    <AuthContext.Provider value={{ session, user, isSessionLoading, setSession: handleSessionChange, logout }}>
+    <AuthContext.Provider value={{ session, user, isSessionLoading, isDemoLoaded, setSession: handleSessionChange, setIsDemoLoaded, logout }}>
       {children}
     </AuthContext.Provider>
   );

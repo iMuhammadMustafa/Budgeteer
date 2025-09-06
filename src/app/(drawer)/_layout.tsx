@@ -11,6 +11,8 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 import MyIcon from "@/src/utils/Icons.Helper";
 import { resetMockDataInLocalStorage } from "@/src/repositories/__mock__/mockDataLocalStorage";
 import Notification from "@/src/components/Notification";
+import DemoModeIndicator from "@/src/components/DemoModeIndicator";
+import { useEffect } from "react";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -23,11 +25,18 @@ export default function DrawerLayout() {
   //   enableNotifications: true,
   // });
 
+  useEffect(() => {
+    if (!isSessionLoading && (!session || !session.user)) {
+      console.log("No session found, navigating to login");
+      router.navigate("/(auth)/Login");
+    }
+  }, [isSessionLoading, session]);
+
   if (isSessionLoading) return <ActivityIndicator />;
   if (!isSessionLoading && (!session || !session.user)) {
     console.log("No session found");
-    router.navigate("/Login")
-  };
+    router.navigate("/Login");
+  }
 
   return (
     <>
@@ -35,7 +44,7 @@ export default function DrawerLayout() {
         screenOptions={{
           drawerType: "slide",
           headerTintColor: isDarkMode ? "white" : "black",
-          headerRight: () => <ThemeToggler toggleTheme={toggleTheme} isDarkMode={isDarkMode} />,
+          headerRight: () => <HeaderRight toggleTheme={toggleTheme} isDarkMode={isDarkMode} />,
         }}
         drawerContent={props => <DrawerContent {...props} />}
       >
@@ -90,37 +99,27 @@ const SettingsScreen = (
   />
 );
 
-const ThemeToggler = ({ toggleTheme, isDarkMode }: { toggleTheme: () => void; isDarkMode: boolean }) => (
-  <Pressable
-    onPress={() => {
-      toggleTheme();
-    }}
-  >
-    <MyIcon
-      name={isDarkMode ? "Sun" : "Moon"}
-      size={24}
-      color={isDarkMode ? "white" : "black"}
-      style={{ marginRight: 30 }}
-    />
-  </Pressable>
+const HeaderRight = ({ toggleTheme, isDarkMode }: { toggleTheme: () => void; isDarkMode: boolean }) => (
+  <View className="flex-row items-center mr-4">
+    <DemoModeIndicator variant="badge" className="mr-3" />
+    <Pressable
+      onPress={() => {
+        toggleTheme();
+      }}
+    >
+      <MyIcon
+        name={isDarkMode ? "Sun" : "Moon"}
+        size={24}
+        color={isDarkMode ? "white" : "black"}
+      />
+    </Pressable>
+  </View>
 );
 
 const DrawerContent = (props: any) => {
-  // const { isDemo } = useDemoMode();
-
-  // useEffect(() => {
-  //   if (isDemo) {
-  //     initializeMockDataInLocalStorage();
-  //   }
-  // }, [isDemo]);
-
   return (
     <DrawerContentScrollView {...props} className="flex-1">
-      {/* {isDemo && (
-        <View className="bg-yellow-300 p-2 mb-2 rounded-md items-center">
-          <Text className="text-black font-bold">Demo Mode</Text>
-        </View>
-      )} */}
+      <DemoModeIndicator variant="banner" className="mb-2" />
       <DrawerItemList {...props} />
       <Footer />
     </DrawerContentScrollView>
@@ -128,20 +127,10 @@ const DrawerContent = (props: any) => {
 };
 const Footer = () => {
   const { currentlyRunning, isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
-  // const { setDemo, isDemo } = useDemoMode();
+  const { logout, isDemoLoaded } = useAuth();
 
-  const handleLogout = () => {
-    // setDemo(false);
-    router.navigate("/(auth)/Logout");
-    supabase.auth.signOut();
-  };
-
-  const handleResetDemoData = () => {
-    resetMockDataInLocalStorage();
-    // Optionally, reload the app to reflect changes
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -163,14 +152,18 @@ const Footer = () => {
         )}
       </View>
 
-      {/* {isDemo && (
-        <Pressable onPress={handleResetDemoData} className="bg-yellow-200 p-2 rounded-md mt-2 mb-2">
-          <Text className="text-black text-center font-bold">Reset Demo Data</Text>
-        </Pressable>
-      )} */}
+      {isDemoLoaded && (
+        <View className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-md mt-2 mb-2">
+          <Text className="text-yellow-800 dark:text-yellow-200 text-center text-sm">
+            You're exploring with demo data. All changes will be cleared when you log out.
+          </Text>
+        </View>
+      )}
 
       <Pressable onPress={handleLogout} className="bg-danger-100 p-2 rounded-md mt-2">
-        <Text className="text-foreground text-center">Logout</Text>
+        <Text className="text-foreground text-center">
+          {isDemoLoaded ? "Exit Demo Mode" : "Logout"}
+        </Text>
       </Pressable>
     </>
   );

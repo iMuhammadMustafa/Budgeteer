@@ -2,6 +2,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "@/src/providers/AuthProvider";
 import { WATERMELONDB_DEFAULTS } from "@/src/database/constants";
+import { DEMO_TENANT_ID, DEMO_USER_ID, seedDemoData } from "@/src/database/demoSeed";
 import { StorageMode } from "@/src/types/StorageMode";
 import { useState } from "react";
 import { Alert } from "react-native";
@@ -14,7 +15,7 @@ export const initialUserState = {
 };
 
 export default function useAuthViewModel() {
-  const { setSession } = useAuth();
+  const { setSession, setIsDemoLoaded } = useAuth();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initialUserState);
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(null);
@@ -70,23 +71,39 @@ export default function useAuthViewModel() {
   };
 
   const handleDemoSession = async () => {
-    await setSession({
-      user: {
-        id: WATERMELONDB_DEFAULTS.userId,
-        email: "demo@demo.com",
-        user_metadata: {
-          tenantid: WATERMELONDB_DEFAULTS.tenantId,
-          full_name: "Demo User",
+    try {
+      // Set demo session with demo tenant ID
+      await setSession({
+        user: {
+          id: DEMO_USER_ID,
+          email: "demo@demo.com",
+          user_metadata: {
+            tenantid: DEMO_TENANT_ID,
+            full_name: "Demo User",
+          },
+          app_metadata: {},
+          aud: "authenticated",
+          created_at: new Date().toISOString(),
         },
-        app_metadata: {},
-        aud: "authenticated",
-        created_at: new Date().toISOString(),
-      },
-      access_token: "demo-access-token",
-      refresh_token: "demo-refresh-token",
-      expires_in: 3600,
-      token_type: "bearer",
-    });
+        access_token: "demo-access-token",
+        refresh_token: "demo-refresh-token",
+        expires_in: 3600,
+        token_type: "bearer",
+      });
+
+      // Seed demo data
+      const timestamp = new Date().toISOString();
+      console.log(`[AUTH ${timestamp}] Demo mode activation initiated - seeding demo data...`);
+      await seedDemoData();
+      console.log(`[AUTH ${timestamp}] Demo data seeded successfully`);
+
+      // Set demo loaded flag
+      setIsDemoLoaded(true);
+      console.log(`[AUTH ${timestamp}] Demo mode activated successfully`);
+    } catch (error) {
+      console.error("Failed to initialize demo session:", error);
+      throw new Error(`Demo seeding failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
   const handleLocalSession = async () => {
     await setSession({
