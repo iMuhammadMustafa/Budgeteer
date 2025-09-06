@@ -357,16 +357,23 @@ export const convertThemeToReactNativeColors = mode => {
 
   const rgb = color => `rgb(${color.replace(/ /g, ",")})`;
 
+  const fontWeights = {
+    regular: /** @type {"400"} */ ("400"),
+    medium: /** @type {"500"} */ ("500"),
+    bold: /** @type {"700"} */ ("700"),
+    heavy: /** @type {"900"} */ ("900"),
+  };
+
   return {
     dark: mode === "dark",
     fonts: {
       body: "System", // Default system font for body
       heading: "System", // Default system font for headings
       monospace: "Courier", // Monospace font for code
-      regular: { fontFamily: "System", fontWeight: "400" }, // Default system font
-      medium: { fontFamily: "System", fontWeight: "500" }, // Medium weight
-      bold: { fontFamily: "System", fontWeight: "700" }, // Bold weight
-      heavy: { fontFamily: "System", fontWeight: "900" }, // Heavy weight
+      regular: { fontFamily: "System", fontWeight: fontWeights.regular }, // Default system font
+      medium: { fontFamily: "System", fontWeight: fontWeights.medium }, // Medium weight
+      bold: { fontFamily: "System", fontWeight: fontWeights.bold }, // Bold weight
+      heavy: { fontFamily: "System", fontWeight: fontWeights.heavy }, // Heavy weight
     },
     colors: {
       background: rgb(styles["--background"]),
@@ -375,7 +382,6 @@ export const convertThemeToReactNativeColors = mode => {
       border: rgb(styles["--border"]),
       primary: rgb(styles["--primary"]),
       notification: rgb(styles["--destructive"]),
-      // Add other React Native-specific colors here
       muted: rgb(styles["--muted"] || "128,128,128"),
       accent: rgb(styles["--accent"] || "0,123,255"),
     },
