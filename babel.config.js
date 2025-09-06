@@ -4,7 +4,7 @@ module.exports = function (api) {
     presets: [
       ["babel-preset-expo", { jsxImportSource: "nativewind" }],
       "nativewind/babel",
-      "module:metro-react-native-babel-preset",
+      // "module:metro-react-native-babel-preset",
     ],
     plugins: [
       ["@babel/plugin-proposal-decorators", { legacy: true }],
