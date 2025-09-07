@@ -47,6 +47,7 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-ui-datepicker": "^3.1.2",
+    "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "supabase": "^2.39.2",
@@ -66,6 +67,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "tailwind-merge": "2.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.3"
   },

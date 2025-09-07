@@ -29,6 +29,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       const savedTheme = await AsyncStorage.getItem("theme");
       setTheme(savedTheme === "dark" ? "dark" : "light");
       setColorScheme(savedTheme === "dark" ? "dark" : "light");
+      applyRootVariables(savedTheme === "dark" ? "dark" : "light");
     };
     if (Platform.OS === "web") {
       document.documentElement.classList.add("bg-background");

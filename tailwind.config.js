@@ -8,6 +8,9 @@ module.exports = {
     {
       pattern: /^text-/,
     },
+    {
+      pattern: /^bg-/,
+    },
   ],
   theme: {
     extend: {
