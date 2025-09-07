@@ -10,7 +10,7 @@ interface IconProps {
   className?: string;
 }
 
-const MyIcon = ({ name, size, color, style, className }: IconProps) => {
+const MyIcon = ({ name, size, color, style, className = "text-foreground" }: IconProps) => {
   const LucideIcon = icons[name as keyof typeof icons];
 
   if (!LucideIcon) {

@@ -1,6 +1,8 @@
 import * as Haptics from "expo-haptics";
 import React, { forwardRef, memo } from "react";
 import { ActivityIndicator, Platform, Pressable, Text } from "react-native";
+import { twMerge } from "tailwind-merge";
+
 import MyIcon from "./MyIcon";
 
 // Type definitions
@@ -15,6 +17,7 @@ export interface ButtonProps {
 
   // Behavior
   onPress: () => void;
+  onLongPress?: () => void;
   disabled?: boolean;
   loading?: boolean;
 
@@ -110,6 +113,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
       children,
       label,
       onPress,
+      onLongPress,
       disabled = false,
       loading = false,
       variant = "primary",
@@ -165,14 +169,41 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
 
       onPress();
     };
+    const handleLongPress = async () => {
+      if (isDisabled) return;
+      if (hapticFeedback !== false && Platform.OS !== "web") {
+        try {
+          switch (hapticFeedback) {
+            case "light":
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              break;
+            case "medium":
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              break;
+            case "heavy":
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              break;
+            case "selection":
+              await Haptics.selectionAsync();
+              break;
+          }
+        } catch (error) {
+          // Silently fail if haptics are not available
+          console.warn("Haptic feedback failed:", error);
+        }
+      }
+      if (onLongPress) {
+        onLongPress();
+      }
+    };
 
     // Determine container and text classes
-    const containerClasses = [
+    const containerClasses = twMerge(
       "flex flex-row justify-center items-center",
       sizeStyle.container,
       isDisabled ? variantStyle.containerDisabled : variantStyle.container,
       className,
-    ].join(" ");
+    );
 
     const textClasses = [sizeStyle.text, isDisabled ? variantStyle.textDisabled : variantStyle.text].join(" ");
 
@@ -186,9 +217,10 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
               color={isDisabled ? "rgb(var(--muted-foreground))" : "currentColor"}
               className="mr-2"
             />
-            {(children || label) && (
+            {children && <>{children}</>}
+            {label && (
               <Text className={textClasses} selectable={false}>
-                {children || label}
+                {label}
               </Text>
             )}
           </>
@@ -205,9 +237,10 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
             />
           )}
 
-          {(children || label) && (
+          {children && <>{children}</>}
+          {label && (
             <Text className={textClasses} selectable={false}>
-              {children || label}
+              {label}
             </Text>
           )}
 
@@ -228,6 +261,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
         className={containerClasses}
         disabled={isDisabled}
         onPress={handlePress}
+        onLongPress={handleLongPress}
         accessibilityRole={accessibilityRole}
         accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : label)}
         accessibilityHint={accessibilityHint}
