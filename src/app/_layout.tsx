@@ -1,11 +1,14 @@
 import "@/global.css";
 import ThemeProvider from "@/src/providers/ThemeProvider";
 import { Stack } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <Stack />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <Stack />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
