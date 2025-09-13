@@ -8,9 +8,8 @@ export class TransactionCategorySupaRepository
   extends SupaRepository<TransactionCategory, TableNames.TransactionCategories>
   implements ITransactionCategoryRepository
 {
-  constructor() {
-    super(TableNames.TransactionCategories);
-  }
+  protected tableName = TableNames.TransactionCategories;
+
   override async findAll(tenantId: string, filters?: any): Promise<TransactionCategory[]> {
     const { data, error } = await supabase
       .from(TableNames.TransactionCategories)

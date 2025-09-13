@@ -7,7 +7,5 @@ export class TransactionGroupSupaRepository
   extends SupaRepository<TransactionGroup, TableNames.TransactionGroups>
   implements ITransactionGroupRepository
 {
-  constructor() {
-    super(TableNames.TransactionGroups);
-  }
+  protected tableName = TableNames.TransactionGroups;
 }

@@ -15,9 +15,8 @@ export class TransactionSupaRepository
   extends SupaRepository<Transaction | TransactionsView, TableNames.Transactions>
   implements ITransactionRepository
 {
-  constructor() {
-    super(TableNames.Transactions);
-  }
+  protected tableName = TableNames.Transactions;
+
   override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
     let query = this.buildQuery(filters, tenantId);
     const { data, error } = await query;

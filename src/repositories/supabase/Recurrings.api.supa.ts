@@ -10,9 +10,7 @@ export class RecurringSupaRepository
   extends SupaRepository<Recurring, TableNames.Recurrings>
   implements IRecurringRepository
 {
-  constructor() {
-    super(TableNames.Recurrings);
-  }
+  protected tableName = TableNames.Recurrings;
   override async findAll(tenantId: string): Promise<Recurring[]> {
     let query = supabase
       .from(TableNames.Recurrings)

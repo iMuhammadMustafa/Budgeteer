@@ -5,9 +5,7 @@ import { SupaRepository } from "../BaseSupaRepository";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
 
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
-  constructor() {
-    super(TableNames.Accounts);
-  }
+  protected tableName = TableNames.Accounts;
 
   override async findAll(tenantId: string): Promise<Account[]> {
     const { data, error } = await supabase
