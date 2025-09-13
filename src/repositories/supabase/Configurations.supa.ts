@@ -2,8 +2,8 @@
 import supabase from "@/src/providers/Supabase";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Configuration } from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { IConfigurationRepository } from "../interfaces/IConfigurationRepository";
-import { SupaRepository } from "../SupaRepository";
 
 export class ConfigurationSupaRepository
   extends SupaRepository<Configuration, TableNames.Configurations>

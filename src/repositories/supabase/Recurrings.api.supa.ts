@@ -3,8 +3,8 @@ import supabase from "@/src/providers/Supabase";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
 // import { RecurringFilters, RecurringType } from "@/src/types/recurring";
+import { SupaRepository } from "../BaseSupaRepository";
 import { IRecurringRepository } from "../interfaces/IRecurringRepository";
-import { SupaRepository } from "../SupaRepository";
 
 export class RecurringSupaRepository
   extends SupaRepository<Recurring, TableNames.Recurrings>

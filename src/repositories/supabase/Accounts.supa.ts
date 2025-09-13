@@ -1,8 +1,8 @@
 import supabase from "@/src/providers/Supabase";
 import { FunctionNames, TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { Account } from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
-import { SupaRepository } from "../SupaRepository";
 
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
   constructor() {

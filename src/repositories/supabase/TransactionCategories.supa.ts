@@ -1,8 +1,8 @@
 import supabase from "@/src/providers/Supabase";
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionCategory } from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { ITransactionCategoryRepository } from "../interfaces/ITransactionCategoryRepository";
-import { SupaRepository } from "../SupaRepository";
 
 export class TransactionCategorySupaRepository
   extends SupaRepository<TransactionCategory, TableNames.TransactionCategories>
