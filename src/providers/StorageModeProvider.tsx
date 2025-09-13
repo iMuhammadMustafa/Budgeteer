@@ -1,10 +1,5 @@
 import { createContext, useContext } from "react";
 
-export enum StorageMode {
-  Cloud = "cloud",
-  Demo = "demo",
-  Local = "local",
-}
 export const StorageModeConfig = {
   [StorageMode.Cloud]: {
     id: StorageMode.Cloud,

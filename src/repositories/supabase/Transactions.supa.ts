@@ -8,8 +8,8 @@ import {
   TransactionsView,
   Updates,
 } from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
-import { SupaRepository } from "../SupaRepository";
 
 export class TransactionSupaRepository
   extends SupaRepository<Transaction | TransactionsView, TableNames.Transactions>
