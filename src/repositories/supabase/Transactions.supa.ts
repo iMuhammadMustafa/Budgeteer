@@ -1,5 +1,3 @@
-// Real implementation moved from Transactions.api.ts
-
 import supabase from "@/src/providers/Supabase";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
