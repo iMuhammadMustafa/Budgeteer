@@ -6,10 +6,7 @@ import { QueryFilters } from "../types/apis/QueryFilters";
 import { IRepository } from "./interfaces/IRepository";
 
 export abstract class SupaRepository<TModel, TTable extends TableNames> implements IRepository<TModel, TTable> {
-  private tableName: string;
-  constructor(tableName: string) {
-    this.tableName = tableName;
-  }
+  protected abstract tableName: string;
 
   async findAll(tenantId: string, filters: QueryFilters): Promise<TModel[]> {
     const { data, error } = await supabase

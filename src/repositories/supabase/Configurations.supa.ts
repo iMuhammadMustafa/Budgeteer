@@ -9,9 +9,7 @@ export class ConfigurationSupaRepository
   extends SupaRepository<Configuration, TableNames.Configurations>
   implements IConfigurationRepository
 {
-  constructor() {
-    super(TableNames.Configurations);
-  }
+  protected tableName = TableNames.Configurations;
   async getConfiguration(table: string, type: string, key: string, tenantId: string): Promise<Configuration> {
     const { data, error } = await supabase
       .from(TableNames.Configurations)
