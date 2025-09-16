@@ -9,7 +9,7 @@ export default class Configuration extends Model implements Tables<TableNames.Co
   @field("key") key!: string;
   @field("value") value!: string;
   @field("type") type!: string;
-  @field("table") tablename!: string;
+  @field("tablename") tablename!: string;
   @field("tenantid") tenantid!: string | null;
   @field("isdeleted") isdeleted!: boolean;
   @field("createdby") createdby!: string | null;

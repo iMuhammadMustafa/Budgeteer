@@ -111,7 +111,7 @@ export const schema = appSchema({
         { name: "key", type: "string" },
         { name: "value", type: "string" },
         { name: "type", type: "string" },
-        { name: "table", type: "string" },
+        { name: "tablename", type: "string" },
         { name: "tenantid", type: "string", isOptional: true },
         { name: "isdeleted", type: "boolean" },
         { name: "createdat", type: "number" },

@@ -196,7 +196,7 @@ CREATE TABLE Configruations
 (
     Id UUID DEFAULT uuid_generate_v7() PRIMARY KEY,
     
-    "table" TEXT NOT NULL,
+    TableName TEXT NOT NULL,
     "type" TEXT NOT NULL,
     KEY TEXT NOT NULL,
     Value TEXT NOT NULL,
