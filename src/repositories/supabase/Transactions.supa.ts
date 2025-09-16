@@ -71,7 +71,7 @@ export class TransactionSupaRepository
     );
   }
 
-  async createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]> {
+  async createMultiple(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]> {
     //TODO Clean this
     const cleaned = transactions.map(t => {
       if ("mode" in t) {
