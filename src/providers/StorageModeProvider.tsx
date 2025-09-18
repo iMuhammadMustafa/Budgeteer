@@ -1,5 +1,14 @@
-import { createContext, useContext } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { initializeWatermelonDB } from "../types/database/watermelon";
+import { seedWatermelonDB } from "../types/database/watermelon/seed";
+import { storage } from "../utils/storageUtils";
 
+export enum StorageMode {
+  Cloud = "cloud",
+  Demo = "demo",
+  Local = "local",
+}
 export const StorageModeConfig = {
   [StorageMode.Cloud]: {
     id: StorageMode.Cloud,
@@ -22,23 +31,73 @@ export const StorageModeConfig = {
 };
 
 type StorageModeContextType = {
-  storageMode: StorageMode;
-  setStorageMode: (mode: StorageMode) => Promise<void>;
-  isInitializing: boolean;
-  //   dbContext: IRepositoryFactory;
+  isLoading: boolean;
+  storageMode: StorageMode | null;
+  setStorageMode: (mode: StorageMode | null) => Promise<void>;
   isDatabaseReady: boolean;
+  // isInitializing: boolean;
+  //   dbContext: IRepositoryFactory;
 };
 
-const storageModeContext = createContext<StorageModeContextType | undefined>(undefined);
+export const STORAGE_KEYS = {
+  LOCAL_SESSION: "budgeteer-local-session",
+  STORAGE_MODE: "budgeteer-storage-mode",
+} as const;
+
+const storageModeContext = createContext<StorageModeContextType | undefined>({
+  isLoading: false,
+  storageMode: null,
+  setStorageMode: async (mode: StorageMode | null) => {},
+  isDatabaseReady: false,
+});
 
 export default function StorageModeProvider({ children }: { children: React.ReactNode }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDatabaseReady, setIsDatabaseReady] = useState(false);
+  const [storageMode, setStorageMode] = useState<StorageMode | null>(null);
+
+  useEffect(() => {
+    const fetchStorageMode = async () => {
+      setIsLoading(true);
+      const mode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
+      if (mode) {
+        setStorageMode(mode as StorageMode);
+      }
+      setIsLoading(false);
+      setIsDatabaseReady(true);
+    };
+
+    fetchStorageMode();
+  }, []);
+
+  const handleSetStorageMode = useCallback(async (mode: StorageMode | null) => {
+    if (!mode) {
+      setStorageMode(null);
+      await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+      return;
+    }
+
+    setIsLoading(true);
+    setIsDatabaseReady(false);
+    await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
+
+    if (mode === StorageMode.Local) {
+      await initializeWatermelonDB();
+
+      await seedWatermelonDB();
+    }
+    setStorageMode(mode);
+    setIsLoading(false);
+    setIsDatabaseReady(true);
+  }, []);
+
   return (
     <storageModeContext.Provider
       value={{
-        storageMode: StorageMode.Cloud,
-        setStorageMode: async () => {},
-        isInitializing: false,
-        isDatabaseReady: true,
+        isLoading,
+        storageMode: storageMode,
+        setStorageMode: handleSetStorageMode,
+        isDatabaseReady: isDatabaseReady,
       }}
     >
       {children}

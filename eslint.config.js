@@ -7,7 +7,10 @@ module.exports = defineConfig([
   {
     ignores: ["dist/*"],
     rules: {
-      "no-empty-object-type": "error",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
     },
   },
 ]);
