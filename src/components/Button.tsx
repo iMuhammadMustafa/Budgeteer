@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { forwardRef, memo } from "react";
-import { ActivityIndicator, Platform, Pressable, Text } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 import { twMerge } from "tailwind-merge";
 
 import MyIcon from "./MyIcon";
@@ -14,6 +14,8 @@ export interface ButtonProps {
   // Content
   children?: React.ReactNode;
   label?: string;
+  bottomDescription?: string;
+  textContainerClasses?: string;
 
   // Behavior
   onPress: () => void;
@@ -58,7 +60,7 @@ export interface ButtonProps {
 const variantStyles = {
   primary: {
     container: "bg-primary",
-    containerDisabled: "bg-primary-200",
+    containerDisabled: "bg-primary opacity-80",
     text: "text-primary-foreground font-medium",
     textDisabled: "text-muted-foreground",
   },
@@ -112,6 +114,8 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
     {
       children,
       label,
+      bottomDescription,
+      textContainerClasses,
       onPress,
       onLongPress,
       disabled = false,
@@ -206,6 +210,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
     );
 
     const textClasses = [sizeStyle.text, isDisabled ? variantStyle.textDisabled : variantStyle.text].join(" ");
+    const bottomDescriptionClasses = "text-foreground opacity-70 ml-8";
 
     // Render content
     const renderContent = () => {
@@ -217,10 +222,15 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
               color={isDisabled ? "rgb(var(--muted-foreground))" : "currentColor"}
               className="mr-2"
             />
-            {children && <>{children}</>}
             {label && (
               <Text className={textClasses} selectable={false}>
                 {label}
+              </Text>
+            )}
+            {children && <>{children}</>}
+            {bottomDescription && (
+              <Text className={`${bottomDescriptionClasses} mt-1 text-xs`} selectable={false}>
+                {bottomDescription}
               </Text>
             )}
           </>
@@ -237,12 +247,19 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
             />
           )}
 
+          <View className={textContainerClasses}>
+            {label && (
+              <Text className={textClasses} selectable={false}>
+                {label}
+              </Text>
+            )}
+            {bottomDescription && (
+              <Text className={`${bottomDescriptionClasses} mt-1 text-xs`} selectable={false}>
+                {bottomDescription}
+              </Text>
+            )}
+          </View>
           {children && <>{children}</>}
-          {label && (
-            <Text className={textClasses} selectable={false}>
-              {label}
-            </Text>
-          )}
 
           {rightIcon && (
             <MyIcon

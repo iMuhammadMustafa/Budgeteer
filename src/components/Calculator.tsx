@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Modal, Platform, Pressable, Text, View } from "react-native";
 
 import * as Haptics from "expo-haptics";
@@ -58,6 +58,136 @@ export default function CalculatorComponent({
   const lastClickedButton = useRef(null);
   const resultRef = useRef(result);
 
+  const handleButtonPress = useCallback(
+    (buttonName: string) => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      switch (buttonName) {
+        case "clear":
+          handleClear();
+          break;
+        case "equals":
+          try {
+            const preparedExpression = prepareExpression(currentExpression);
+            const evalResult = eval(preparedExpression);
+
+            setResult(evalResult.toString());
+            setCurrentExpression(evalResult.toString());
+
+            setHistory([`${currentExpression} = ${evalResult}`, ...history]);
+
+            setLastOperation("equals");
+          } catch (error) {
+            setResult("Error");
+          }
+          break;
+        case "submit":
+          try {
+            const preparedExpression = prepareExpression(currentExpression);
+            const evalResult = eval(preparedExpression);
+            onSubmit(evalResult.toString());
+            setModalVisible(false);
+            handleClear();
+          } catch (error) {
+            setResult("Error");
+          }
+          break;
+        case "clearLastOperation":
+          setCurrentExpression(prev => {
+            const newExpression = prev.replace(/[-+x÷]?[^-+x÷]*$/, "");
+            try {
+              const preparedExpression = prepareExpression(newExpression);
+              const newResult = eval(preparedExpression);
+              setResult(newResult.toString());
+            } catch (error) {
+              setResult("");
+            }
+            return newExpression;
+          });
+          break;
+        case "backspace":
+          setCurrentExpression(prev => {
+            if (prev.length === 1) {
+              return "0";
+            } else {
+              return prev.slice(0, -1);
+            }
+          });
+          break;
+        case "toggleSign":
+          setCurrentExpression(prev => {
+            if (prev.startsWith("-")) {
+              return prev.slice(1);
+            } else {
+              return "-" + prev;
+            }
+          });
+          break;
+        case "percentage":
+          setCurrentExpression(prev => {
+            const value = parseFloat(prev);
+            return (value / 100).toString();
+          });
+          break;
+        case "sqrt":
+          setCurrentExpression(prev => {
+            const value = parseFloat(prev);
+            return Math.sqrt(value).toString();
+          });
+          break;
+        default:
+          if (lastOperation === "equals" && !isNaN(parseInt(buttonName))) {
+            setCurrentExpression(buttonName);
+            setResult("0");
+          } else {
+            setCurrentExpression(prev => {
+              const button = buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName;
+              {
+                if (prev === "0" && !isNaN(parseInt(button))) {
+                  return button;
+                } else {
+                  return prev + button;
+                }
+              }
+            });
+          }
+          setLastOperation(buttonName);
+      }
+      if (Platform.OS === "web") {
+        document.getElementById("equals")?.focus();
+      }
+    },
+    [currentExpression, history, lastOperation, onSubmit],
+  );
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (modalVisible) {
+        const key = event.key;
+
+        if (/^[0-9+\-*/().%]$/.test(key)) {
+          handleButtonPress(key);
+        } else if (key === "Enter") {
+          handleButtonPress("equals");
+          return;
+        } else if (key === "Backspace") {
+          handleButtonPress("backspace");
+        } else if (key === "v" && event.ctrlKey) {
+          navigator.clipboard.readText().then(text => {
+            setCurrentExpression(prev => prev + text);
+          });
+        } else if (key === "c" && event.ctrlKey) {
+          navigator.clipboard.writeText(resultRef.current);
+        } else if (key === "Escape") {
+          setModalVisible(false);
+        }
+        lastClickedButton.current = null; // Reset last clicked button on any key press
+      }
+    },
+    [modalVisible, handleButtonPress],
+  );
+
   useEffect(() => {
     if (Platform.OS === "web") {
       document.getElementById("equals")?.focus();
@@ -66,7 +196,7 @@ export default function CalculatorComponent({
         window.removeEventListener("keydown", handleKeyDown);
       };
     }
-  }, [modalVisible]);
+  }, [modalVisible, handleKeyDown]);
 
   useEffect(() => {
     if (currentValue) {
@@ -84,130 +214,6 @@ export default function CalculatorComponent({
     setResult("0");
     setHistory([]);
     setLastOperation("");
-  };
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (modalVisible) {
-      const key = event.key;
-
-      if (/^[0-9+\-*/().%]$/.test(key)) {
-        handleButtonPress(key);
-      } else if (key === "Enter") {
-        handleButtonPress("equals");
-        return;
-      } else if (key === "Backspace") {
-        handleButtonPress("backspace");
-      } else if (key === "v" && event.ctrlKey) {
-        navigator.clipboard.readText().then(text => {
-          setCurrentExpression(prev => prev + text);
-        });
-      } else if (key === "c" && event.ctrlKey) {
-        navigator.clipboard.writeText(resultRef.current);
-      } else if (key === "Escape") {
-        setModalVisible(false);
-      }
-      lastClickedButton.current = null; // Reset last clicked button on any key press
-    }
-  };
-
-  const handleButtonPress = (buttonName: string) => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    switch (buttonName) {
-      case "clear":
-        handleClear();
-        break;
-      case "equals":
-        try {
-          const preparedExpression = prepareExpression(currentExpression);
-          const evalResult = eval(preparedExpression);
-
-          setResult(evalResult.toString());
-          setCurrentExpression(evalResult.toString());
-
-          setHistory([`${currentExpression} = ${evalResult}`, ...history]);
-
-          setLastOperation("equals");
-        } catch (error) {
-          setResult("Error");
-        }
-        break;
-      case "submit":
-        try {
-          const preparedExpression = prepareExpression(currentExpression);
-          const evalResult = eval(preparedExpression);
-          onSubmit(evalResult.toString());
-          setModalVisible(false);
-          handleClear();
-        } catch (error) {
-          setResult("Error");
-        }
-        break;
-      case "clearLastOperation":
-        setCurrentExpression(prev => {
-          const newExpression = prev.replace(/[-+x÷]?[^-+x÷]*$/, "");
-          try {
-            const preparedExpression = prepareExpression(newExpression);
-            const newResult = eval(preparedExpression);
-            setResult(newResult.toString());
-          } catch (error) {
-            setResult("");
-          }
-          return newExpression;
-        });
-        break;
-      case "backspace":
-        setCurrentExpression(prev => {
-          if (prev.length === 1) {
-            return "0";
-          } else {
-            return prev.slice(0, -1);
-          }
-        });
-        break;
-      case "toggleSign":
-        setCurrentExpression(prev => {
-          if (prev.startsWith("-")) {
-            return prev.slice(1);
-          } else {
-            return "-" + prev;
-          }
-        });
-        break;
-      case "percentage":
-        setCurrentExpression(prev => {
-          const value = parseFloat(prev);
-          return (value / 100).toString();
-        });
-        break;
-      case "sqrt":
-        setCurrentExpression(prev => {
-          const value = parseFloat(prev);
-          return Math.sqrt(value).toString();
-        });
-        break;
-      default:
-        if (lastOperation === "equals" && !isNaN(parseInt(buttonName))) {
-          setCurrentExpression(buttonName);
-          setResult("0");
-        } else {
-          setCurrentExpression(prev => {
-            const button = buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName;
-            {
-              if (prev === "0" && !isNaN(parseInt(button))) {
-                return button;
-              } else {
-                return prev + button;
-              }
-            }
-          });
-        }
-        setLastOperation(buttonName);
-    }
-    if (Platform.OS === "web") {
-      document.getElementById("equals")?.focus();
-    }
   };
 
   const prepareExpression = (expr: string) => {
