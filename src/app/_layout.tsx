@@ -6,6 +6,13 @@ import AppInitializer from "../providers/AppInitalizer";
 import AuthProvider from "../providers/AuthProvider";
 import StorageModeProvider from "../providers/StorageModeProvider";
 
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

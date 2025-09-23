@@ -5,15 +5,15 @@ import { TableNames, ViewNames } from "../types/database/TableNames";
 import { Inserts, Updates } from "../types/database/Tables.Types";
 
 export interface IReadService<TModel> {
-  findAll: (searchFilters?: QueryFilters) => ReturnType<typeof useQuery<TModel[]>>;
-  findById: (id?: string) => ReturnType<typeof useQuery<TModel | null>>;
+  useFindAll: (searchFilters?: QueryFilters) => ReturnType<typeof useQuery<TModel[]>>;
+  useFindById: (id?: string) => ReturnType<typeof useQuery<TModel | null>>;
 }
 export interface IWriteService<TModel, TTable extends TableNames> {
-  create: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
-  update: () => ReturnType<
+  useCreate: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
+  useUpdate: () => ReturnType<
     typeof useMutation<TModel | null | undefined, unknown, { form: Updates<TTable>; original?: TModel; props?: any }>
   >;
-  upsert: () => ReturnType<
+  useUpsert: () => ReturnType<
     typeof useMutation<
       TModel | null | undefined,
       unknown,
@@ -22,15 +22,15 @@ export interface IWriteService<TModel, TTable extends TableNames> {
   >;
 }
 export interface IMultipleWriteService<TModel, TTable extends TableNames> {
-  createMultiple?(data: Inserts<TTable>[]): Promise<TModel[]>;
-  updateMultiple?(data: Updates<TTable>[]): Promise<void>;
-  deleteMultiple?(ids: string[]): Promise<void>;
+  useCreateMultiple?(data: Inserts<TTable>[]): Promise<TModel[]>;
+  useUpdateMultiple?(data: Updates<TTable>[]): Promise<void>;
+  useDeleteMultiple?(ids: string[]): Promise<void>;
 }
 
 export interface IDeleteService<TModel> {
-  softDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
-  delete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
-  restore: () => ReturnType<typeof useMutation<void, unknown, string>>;
+  useSoftDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
+  useDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
+  useRestore: () => ReturnType<typeof useMutation<void, unknown, string>>;
 }
 
 export interface IService<TModel, TTable extends TableNames>
@@ -42,15 +42,15 @@ export interface IService<TModel, TTable extends TableNames>
 }
 export interface IServiceWithView<TModel, TTable extends TableNames, TView extends ViewNames>
   extends IDeleteService<TView> {
-  findAll: (searchFilters?: any) => ReturnType<typeof useQuery<TView[]>>;
-  findById: (id?: string) => ReturnType<typeof useQuery<TModel | TView | null>>;
+  useFindAll: (searchFilters?: any) => ReturnType<typeof useQuery<TView[]>>;
+  useFindById: (id?: string) => ReturnType<typeof useQuery<TModel | TView | null>>;
 
-  create: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
+  useCreate: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
 
-  update: () => ReturnType<
+  useUpdate: () => ReturnType<
     typeof useMutation<TModel | null | undefined, unknown, { form: Updates<TTable>; original: TModel; props?: any }>
   >;
-  upsert: () => ReturnType<
+  useUpsert: () => ReturnType<
     typeof useMutation<
       TModel | null | undefined,
       unknown,

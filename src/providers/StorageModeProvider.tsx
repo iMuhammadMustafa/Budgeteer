@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createRepositoryFactory, IRepositoryFactory } from "../repositories/RepositoryFactory";
 import { initializeWatermelonDB } from "../types/database/watermelon";
 import { seedWatermelonDB } from "../types/database/watermelon/seed";
 import { storage } from "../utils/storageUtils";
@@ -35,8 +36,7 @@ type StorageModeContextType = {
   storageMode: StorageMode | null;
   setStorageMode: (mode: StorageMode | null) => Promise<void>;
   isDatabaseReady: boolean;
-  // isInitializing: boolean;
-  //   dbContext: IRepositoryFactory;
+  dbContext: IRepositoryFactory;
 };
 
 export const STORAGE_KEYS = {
@@ -49,12 +49,14 @@ const storageModeContext = createContext<StorageModeContextType | undefined>({
   storageMode: null,
   setStorageMode: async (mode: StorageMode | null) => {},
   isDatabaseReady: false,
+  dbContext: null as any,
 });
 
 export default function StorageModeProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDatabaseReady, setIsDatabaseReady] = useState(false);
   const [storageMode, setStorageMode] = useState<StorageMode | null>(null);
+  const dbContext = useMemo(() => createRepositoryFactory(storageMode), [storageMode]);
 
   useEffect(() => {
     const fetchStorageMode = async () => {
@@ -98,6 +100,7 @@ export default function StorageModeProvider({ children }: { children: React.Reac
         storageMode: storageMode,
         setStorageMode: handleSetStorageMode,
         isDatabaseReady: isDatabaseReady,
+        dbContext,
       }}
     >
       {children}
