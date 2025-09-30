@@ -22,9 +22,10 @@ export interface IWriteService<TModel, TTable extends TableNames> {
   >;
 }
 export interface IMultipleWriteService<TModel, TTable extends TableNames> {
-  useCreateMultiple?(data: Inserts<TTable>[]): Promise<TModel[]>;
-  useUpdateMultiple?(data: Updates<TTable>[]): Promise<void>;
-  useDeleteMultiple?(ids: string[]): Promise<void>;
+  useCreateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Inserts<TTable>[]}>>;
+  useUpdateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Updates<TTable>[]}>>;
+  useDeleteMultiple?: () => ReturnType<typeof useMutation<void, unknown, { id: string[]}>>;
+
 }
 
 export interface IDeleteService<TModel> {
