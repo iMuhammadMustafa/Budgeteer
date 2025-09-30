@@ -9,6 +9,7 @@ import StorageModeProvider from "../providers/StorageModeProvider";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import QueryProvider from "../providers/QueryProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,11 +21,13 @@ export default function RootLayout() {
         <StorageModeProvider>
           <AuthProvider>
             <AppInitializer>
-              <Stack>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-              </Stack>
+              <QueryProvider>
+                <Stack>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                </Stack>
+              </QueryProvider>
             </AppInitializer>
           </AuthProvider>
         </StorageModeProvider>

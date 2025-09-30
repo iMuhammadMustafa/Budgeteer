@@ -1,27 +1,31 @@
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Platform, Text, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
+import { IService } from "../services/IService";
+import { TableNames } from "../types/database/TableNames";
 import Button from "./Button";
 import MyIcon from "./MyIcon";
 
-export default function MyTab({
+export default function MyTab<TModel, TTable extends TableNames>({
   title,
+  service,
   queryKey,
-  onGet,
-  onBatchDelete,
-  upsertUrl,
   groupBy,
   Footer,
+  detailsContent,
+  customAction,
+  upsertUrl,
 }: {
   title: string;
+  service: IService<TModel, TTable>;
   queryKey: string[];
-  onGet: () => { data: any[]; isLoading: boolean; error: any };
-  onBatchDelete: () => BatchDeleteMutation;
-  upsertUrl: Href;
   groupBy?: string;
   Footer?: React.ReactNode | string;
+  detailsContent?: (item: any) => string;
+  customAction?: React.ReactNode | ((item: any) => React.ReactNode);
+  upsertUrl: Href;
 }) {
   const {
     selectedItems,
@@ -33,57 +37,81 @@ export default function MyTab({
     handleDelete,
     handleRefresh,
   } = useMyTab({
+    service,
     queryKey,
-    onGet,
-    onBatchDelete,
-    upsertUrl,
     groupBy,
+    upsertUrl,
   });
 
   if (isLoading) return <ActivityIndicator />;
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
-      <View className="flex-row justify-between items-center p-2 px-4 bg-background">
-        <Text className="font-bold text-foreground">{title}</Text>
+      <View className="flex-row justify-between items-center px-4 bg-background">
+        <Text className="font-bold text-lg text-foreground">{title}</Text>
         <View className="flex-row items-center">
-          <Button variant="ghost" onPress={handleRefresh} rightIcon="RefreshCw" />
-          <Link href={upsertUrl} key={upsertUrl.toString()}>
+          <Button variant="ghost" className="py-0" onPress={handleRefresh} rightIcon="RefreshCw" />
+          {/* <Link href={upsertUrl} key={upsertUrl.toString()}>
             <MyIcon name="Plus" size={24} />
-          </Link>
+          </Link> */}
         </View>
       </View>
 
-      {groupedData &&
-        Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
-          <View key={groupName}>
-            <Text className="font-bold text-lg p-2 px-4 bg-card text-foreground">{groupName}</Text>
-            {itemsInGroup.map((item: any) => {
-              const isSelected = selectedItems.some(selectedItem => item.id === selectedItem.id);
-              return (
-                <Button
-                  variant="ghost"
-                  key={item.id}
-                  className={`flex-row items-center px-5 py-3 border-b border-gray-200 text-foreground ${isSelected ? "bg-info-100" : "bg-background"}`}
-                  onLongPress={() => handleLongPress(item)}
-                  onPress={() => handlePress(item)}
-                  rightIcon="ChevronRight"
-                >
-                  <View className="flex flex-row flex-1 width-full">
-                    <View className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.iconColor}`}>
-                      {item.icon && <MyIcon name={item.icon} size={18} className="color-card-foreground" />}
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-md text-foreground">{item.name}</Text>
-                      <Text className="text-md text-foreground">{item.details}</Text>
-                    </View>
-                    {/* <MyIcon name="ChevronRight" size={20} className="text-gray-400 dark:text-gray-500" /> */}
+      <ScrollView className="custom-scrollbar mt-2">
+        {groupedData &&
+          Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
+            <View key={groupName}>
+              {groupName && <Text className="font-bold text-lg py-0 px-4 bg-card text-foreground">{groupName}</Text>}
+              {itemsInGroup.map((item: any) => {
+                const isSelected = selectedItems.some(selectedItem => item.id === selectedItem.id);
+                return (
+                  <View
+                    key={item.id}
+                    className={`flex-row items-center ${groupName ? "py-1" : "py-2"} border-b border-gray-200 px-5 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
+                  >
+                    {/*
+                    //TODO: Fix Link usage with Button 
+                      <Link href={`${upsertUrl}${item.id}`}>
+                     */}
+                    <Button
+                      variant="ghost"
+                      onLongPress={() => handleLongPress(item)}
+                      onPress={() => handlePress(item)}
+                      rightIcon="ChevronRight"
+                      className={`flex-1 flex-row items-center py-0 px-0 rounded-none text-foreground`}
+                    >
+                      <View className="flex flex-row flex-1 width-full">
+                        <View
+                          className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.color ? item.color : "gray-300"}`}
+                        >
+                          {item.icon && (
+                            <MyIcon
+                              name={item.icon}
+                              size={18}
+                              className={`color-card-foreground bg-${item.iconColor}`}
+                            />
+                          )}
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-md text-foreground">{item.name}</Text>
+                          <Text className="text-md text-foreground">
+                            {detailsContent ? detailsContent(item) : item.details}
+                          </Text>
+                        </View>
+                      </View>
+                    </Button>
+                    {customAction && (
+                      <View className="ml-2">
+                        {typeof customAction === "function" ? customAction(item) : customAction}
+                      </View>
+                    )}
                   </View>
-                </Button>
-              );
-            })}
-          </View>
-        ))}
+                );
+              })}
+            </View>
+          ))}
+      </ScrollView>
 
+      {Footer && <View className="p-2">{typeof Footer === "string" ? <Text>{Footer}</Text> : Footer}</View>}
       {isSelectionMode && (
         <Button
           className="absolute right-4 bottom-4 w-14 h-14 rounded-full justify-center items-center"
@@ -93,38 +121,36 @@ export default function MyTab({
           iconSize={24}
         />
       )}
-
-      {Footer && <View className="p-2">{typeof Footer === "string" ? <Text>{Footer}</Text> : Footer}</View>}
     </SafeAreaView>
   );
 }
 
-const useMyTab = ({
+const useMyTab = <TModel, TTable extends TableNames>({
   queryKey,
-  onGet,
-  onBatchDelete,
-  upsertUrl,
+  service,
   groupBy,
+  upsertUrl,
 }: {
   queryKey: string[];
-  onGet: () => { data: any[]; isLoading: boolean; error: any };
-  onBatchDelete: () => BatchDeleteMutation;
-  upsertUrl: string;
+  service: IService<TModel, TTable>;
   groupBy?: string;
+  upsertUrl: Href;
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
 
-  const { data, isLoading, error } = onGet();
-  const { mutate } = onBatchDelete();
+  const { data, isLoading, error } = service.useFindAll();
+  const { mutate } = service.useSoftDelete();
 
-  let groupedData: Record<string, any[]> = useMemo(() => {
-    if (!groupBy) return data;
+  let groupedData: Record<string, TModel[]> = useMemo(() => {
+    if (!groupBy) return { "": data || [] };
 
     const getNestedValue = (obj: any, path: string) => {
       if (!path) return undefined;
       return path.split(".").reduce((acc, part) => acc && acc[part], obj);
     };
+
+    if (!data) return {};
 
     return data.reduce(
       (acc, item) => {
@@ -132,7 +158,7 @@ const useMyTab = ({
         (acc[groupValue] = acc[groupValue] || []).push(item);
         return acc;
       },
-      {} as Record<string, any[]>,
+      {} as Record<string, TModel[]>,
     );
   }, [data, groupBy]);
 
@@ -145,14 +171,16 @@ const useMyTab = ({
         prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item],
       );
     } else {
-      let route: Href = upsertUrl + item;
+      let route: Href = upsertUrl + item.id;
       router.push(route);
     }
   };
 
   const handleDelete = () => {
     if (isSelectionMode && selectedItems.length > 0) {
-      mutate({ items: selectedItems });
+      for (const item of selectedItems) {
+        mutate({ id: item.id, item });
+      }
       setSelectedItems([]);
     }
   };
