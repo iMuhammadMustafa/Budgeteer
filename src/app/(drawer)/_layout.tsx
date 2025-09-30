@@ -1,5 +1,6 @@
 import Button from "@/src/components/Button";
 import MyIcon from "@/src/components/MyIcon";
+import { useAuth } from "@/src/providers/AuthProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
@@ -7,8 +8,12 @@ import * as Updates from "expo-updates";
 import { ActivityIndicator, Platform, Text, View } from "react-native";
 
 export default function DrawerLayout() {
-  const { isDarkMode, toggleTheme } = useTheme();
+  console.log("This is the Drawer Layout");
 
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { isLoading, session } = useAuth();
+
+  if (isLoading || !session) return <ActivityIndicator className="flex-1" />;
   return (
     <Drawer
       screenOptions={{
