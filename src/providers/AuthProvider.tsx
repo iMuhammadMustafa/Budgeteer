@@ -1,7 +1,8 @@
+import { StorageMode } from "@/src/types/StorageMode";
 import { Session } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { storage } from "../utils/storageUtils";
-import { STORAGE_KEYS, StorageMode, useStorageMode } from "./StorageModeProvider";
+import { STORAGE_KEYS, useStorageMode } from "./StorageModeProvider";
 import supabase from "./Supabase";
 
 interface AuthContextType {

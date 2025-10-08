@@ -1,4 +1,4 @@
-import MyIcon from "@/src/components/MyIcon";
+import MyIcon from "@/src/components/elements/MyIcon";
 import { Tabs } from "expo-router";
 
 export default function TabsLayout() {

@@ -1,9 +1,10 @@
+import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
 import { router } from "expo-router";
 import { useCallback } from "react";
 import { Text, View } from "react-native";
-import Button from "../components/Button";
+import Button from "../components/elements/Button";
 import { useAuth } from "../providers/AuthProvider";
-import { StorageMode, StorageModeConfig, useStorageMode } from "../providers/StorageModeProvider";
+import { useStorageMode } from "../providers/StorageModeProvider";
 import { WATERMELONDB_DEFAULTS } from "../types/database/watermelon/constants";
 
 export default function Index() {

@@ -1,35 +1,10 @@
+import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
+import { initializeWatermelonDB } from "@/src/types/database/watermelon";
+import { seedWatermelonDB } from "@/src/types/database/watermelon/seed";
+import { StorageMode } from "@/src/types/StorageMode";
+import { storage } from "@/src/utils/storageUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { createRepositoryFactory, IRepositoryFactory } from "../repositories/RepositoryFactory";
-import { initializeWatermelonDB } from "../types/database/watermelon";
-import { seedWatermelonDB } from "../types/database/watermelon/seed";
-import { storage } from "../utils/storageUtils";
-
-export enum StorageMode {
-  Cloud = "cloud",
-  Demo = "demo",
-  Local = "local",
-}
-export const StorageModeConfig = {
-  [StorageMode.Cloud]: {
-    id: StorageMode.Cloud,
-    title: "Cloud Mode",
-    description: "Cloud database with sync. Login with Username and Password",
-    icon: "☁️",
-  },
-  [StorageMode.Demo]: {
-    id: StorageMode.Demo,
-    title: "Demo Mode",
-    description: "Try the app with sample data",
-    icon: "🎮",
-  },
-  [StorageMode.Local]: {
-    id: StorageMode.Local,
-    title: "Local Mode",
-    description: "Local device storage",
-    icon: "💾",
-  },
-};
 
 type StorageModeContextType = {
   isLoading: boolean;

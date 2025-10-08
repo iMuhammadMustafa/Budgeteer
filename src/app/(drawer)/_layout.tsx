@@ -1,5 +1,5 @@
-import Button from "@/src/components/Button";
-import MyIcon from "@/src/components/MyIcon";
+import Button from "@/src/components/elements/Button";
+import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";

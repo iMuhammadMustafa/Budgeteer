@@ -1,7 +1,8 @@
-import Button from "@/src/components/Button";
+import Button from "@/src/components/elements/Button";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { StorageMode, useStorageMode } from "@/src/providers/StorageModeProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import supabase from "@/src/providers/Supabase";
+import { StorageMode } from "@/src/types/StorageMode";
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
