@@ -1,8 +1,10 @@
-import Button from "@/src/components/Button";
-import { AccountSelecterDropdown } from "@/src/components/DropdownField";
-import MyModal from "@/src/components/MyModal";
+import Button from "@/src/components/elements/Button";
+import { AccountSelecterDropdown } from "@/src/components/elements/DropdownField";
+import MyModal from "@/src/components/elements/MyModal";
+import TextInputField from "@/src/components/elements/TextInputField";
+import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import MyTab from "@/src/components/MyTab";
-import TextInputField from "@/src/components/TextInputField";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { useState } from "react";
@@ -11,9 +13,11 @@ import { ActivityIndicator, Text, View } from "react-native";
 export default function AccountsIndex() {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
+  const accountCategoryService = useAccountCategoryService();
 
   const { data: accounts, isLoading, error } = accountService.useFindAll();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
+  const { data: accountCategories } = accountCategoryService.useFindAll();
   const { mutate: createTransaction, isPending: isCreating } = transactionService.useCreate();
 
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
@@ -54,7 +58,7 @@ export default function AccountsIndex() {
     <>
       <MyTab
         title="Accounts"
-        upsertUrl={"/Accounts/Upsert?accountId="}
+        detailsUrl={"/Accounts/Upsert?accountId="}
         queryKey={["accounts"]}
         service={accountService}
         groupBy={"category.name"}
@@ -63,6 +67,8 @@ export default function AccountsIndex() {
         customAction={(item: any) => (
           <Button rightIcon="ArrowLeftRight" variant="ghost" onPress={() => openTransferModal(item)} />
         )}
+        UpsertModal={(item: any) => <AccountForm account={item} />}
+        initialState={initialState}
       />
       {modalState.open && (
         <AccountTransferModal

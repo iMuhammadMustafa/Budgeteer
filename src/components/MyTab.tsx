@@ -5,8 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
 import { TableNames } from "../types/database/TableNames";
-import Button from "./Button";
-import MyIcon from "./MyIcon";
+import Button from "./elements/Button";
+import MyIcon from "./elements/MyIcon";
+import MyModal from "./elements/MyModal";
 
 export default function MyTab<TModel, TTable extends TableNames>({
   title,
@@ -16,7 +17,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
   Footer,
   detailsContent,
   customAction,
-  upsertUrl,
+  UpsertModal,
+  initialState,
+  detailsUrl,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -25,7 +28,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
   Footer?: React.ReactNode | string;
   detailsContent?: (item: any) => string;
   customAction?: React.ReactNode | ((item: any) => React.ReactNode);
-  upsertUrl: Href;
+  UpsertModal?: (item: any) => React.ReactNode;
+  initialState?: any;
+  detailsUrl: Href;
 }) {
   const {
     selectedItems,
@@ -40,8 +45,11 @@ export default function MyTab<TModel, TTable extends TableNames>({
     service,
     queryKey,
     groupBy,
-    upsertUrl,
+    detailsUrl: detailsUrl,
   });
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState(initialState);
 
   if (isLoading) return <ActivityIndicator />;
   return (
@@ -49,10 +57,21 @@ export default function MyTab<TModel, TTable extends TableNames>({
       <View className="flex-row justify-between items-center px-4 bg-background">
         <Text className="font-bold text-lg text-foreground">{title}</Text>
         <View className="flex-row items-center">
-          <Button variant="ghost" className="py-0" onPress={handleRefresh} rightIcon="RefreshCw" />
-          {/* <Link href={upsertUrl} key={upsertUrl.toString()}>
-            <MyIcon name="Plus" size={24} />
-          </Link> */}
+          <Button variant="ghost" className="py-0 px-2" iconSize={20} onPress={handleRefresh} rightIcon="RefreshCw" />
+          {UpsertModal && (
+            <Button
+              variant="ghost"
+              className="py-0 px-0"
+              iconSize={24}
+              onPress={() => setIsOpen(true)}
+              rightIcon="Plus"
+            />
+          )}
+          {UpsertModal && isOpen && (
+            <MyModal isOpen={isOpen} setIsOpen={setIsOpen} title={`Add New ${title.slice(0, -1)}`}>
+              {UpsertModal(currentItem)}
+            </MyModal>
+          )}
         </View>
       </View>
 
@@ -68,15 +87,12 @@ export default function MyTab<TModel, TTable extends TableNames>({
                     key={item.id}
                     className={`flex-row items-center ${groupName ? "py-1" : "py-2"} border-b border-gray-200 px-5 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
                   >
-                    {/*
-                    //TODO: Fix Link usage with Button 
-                      <Link href={`${upsertUrl}${item.id}`}>
-                     */}
+                    {/* <Link href={`${detailsUrl}${item.id}` as Href} asChild onPress={e => e.preventDefault()}> */}
                     <Button
                       variant="ghost"
                       onLongPress={() => handleLongPress(item)}
                       onPress={() => handlePress(item)}
-                      rightIcon="ChevronRight"
+                      // rightIcon="ChevronRight"
                       className={`flex-1 flex-row items-center py-0 px-0 rounded-none text-foreground`}
                     >
                       <View className="flex flex-row flex-1 width-full">
@@ -99,6 +115,19 @@ export default function MyTab<TModel, TTable extends TableNames>({
                         </View>
                       </View>
                     </Button>
+                    {/* </Link> */}
+                    {UpsertModal && (
+                      <Button
+                        variant="ghost"
+                        className="py-0 px-0"
+                        iconSize={20}
+                        onPress={() => {
+                          setIsOpen(true);
+                          setCurrentItem(item);
+                        }}
+                        rightIcon="SquarePen"
+                      />
+                    )}
                     {customAction && (
                       <View className="ml-2">
                         {typeof customAction === "function" ? customAction(item) : customAction}
@@ -129,12 +158,12 @@ const useMyTab = <TModel, TTable extends TableNames>({
   queryKey,
   service,
   groupBy,
-  upsertUrl,
+  detailsUrl,
 }: {
   queryKey: string[];
   service: IService<TModel, TTable>;
   groupBy?: string;
-  upsertUrl: Href;
+  detailsUrl: Href;
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
@@ -171,7 +200,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
         prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item],
       );
     } else {
-      let route: Href = upsertUrl + item.id;
+      let route: Href = detailsUrl + item.id;
       router.push(route);
     }
   };

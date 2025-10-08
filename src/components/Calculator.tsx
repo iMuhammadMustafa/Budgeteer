@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Modal, Platform, Pressable, Text, View } from "react-native";
 
 import * as Haptics from "expo-haptics";
-import MyIcon from "./MyIcon";
+import MyIcon from "./elements/MyIcon";
 
 const buttonRows = [
   [

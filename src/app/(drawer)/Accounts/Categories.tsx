@@ -1,3 +1,4 @@
+import AccountCategoryForm, { initialState } from "@/src/components/forms/AccountCategoryForm";
 import MyTab from "@/src/components/MyTab";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 
@@ -6,9 +7,11 @@ export default function AccountCategoriesTab() {
   return (
     <MyTab
       title="Account Categories"
-      upsertUrl={"/Accounts/Categories/Upsert?accountId="}
+      detailsUrl={"/Accounts/Categories/Upsert?accountId="}
       queryKey={["accountcategories"]}
       service={accountCategoryService}
+      initialState={initialState}
+      UpsertModal={(category: any) => <AccountCategoryForm category={category} />}
     />
   );
 }

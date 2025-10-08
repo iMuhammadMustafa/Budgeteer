@@ -1,3 +1,4 @@
+import TransactionGroupForm, { initialState } from "@/src/components/forms/TransactionGroupForm";
 import MyTab from "@/src/components/MyTab";
 import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 
@@ -6,9 +7,11 @@ export default function TransactionGroupsTab() {
   return (
     <MyTab
       title="Groups"
-      upsertUrl={"Categories/Groups/Upsert?accountId="}
+      detailsUrl={"Categories/Groups/Upsert?accountId="}
       queryKey={["transactiongroups"]}
       service={groups}
+      UpsertModal={item => <TransactionGroupForm group={item} />}
+      initialState={initialState}
     />
   );
 }
