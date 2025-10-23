@@ -77,9 +77,14 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
   // Initialize component
   useEffect(() => {
     const iconToSet = initialIcon || DEFAULT_ICON;
-    setSelectedIcon(iconToSet);
-    onSelect(iconToSet);
-  }, [initialIcon, onSelect]);
+    setSelectedIcon(prev => {
+      if (prev !== iconToSet) {
+        onSelect(iconToSet);
+        return iconToSet;
+      }
+      return prev;
+    });
+  }, [initialIcon]);
 
   // Filtered icons with performance optimization
   const filteredIcons = useMemo(() => {
