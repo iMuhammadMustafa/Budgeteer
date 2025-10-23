@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
-import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 
 import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
@@ -14,6 +14,7 @@ import { FormFieldConfig, ValidationSchema } from "@/src/types/components/forms.
 import { TableNames } from "@/src/types/database/TableNames";
 import { AccountCategory, Inserts, Updates } from "@/src/types/database/Tables.Types";
 import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 interface AccountCategoryFormProps {

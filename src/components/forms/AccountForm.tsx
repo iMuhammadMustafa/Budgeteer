@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 
 import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
@@ -13,6 +13,7 @@ import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account, Updates } from "@/src/types/database/Tables.Types";
 import { commonValidationRules, createAccountNameValidation } from "@/src/utils/form-validation";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFormState } from "../form-builder/hooks/useFormState";
 import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 
@@ -146,6 +147,12 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     updateField("balance", adjustedBalance);
   }, [openTransaction?.amount, account.balance, formState.data.openBalance, updateField]);
 
+  const handleIconSelect = useCallback(
+    (icon: string) => {
+      updateField("icon", icon);
+    },
+    [updateField],
+  );
   // Custom reset handler that preserves open balance field
   const handleReset = useCallback(() => {
     // Store the current open balance since it's managed as a separate form
@@ -250,7 +257,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker
-                  onSelect={(icon: any) => updateField("icon", icon)}
+                  onSelect={(icon: any) => handleIconSelect(icon)}
                   initialIcon={formState.data.icon ?? "BadgeInfo"}
                 />
               </View>
