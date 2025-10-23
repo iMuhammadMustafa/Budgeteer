@@ -76,14 +76,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
 
   // Initialize component
   useEffect(() => {
-    const iconToSet = initialIcon || DEFAULT_ICON;
-    setSelectedIcon(prev => {
-      if (prev !== iconToSet) {
-        onSelect(iconToSet);
-        return iconToSet;
-      }
-      return prev;
-    });
+    setSelectedIcon(initialIcon || DEFAULT_ICON);
   }, [initialIcon]);
 
   // Filtered icons with performance optimization
@@ -327,7 +320,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                   getItemLayout={getItemLayout}
                   initialNumToRender={numColumns * 5}
                   maxToRenderPerBatch={numColumns * 5}
-                  windowSize={10}
+                  windowSize={5}
                   removeClippedSubviews={true}
                   showsVerticalScrollIndicator={true}
                   contentContainerStyle={{
