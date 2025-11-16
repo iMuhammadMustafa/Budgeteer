@@ -79,7 +79,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
         {groupedData &&
           Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
             <View key={groupName}>
-              {groupName && <Text className="font-bold text-lg py-0 px-4 bg-card text-foreground">{groupName}</Text>}
+              {!groupName ? null : (
+                <Text className="font-bold text-lg py-0 px-4 bg-card text-foreground">{groupName}</Text>
+              )}
               {itemsInGroup.map((item: any) => {
                 const isSelected = selectedItems.some(selectedItem => item.id === selectedItem.id);
                 return (
