@@ -174,7 +174,6 @@ const IconItemComponent = memo(
         ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:bg-gray-50"}
         ${item.isRecent ? "ring-2 ring-green-200" : ""}
       `}
-        accessibilityRole="button"
         accessibilityLabel={`Select ${item.name} icon`}
         accessibilityHint={item.isRecent ? "Recently used icon" : undefined}
       >
@@ -405,7 +404,6 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
           focus:border-blue-500 focus:ring-2 focus:ring-blue-200
         "
         onPress={handleModalOpen}
-        accessibilityRole="button"
         accessibilityLabel={`Selected icon: ${selectedIcon}. Tap to change icon`}
         accessibilityHint="Opens icon picker modal"
       >
@@ -424,7 +422,6 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
         <Pressable
           className="flex-1 bg-black/50 justify-center items-center p-4"
           onPress={handleModalClose}
-          accessibilityRole="button"
           accessibilityLabel="Close icon picker"
         >
           <Pressable
@@ -438,7 +435,6 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                 <Pressable
                   onPress={handleModalClose}
                   className="p-2 rounded-full hover:bg-gray-100"
-                  accessibilityRole="button"
                   accessibilityLabel="Close"
                 >
                   <MyIcon name="X" size={20} color="#6b7280" />
