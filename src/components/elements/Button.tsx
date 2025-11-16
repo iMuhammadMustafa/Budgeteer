@@ -16,6 +16,7 @@ export interface ButtonProps {
   label?: string;
   bottomDescription?: string;
   textContainerClasses?: string;
+  textClasses?: string;
 
   // Behavior
   onPress: () => void;
@@ -61,13 +62,13 @@ const variantStyles = {
   primary: {
     container: "bg-primary",
     containerDisabled: "bg-primary opacity-80",
-    text: "text-primary-foreground font-medium",
+    text: "text-foreground font-medium",
     textDisabled: "text-muted-foreground",
   },
   secondary: {
     container: "bg-secondary",
     containerDisabled: "bg-secondary-200",
-    text: "text-secondary-foreground font-medium",
+    text: "text-foreground font-medium",
     textDisabled: "text-muted-foreground",
   },
   outline: {
@@ -85,7 +86,7 @@ const variantStyles = {
   destructive: {
     container: "bg-destructive",
     containerDisabled: "bg-destructive/50",
-    text: "text-destructive-foreground font-medium",
+    text: "text-foreground font-medium",
     textDisabled: "text-muted-foreground",
   },
 };
@@ -133,6 +134,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
       accessibilityRole = "button",
       // Legacy support
       isValid = true,
+      textClasses = "",
     },
     ref,
   ) => {
@@ -209,7 +211,8 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
       className,
     );
 
-    const textClasses = [sizeStyle.text, isDisabled ? variantStyle.textDisabled : variantStyle.text].join(" ");
+    const _textClasses =
+      [sizeStyle.text, isDisabled ? variantStyle.textDisabled : variantStyle.text].join(" ") + " " + textClasses;
     const bottomDescriptionClasses = "text-foreground opacity-70 ml-8";
 
     // Render content
@@ -223,7 +226,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
               className="mr-2"
             />
             {label && (
-              <Text className={textClasses} selectable={false}>
+              <Text className={_textClasses} selectable={false}>
                 {label}
               </Text>
             )}
@@ -243,13 +246,13 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
             <MyIcon
               name={leftIcon}
               size={finalIconSize}
-              className={`${textClasses} ${children || label ? "mr-2" : ""}`}
+              className={`${_textClasses} ${children || label ? "mr-2" : ""}`}
             />
           )}
 
           <View className={textContainerClasses}>
             {label && (
-              <Text className={textClasses} selectable={false}>
+              <Text className={_textClasses} selectable={false}>
                 {label}
               </Text>
             )}
@@ -265,7 +268,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
             <MyIcon
               name={rightIcon}
               size={finalIconSize}
-              className={`${textClasses} ${children || label ? "ml-2" : ""}`}
+              className={`${_textClasses} ${children || label ? "ml-2" : ""}`}
             />
           )}
         </>

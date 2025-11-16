@@ -9,6 +9,8 @@ import StorageModeProvider from "../providers/StorageModeProvider";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import { Suspense } from "react";
+import { ActivityIndicator } from "react-native";
 import QueryProvider from "../providers/QueryProvider";
 
 dayjs.extend(utc);
@@ -16,22 +18,26 @@ dayjs.extend(timezone);
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <StorageModeProvider>
-          <AuthProvider>
-            <AppInitializer>
-              <QueryProvider>
-                <Stack>
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                </Stack>
-              </QueryProvider>
-            </AppInitializer>
-          </AuthProvider>
-        </StorageModeProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <Suspense fallback={<ActivityIndicator />}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider>
+          {/* <NotificationsProvider> */}
+          <StorageModeProvider>
+            <AuthProvider>
+              <AppInitializer>
+                <QueryProvider>
+                  <Stack>
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                  </Stack>
+                </QueryProvider>
+              </AppInitializer>
+            </AuthProvider>
+          </StorageModeProvider>
+          {/* </NotificationsProvider> */}
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </Suspense>
   );
 }
