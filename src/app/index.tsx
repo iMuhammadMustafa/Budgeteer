@@ -53,43 +53,46 @@ export default function Index() {
 
   if (isLoading) return <Text>Loading...</Text>;
   return (
-    <View className="flex-1 items-center bg-background">
-      <View className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
-        <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
-        <Text className="text-foreground text-lg mb-8 text-center opacity-70">
-          Choose how you would like to use the app
-        </Text>
+    <>
+      {/* <StickyTable /> */}
+      <View className="flex-1 items-center bg-background">
+        <View className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
+          <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
+          <Text className="text-foreground text-lg mb-8 text-center opacity-70">
+            Choose how you would like to use the app
+          </Text>
 
-        <View className="space-y-4">
-          {Object.values(StorageModeConfig).map(mode => (
-            <Button
-              key={mode.id}
-              className="p-6 border border-primary rounded-lg bg-card shadow-sm text-foreground"
-              onPress={async () => await handleLocalLogin(mode)}
-              disabled={isLoading}
-              label={`${mode.icon} ${mode.title}`}
-              bottomDescription={mode.description}
-              textContainerClasses="flex flex-col items-center"
-              textClasses="text-foreground"
-            />
-          ))}
+          <View className="space-y-4">
+            {Object.values(StorageModeConfig).map(mode => (
+              <Button
+                key={mode.id}
+                className="p-6 border border-primary rounded-lg bg-card shadow-sm text-foreground"
+                onPress={async () => await handleLocalLogin(mode)}
+                disabled={isLoading}
+                label={`${mode.icon} ${mode.title}`}
+                bottomDescription={mode.description}
+                textContainerClasses="flex flex-col items-center"
+                textClasses="text-foreground"
+              />
+            ))}
+          </View>
+
+          {isLoading && (
+            <View className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
+            </View>
+          )}
         </View>
 
-        {isLoading && (
-          <View className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
-          </View>
-        )}
+        <View className="absolute top-10 right-5">
+          <Button
+            onPress={toggleTheme}
+            label={theme === "light" ? "🌙" : "☀️"}
+            accessibilityLabel="Go to Theme Settings"
+            variant="ghost"
+          />
+        </View>
       </View>
-
-      <View className="absolute top-10 right-5">
-        <Button
-          onPress={toggleTheme}
-          label={theme === "light" ? "🌙" : "☀️"}
-          accessibilityLabel="Go to Theme Settings"
-          variant="ghost"
-        />
-      </View>
-    </View>
+    </>
   );
 }
