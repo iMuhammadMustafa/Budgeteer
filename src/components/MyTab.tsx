@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +19,8 @@ export default function MyTab<TModel, TTable extends TableNames>({
   UpsertModal,
   initialState,
   detailsUrl,
+  icons = true,
+  customRenderItem,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -31,6 +32,13 @@ export default function MyTab<TModel, TTable extends TableNames>({
   UpsertModal?: (item: any) => React.ReactNode;
   initialState?: any;
   detailsUrl: Href;
+  icons?: boolean;
+  customRenderItem?: (
+    item: TModel,
+    isSelected: boolean,
+    onLongPress: () => void,
+    onPress: () => void,
+  ) => React.ReactNode;
 }) {
   const {
     selectedItems,
@@ -41,15 +49,17 @@ export default function MyTab<TModel, TTable extends TableNames>({
     handlePress,
     handleDelete,
     handleRefresh,
+    isOpen,
+    setIsOpen,
+    currentItem,
+    setCurrentItem,
   } = useMyTab({
     service,
     queryKey,
     groupBy,
     detailsUrl: detailsUrl,
+    initialState,
   });
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState(initialState);
 
   if (isLoading) return <ActivityIndicator />;
   return (
@@ -63,7 +73,10 @@ export default function MyTab<TModel, TTable extends TableNames>({
               variant="ghost"
               className="py-0 px-0"
               iconSize={24}
-              onPress={() => setIsOpen(true)}
+              onPress={() => {
+                setIsOpen(true);
+                setCurrentItem(initialState);
+              }}
               rightIcon="Plus"
             />
           )}
@@ -97,25 +110,36 @@ export default function MyTab<TModel, TTable extends TableNames>({
                       // rightIcon="ChevronRight"
                       className={`flex-1 flex-row items-center py-0 px-0 rounded-none text-foreground`}
                     >
-                      <View className="flex flex-row flex-1 width-full">
-                        <View
-                          className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.color ? item.color : "gray-300"}`}
-                        >
-                          {item.icon && (
-                            <MyIcon
-                              name={item.icon}
-                              size={18}
-                              className={`color-card-foreground bg-${item.iconColor}`}
-                            />
+                      {customRenderItem ? (
+                        customRenderItem(
+                          item,
+                          isSelected,
+                          () => handleLongPress(item),
+                          () => handlePress(item),
+                        )
+                      ) : (
+                        <View className="flex flex-row flex-1 width-full">
+                          {icons && (
+                            <View
+                              className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.color ? item.color : "gray-300"}`}
+                            >
+                              {item.icon && (
+                                <MyIcon
+                                  name={item.icon}
+                                  size={18}
+                                  className={`color-card-foreground bg-${item.iconColor}`}
+                                />
+                              )}
+                            </View>
                           )}
+                          <View className="flex-1">
+                            <Text className="text-md text-foreground">{item.name}</Text>
+                            <Text className="text-md text-foreground">
+                              {detailsContent ? detailsContent(item) : item.details}
+                            </Text>
+                          </View>
                         </View>
-                        <View className="flex-1">
-                          <Text className="text-md text-foreground">{item.name}</Text>
-                          <Text className="text-md text-foreground">
-                            {detailsContent ? detailsContent(item) : item.details}
-                          </Text>
-                        </View>
-                      </View>
+                      )}
                     </Button>
                     {/* </Link> */}
                     {UpsertModal && (
@@ -161,17 +185,22 @@ const useMyTab = <TModel, TTable extends TableNames>({
   service,
   groupBy,
   detailsUrl,
+  initialState,
 }: {
   queryKey: string[];
   service: IService<TModel, TTable>;
   groupBy?: string;
   detailsUrl: Href;
+  initialState?: any;
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
 
   const { data, isLoading, error } = service.useFindAll();
   const { mutate } = service.useSoftDelete();
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState(initialState);
 
   let groupedData: Record<string, TModel[]> = useMemo(() => {
     if (!groupBy) return { "": data || [] };
@@ -203,7 +232,9 @@ const useMyTab = <TModel, TTable extends TableNames>({
       );
     } else {
       let route: Href = detailsUrl + item.id;
-      router.push(route);
+      // router.push(route);
+      setIsOpen(true);
+      setCurrentItem(item);
     }
   };
 
@@ -229,5 +260,9 @@ const useMyTab = <TModel, TTable extends TableNames>({
     handlePress,
     handleDelete,
     handleRefresh,
+    isOpen,
+    setIsOpen,
+    currentItem,
+    setCurrentItem,
   };
 };
