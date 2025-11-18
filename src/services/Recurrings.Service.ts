@@ -62,31 +62,22 @@ export const executeRecurringHelper = async (
   const userId = session.user.id;
   const tenantId = session.user.user_metadata.tenantid;
 
-  if (!recurring) {
-    throw new Error("Recurring transaction not found");
-  }
   try {
-    validateExecutionContext(recurring, overrides?.amount);
-
-    const executionAmount = overrides?.amount ?? recurring.amount ?? 0;
-    const executionDate = recurring.nextoccurrencedate ?? overrides?.date ?? dayjs().utc().toISOString();
-    const executionDescription = overrides?.description ?? recurring.description;
-    const executionNotes = overrides?.notes ?? recurring.notes;
-    const type = recurring.type;
 
     const transactions: Inserts<TableNames.Transactions>[] = [];
     const transactionId = GenerateUuid();
     const transferTransactionId = GenerateUuid();
+    
     let transaction: Inserts<TableNames.Transactions> = {
       id: transactionId,
       name: recurring.name,
-      description: executionDescription,
-      amount: executionAmount,
-      date: executionDate,
+      description: overrides?.description ?? recurring.description,
+      amount: overrides?.amount ?? recurring.amount ?? 0,
+      date: overrides?.date ?? recurring.nextoccurrencedate ??  dayjs().toISOString(),
       accountid: recurring.sourceaccountid,
       payee: recurring.payeename,
-      notes: executionNotes,
-      type: type,
+      notes: overrides?.notes ?? recurring.notes,
+      type: recurring.type,
       categoryid: recurring.categoryid!,
       tenantid: tenantId,
       createdby: userId,
@@ -130,11 +121,11 @@ export const executeRecurringHelper = async (
     }
 
     let updateData: any = {
-      lastexecutedat: executionDate,
-      lastautoappliedat: dayjs().utc().toISOString(),
+      lastexecutedat: transaction.date,
+      lastautoappliedat: dayjs().toISOString(),
       failedattempts: 0,
       updatedby: userId,
-      updatedat: dayjs().utc().toISOString(),
+      updatedat: dayjs().toISOString(),
     };
 
     if (!recurring.isdateflexible && recurring.nextoccurrencedate && recurring.recurrencerule) {
@@ -205,39 +196,6 @@ const getNextOccurrence = (date: string, rule: string) => {
   return next.toDate();
 };
 
-export function validateExecutionContext(recurring: Recurring, overrideAmount?: number): void {
-  const errors: string[] = [];
-
-  if (!recurring.isactive) {
-    errors.push("Recurring transaction is not active");
-  }
-
-  if (recurring.isdeleted) {
-    errors.push("Recurring transaction has been deleted");
-  }
-
-  if (!recurring.isamountflexible && !overrideAmount && !recurring.amount) {
-    errors.push("Amount is required for execution");
-  }
-
-  if (
-    recurring.failedattempts &&
-    recurring.maxfailedattempts &&
-    recurring.failedattempts >= recurring.maxfailedattempts
-  ) {
-    errors.push(
-      `Recurring transaction has exceeded maximum failed attempts (${recurring.failedattempts}/${recurring.maxfailedattempts})`,
-    );
-  }
-
-  if (recurring.enddate && dayjs().isAfter(dayjs(recurring.enddate))) {
-    errors.push("Recurring transaction end date has passed");
-  }
-
-  if (errors.length !== 0) {
-    throw new Error(`Execution validation failed: ${errors.join(", ")}`);
-  }
-}
 export const parseRecurrenceRule = (rule: string): { freq: RecurrenceFrequency; interval: number } => {
   const parts = rule.split(";");
   const freq = parts.find(p => p.startsWith("FREQ="))?.split("=")[1] || "MONTHLY";
