@@ -309,7 +309,7 @@ export const createAmountValidation = (): ValidationRule[] => [
  */
 export const createDateValidation = (): ValidationRule[] => [
   commonValidationRules.required("Date is required"),
-  commonValidationRules.custom(notFutureDateValidator, "Date cannot be in the future"),
+  // commonValidationRules.custom(notFutureDateValidator, "Date cannot be in the future"),
 ];
 
 /**

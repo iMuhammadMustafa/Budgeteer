@@ -1,12 +1,25 @@
 import { Modal, Pressable, ScrollView } from "react-native";
 
-export default function MyModal({ isOpen, setIsOpen, onRequestClose, children }: any) {
+export default function MyModal({
+  isOpen,
+  setIsOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <Modal
       visible={isOpen}
-      onDismiss={() => setIsOpen(false)}
+      onDismiss={() => {
+        onClose();
+        setIsOpen(false);
+      }}
       onRequestClose={() => {
-        onRequestClose();
+        onClose();
         setIsOpen(false);
       }}
       transparent={true}
