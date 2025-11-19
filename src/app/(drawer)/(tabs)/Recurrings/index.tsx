@@ -82,7 +82,13 @@ export default function RecurringsScreen() {
       </>
     );
   };
-
+  const handleClose = () => {
+    console.log("RequestingClose");
+    setModalVisible(false);
+    setAmountInput("");
+    setPendingRecurring(null);
+    setMode("minus");
+  };
   return (
     <>
       <View className="flex-1 bg-background">
@@ -98,16 +104,7 @@ export default function RecurringsScreen() {
       </View>
 
       {modalVisible && (
-        <MyModal
-          isOpen={modalVisible}
-          setIsOpen={setModalVisible}
-          onRequestClose={() => {
-            setModalVisible(false);
-            setAmountInput("");
-            setPendingRecurring(null);
-            setMode("minus");
-          }}
-        >
+        <MyModal isOpen={modalVisible} setIsOpen={setModalVisible} onClose={handleClose}>
           <View className="bg-card rounded-xl p-6 items-center">
             <Text className="text-lg font-bold mb-2 text-foreground">
               {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible
