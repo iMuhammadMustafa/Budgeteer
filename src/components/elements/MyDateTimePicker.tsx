@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { Keyboard, Modal, Platform, Pressable, Text, View } from "react-native";
+import { Keyboard, Platform, Pressable, Text, View } from "react-native";
 
 import dayjs from "dayjs";
 import DateTimePicker, { DateType } from "react-native-ui-datepicker";
 import MyIcon from "./MyIcon";
+import MyModal from "./MyModal";
 
 type MyDateTimePickerProps = {
   label?: string;
@@ -74,7 +75,20 @@ export default function MyDateTimePicker({
           <DateTimePicker
             mode="single"
             date={pickerDate} // Use internal pickerDate
-            // displayFullDays
+            showOutsideDays
+            className="bg-card text-foreground "
+            classNames={{
+              today: "border border-primary rounded-full",
+              selected: "bg-primary rounded-full",
+              disabled: "opacity-50",
+              outside: "opacity-50",
+              outside_label: "text-gray-500",
+              day_label: "text-foreground",
+              month_label: "text-foreground font-medium",
+              year_label: "text-foreground font-medium",
+              header: "bg-background border-b border-border text-foreground",
+              selected_month_label: "text-primary font-medium",
+            }}
             // timePicker // Removed time picker for date-only as per recurring table
             onChange={(params: { date: DateType }) => {
               // Use DateType from library
@@ -116,16 +130,17 @@ const DateTimePickerContainer = ({
         <View className={`max-w-[${layout.width / 2}px]`}>{children}</View>
       </View>
     ) : (
-      <Modal
+      <MyModal isOpen={isVisible} setIsOpen={setIsVisible} onClose={() => setIsVisible(false)}>
+        {/* <Modal
         visible={isVisible}
         onDismiss={() => setIsVisible(false)}
         // onBackButtonPress={() => setIsVisible(false)}
         // onBackdropPress={() => setIsVisible(false)}
-      >
+      > */}
         <Pressable onPressOut={() => setIsVisible(false)}>
-          <View className="m-auto items-center justify-center bg-white rounded-md p-1">{children}</View>
+          <View className="m-auto items-center justify-center bg-background rounded-md p-1">{children}</View>
         </Pressable>
-      </Modal>
+      </MyModal>
     )}
   </>
 );

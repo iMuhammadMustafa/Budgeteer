@@ -3,7 +3,7 @@ import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 
 export default function AddTransaction() {
@@ -28,22 +28,6 @@ export default function AddTransaction() {
       component: SecondRoute,
     },
   ];
-
-  const renderScene = useCallback(
-    ({ route }: any) => {
-      switch (route.key) {
-        case "first":
-          return (
-            <FirstRoute transaction={transaction.id ? transaction : (transactionById ?? initialTransactionState)} />
-          );
-        case "second":
-          return <SecondRoute transaction={transaction ?? null} />;
-        default:
-          return <FirstRoute />;
-      }
-    },
-    [transaction],
-  );
 
   return (
     <View className="flex-1">
