@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CalculatorComponent from "../Calculator";
 import Button from "../elements/Button";
+import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import SearchableDropdown from "../elements/SearchableDropdown";
 import FormContainer from "../form-builder/FormContainer";
@@ -53,7 +54,11 @@ const TRANSACTION_TYPE_CONFIG = {
   Expense: { mode: "minus", defaultName: "Expense" },
   Transfer: { mode: "minus", defaultName: "Transfer" },
 } as const;
-
+const transactionTypeOptions: OptionItem[] = [
+  { id: "Income", label: "Income", value: "Income" },
+  { id: "Expense", label: "Expense", value: "Expense" },
+  { id: "Transfer", label: "Transfer", value: "Transfer" },
+];
 const getValidationSchema = (type: string): ValidationSchema<TransactionFormType> => {
   const baseSchema: ValidationSchema<TransactionFormType> = {
     name: [commonValidationRules.required("Transaction name is required")],
@@ -84,6 +89,7 @@ const calculateFinalAmount = (data: TransactionFormType, currentMode: "plus" | "
   let finalAmount = Math.abs(data.amount);
 
   // Apply sign based on transaction type and mode
+
   switch (data.type) {
     case "Transfer":
       // Transfers are always negative from source account
@@ -101,12 +107,7 @@ const calculateFinalAmount = (data: TransactionFormType, currentMode: "plus" | "
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
-  const transactionTypeOptions: OptionItem[] = [
-    { id: "Income", label: "Income", value: "Income" },
-    { id: "Expense", label: "Expense", value: "Expense" },
-    { id: "Transfer", label: "Transfer", value: "Transfer" },
-  ];
-
+  console.log("Fk TransactionForm render with transaction:", transaction);
   const {
     onSubmit,
     isValid,
@@ -145,7 +146,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
         >
           <View className="flex-row justify-end mb-4">
             <Button
-              label="Add More"
+              label="One More"
               variant="primary"
               className="bg-primary-300 rounded-md"
               disabled={isLoading}
@@ -188,41 +189,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               label: "Date",
               type: "date",
               required: true,
+              popUp: Platform.OS !== "web",
             }}
             value={formState.data.date}
             error={formState.errors.date}
             touched={formState.touched.date}
             onChange={value => {
               if (value) {
-                const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
+                const formattedDate = dayjs(value);
                 updateField("date", formattedDate);
               }
             }}
             onBlur={() => setFieldTouched("date")}
           />
 
-          {/* Amount and Type Section */}
           <View className="flex-row justify-center items-center mb-4">
             <View className="me-2 mt-5 justify-center items-center">
-              <Pressable
-                className={`${
-                  formState.data.type === "Transfer"
-                    ? "bg-info-400"
-                    : mode === "plus"
-                      ? "bg-success-400"
-                      : "bg-danger-400"
-                } border border-muted rounded-lg p-1.5`}
-                onPress={handleModeToggle}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={`Toggle amount sign, currently ${mode}`}
-              >
-                {mode === "minus" ? (
-                  <MyIcon name="Minus" size={24} className="text-gray-100" />
-                ) : (
-                  <MyIcon name="Plus" size={24} className="text-gray-100" />
-                )}
-              </Pressable>
+              <ModeIcon onPress={handleModeToggle} mode={mode} />
             </View>
             <View className="flex-1">
               <FormField
@@ -306,12 +289,12 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 <>
                   <Pressable
                     onPress={handleSwitchAccounts}
-                    className={`p-2 ${Platform.OS === "web" ? "mx-2" : "my-2 self-center"}`}
+                    className={`${Platform.OS === "web" ? "mx-2" : "my-2"} "p-2 self-center`}
                     accessible={true}
                     accessibilityRole="button"
                     accessibilityLabel="Switch source and destination accounts"
                   >
-                    <MyIcon name="ArrowUpDown" size={24} className="text-primary-300" />
+                    <MyIcon name="ArrowUpDown" size={24} className="text-foreground" />
                   </Pressable>
 
                   <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
@@ -322,7 +305,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         type: "select",
                         required: true,
                         options: transferAccountOptions,
-                        description: "Select the account to transfer money to",
+                        group: "category.name",
                       }}
                       value={formState.data.transferaccountid}
                       error={formState.errors.transferaccountid}
@@ -425,7 +408,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         ...data,
         amount: finalAmount,
         mode: undefined,
-        payee: data.type === "Transfer" ? "" : data.payee,
+        payee: data.type === "Transfer" ? null : data.payee,
       };
 
       await upsertTransaction(

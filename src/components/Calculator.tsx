@@ -261,7 +261,11 @@ const History = ({ history }: any) => {
     <View className="min-h-24 max-h-24 h-24 rounded-md overflow-hidden">
       <FlatList
         data={history}
-        renderItem={({ item }) => <Text className={`text-foreground text-base mb-1`}>{item}</Text>}
+        renderItem={({ item }) => (
+          <Text selectable={false} className={`text-foreground text-base mb-1`}>
+            {item}
+          </Text>
+        )}
         keyExtractor={(item, index) => index.toString()}
         className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar"
       />
@@ -270,7 +274,7 @@ const History = ({ history }: any) => {
     // <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
     //   {history &&
     //     history.map((item: any, index: number) => (
-    //       <Text key={index} className={`text-base mb-1`}>
+    //       <Text selectable={false} key={index} className={`text-base mb-1`}>
     //         {item}
     //       </Text>
     //     ))}
@@ -281,10 +285,14 @@ const Display = ({ currentExpression, result }: any) => {
   return (
     <View className="rounded-md bg-card border border-muted px-4">
       <View className="items-end">
-        <Text className="text-foreground text-xl">{currentExpression}</Text>
+        <Text selectable={false} className="text-foreground text-xl">
+          {currentExpression}
+        </Text>
       </View>
       <View className="items-end">
-        <Text className="text-foreground text-2xl font-bold">{result}</Text>
+        <Text selectable={false} className="text-foreground text-2xl font-bold">
+          {result}
+        </Text>
       </View>
     </View>
   );
@@ -316,7 +324,9 @@ const Button = ({
       className={`w-14 h-14 justify-center items-center bg-gray-200 rounded-lg`}
       onPress={() => handleButtonPress(button.name)}
     >
-      <Text className={`text-xl`}>{button.label}</Text>
+      <Text selectable={false} className={`text-xl`}>
+        {button.label}
+      </Text>
     </Pressable>
   );
 };
@@ -336,7 +346,9 @@ const FormActionButtons = ({
           setModalVisible(false);
         }}
       >
-        <Text className={`text-white font-bold text-center`}>Close</Text>
+        <Text selectable={false} className={`text-white font-bold text-center`}>
+          Close
+        </Text>
       </Pressable>
       <Pressable
         className={`bg-primary rounded-md p-4`}
@@ -344,7 +356,9 @@ const FormActionButtons = ({
           handleButtonPress("submit");
         }}
       >
-        <Text className={`text-white font-bold text-center`}>Submit</Text>
+        <Text selectable={false} className={`text-white font-bold text-center`}>
+          Submit
+        </Text>
       </Pressable>
     </View>
   );

@@ -160,7 +160,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
               handleChange(dateString);
               handleBlur();
             }}
-            isModal={true}
+            isModal={config.popUp}
           />
         );
 
