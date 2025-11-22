@@ -7,6 +7,7 @@ import AuthProvider from "../providers/AuthProvider";
 import StorageModeProvider from "../providers/StorageModeProvider";
 
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Suspense } from "react";
@@ -15,6 +16,7 @@ import QueryProvider from "../providers/QueryProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(relativeTime);
 
 export default function RootLayout() {
   return (
