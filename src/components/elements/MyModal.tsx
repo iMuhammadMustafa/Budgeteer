@@ -13,7 +13,7 @@ export default function MyModal({
 }: {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  onClose: () => void;
+  onClose?: () => void;
   children: React.ReactNode;
 }) {
   const idRef = useRef<number>(nextModalId++);
