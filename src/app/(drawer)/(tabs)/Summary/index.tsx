@@ -220,11 +220,10 @@ export default function SummaryV2() {
   // Render loading state
   if (isLoading && !refreshing) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
-        <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+      <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#10b981" />
-          <Text className="mt-4 text-base text-slate-500">Loading expense data...</Text>
+          <Text className="mt-4 text-base text-foreground">Loading expense data...</Text>
         </View>
       </SafeAreaView>
     );
@@ -233,15 +232,15 @@ export default function SummaryV2() {
   // Render error state
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-background">
         <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
         <View className="flex-1 justify-center items-center px-5">
           <Text className="text-lg font-bold text-red-500 mb-2">Failed to load expense data</Text>
-          <Text className="text-sm text-slate-500 text-center mb-4">
+          <Text className="text-sm text-muted-foreground text-center mb-4">
             {error instanceof Error ? error.message : "Unknown error occurred"}
           </Text>
-          <Pressable onPress={onRefresh} className="bg-emerald-500 py-3 px-6 rounded-lg">
-            <Text className="text-white font-semibold">Try Again</Text>
+          <Pressable onPress={onRefresh} className="bg-success-500 py-3 px-6 rounded-lg">
+            <Text className="text-primary-foreground font-semibold">Try Again</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -253,23 +252,25 @@ export default function SummaryV2() {
       <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
 
       {/* Header */}
-      <View className="flex-row justify-between items-center p-4 bg-white border-b border-slate-200">
-        <Text className="text-2xl font-bold text-slate-800">Expense Summary</Text>
+      <View className="flex-row justify-between items-center p-4 bg-card border-b border-border">
+        <Text className="text-2xl font-bold text-foreground">Expense Summary</Text>
         <Pressable onPress={onRefresh} className="p-2">
           <RefreshCcw size={24} color="#10b981" />
         </Pressable>
       </View>
 
       {/* Time Period Selector */}
-      <View className="bg-white p-4 border-b border-slate-200">
-        <View className="flex-row bg-slate-100 rounded-lg p-1">
+      <View className="bg-card p-4 border-b border-border">
+        <View className="flex-row bg-popover rounded-lg p-1">
           {(["monthly", "quarterly", "yearly"] as TimePeriod[]).map(period => (
             <Pressable
               key={period}
               onPress={() => setTimePeriod(period)}
               className={`flex-1 py-3 px-4 rounded-md items-center ${timePeriod === period ? "bg-primary" : ""}`}
             >
-              <Text className={`${timePeriod === period ? "text-white" : "text-gray-500"} font-semibold capitalize`}>
+              <Text
+                className={`${timePeriod === period ? "text-primary-foreground" : "text-muted-foreground"} font-semibold capitalize`}
+              >
                 {period}
               </Text>
             </Pressable>
@@ -291,26 +292,26 @@ export default function SummaryV2() {
               {/* --- COLUMN 1: STICKY CATEGORIES (Header + Body) --- */}
               <View style={{ width: CATEGORY_COLUMN_WIDTH }} className=" border-slate-300">
                 {/* Sticky Category Header */}
-                <View className="bg-slate-50 border-b-2 border-slate-200 py-4 px-4">
-                  <Text className="font-bold text-sm text-slate-800">Category</Text>
+                <View className="bg-popover border-b-2 border-border py-4 px-4">
+                  <Text className="font-bold text-sm text-foreground">Category</Text>
                 </View>
 
                 {/* Sticky Category Body */}
                 {Object.entries(groupedData).map(([groupName, categories]) => (
                   <View key={groupName}>
                     {/* Group Header - Category Column */}
-                    <View className="bg-slate-100 py-3 border-b border-slate-200 px-4" style={{ height: 58 }}>
+                    <View className="bg-popover py-3 border-b border-border px-4" style={{ height: 58 }}>
                       <View className="flex-row items-center h-full">
                         <View className="w-7 h-7 items-center justify-center mr-2">
                           {Object.values(categories)[0]?.[0]?.groupIcon && (
                             <MyIcon
                               name={Object.values(categories)[0][0].groupIcon!}
                               size={18}
-                              className="text-slate-800"
+                              className="text-foreground"
                             />
                           )}
                         </View>
-                        <Text className="font-bold text-base text-slate-800 flex-1">{groupName}</Text>
+                        <Text className="font-bold text-base text-foreground flex-1">{groupName}</Text>
                       </View>
                     </View>
 
@@ -331,8 +332,8 @@ export default function SummaryV2() {
                         <View
                           key={`${groupName}-${categoryName}`}
                           className={`${
-                            categoryIndex % 2 === 0 ? "bg-white" : "bg-slate-50"
-                          } py-2 border-b border-slate-100 px-4`}
+                            categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
+                          } py-2 border-b border-border px-4`}
                           style={{ height: rowHeight }}
                         >
                           <View className="flex-row items-center pl-4 h-full">
@@ -341,11 +342,11 @@ export default function SummaryV2() {
                                 <MyIcon
                                   name={categoryTransactions[0].categoryIcon!}
                                   size={16}
-                                  className="text-slate-500"
+                                  className="text-muted-foreground"
                                 />
                               )}
                             </View>
-                            <Text className="text-sm text-slate-500 flex-1" numberOfLines={2}>
+                            <Text className="text-sm text-muted-foreground flex-1" numberOfLines={2}>
                               {categoryName}
                             </Text>
                           </View>
@@ -356,19 +357,19 @@ export default function SummaryV2() {
                 ))}
 
                 {/* Totals Row - Category Column */}
-                <View className="bg-slate-800 py-4 border-t-2 border-slate-200 px-4">
-                  <Text className="font-bold text-base text-white">Total</Text>
+                <View className="bg-primary py-4 border-t-2 border-border px-4">
+                  <Text className="font-bold text-base text-primary-foreground">Total</Text>
                 </View>
               </View>
 
               {/* --- COLUMN 2: SCROLLABLE DATA (Header + Body) --- */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={true} className="bg-white">
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} className="bg-card">
                 <View>
                   {/* Scrollable Period Headers */}
-                  <View className="flex-row bg-slate-50 border-b-2 border-slate-200 py-4">
+                  <View className="flex-row bg-popover border-b-2 border-border py-4">
                     {periods.map((period, index) => (
                       <View key={index} style={{ width: columnWidth }} className="px-2">
-                        <Text className="font-bold text-sm text-slate-800 text-center" numberOfLines={2}>
+                        <Text className="font-bold text-sm text-foreground text-center" numberOfLines={2}>
                           {period.label}
                         </Text>
                       </View>
@@ -379,7 +380,7 @@ export default function SummaryV2() {
                   {Object.entries(groupedData).map(([groupName, categories]) => (
                     <View key={groupName}>
                       {/* Group Header - Data Columns */}
-                      <View className="flex-row bg-slate-100 py-3 border-b border-slate-200" style={{ height: 58 }}>
+                      <View className="flex-row bg-popover py-3 border-b border-border" style={{ height: 58 }}>
                         {periods.map((period, periodIndex) => {
                           const groupTotal = Object.values(categories).reduce(
                             (sum, categoryTransactions) => sum + (categoryTransactions[periodIndex]?.amount || 0),
@@ -406,7 +407,11 @@ export default function SummaryV2() {
                               <View className="flex-row items-center justify-center" style={{ gap: 4 }}>
                                 <Text
                                   className={`font-semibold text-sm text-center ${
-                                    hasIncrease ? "text-red-500" : hasDecrease ? "text-emerald-500" : "text-slate-800"
+                                    hasIncrease
+                                      ? "text-red-500"
+                                      : hasDecrease
+                                        ? "text-success-500"
+                                        : "text-typography-700"
                                   }`}
                                 >
                                   {formatCurrency(groupTotal)}
@@ -436,8 +441,8 @@ export default function SummaryV2() {
                           <View
                             key={`${groupName}-${categoryName}`}
                             className={`flex-row ${
-                              categoryIndex % 2 === 0 ? "bg-white" : "bg-slate-50"
-                            } py-2 border-b border-slate-100`}
+                              categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
+                            } py-2 border-b border-border`}
                             style={{ height: rowHeight }}
                           >
                             {periods.map((period, periodIndex) => {
@@ -461,15 +466,17 @@ export default function SummaryV2() {
                                           hasIncrease
                                             ? "text-red-500"
                                             : hasDecrease
-                                              ? "text-emerald-500"
-                                              : "text-gray-700"
+                                              ? "text-success-500"
+                                              : "text-typography-700"
                                         } font-medium`}
                                         // } ${amount > 0 ? "font-medium" : "font-normal"}`}
                                       >
                                         {formatCurrency(amount)}
                                       </Text>
                                       {hasBudget ? (
-                                        <Text className="text-sm text-slate-400">/ {formatCurrency(budget)}</Text>
+                                        <Text className="text-sm text-muted-foreground">
+                                          / {formatCurrency(budget)}
+                                        </Text>
                                       ) : (
                                         ""
                                       )}
@@ -507,7 +514,7 @@ export default function SummaryV2() {
                   ))}
 
                   {/* Totals Row - Data Columns */}
-                  <View className="flex-row bg-slate-800 py-4 border-t-2 border-slate-200">
+                  <View className="flex-row bg-primary py-4 border-t-2 border-border">
                     {comparisonData.map((periodData, periodIndex) => {
                       const previousTotal = periodIndex > 0 ? comparisonData[periodIndex - 1].totalExpenses : null;
                       const hasIncrease = previousTotal !== null && periodData.totalExpenses > previousTotal;
@@ -520,7 +527,7 @@ export default function SummaryV2() {
                           className="px-2 items-center justify-center h-full"
                         >
                           <View className="flex-row items-center justify-center" style={{ gap: 6 }}>
-                            <Text className="font-bold text-base text-white text-center">
+                            <Text className="font-bold text-base text-primary-foreground text-center">
                               {formatCurrency(periodData.totalExpenses)}
                             </Text>
                             {hasIncrease && <ArrowUp size={16} color="#fca5a5" />}
