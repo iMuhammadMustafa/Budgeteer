@@ -81,7 +81,8 @@ export default function MyTab<TModel, TTable extends TableNames>({
             />
           )}
           {UpsertModal && isOpen && (
-            <MyModal isOpen={isOpen} setIsOpen={setIsOpen} title={`Add New ${title.slice(0, -1)}`}>
+            //title={`Add New ${title.slice(0, -1)}`}
+            <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={() => setIsOpen(false)}>
               {UpsertModal(currentItem)}
             </MyModal>
           )}
@@ -102,6 +103,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
                     key={item.id}
                     className={`flex-row items-center ${groupName ? "py-1" : "py-2"} border-b border-gray-200 px-5 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
                   >
+                    {/* TODO fix Link usage*/}
                     {/* <Link href={`${detailsUrl}${item.id}` as Href} asChild onPress={e => e.preventDefault()}> */}
                     <Button
                       variant="ghost"

@@ -264,9 +264,9 @@ export function MyTransactionTypesDropdown({
         { id: "Income", label: "Income", value: "Income", disabled: isEdit },
         { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
         { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
-        { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: isEdit || isAdjustmentDisabled },
-        { id: "Initial", label: "Initial", value: "Initial", disabled: isEdit || isInitialDisabled },
-        { id: "Refund", label: "Refund", value: "Refund", disabled: isEdit || isRefundDisabled },
+        { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: isEdit && isAdjustmentDisabled },
+        { id: "Initial", label: "Initial", value: "Initial", disabled: isEdit && isInitialDisabled },
+        { id: "Refund", label: "Refund", value: "Refund", disabled: isEdit && isRefundDisabled },
       ]}
       selectedValue={selectedValue}
       onSelect={onSelect}
