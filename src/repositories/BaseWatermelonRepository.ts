@@ -48,7 +48,7 @@ export abstract class BaseWatermelonRepository<TModel extends Model, TTable exte
       );
     }
 
-    conditions.push(Q.where("tenantId", tenantId));
+    conditions.push(Q.where("tenantid", tenantId));
     conditions.push(Q.where("isdeleted", false));
 
     if (filters) {
@@ -61,6 +61,7 @@ export abstract class BaseWatermelonRepository<TModel extends Model, TTable exte
 
     const query = db.get(this.tableName).query(...conditions);
     const results = await query;
+
     return (results as TModel[]).map(model => this.mapFromWatermelon(model));
   }
 

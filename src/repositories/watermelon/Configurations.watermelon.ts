@@ -4,12 +4,17 @@ import { Configuration } from "@/src/types/database/watermelon/models";
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { IConfigurationRepository } from "../interfaces/IConfigurationRepository";
+import { mapConfigurationFromWatermelon } from "./TypeMappers";
 
 export class ConfigurationWatermelonRepository
   extends BaseWatermelonRepository<Configuration, TableNames.Configurations, ConfigurationType>
   implements IConfigurationRepository
 {
   protected tableName = TableNames.Configurations;
+
+  protected override mapFromWatermelon(model: Configuration): ConfigurationType {
+    return mapConfigurationFromWatermelon(model);
+  }
 
   async getConfiguration(table: string, type: string, key: string, tenantId: string): Promise<ConfigurationType> {
     const db = await this.getDb();

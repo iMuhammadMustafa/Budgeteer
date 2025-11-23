@@ -5,12 +5,17 @@ import { Account, AccountCategory, Transaction } from "@/src/types/database/wate
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
+import { mapAccountFromWatermelon } from "./TypeMappers";
 
 export class AccountWatermelonRepository
   extends BaseWatermelonRepository<Account, TableNames.Accounts, AccountType>
   implements IAccountRepository
 {
   protected tableName = TableNames.Accounts;
+
+    protected override mapFromWatermelon(model: Account): AccountType {
+      return mapAccountFromWatermelon(model);
+    }
 
   override async findAll(tenantId: string, filters?: any): Promise<AccountType[]> {
     const db = await this.getDb();
@@ -35,8 +40,14 @@ export class AccountWatermelonRepository
         .get(TableNames.AccountCategories)
         .query(Q.where("id", account.categoryid), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
-      const mappedAccount = this.mapFromWatermelon(account);
-      mappedAccount.category = categoryResults[0] as AccountCategory | undefined;
+      // if(categoryResults.length > 0){
+      //   account.category = categoryResults[0] as AccountCategory;
+      // }
+
+      // const mappedAccount = this.mapFromWatermelon(account);
+      const mappedAccount = mapAccountFromWatermelon(account);
+      const mappedCategory = categoryResults.length > 0 ? mapAccountFromWatermelon(categoryResults[0] as any) : undefined;
+      mappedAccount.category = mappedCategory;
 
       accountsWithCategories.push(mappedAccount);
     }

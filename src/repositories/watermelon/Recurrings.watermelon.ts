@@ -4,12 +4,17 @@ import { Account, Recurring, TransactionCategory } from "@/src/types/database/wa
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { IRecurringRepository } from "../interfaces/IRecurringRepository";
+import { mapRecurringFromWatermelon } from "./TypeMappers";
 
 export class RecurringWatermelonRepository
   extends BaseWatermelonRepository<Recurring, TableNames.Recurrings, RecurringType>
   implements IRecurringRepository
 {
   protected tableName = TableNames.Recurrings;
+
+  protected override mapFromWatermelon(model: Recurring): RecurringType {
+    return mapRecurringFromWatermelon(model);
+  }
 
   override async findAll(tenantId: string, filters?: any): Promise<RecurringType[]> {
     const db = await this.getDb();

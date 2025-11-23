@@ -11,12 +11,17 @@ import { Account, Transaction, TransactionCategory, TransactionGroup } from "@/s
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
+import { mapTransactionFromWatermelon } from "./TypeMappers";
 
 export class TransactionWatermelonRepository
   extends BaseWatermelonRepository<Transaction, TableNames.Transactions, TransactionType>
   implements ITransactionRepository
 {
   protected tableName = TableNames.Transactions;
+
+  protected override mapFromWatermelon(model: Transaction): TransactionType {
+    return mapTransactionFromWatermelon(model);
+  }
 
   protected override mapFieldsForWatermelon(data: Record<string, any>): Record<string, any> {
     const mapped: Record<string, any> = {};
