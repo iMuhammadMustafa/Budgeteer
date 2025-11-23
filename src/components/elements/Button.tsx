@@ -84,10 +84,10 @@ const variantStyles = {
     textDisabled: "text-muted-foreground",
   },
   destructive: {
-    container: "bg-destructive",
-    containerDisabled: "bg-destructive/50",
-    text: "text-foreground font-medium",
-    textDisabled: "text-muted-foreground",
+    container: "bg-danger-500",
+    containerDisabled: "bg-danger-500/50",
+    text: "text-white font-medium",
+    textDisabled: "text-white/70",
   },
 };
 

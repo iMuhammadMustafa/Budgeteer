@@ -9,13 +9,12 @@ import { useTheme } from "../providers/ThemeProvider";
 import { WATERMELONDB_DEFAULTS } from "../types/database/watermelon/constants";
 
 export default function Index() {
-  console.log("Rendering Index screen from src/app/index.tsx");
   const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
   const { session, setSession, isLoading: isAuthLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isLoading = isStorageLoading || isAuthLoading;
 
-  const handleLocalLogin = useCallback(
+  const handleLogin = useCallback(
     async (mode: any) => {
       if (storageMode && session) return router.push("/Dashboard");
 
@@ -67,7 +66,7 @@ export default function Index() {
               <Button
                 key={mode.id}
                 className="p-6 border border-primary rounded-lg bg-card shadow-sm text-foreground"
-                onPress={async () => await handleLocalLogin(mode)}
+                onPress={async () => await handleLogin(mode)}
                 disabled={isLoading}
                 label={`${mode.icon} ${mode.title}`}
                 bottomDescription={mode.description}

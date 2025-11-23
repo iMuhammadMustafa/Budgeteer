@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
@@ -7,6 +7,7 @@ import { TableNames } from "../types/database/TableNames";
 import Button from "./elements/Button";
 import MyIcon from "./elements/MyIcon";
 import MyModal from "./elements/MyModal";
+import SkeletonList from "./elements/SkeletonList";
 
 export default function MyTab<TModel, TTable extends TableNames>({
   title,
@@ -60,8 +61,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     detailsUrl: detailsUrl,
     initialState,
   });
-
-  if (isLoading) return <ActivityIndicator />;
+  if (isLoading) return <SkeletonList length={20} />;
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <View className="flex-row justify-between items-center px-4 bg-background">

@@ -8,8 +8,6 @@ import * as Updates from "expo-updates";
 import { ActivityIndicator, Platform, Text, View } from "react-native";
 
 export default function DrawerLayout() {
-  console.log("This is the Drawer Layout");
-
   const { isDarkMode, toggleTheme } = useTheme();
   const { isLoading, session } = useAuth();
 
@@ -68,29 +66,33 @@ export default function DrawerLayout() {
 
 const Footer = () => {
   const { isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
+  const { logout } = useAuth();
 
   return (
-    <View className="flex-row justify-around items-center py-2">
-      <Text
-        className="text-foreground text-center"
-        onPress={async () => {
-          if (Platform.OS !== "web") await Updates.checkForUpdateAsync();
-        }}
-      >
-        Version 0.16.11
-      </Text>
-      {isUpdatePending && !isDownloading && (
-        <Button onPress={async () => await Updates.reloadAsync()} variant="outline" rightIcon="Power" size="sm" />
-      )}
-      {isDownloading && <ActivityIndicator size="small" color="black" />}
-      {isUpdateAvailable && !isUpdatePending && !isDownloading && (
-        <Button
-          onPress={async () => await Updates.fetchUpdateAsync()}
-          variant="outline"
-          rightIcon="CloudDownload"
-          size="sm"
-        />
-      )}
-    </View>
+    <>
+      <View className="flex-row justify-around items-center py-2">
+        <Text
+          className="text-foreground text-center"
+          onPress={async () => {
+            if (Platform.OS !== "web") await Updates.checkForUpdateAsync();
+          }}
+        >
+          Version 0.16.11
+        </Text>
+        {isUpdatePending && !isDownloading && (
+          <Button onPress={async () => await Updates.reloadAsync()} variant="outline" rightIcon="Power" size="sm" />
+        )}
+        {isDownloading && <ActivityIndicator size="small" color="black" />}
+        {isUpdateAvailable && !isUpdatePending && !isDownloading && (
+          <Button
+            onPress={async () => await Updates.fetchUpdateAsync()}
+            variant="outline"
+            rightIcon="CloudDownload"
+            size="sm"
+          />
+        )}
+      </View>
+      <Button label="Logout" onPress={logout} variant="destructive" rightIcon="LogOut" size="sm" />
+    </>
   );
 };

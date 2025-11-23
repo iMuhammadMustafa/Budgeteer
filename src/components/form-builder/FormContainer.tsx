@@ -61,7 +61,7 @@ function FormContainerComponent({
       <View className="flex-1 mb-4">{children}</View>
 
       {/* Form Actions */}
-      <View className="flex-row justify-end space-x-3 mt-4">
+      <View className="flex-row justify-end space-x-3 mt-4 -z-10">
         {showReset && onReset && (
           <Pressable
             className="p-3 flex justify-center items-center border border-gray-300 rounded-md bg-white"

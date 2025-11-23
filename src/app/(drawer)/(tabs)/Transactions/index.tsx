@@ -1,3 +1,4 @@
+import SkeletonList from "@/src/components/elements/SkeletonList";
 import DaysList from "@/src/components/Transactions/Days";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
@@ -64,11 +65,7 @@ export default function Transactions() {
       />
 
       {isLoading && days.length === 0 ? (
-        <FlatList
-          data={Array.from({ length: 5 })}
-          keyExtractor={(_, idx) => `skeleton-${idx}`}
-          renderItem={() => <DaySkeleton />}
-        />
+        <SkeletonList length={5} customSkeleton={<DaySkeleton />} />
       ) : days.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <Text className="text-xl text-muted">No transactions found</Text>

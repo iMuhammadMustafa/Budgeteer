@@ -1,7 +1,9 @@
 import { StorageMode } from "@/src/types/StorageMode";
 import { Session } from "@supabase/supabase-js";
+import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { storage } from "../utils/storageUtils";
+import { queryClient } from "./QueryProvider";
 import { STORAGE_KEYS, useStorageMode } from "./StorageModeProvider";
 import supabase from "./Supabase";
 
@@ -12,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   isLoggedIn: boolean;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>({
@@ -21,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>({
   isLoading: false,
   setIsLoading: () => {},
   isLoggedIn: false,
+  logout: async () => {},
 });
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -83,8 +87,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const logout = useCallback(async () => {
+    if (storageMode === StorageMode.Cloud) {
+      await supabase.auth.signOut();
+    } else {
+      await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    }
+    setSession(null);
+    queryClient.clear();
+    router.replace("/");
+  }, [storageMode]);
+
   return (
-    <AuthContext.Provider value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn }}>
+    <AuthContext.Provider
+      value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

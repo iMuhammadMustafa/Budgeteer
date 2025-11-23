@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
-import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 
 import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
@@ -18,6 +18,7 @@ import {
   createCategoryNameValidation,
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 

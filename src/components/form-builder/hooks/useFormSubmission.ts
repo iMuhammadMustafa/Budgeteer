@@ -44,7 +44,7 @@ export function useFormSubmission<T>(
   // Refs for tracking retry attempts and cleanup
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
-  const maxRetries = 3;
+  const maxRetries = 0;
 
   // Clear any pending retry timeout
   const clearRetryTimeout = useCallback(() => {
