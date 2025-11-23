@@ -65,7 +65,7 @@ const formatCurrency = (amount: number): string => {
   return `$${Math.abs(amount).toFixed(2)}`;
 };
 
-export default function SummaryV2() {
+export default function SummaryIndex() {
   // State
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("monthly");
   const [refreshing, setRefreshing] = useState(false);

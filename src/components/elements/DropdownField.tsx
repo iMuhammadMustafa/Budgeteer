@@ -124,7 +124,9 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
         <>
           {typeof item === "string" ? (
             <>
-              <Text className="p-2 bg-gray-100 text-dark text-sm  text-center">{item}</Text>
+              <Text selectable={false} className="p-2 bg-gray-100 text-dark text-sm  text-center">
+                {item}
+              </Text>
               <View
                 className={`flex-row flex-wrap border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
               >
@@ -172,6 +174,7 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
       />
     )}
     <Text
+      selectable={false}
       className={`text-base relative text-center z-10  ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
     >
       {option.label}
@@ -180,7 +183,10 @@ const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionP
       <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}> - </Text>
     )}
     {option.details && (
-      <Text className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}>
+      <Text
+        selectable={false}
+        className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}
+      >
         {option.details}
       </Text>
     )}

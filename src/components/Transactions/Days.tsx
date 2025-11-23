@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
 import { FlatList, Text, View } from "react-native";
 
+import Divider from "@/src/components/elements/Divider";
+import MyIcon from "@/src/components/elements/MyIcon";
+import TransactionItem from "@/src/components/Transactions/TransactionItem";
 import { GroupedData } from "@/src/types/components/Transactions.types";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
-import Divider from "../elements/Divider";
-import MyIcon from "../elements/MyIcon";
-import TransactionItem from "./TransactionItem";
 
 dayjs.extend(require("dayjs/plugin/relativeTime"));
 
