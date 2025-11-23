@@ -4,12 +4,17 @@ import { TransactionCategory, TransactionGroup } from "@/src/types/database/wate
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { ITransactionCategoryRepository } from "../interfaces/ITransactionCategoryRepository";
+import { mapTransactionCategoryFromWatermelon } from "./TypeMappers";
 
 export class TransactionCategoryWatermelonRepository
   extends BaseWatermelonRepository<TransactionCategory, TableNames.TransactionCategories, TransactionCategoryType>
   implements ITransactionCategoryRepository
 {
   protected tableName = TableNames.TransactionCategories;
+
+  protected override mapFromWatermelon(model: TransactionCategory): TransactionCategoryType {
+    return mapTransactionCategoryFromWatermelon(model);
+  }
 
   override mapFieldsForWatermelon(data: Record<string, any>): Record<string, any> {
     const mapped: Record<string, any> = {};
@@ -51,9 +56,9 @@ export class TransactionCategoryWatermelonRepository
       const groupQuery = await db
         .get(TableNames.TransactionGroups)
         .query(Q.where("id", category.groupid), Q.where("isdeleted", false), Q.where("tenantid", tenantId));
-
+        
+      category.group = groupQuery[0] as TransactionGroup;
       const mappedCategory = this.mapFromWatermelon(category);
-      mappedCategory.group = groupQuery[0] as TransactionGroup | undefined;
 
       categoriesWithGroups.push(mappedCategory);
     }
