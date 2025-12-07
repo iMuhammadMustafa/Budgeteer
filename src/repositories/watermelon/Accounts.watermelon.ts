@@ -1,7 +1,7 @@
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account as AccountType } from "@/src/types/database/Tables.Types";
 import { getWatermelonDB } from "@/src/types/database/watermelon";
-import { Account, AccountCategory, Transaction } from "@/src/types/database/watermelon/models";
+import { Account, Transaction } from "@/src/types/database/watermelon/models";
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
@@ -40,14 +40,7 @@ export class AccountWatermelonRepository
         .get(TableNames.AccountCategories)
         .query(Q.where("id", account.categoryid), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
-      // if(categoryResults.length > 0){
-      //   account.category = categoryResults[0] as AccountCategory;
-      // }
-
-      // const mappedAccount = this.mapFromWatermelon(account);
-      const mappedAccount = mapAccountFromWatermelon(account);
-      const mappedCategory = categoryResults.length > 0 ? mapAccountFromWatermelon(categoryResults[0] as any) : undefined;
-      mappedAccount.category = mappedCategory;
+      const mappedAccount = mapAccountFromWatermelon(account as any, categoryResults[0] as any);
 
       accountsWithCategories.push(mappedAccount);
     }
@@ -101,8 +94,9 @@ export class AccountWatermelonRepository
     const categoryQuery = await db
       .get(TableNames.AccountCategories)
       .query(Q.where("id", model.categoryid), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
-    const mappedAccount = this.mapFromWatermelon(model);
-    mappedAccount.category = categoryQuery[0] as AccountCategory | undefined;
+
+    const mappedAccount = mapAccountFromWatermelon(model, categoryQuery[0] as any);
+
 
     return { ...mappedAccount, runningbalance };
   }
