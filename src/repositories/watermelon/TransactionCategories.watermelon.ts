@@ -1,6 +1,6 @@
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionCategory as TransactionCategoryType } from "@/src/types/database/Tables.Types";
-import { TransactionCategory, TransactionGroup } from "@/src/types/database/watermelon/models";
+import { TransactionCategory } from "@/src/types/database/watermelon/models";
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { ITransactionCategoryRepository } from "../interfaces/ITransactionCategoryRepository";
@@ -57,8 +57,7 @@ export class TransactionCategoryWatermelonRepository
         .get(TableNames.TransactionGroups)
         .query(Q.where("id", category.groupid), Q.where("isdeleted", false), Q.where("tenantid", tenantId));
         
-      category.group = groupQuery[0] as TransactionGroup;
-      const mappedCategory = this.mapFromWatermelon(category);
+      const mappedCategory = mapTransactionCategoryFromWatermelon(category, groupQuery[0] as any);
 
       categoriesWithGroups.push(mappedCategory);
     }
@@ -80,8 +79,7 @@ export class TransactionCategoryWatermelonRepository
       .get(TableNames.TransactionGroups)
       .query(Q.where("id", model.groupid), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
-    const mappedCategory = this.mapFromWatermelon(model);
-    mappedCategory.group = groupQuery[0] as TransactionGroup | undefined;
+    const mappedCategory = mapTransactionCategoryFromWatermelon(model, groupQuery[0] as any);
 
     return mappedCategory;
   }

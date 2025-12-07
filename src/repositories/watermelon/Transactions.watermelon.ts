@@ -11,7 +11,7 @@ import { Account, Transaction, TransactionCategory, TransactionGroup } from "@/s
 import { Q } from "@nozbe/watermelondb";
 import { BaseWatermelonRepository } from "../BaseWatermelonRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
-import { mapTransactionFromWatermelon } from "./TypeMappers";
+import { mapAccountFromWatermelon, mapTransactionCategoryFromWatermelon, mapTransactionFromWatermelon, mapTransactionGroupFromWatermelon } from "./TypeMappers";
 
 export class TransactionWatermelonRepository
   extends BaseWatermelonRepository<Transaction, TableNames.Transactions, TransactionType>
@@ -35,6 +35,9 @@ export class TransactionWatermelonRepository
           if (Array.isArray(value)) {
             mapped[key] = JSON.stringify(value);
           }
+          break;
+        case "account":
+        case "category":
           break;
         default:
           mapped[key] = value;
@@ -76,25 +79,35 @@ export class TransactionWatermelonRepository
       conditions.push(Q.where("description", Q.like(`%${filters.description}%`)));
     }
 
-    // Fetch all accounts, categories, and groups for the tenant
-    const [accounts, categories, groups] = await Promise.all([
-      db.get(TableNames.Accounts).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
-      db.get(TableNames.TransactionCategories).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
-      db.get(TableNames.TransactionGroups).query(Q.where("tenantid", tenantId), Q.where("isdeleted", false)),
-    ]);
-
-    // Build lookup maps
-    const accountMap = new Map();
-    for (const acc of accounts) accountMap.set(acc.id, acc);
-    const categoryMap = new Map();
-    for (const cat of categories) categoryMap.set(cat.id, cat);
-    const groupMap = new Map();
-    for (const grp of groups) groupMap.set(grp.id, grp);
-
     // Fetch and sort transactions by account/date/createdat/updatedat/type/id
     const query = db.get(this.tableName).query(...conditions);
     const results = await query;
     const transactions: Transaction[] = results as Transaction[];
+
+
+    // Fetch related accounts, categories, groups for mapping
+    const accountIds = Array.from(new Set(transactions.map(tx => tx.accountid)));
+    const accountQuery = await db
+      .get(TableNames.Accounts)
+      .query(Q.where("id", Q.oneOf(accountIds)), Q.where("tenantid", tenantId), Q.where("isdeleted", false)) as Account[];
+
+    const categoryIds = Array.from(new Set(transactions.map(tx => tx.categoryid).filter(id => id !== null)));
+    const categoryQuery = await db
+      .get(TableNames.TransactionCategories)
+      .query(Q.where("id", Q.oneOf(categoryIds)), Q.where("tenantid", tenantId), Q.where("isdeleted", false)) as TransactionCategory[];
+    
+    const groupIds = Array.from(new Set(categoryQuery.map(cat => cat.groupid).filter(id => id !== null)));
+    const groupQuery = await db
+      .get(TableNames.TransactionGroups)
+      .query(Q.where("id", Q.oneOf(groupIds)), Q.where("tenantid", tenantId), Q.where("isdeleted", false)) as TransactionGroup[];
+
+    // Build lookup maps
+    const accountMap = new Map();
+    for (const acc of accountQuery) accountMap.set(acc.id, acc);
+    const categoryMap = new Map();
+    for (const cat of categoryQuery) categoryMap.set(cat.id, cat);
+    const groupMap = new Map();
+    for (const grp of groupQuery) groupMap.set(grp.id, grp);
 
     // Group transactions by accountid for running balance calculation
     const transactionsByAccount: Record<string, Transaction[]> = {};
@@ -144,11 +157,10 @@ export class TransactionWatermelonRepository
     // Build TransactionsView array
     // Map to TransactionsView, then sort DESC for display
     let views = transactions.map(transaction => {
-      const mapped = this.mapFromWatermelon(transaction);
-      const account = accountMap.get(mapped.accountid) as Account | undefined;
-      const category = categoryMap.get(mapped.categoryid) as TransactionCategory | undefined;
-      const group =
-        category && category.groupid ? (groupMap.get(category.groupid) as TransactionGroup | undefined) : null;
+      const mapped = mapTransactionFromWatermelon(transaction);
+      const account = accountMap.get(mapped.accountid) ? mapAccountFromWatermelon(accountMap.get(mapped.accountid) as Account) : null;
+      const category = categoryMap.get(mapped.categoryid) ? mapTransactionCategoryFromWatermelon(categoryMap.get(mapped.categoryid) as TransactionCategory) : null;
+      const group = category && category.groupid ? groupMap.get(category.groupid) ? mapTransactionGroupFromWatermelon(groupMap.get(category.groupid) as TransactionGroup) : null : null;
 
       return {
         accountid: mapped.accountid,
@@ -176,6 +188,7 @@ export class TransactionWatermelonRepository
         updatedat: mapped.updatedat,
       } as TransactionsView;
     });
+
     // Sort DESC by date, createdat, updatedat, type, id
     views.sort((a, b) => {
       const da = new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime();
