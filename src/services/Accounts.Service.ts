@@ -35,7 +35,7 @@ export function useAccountService(): IAccountService {
 
   const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
-      queryKey: [TableNames.Accounts, tenantId],
+      queryKey: [TableNames.Accounts, "TotalBalance", tenantId],
       queryFn: async () => {
         return accountRepo.getTotalAccountBalance(tenantId);
       },

@@ -46,7 +46,7 @@ export default function DashboardIndex() {
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <Text className="text-xl font-bold text-foreground">Dashboard</Text>
         <Pressable className="p-2">
-          <RefreshCcw size={24} color="#4CAF50" />
+          <RefreshCcw size={24} color="#4CAF50" onPress={onRefresh} />
         </Pressable>
       </View>
       <ScrollView

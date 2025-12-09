@@ -68,7 +68,7 @@ export default function useDashboard() {
     setRefreshing(true);
     statsService.useRefreshAllQueries();
     setTimeout(() => setRefreshing(false), 1000);
-  }, [statsService.useRefreshAllQueries]);
+  }, [statsService]);
 
   const handleDayPress = async (day: any) => {
     try {
