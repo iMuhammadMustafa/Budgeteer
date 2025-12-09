@@ -144,7 +144,16 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           showReset={isDirty}
           onReset={resetForm}
         >
-          <View className="flex-row justify-end mb-4">
+          <View className="flex-row justify-end mb-4 gap-2">
+            <Button
+              label="Clear"
+              variant="secondary"
+              className="bg-red-500 rounded-md"
+              disabled={isLoading}
+              onPress={() => router.replace("/AddTransaction")}
+              leftIcon="Trash"
+              size="sm"
+            />
             <Button
               label="One More"
               variant="primary"
@@ -371,6 +380,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 }
 
 const useTransactionForm = ({ transaction }: { transaction: TransactionFormType }) => {
+    // ...existing code...
   const transactionCategoryService = useTransactionCategoryService();
   const accountService = useAccountService();
   const transactionService = useTransactionService();
@@ -423,7 +433,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         },
       );
     },
-    [upsertTransaction, transaction, mode, calculateFinalAmount],
+    [upsertTransaction, transaction, mode],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -441,7 +451,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
       resetForm();
       router.navigate("/Transactions");
     }
-  }, [validateForm, submit, formState.data]);
+  }, [validateForm, submit, formState.data, resetForm]);
 
   const handleOnMoreSubmit = useCallback(() => {
     if (validateForm()) {
