@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { queryClient } from "../providers/QueryProvider";
+import { useQueryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
 import { TableNames } from "../types/database/TableNames";
 import Button from "./elements/Button";
@@ -248,6 +248,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
       setSelectedItems([]);
     }
   };
+  const queryClient = useQueryClient();
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };

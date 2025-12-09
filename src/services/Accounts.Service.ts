@@ -5,7 +5,7 @@ import { Session } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
-import { queryClient } from "../providers/QueryProvider";
+import { useQueryClient } from "../providers/QueryProvider";
 import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
 import { IConfigurationRepository } from "../repositories/interfaces/IConfigurationRepository";
 import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
@@ -23,6 +23,7 @@ export interface IAccountService extends IService<Account, TableNames.Accounts> 
 
 export function useAccountService(): IAccountService {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   if (!session) throw new Error("Session not found");
 
   const tenantId = session?.user?.user_metadata?.tenantid;

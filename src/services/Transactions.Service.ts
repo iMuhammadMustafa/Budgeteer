@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/providers/AuthProvider";
-import { queryClient } from "@/src/providers/QueryProvider";
+import { useQueryClient } from "@/src/providers/QueryProvider";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import {
@@ -31,6 +31,7 @@ export interface ITransactionService extends IService<Transaction, TableNames.Tr
 
 export function useTransactionService(): ITransactionService {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   if (!session) throw new Error("Session not found");
 
   const tenantId = session?.user?.user_metadata?.tenantid;

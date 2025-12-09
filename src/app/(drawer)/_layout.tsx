@@ -1,7 +1,7 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
-import { queryClient } from "@/src/providers/QueryProvider";
+import { useQueryClient } from "@/src/providers/QueryProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
@@ -68,6 +68,7 @@ export default function DrawerLayout() {
 const Footer = () => {
   const { isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
   const { logout } = useAuth();
+  const queryClient = useQueryClient();
 
   return (
     <>
@@ -96,7 +97,9 @@ const Footer = () => {
       <Button label="Logout" onPress={logout} variant="destructive" rightIcon="LogOut" size="sm" />
       <Button
         label="Clear Cache"
-        onPress={async () => await queryClient.clear()}
+        onPress={async () => {
+          await queryClient.clear();
+        }}
         variant="ghost"
         size="sm"
         rightIcon="Trash"

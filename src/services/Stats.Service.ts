@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/providers/AuthProvider";
-import { queryClient } from "@/src/providers/QueryProvider";
+import { useQueryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import {
   BarDataType,
@@ -69,6 +69,7 @@ export function useStatsService(): IStatsService {
   const statsRepo = dbContext.StatsRepository();
   const transactionRepo = dbContext.TransactionRepository();
   if (!tenantId) throw new Error("Tenant ID not found in session");
+  const queryClient = useQueryClient();
 
   const useGetStatsDailyTransactions = (
     startDate: string,

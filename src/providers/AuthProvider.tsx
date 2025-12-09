@@ -3,7 +3,7 @@ import { Session } from "@supabase/supabase-js";
 import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { storage } from "../utils/storageUtils";
-import { queryClient } from "./QueryProvider";
+import { useQueryClient } from "./QueryProvider";
 import { STORAGE_KEYS, useStorageMode } from "./StorageModeProvider";
 import supabase from "./Supabase";
 
@@ -33,6 +33,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(false);
   const user = session?.user ?? null;
   const isLoggedIn = !!user;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -96,7 +97,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setSession(null);
     queryClient.clear();
     router.replace("/");
-  }, [storageMode]);
+  }, [storageMode, queryClient]);
 
   return (
     <AuthContext.Provider

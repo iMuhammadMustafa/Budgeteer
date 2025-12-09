@@ -2,7 +2,7 @@ import { TableNames } from "@/src/types/database//TableNames";
 import { Session } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { queryClient } from "../providers/QueryProvider";
+import { useQueryClient } from "../providers/QueryProvider";
 import { IRepository } from "../repositories/interfaces/IRepository";
 import { Inserts, Updates } from "../types/database/Tables.Types";
 
@@ -45,6 +45,7 @@ export function useBaseCreate<TModel, TTable extends TableNames>(
     customCreate?: (form: Inserts<TTable>, session: Session) => Promise<TModel>;
   },
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (form: Inserts<TTable>) => {
       if (options?.customCreate) {
@@ -67,6 +68,7 @@ export function useBaseUpdate<TModel, TTable extends TableNames>(
     customUpdate?: (form: Updates<TTable>, session: Session, original?: TModel) => Promise<TModel>;
   },
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ form, original }: { form: Updates<TTable>; original?: TModel }) => {
       console.log(form);
@@ -92,6 +94,7 @@ export function useBaseUpsert<TModel, TTable extends TableNames>(
     customUpsert?: (form: Inserts<TTable> | Updates<TTable>, session: Session, original?: TModel) => Promise<TModel>;
   },
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ form, original }: { form: Inserts<TTable> | Updates<TTable>; original?: TModel }) => {
       console.log(form);
@@ -125,6 +128,7 @@ export function useBaseDelete<TModel, TTable extends TableNames>(
   tenantId: string,
   session: any,
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
       return await repo.delete(id, tenantId);
@@ -141,6 +145,7 @@ export function useBaseSoftDelete<TModel, TTable extends TableNames>(
   tenantId: string,
   session: any,
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
       return await repo.softDelete(id, tenantId);
@@ -157,6 +162,7 @@ export function useBaseRestore<TModel, TTable extends TableNames>(
   tenantId: string,
   session: any,
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       return await repo.restore(id, tenantId);

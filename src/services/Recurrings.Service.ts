@@ -5,7 +5,7 @@ import { Session } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
-import { queryClient } from "../providers/QueryProvider";
+import { useQueryClient } from "../providers/QueryProvider";
 import GenerateUuid from "../utils/uuid.Helper";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
@@ -27,6 +27,7 @@ export function useRecurringService(): IRecurringService {
   const recurringRepo = dbContext.RecurringRepository();
   const transactionRepo = dbContext.TransactionRepository();
   const accountRepo = dbContext.AccountRepository();
+  const queryClient = useQueryClient();
 
   const useExecuteRecurring = () => {
     return useMutation({
@@ -63,17 +64,16 @@ export const executeRecurringHelper = async (
   const tenantId = session.user.user_metadata.tenantid;
 
   try {
-
     const transactions: Inserts<TableNames.Transactions>[] = [];
     const transactionId = GenerateUuid();
     const transferTransactionId = GenerateUuid();
-    
+
     let transaction: Inserts<TableNames.Transactions> = {
       id: transactionId,
       name: recurring.name,
       description: overrides?.description ?? recurring.description,
       amount: overrides?.amount ?? recurring.amount ?? 0,
-      date: overrides?.date ?? recurring.nextoccurrencedate ??  dayjs().toISOString(),
+      date: overrides?.date ?? recurring.nextoccurrencedate ?? dayjs().toISOString(),
       accountid: recurring.sourceaccountid,
       payee: recurring.payeename,
       notes: overrides?.notes ?? recurring.notes,
