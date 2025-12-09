@@ -22,5 +22,7 @@ export function useTransactionGroupService(): ITransactionGroupService {
     TransactionGroupRepo,
     tenantId,
     session,
+    undefined,
+    [TableNames.TransactionCategories],
   );
 }

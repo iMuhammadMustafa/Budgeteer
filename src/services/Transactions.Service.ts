@@ -42,7 +42,7 @@ export function useTransactionService(): ITransactionService {
 
   const useFindAllView = (searchFilters?: TransactionFilters) => {
     return useQuery<TransactionsView[]>({
-      queryKey: [ViewNames.TransactionsView, searchFilters, tenantId, "repo"],
+      queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
       queryFn: async () => {
         return transactionRepo.findAll(tenantId, searchFilters) as Promise<TransactionsView[]>;
       },
@@ -56,7 +56,7 @@ export function useTransactionService(): ITransactionService {
 
   const useGetByTransferId = (id?: string) => {
     return useQuery<TransactionsView>({
-      queryKey: [TableNames.Transactions, "transfer", id, tenantId, "repo"],
+      queryKey: [TableNames.Transactions, "transfer", id, tenantId],
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
         return transactionRepo.findByTransferId(id, tenantId);
@@ -95,7 +95,7 @@ export function useTransactionService(): ITransactionService {
     const normalizedFilters = Object.keys(searchFilters).length !== 0 ? searchFilters : {};
     const pageSize = 10;
     return useInfiniteQuery<TransactionsView[]>({
-      queryKey: [ViewNames.TransactionsView, normalizedFilters, tenantId, "repo", "infinite"],
+      queryKey: [ViewNames.TransactionsView, normalizedFilters, tenantId, "infinite"],
       initialPageParam: 0,
       queryFn: async ({ pageParam = 0 }) => {
         const offset = (pageParam as number) * pageSize;
@@ -142,6 +142,37 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
+  const useUpsert = () => {
+    return useMutation({
+      mutationFn: async ({
+        form,
+        original,
+      }: {
+        form: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>;
+        original?: Transaction;
+      }) => {
+        if (form.id && original) {
+          if (!original) throw new Error("Original transaction is required for update");
+          await updateTransactionHelper(form, original, session, transactionRepo, accountRepo);
+          return original;
+        }
+
+        return (await createTransactionHelper(
+          form as Inserts<TableNames.Transactions>,
+          session,
+          transactionRepo,
+          accountRepo,
+        )) as Transaction;
+      },
+      onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      },
+      onError: (error, variables, context) => {
+        throw new Error(JSON.stringify(error));
+      },
+    });
+  };
+
   return {
     ...createServiceHooks<Transaction, TableNames.Transactions>(
       TableNames.Transactions,
@@ -159,7 +190,7 @@ export function useTransactionService(): ITransactionService {
         },
       },
     ),
-
+    useUpsert,
     useDelete: useCustomSoftDelete,
     useSoftDelete: useCustomSoftDelete,
     useFindAllView,

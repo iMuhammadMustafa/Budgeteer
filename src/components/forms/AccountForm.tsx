@@ -34,7 +34,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
       openBalance: openTransaction?.amount || null,
       addAdjustmentTransaction: true,
     }),
-    [account, openTransaction, runningBalance],
+    [account, openTransaction?.amount],
   );
 
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
@@ -75,7 +75,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
           },
           {
             onSuccess: () => {
-              router.navigate("/Accounts");
+              router.replace("/Accounts");
               resolve();
             },
             onError: error => {
@@ -122,7 +122,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
         balance: runningBalance,
       });
     }
-  }, [account, updateAccount]);
+  }, [account, updateAccount, runningBalance, setInitialFormData, formState.data]);
 
   const handleOpenBalanceChange = useCallback(
     (value: any) => {
@@ -178,7 +178,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     // Use setInitialFormData to reset without triggering dirty state
     // This properly resets the form while preserving the open balance
     setInitialFormData(resetData);
-  }, [initialFormData, formState.data.openBalance, setInitialFormData]);
+  }, [initialFormData, formState.data.openBalance, setInitialFormData, openTransaction?.amount]);
 
   // Prepare dropdown options for categories
   const categoryOptions = useMemo(

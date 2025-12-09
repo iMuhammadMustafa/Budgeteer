@@ -22,7 +22,7 @@ export function useConfigurationService(): IConfigurationService {
 
   const useGetConfiguration = (table: string, type: string, key: string) => {
     return useQuery<Configuration>({
-      queryKey: [TableNames.Configurations, table, type, key, tenantId, "repo"],
+      queryKey: [TableNames.Configurations, table, type, key, tenantId],
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         return configurationRepo.getConfiguration(table, type, key, tenantId);

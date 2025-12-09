@@ -18,6 +18,7 @@ export interface IAccountService extends IService<Account, TableNames.Accounts> 
   useGetAccountOpenedTransaction: (id?: string) => ReturnType<typeof useQuery<any>>;
   useUpdateAccountBalance: () => ReturnType<typeof useMutation<number, Error, { accountId: string; amount: number }>>;
   useUpdateAccountOpenedTransaction: () => ReturnType<typeof useMutation<any, Error, { id: string; amount: number }>>;
+  useGetAccountRunningBalance: (id?: string) => ReturnType<typeof useQuery<number | null>>;
 }
 
 export function useAccountService(): IAccountService {
@@ -34,7 +35,7 @@ export function useAccountService(): IAccountService {
 
   const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
-      queryKey: [ViewNames.StatsTotalAccountBalance, tenantId, "repo"],
+      queryKey: [ViewNames.StatsTotalAccountBalance, tenantId],
       queryFn: async () => {
         return accountRepo.getTotalAccountBalance(tenantId);
       },
@@ -44,9 +45,20 @@ export function useAccountService(): IAccountService {
 
   const useGetAccountOpenedTransaction = (id?: string) => {
     return useQuery<any>({
-      queryKey: [TableNames.Transactions, id, tenantId, "repo"],
+      queryKey: [TableNames.Transactions, id, tenantId],
       queryFn: async () => {
         return accountRepo.getAccountOpenedTransaction(id!, tenantId);
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
+
+  const useGetAccountRunningBalance = (id?: string) => {
+    return useQuery<number | null>({
+      queryKey: [TableNames.Accounts, id, "RunningBalance", tenantId],
+      queryFn: async () => {
+        const result = await accountRepo.getAccountRunningBalance(id!, tenantId);
+        return result?.runningbalance ?? null;
       },
       enabled: !!id && !!tenantId,
     });
@@ -171,6 +183,7 @@ export function useAccountService(): IAccountService {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, _?.id, "RunningBalance", tenantId] });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));
@@ -187,6 +200,7 @@ export function useAccountService(): IAccountService {
     useGetAccountOpenedTransaction,
     useUpdateAccountBalance,
     useUpdateAccountOpenedTransaction,
+    useGetAccountRunningBalance
   };
 }
 
