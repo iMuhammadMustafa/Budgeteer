@@ -1,6 +1,5 @@
-import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
+import { TableNames } from "@/src/types/database/TableNames";
+import { AccountCategory } from "@/src/types/database/Tables.Types";
 import { IRepository } from "./IRepository";
 
-export interface IAccountCategoryRepository
-  extends IRepository<AccountCategory, Inserts<TableNames.AccountCategories>, Updates<TableNames.AccountCategories>> {}
+export interface IAccountCategoryRepository extends IRepository<AccountCategory, TableNames.AccountCategories> {}

@@ -1,98 +1,91 @@
-import { createContext, ReactNode, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
-import { initializeWatermelonDB, isWatermelonDBReady } from "@/src/database";
-import { seedWatermelonDB } from "@/src/database/seed";
-import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
+import { initializeWatermelonDB } from "@/src/types/database/watermelon";
+import { seedWatermelonDB } from "@/src/types/database/watermelon/seed";
 import { StorageMode } from "@/src/types/StorageMode";
+import { storage } from "@/src/utils/storageUtils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type StorageModeContextType = {
-  storageMode: StorageMode;
-  setStorageMode: (mode: StorageMode) => Promise<void>;
-  isInitializing: boolean;
-  dbContext: IRepositoryFactory;
+  isLoading: boolean;
+  storageMode: StorageMode | null;
+  setStorageMode: (mode: StorageMode | null) => Promise<void>;
   isDatabaseReady: boolean;
+  dbContext: IRepositoryFactory;
 };
 
-const StorageModeContext = createContext<StorageModeContextType | undefined>(undefined);
+export const STORAGE_KEYS = {
+  LOCAL_SESSION: "budgeteer-local-session",
+  STORAGE_MODE: "budgeteer-storage-mode",
+} as const;
 
-export function StorageModeProvider({ children }: { children: ReactNode }) {
-  const [storageMode, setStorageModeState] = useState<StorageMode>(StorageMode.Cloud);
-  const [isInitializing, setIsInitializing] = useState(false);
+const storageModeContext = createContext<StorageModeContextType | undefined>({
+  isLoading: false,
+  storageMode: null,
+  setStorageMode: async (mode: StorageMode | null) => {},
+  isDatabaseReady: false,
+  dbContext: null as any,
+});
 
-  // Memoize the repository factory to avoid recreating on every render
+export default function StorageModeProvider({ children }: { children: React.ReactNode }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDatabaseReady, setIsDatabaseReady] = useState(false);
+  const [storageMode, setStorageMode] = useState<StorageMode | null>(null);
   const dbContext = useMemo(() => createRepositoryFactory(storageMode), [storageMode]);
 
-  // Memoize the database ready check to avoid unnecessary function calls
-  const isDatabaseReady = useMemo(() => {
-    return storageMode === StorageMode.Local ? isWatermelonDBReady() : true;
-  }, [storageMode]);
-
-  const setStorageMode = useCallback(async (mode: StorageMode) => {
-    setIsInitializing(true);
-    try {
-      // Initialize WatermelonDB if switching to Local mode
-      if (mode === StorageMode.Local) {
-        await initializeWatermelonDB();
-        console.log("WatermelonDB initialized for Local storage mode");
-
-        // Seed the database with initial data
-        await seedWatermelonDB();
-        console.log("WatermelonDB seeded with initial data");
-      }
-
-      setStorageModeState(mode);
-
-      // Store the storage mode preference
-      await storage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
-    } catch (error) {
-      console.error("Failed to set storage mode:", error);
-      throw error;
-    } finally {
-      setIsInitializing(false);
-    }
-  }, []);
-
   useEffect(() => {
-    // Initialize with saved storage mode or default to Cloud
-    const initializeCurrentMode = async () => {
-      try {
-        // Load saved storage mode
-        const savedMode = (await storage.getItem(STORAGE_KEYS.STORAGE_MODE)) as StorageMode;
-        if (savedMode && Object.values(StorageMode).includes(savedMode)) {
-          setStorageModeState(savedMode);
-
-          // Initialize WatermelonDB if needed
-          if (savedMode === StorageMode.Local && !isWatermelonDBReady()) {
-            setIsInitializing(true);
-            await initializeWatermelonDB();
-            console.log("WatermelonDB initialized on startup");
-
-            // Seed the database with initial data
-            await seedWatermelonDB();
-            console.log("WatermelonDB seeded with initial data on startup");
-          }
-        }
-      } catch (error) {
-        console.error("Failed to initialize storage mode:", error);
-      } finally {
-        setIsInitializing(false);
+    const fetchStorageMode = async () => {
+      setIsLoading(true);
+      const mode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
+      if (mode) {
+        setStorageMode(mode as StorageMode);
       }
+      setIsLoading(false);
+      setIsDatabaseReady(true);
     };
 
-    initializeCurrentMode();
+    fetchStorageMode();
+  }, []);
+
+  const handleSetStorageMode = useCallback(async (mode: StorageMode | null) => {
+    if (!mode) {
+      setStorageMode(null);
+      await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+      return;
+    }
+
+    setIsLoading(true);
+    setIsDatabaseReady(false);
+    await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
+
+    if (mode === StorageMode.Local) {
+      await initializeWatermelonDB();
+
+      await seedWatermelonDB();
+    }
+    setStorageMode(mode);
+    setIsLoading(false);
+    setIsDatabaseReady(true);
   }, []);
 
   return (
-    <StorageModeContext.Provider value={{ storageMode, setStorageMode, isInitializing, dbContext, isDatabaseReady }}>
+    <storageModeContext.Provider
+      value={{
+        isLoading,
+        storageMode: storageMode,
+        setStorageMode: handleSetStorageMode,
+        isDatabaseReady: isDatabaseReady,
+        dbContext,
+      }}
+    >
       {children}
-    </StorageModeContext.Provider>
+    </storageModeContext.Provider>
   );
 }
-
-export function useStorageMode() {
-  const context = useContext(StorageModeContext);
+export const useStorageMode = () => {
+  const context = useContext(storageModeContext);
   if (!context) {
     throw new Error("useStorageMode must be used within a StorageModeProvider");
   }
   return context;
-}
+};

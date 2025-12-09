@@ -1,145 +1,117 @@
-import { PropsWithChildren, createContext, useContext, useEffect, useState } from "react";
-import { Session } from "@supabase/supabase-js";
-import supabase from "./Supabase";
-import { storage, STORAGE_KEYS } from "@/src/utils/storageUtils";
-import { useStorageMode } from "./StorageModeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
-import { clearDemoData } from "@/src/database/demoSeed";
+import { Session } from "@supabase/supabase-js";
+import { router } from "expo-router";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { storage } from "../utils/storageUtils";
+import { useQueryClient } from "./QueryProvider";
+import { STORAGE_KEYS, useStorageMode } from "./StorageModeProvider";
+import supabase from "./Supabase";
 
-type AuthType = {
+interface AuthContextType {
   session: Session | null;
-  user?: Session["user"];
-  isSessionLoading: boolean;
-  isDemoLoaded: boolean;
-  setSession: (session: Session | null) => void;
-  setIsDemoLoaded: (isDemoLoaded: boolean) => void;
+  user: Session["user"] | null;
+  setSession: (newSession: Session | null, currentStorageMode: StorageMode | null) => Promise<void>;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+  isLoggedIn: boolean;
   logout: () => Promise<void>;
-};
+}
 
-const AuthContext = createContext<AuthType>({
+const AuthContext = createContext<AuthContextType | undefined>({
   session: null,
-  isSessionLoading: true,
-  isDemoLoaded: false,
-  setSession: () => {},
-  setIsDemoLoaded: () => {},
-  logout: () => Promise.resolve(),
+  user: null,
+  setSession: async () => {},
+  isLoading: false,
+  setIsLoading: () => {},
+  isLoggedIn: false,
+  logout: async () => {},
 });
 
-export default function AuthProvider({ children }: PropsWithChildren) {
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { storageMode, isDatabaseReady } = useStorageMode();
   const [session, setSession] = useState<Session | null>(null);
-  const [isDemoLoaded, setIsDemoLoaded] = useState<boolean>(false);
-  const { storageMode, setStorageMode } = useStorageMode();
-  const user = session?.user;
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
-
-  // Enhanced setSession that handles local storage
-  const handleSessionChange = async (newSession: Session | null) => {
-    setSession(newSession);
-
-    if (storageMode === StorageMode.Local || storageMode === StorageMode.Demo) {
-      if (newSession) {
-        console.log("setting", newSession);
-        await storage.setItem(STORAGE_KEYS.LOCAL_SESSION, JSON.stringify(newSession));
-      }
-    }
-  };
-
-  // Logout function that handles both cloud and local sessions
-  const logout = async () => {
-    try {
-      // Clean up demo data if demo mode was active
-      if (isDemoLoaded) {
-        const timestamp = new Date().toISOString();
-        console.log(`[AUTH ${timestamp}] Demo mode logout initiated - cleaning up demo data...`);
-        try {
-          await clearDemoData();
-          console.log(`[AUTH ${timestamp}] Demo data cleaned up successfully during logout`);
-        } catch (error) {
-          console.error(`[AUTH ERROR ${timestamp}] Failed to clean up demo data during logout:`, error);
-          // Continue with logout even if cleanup fails
-        }
-        setIsDemoLoaded(false);
-        console.log(`[AUTH ${timestamp}] Demo mode deactivated during logout`);
-      }
-
-      // Sign out from Supabase if in cloud mode
-      if (storageMode === StorageMode.Cloud) {
-        await supabase.auth.signOut();
-      }
-
-      // Clear local session
-      // await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
-
-      // Clear session state
-      setSession(null);
-    } catch (error) {
-      console.error("Failed to logout:", error);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const user = session?.user ?? null;
+  const isLoggedIn = !!user;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        // Check for Supabase session first (Cloud mode)
-        const { data } = await supabase.auth.getSession();
-
-        if (data.session) {
-          // We have a valid Supabase session
-          setSession(data.session);
-          await setStorageMode(StorageMode.Cloud);
-        } else {
-          // No Supabase session, check for local session
-          const localSessionData = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
-          if (localSessionData) {
-            try {
-              const localSession = JSON.parse(localSessionData);
-              setSession(localSession);
-              // Keep the current storage mode from StorageModeProvider
-            } catch (error) {
-              console.error("Failed to parse local session:", error);
-              await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to initialize auth:", error);
-      } finally {
-        setIsSessionLoading(false);
-      }
-    };
-
-    // Listen for Supabase auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, supabaseSession) => {
-      if (supabaseSession) {
-        // Supabase session available - switch to cloud mode
-        setSession(supabaseSession);
-        await setStorageMode(StorageMode.Cloud);
-        // Clear any local session when switching to cloud
-        await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
-      } else if (storageMode === StorageMode.Cloud) {
-        // Supabase session lost and we were in cloud mode
+    const fetchSession = async () => {
+      if (storageMode === null || !isDatabaseReady) {
         setSession(null);
+        return;
       }
-    });
+      setIsLoading(true);
 
-    initializeAuth();
-
-    return () => {
-      subscription.unsubscribe();
+      switch (storageMode) {
+        case StorageMode.Local:
+          const localSession = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
+          if (localSession) {
+            setSession(JSON.parse(localSession));
+          }
+          break;
+        case StorageMode.Demo:
+          console.log("Using demo storage mode");
+          break;
+        case StorageMode.Cloud:
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.getSession();
+          if (session) setSession(session);
+          break;
+        default:
+          console.warn("Unknown storage mode:", storageMode);
+          break;
+      }
+      setIsLoading(false);
     };
-  }, [setStorageMode, storageMode]);
+
+    fetchSession();
+  }, [storageMode, isDatabaseReady]);
+
+  const handleSetSession = useCallback(async (newSession: Session | null, newStorageMode: StorageMode | null) => {
+    if (newStorageMode === StorageMode.Local || newStorageMode === StorageMode.Demo) {
+      await storage.setItem(STORAGE_KEYS.LOCAL_SESSION, JSON.stringify(newSession));
+    } else {
+      await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    }
+
+    setSession(newSession);
+
+    if (newSession) return;
+
+    if (newStorageMode === StorageMode.Cloud) {
+      await supabase.auth.signOut();
+    } else {
+      return await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    if (storageMode === StorageMode.Cloud) {
+      await supabase.auth.signOut();
+    } else {
+      await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    }
+    setSession(null);
+    queryClient.clear();
+    router.replace("/");
+  }, [storageMode, queryClient]);
 
   return (
-    <AuthContext.Provider value={{ session, user, isSessionLoading, isDemoLoaded, setSession: handleSessionChange, setIsDemoLoaded, logout }}>
+    <AuthContext.Provider
+      value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
-// export const useAuth = () => useContext(AuthContext);
+
 export const useAuth = () => {
-  const authContext = useContext(AuthContext);
-  if (!authContext) throw new Error("useAuth must be used within an AuthProvider");
-  return authContext;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

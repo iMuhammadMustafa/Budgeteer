@@ -1,13 +1,13 @@
-import { FunctionNames, TableNames, ViewNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { FunctionNames, TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { Account } from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { IAccountRepository } from "../interfaces/IAccountRepository";
 
-export class AccountSupaRepository implements IAccountRepository {
-  async findAll(filters?: any, tenantId?: string): Promise<Account[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
+  protected tableName = TableNames.Accounts;
 
+  override async findAll(tenantId: string): Promise<Account[]> {
     const { data, error } = await supabase
       .from(TableNames.Accounts)
       .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
@@ -17,88 +17,26 @@ export class AccountSupaRepository implements IAccountRepository {
       .order("displayorder", { ascending: false })
       .order("name")
       .order("owner");
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data as unknown as Account[];
   }
 
-  async findById(id: string, tenantId?: string): Promise<Account | null> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
+  override async findById(id: string, tenantId: string): Promise<Account | null> {
     const { data, error } = await supabase
       .from(ViewNames.ViewAccountsWithRunningBalance)
-      .select(`*`)
+      .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
       .eq("id", id)
       .single();
 
+    if (error) throw error;
     if (!data) return null;
 
-    // Now fetch category manually
-    const { data: category, error: categoryError } = await supabase
-      .from(TableNames.AccountCategories)
-      .select("*")
-      .eq("id", data.categoryid!)
-      .single();
-    if (categoryError) throw new Error(categoryError.message);
-
-    if (error) throw new Error(error);
-    return {
-      ...data,
-      category,
-    } as unknown as Account | null;
+    return data;
   }
 
-  async create(data: Inserts<TableNames.Accounts>, tenantId?: string): Promise<Account> {
-    const { data: result, error } = await supabase.from(TableNames.Accounts).insert(data).select().single();
-
-    if (error) throw error;
-    return result;
-  }
-
-  async update(id: string, data: Updates<TableNames.Accounts>, tenantId?: string): Promise<Account | null> {
-    const { data: result, error } = await supabase
-      .from(TableNames.Accounts)
-      .update({ ...data })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") return null; // No rows found
-      throw error;
-    }
-    return result;
-  }
-
-  async delete(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase.from(TableNames.Accounts).delete().eq("id", id);
-    if (error) throw error;
-  }
-
-  async softDelete(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase
-      .from(TableNames.Accounts)
-      .update({
-        isdeleted: true,
-        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-      })
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  async restore(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase
-      .from(TableNames.Accounts)
-      .update({
-        isdeleted: false,
-        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-      })
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  async updateAccountBalance(accountid: string, amount: number, tenantId?: string): Promise<number> {
+  async updateAccountBalance(accountid: string, amount: number, tenantId: string): Promise<number> {
     const { data, error } = await supabase.rpc(FunctionNames.UpdateAccountBalance, {
       accountid,
       amount,
@@ -107,9 +45,7 @@ export class AccountSupaRepository implements IAccountRepository {
     return data;
   }
 
-  async getAccountOpenedTransaction(accountid: string, tenantId?: string): Promise<{ id: string; amount: number }> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
+  async getAccountOpenedTransaction(accountid: string, tenantId: string): Promise<{ id: string; amount: number }> {
     const { data, error } = await supabase
       .from(TableNames.Transactions)
       .select("id, amount")
@@ -119,13 +55,11 @@ export class AccountSupaRepository implements IAccountRepository {
       .eq("isdeleted", false)
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
   }
 
-  async getTotalAccountBalance(tenantId?: string): Promise<{ totalbalance: number } | null> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
+  async getTotalAccountBalance(tenantId: string): Promise<{ totalbalance: number } | null> {
     const { data, error } = await supabase
       .from(ViewNames.StatsTotalAccountBalance)
       .select("totalbalance")
@@ -137,8 +71,19 @@ export class AccountSupaRepository implements IAccountRepository {
       if (error.code === "PGRST116") {
         return { totalbalance: 0 }; // Or return null if you prefer to indicate no data vs zero balance
       }
-      throw new Error(error.message);
+      throw error;
     }
     return data as { totalbalance: number } | null;
+  }
+
+  async getAccountRunningBalance(accountid: string, tenantId: string): Promise<{ runningbalance: number } | null> {
+    const { data, error } = await supabase
+      .from(ViewNames.ViewAccountsWithRunningBalance)
+      .select("runningbalance")
+      .eq("tenantid", tenantId)
+      .eq("id", accountid)
+      .single();
+    if (error) throw error;
+    return data as { runningbalance: number } | null;
   }
 }

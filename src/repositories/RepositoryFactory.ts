@@ -1,9 +1,4 @@
-/**
- * Repository Factory - WatermelonDB Migration Complete
- * All repositories have been implemented for both Cloud (Supabase) and Local (WatermelonDB) storage modes.
- * WatermelonDB repositories provide offline-first functionality with sync capabilities.
- */
-import { StorageMode } from "../types/StorageMode";
+import { StorageMode } from "@/src/types/StorageMode";
 import { IAccountCategoryRepository } from "./interfaces/IAccountCategoryRepository";
 import { IAccountRepository } from "./interfaces/IAccountRepository";
 import { IConfigurationRepository } from "./interfaces/IConfigurationRepository";
@@ -20,14 +15,14 @@ import { StatsSupaRepository } from "./supabase/Stats.supa";
 import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
-import { AccountCategoryWatermelonRepository } from "./watermelondb/AccountCategories.watermelon";
-import { AccountWatermelonRepository } from "./watermelondb/Accounts.watermelon";
-import { ConfigurationWatermelonRepository } from "./watermelondb/Configurations.watermelon";
-import { RecurringWatermelonRepository } from "./watermelondb/Recurrings.watermelon";
-import { StatsWatermelonRepository } from "./watermelondb/Stats.watermelon";
-import { TransactionCategoryWatermelonRepository } from "./watermelondb/TransactionCategories.watermelon";
-import { TransactionGroupWatermelonRepository } from "./watermelondb/TransactionGroups.watermelon";
-import { TransactionWatermelonRepository } from "./watermelondb/Transactions.watermelon";
+import { AccountCategoryWatermelonRepository } from "./watermelon/AccountCategories.watermelon";
+import { AccountWatermelonRepository } from "./watermelon/Accounts.watermelon";
+import { ConfigurationWatermelonRepository } from "./watermelon/Configurations.watermelon";
+import { RecurringWatermelonRepository } from "./watermelon/Recurrings.watermelon";
+import { StatsWatermelonRepository } from "./watermelon/Stats.watermelon";
+import { TransactionCategoryWatermelonRepository } from "./watermelon/TransactionCategories.watermelon";
+import { TransactionGroupWatermelonRepository } from "./watermelon/TransactionGroups.watermelon";
+import { TransactionWatermelonRepository } from "./watermelon/Transactions.watermelon";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -40,7 +35,7 @@ export interface IRepositoryFactory {
   TransactionRepository(): ITransactionRepository;
 }
 
-export function createRepositoryFactory(storageMode: StorageMode): IRepositoryFactory {
+export function createRepositoryFactory(storageMode: StorageMode | null): IRepositoryFactory {
   if (storageMode === StorageMode.Cloud) {
     return {
       AccountCategoryRepository: () => new AccountCategorySupaRepository(),

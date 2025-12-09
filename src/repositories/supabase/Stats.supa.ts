@@ -1,15 +1,15 @@
 // Real implementation moved from Stats.api.ts
-import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { EnumNames, ViewNames } from "@/src/types/db/TableNames";
+import { ViewNames } from "@/src/types/database/TableNames";
 import {
   StatsDailyTransactions,
-  StatsMonthlyTransactionsTypes,
-  StatsMonthlyCategoriesTransactions,
   StatsMonthlyAccountsTransactions,
+  StatsMonthlyCategoriesTransactions,
+  StatsMonthlyTransactionsTypes,
   StatsNetWorthGrowth,
   TransactionType,
-} from "@/src/types/db/Tables.Types";
+} from "@/src/types/database/Tables.Types";
+import dayjs from "dayjs";
 import { IStatsRepository } from "../interfaces/IStatsRepository";
 
 export class StatsSupaRepository implements IStatsRepository {
@@ -27,7 +27,7 @@ export class StatsSupaRepository implements IStatsRepository {
       .gte("date", startDate ?? dayjs().startOf("week").toISOString())
       .lte("date", endDate ?? dayjs().endOf("week").toISOString());
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
   }
 
@@ -43,7 +43,7 @@ export class StatsSupaRepository implements IStatsRepository {
       .gte("date", startDate ?? dayjs().startOf("week").toISOString())
       .lte("date", endDate ?? dayjs().endOf("week").toISOString());
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
   }
 
@@ -68,7 +68,7 @@ export class StatsSupaRepository implements IStatsRepository {
       .gte("date", formattedStartDate)
       .lte("date", formattedEndDate);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data as StatsMonthlyCategoriesTransactions[];
   }
 
@@ -92,7 +92,7 @@ export class StatsSupaRepository implements IStatsRepository {
       .gte("date", formattedStartDate)
       .lte("date", formattedEndDate);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
   }
 
@@ -105,7 +105,7 @@ export class StatsSupaRepository implements IStatsRepository {
       .lte("month", endDate ?? dayjs().endOf("year").format("YYYY-MM-DD"))
       .order("month", { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
   }
 }

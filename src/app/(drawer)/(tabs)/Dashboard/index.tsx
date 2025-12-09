@@ -1,28 +1,19 @@
-import { useState, useCallback } from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-  Pressable,
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-} from "react-native";
-import { router } from "expo-router";
-import useDashboard from "./useDashboardViewModel";
 import Bar from "@/src/components/Charts/Bar";
 import DoubleBar from "@/src/components/Charts/DoubleBar";
 import Line from "@/src/components/Charts/Line";
-import MyPie from "@/src/components/Charts/MyPie";
 import MyCalendar from "@/src/components/Charts/MyCalendar";
+import MyPie from "@/src/components/Charts/MyPie";
+import MyIcon from "@/src/components/elements/MyIcon";
 import { PieData } from "@/src/types/components/Charts.types";
+import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
-import MyIcon from "@/src/utils/Icons.Helper";
-import { TransactionsView } from "@/src/types/db/Tables.Types";
+import { router } from "expo-router";
 import { RefreshCcw } from "lucide-react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import useDashboard from "./useDashboardViewModel";
 
-export default function Dashboard() {
+export default function DashboardIndex() {
   const {
     weeklyTransactionTypesData,
     dailyTransactionTypesData,
@@ -54,8 +45,8 @@ export default function Dashboard() {
     <SafeAreaView className="w-full h-full m-auto flex-1">
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <Text className="text-xl font-bold text-foreground">Dashboard</Text>
-        <Pressable onPress={onRefresh} className="p-2">
-          <RefreshCcw size={24} color="#4CAF50" />
+        <Pressable className="p-2">
+          <RefreshCcw size={24} color="#4CAF50" onPress={onRefresh} />
         </Pressable>
       </View>
       <ScrollView
@@ -101,6 +92,7 @@ export default function Dashboard() {
     </SafeAreaView>
   );
 }
+
 function DashboardView({
   weeklyTransactionTypesData,
   yearlyTransactionsTypes,

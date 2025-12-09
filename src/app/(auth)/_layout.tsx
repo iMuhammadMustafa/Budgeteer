@@ -3,13 +3,13 @@ import { router, Stack } from "expo-router";
 import { ActivityIndicator } from "react-native";
 
 export default function AuthLayout() {
-  const { session, isSessionLoading: loading } = useAuth();
+  const { session, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return <ActivityIndicator />;
   }
   if (session) {
-    router.replace("/Dashboard");
+    router.navigate("/Dashboard");
   }
 
   return (

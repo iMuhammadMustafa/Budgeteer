@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Modal, ScrollView, Platform } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FlatList, Modal, Platform, Pressable, Text, View } from "react-native";
 
-import MyIcon from "@/src/utils/Icons.Helper";
 import * as Haptics from "expo-haptics";
-import { FlatList } from "react-native";
+import MyIcon from "./elements/MyIcon";
 
 const buttonRows = [
   [
@@ -54,10 +53,140 @@ export default function CalculatorComponent({
   const [modalVisible, setModalVisible] = useState(false);
   const [currentExpression, setCurrentExpression] = useState("0");
   const [result, setResult] = useState("0");
-  const [history, setHistory] = useState<Array<string>>([]);
+  const [history, setHistory] = useState<string[]>([]);
   const [lastOperation, setLastOperation] = useState("");
   const lastClickedButton = useRef(null);
   const resultRef = useRef(result);
+
+  const handleButtonPress = useCallback(
+    (buttonName: string) => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      switch (buttonName) {
+        case "clear":
+          handleClear();
+          break;
+        case "equals":
+          try {
+            const preparedExpression = prepareExpression(currentExpression);
+            const evalResult = eval(preparedExpression);
+
+            setResult(evalResult.toString());
+            setCurrentExpression(evalResult.toString());
+
+            setHistory([`${currentExpression} = ${evalResult}`, ...history]);
+
+            setLastOperation("equals");
+          } catch (error) {
+            setResult("Error");
+          }
+          break;
+        case "submit":
+          try {
+            const preparedExpression = prepareExpression(currentExpression);
+            const evalResult = eval(preparedExpression);
+            onSubmit(evalResult.toString());
+            setModalVisible(false);
+            handleClear();
+          } catch (error) {
+            setResult("Error");
+          }
+          break;
+        case "clearLastOperation":
+          setCurrentExpression(prev => {
+            const newExpression = prev.replace(/[-+x÷]?[^-+x÷]*$/, "");
+            try {
+              const preparedExpression = prepareExpression(newExpression);
+              const newResult = eval(preparedExpression);
+              setResult(newResult.toString());
+            } catch (error) {
+              setResult("");
+            }
+            return newExpression;
+          });
+          break;
+        case "backspace":
+          setCurrentExpression(prev => {
+            if (prev.length === 1) {
+              return "0";
+            } else {
+              return prev.slice(0, -1);
+            }
+          });
+          break;
+        case "toggleSign":
+          setCurrentExpression(prev => {
+            if (prev.startsWith("-")) {
+              return prev.slice(1);
+            } else {
+              return "-" + prev;
+            }
+          });
+          break;
+        case "percentage":
+          setCurrentExpression(prev => {
+            const value = parseFloat(prev);
+            return (value / 100).toString();
+          });
+          break;
+        case "sqrt":
+          setCurrentExpression(prev => {
+            const value = parseFloat(prev);
+            return Math.sqrt(value).toString();
+          });
+          break;
+        default:
+          if (lastOperation === "equals" && !isNaN(parseInt(buttonName))) {
+            setCurrentExpression(buttonName);
+            setResult("0");
+          } else {
+            setCurrentExpression(prev => {
+              const button = buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName;
+              {
+                if (prev === "0" && !isNaN(parseInt(button))) {
+                  return button;
+                } else {
+                  return prev + button;
+                }
+              }
+            });
+          }
+          setLastOperation(buttonName);
+      }
+      if (Platform.OS === "web") {
+        document.getElementById("equals")?.focus();
+      }
+    },
+    [currentExpression, history, lastOperation, onSubmit],
+  );
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (modalVisible) {
+        const key = event.key;
+
+        if (/^[0-9+\-*/().%]$/.test(key)) {
+          handleButtonPress(key);
+        } else if (key === "Enter") {
+          handleButtonPress("equals");
+          return;
+        } else if (key === "Backspace") {
+          handleButtonPress("backspace");
+        } else if (key === "v" && event.ctrlKey) {
+          navigator.clipboard.readText().then(text => {
+            setCurrentExpression(prev => prev + text);
+          });
+        } else if (key === "c" && event.ctrlKey) {
+          navigator.clipboard.writeText(resultRef.current);
+        } else if (key === "Escape") {
+          setModalVisible(false);
+        }
+        lastClickedButton.current = null; // Reset last clicked button on any key press
+      }
+    },
+    [modalVisible, handleButtonPress],
+  );
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -67,7 +196,7 @@ export default function CalculatorComponent({
         window.removeEventListener("keydown", handleKeyDown);
       };
     }
-  }, [modalVisible]);
+  }, [modalVisible, handleKeyDown]);
 
   useEffect(() => {
     if (currentValue) {
@@ -85,130 +214,6 @@ export default function CalculatorComponent({
     setResult("0");
     setHistory([]);
     setLastOperation("");
-  };
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (modalVisible) {
-      const key = event.key;
-
-      if (/^[0-9+\-*/().%]$/.test(key)) {
-        handleButtonPress(key);
-      } else if (key === "Enter") {
-        handleButtonPress("equals");
-        return;
-      } else if (key === "Backspace") {
-        handleButtonPress("backspace");
-      } else if (key === "v" && event.ctrlKey) {
-        navigator.clipboard.readText().then(text => {
-          setCurrentExpression(prev => prev + text);
-        });
-      } else if (key === "c" && event.ctrlKey) {
-        navigator.clipboard.writeText(resultRef.current);
-      } else if (key === "Escape") {
-        setModalVisible(false);
-      }
-      lastClickedButton.current = null; // Reset last clicked button on any key press
-    }
-  };
-
-  const handleButtonPress = (buttonName: string) => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    switch (buttonName) {
-      case "clear":
-        handleClear();
-        break;
-      case "equals":
-        try {
-          const preparedExpression = prepareExpression(currentExpression);
-          const evalResult = eval(preparedExpression);
-
-          setResult(evalResult.toString());
-          setCurrentExpression(evalResult.toString());
-
-          setHistory([`${currentExpression} = ${evalResult}`, ...history]);
-
-          setLastOperation("equals");
-        } catch (error) {
-          setResult("Error");
-        }
-        break;
-      case "submit":
-        try {
-          const preparedExpression = prepareExpression(currentExpression);
-          const evalResult = eval(preparedExpression);
-          onSubmit(evalResult.toString());
-          setModalVisible(false);
-          handleClear();
-        } catch (error) {
-          setResult("Error");
-        }
-        break;
-      case "clearLastOperation":
-        setCurrentExpression(prev => {
-          const newExpression = prev.replace(/[-+x÷]?[^-+x÷]*$/, "");
-          try {
-            const preparedExpression = prepareExpression(newExpression);
-            const newResult = eval(preparedExpression);
-            setResult(newResult.toString());
-          } catch (error) {
-            setResult("");
-          }
-          return newExpression;
-        });
-        break;
-      case "backspace":
-        setCurrentExpression(prev => {
-          if (prev.length === 1) {
-            return "0";
-          } else {
-            return prev.slice(0, -1);
-          }
-        });
-        break;
-      case "toggleSign":
-        setCurrentExpression(prev => {
-          if (prev.startsWith("-")) {
-            return prev.slice(1);
-          } else {
-            return "-" + prev;
-          }
-        });
-        break;
-      case "percentage":
-        setCurrentExpression(prev => {
-          const value = parseFloat(prev);
-          return (value / 100).toString();
-        });
-        break;
-      case "sqrt":
-        setCurrentExpression(prev => {
-          const value = parseFloat(prev);
-          return Math.sqrt(value).toString();
-        });
-        break;
-      default:
-        if (lastOperation === "equals" && !isNaN(parseInt(buttonName))) {
-          setCurrentExpression(buttonName);
-          setResult("0");
-        } else {
-          setCurrentExpression(prev => {
-            const button = buttonRows.flat().find(b => b.name === buttonName)?.label || buttonName;
-            {
-              if (prev === "0" && !isNaN(parseInt(button))) {
-                return button;
-              } else {
-                return prev + button;
-              }
-            }
-          });
-        }
-        setLastOperation(buttonName);
-    }
-    if (Platform.OS === "web") {
-      document.getElementById("equals")?.focus();
-    }
   };
 
   const prepareExpression = (expr: string) => {
@@ -256,7 +261,11 @@ const History = ({ history }: any) => {
     <View className="min-h-24 max-h-24 h-24 rounded-md overflow-hidden">
       <FlatList
         data={history}
-        renderItem={({ item }) => <Text className={`text-foreground text-base mb-1`}>{item}</Text>}
+        renderItem={({ item }) => (
+          <Text selectable={false} className={`text-foreground text-base mb-1`}>
+            {item}
+          </Text>
+        )}
         keyExtractor={(item, index) => index.toString()}
         className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar"
       />
@@ -265,7 +274,7 @@ const History = ({ history }: any) => {
     // <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
     //   {history &&
     //     history.map((item: any, index: number) => (
-    //       <Text key={index} className={`text-base mb-1`}>
+    //       <Text selectable={false} key={index} className={`text-base mb-1`}>
     //         {item}
     //       </Text>
     //     ))}
@@ -276,10 +285,14 @@ const Display = ({ currentExpression, result }: any) => {
   return (
     <View className="rounded-md bg-card border border-muted px-4">
       <View className="items-end">
-        <Text className="text-foreground text-xl">{currentExpression}</Text>
+        <Text selectable={false} className="text-foreground text-xl">
+          {currentExpression}
+        </Text>
       </View>
       <View className="items-end">
-        <Text className="text-foreground text-2xl font-bold">{result}</Text>
+        <Text selectable={false} className="text-foreground text-2xl font-bold">
+          {result}
+        </Text>
       </View>
     </View>
   );
@@ -311,7 +324,9 @@ const Button = ({
       className={`w-14 h-14 justify-center items-center bg-gray-200 rounded-lg`}
       onPress={() => handleButtonPress(button.name)}
     >
-      <Text className={`text-xl`}>{button.label}</Text>
+      <Text selectable={false} className={`text-xl`}>
+        {button.label}
+      </Text>
     </Pressable>
   );
 };
@@ -331,7 +346,9 @@ const FormActionButtons = ({
           setModalVisible(false);
         }}
       >
-        <Text className={`text-white font-bold text-center`}>Close</Text>
+        <Text selectable={false} className={`text-white font-bold text-center`}>
+          Close
+        </Text>
       </Pressable>
       <Pressable
         className={`bg-primary rounded-md p-4`}
@@ -339,7 +356,9 @@ const FormActionButtons = ({
           handleButtonPress("submit");
         }}
       >
-        <Text className={`text-white font-bold text-center`}>Submit</Text>
+        <Text selectable={false} className={`text-white font-bold text-center`}>
+          Submit
+        </Text>
       </Pressable>
     </View>
   );

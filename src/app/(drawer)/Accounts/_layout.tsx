@@ -1,21 +1,16 @@
-import { Stack } from "expo-router";
+import TabNavigation from "@/src/components/TabNavigation";
+import { useSegments } from "expo-router";
 
-export default function AccountStack() {
+export default function AccountsLayout() {
+  const segments = useSegments();
+
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="Upsert"
-        options={({ route }: any) => ({
-          title: route.params?.accountId ? "Edit Account" : "Add Account",
-        })}
-      />
-      <Stack.Screen
-        name="Categories/Upsert"
-        options={({ route }: any) => ({
-          title: route.params?.categoryId ? "Edit Accounts' Category" : "Add Accounts' Category",
-        })}
-      />
-    </Stack>
+    <TabNavigation 
+      routes={[
+        { name: "Accounts", path: "/Accounts" },
+        { name: "Categories", path: "/Accounts/Categories" },
+      ]}
+      currentRoute={segments[2] === "Categories" ? "/Accounts/Categories" : "/Accounts"}
+    />
   );
 }

@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Alert, Pressable, SafeAreaView, TextInput, View, Text } from "react-native";
-import { Link, router } from "expo-router";
 import supabase from "@/src/providers/Supabase";
-import GenerateUuid from "@/src/utils/UUID.Helper";
+import GenerateUuid from "@/src/utils/uuid.Helper";
+import { Link, router } from "expo-router";
+import { useState } from "react";
+import { Alert, Pressable, SafeAreaView, Text, TextInput } from "react-native";
 
 const initailRegisterState = {
   id: GenerateUuid(),

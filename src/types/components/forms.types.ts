@@ -6,12 +6,12 @@
 import { ReactNode } from "react";
 import {
   Account,
+  AccountCategory,
+  Configuration,
   Transaction,
   TransactionCategory,
   TransactionGroup,
-  AccountCategory,
-  Configuration,
-} from "../db/Tables.Types";
+} from "../database/Tables.Types";
 
 // ============================================================================
 // Base Form Interfaces

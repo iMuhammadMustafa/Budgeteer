@@ -1,19 +1,20 @@
-import { memo, useCallback, useMemo, useEffect } from "react";
-import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
+import { memo, useCallback, useMemo } from "react";
+import { Platform, ScrollView, Text, View } from "react-native";
 
-import { AccountCategory, Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
-import { ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
-import { useFormState } from "../hooks/useFormState";
-import { useFormSubmission } from "../hooks/useFormSubmission";
-import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
-import FormContainer from "./FormContainer";
-import FormField from "./FormField";
-import FormSection from "./FormSection";
-import { ColorsPickerDropdown } from "../DropDownField";
-import IconPicker from "../IconPicker";
+import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import IconPicker from "@/src/components/elements/IconPicker";
+import FormContainer from "@/src/components/form-builder/FormContainer";
+import FormField from "@/src/components/form-builder/FormField";
+import FormSection from "@/src/components/form-builder/FormSection";
+import { useFormState } from "@/src/components/form-builder/hooks/useFormState";
+import { useFormSubmission } from "@/src/components/form-builder/hooks/useFormSubmission";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
+import { FormFieldConfig, ValidationSchema } from "@/src/types/components/forms.types";
+import { TableNames } from "@/src/types/database/TableNames";
+import { AccountCategory, Inserts, Updates } from "@/src/types/database/Tables.Types";
+import { commonValidationRules, createCategoryNameValidation } from "@/src/utils/form-validation";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 interface AccountCategoryFormProps {
@@ -36,7 +37,7 @@ interface AccountCategoryFormData {
 
 export const initialState: AccountCategoryFormData = {
   name: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
   type: "Asset",
@@ -81,7 +82,7 @@ const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this category appears in lists (lower numbers appear first)",
+    description: "Order in which this category appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -90,7 +91,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   const initialFormData: AccountCategoryFormData = useMemo(() => {
     const formData = {
       name: category.name || "",
-      icon: category.icon || "CircleHelp",
+      icon: category.icon || "BadgeInfo",
       color: category.color || "info-100",
       displayorder: category.displayorder ?? 0,
       type: (category.type as "Asset" | "Liability") || "Asset",
@@ -114,7 +115,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
   // }, [formState]);
 
   // Form submission handling
-  const { mutate } = useAccountCategoryService().upsert();
+  const { mutate } = useAccountCategoryService().useUpsert();
 
   const handleSubmit = useCallback(
     async (data: AccountCategoryFormData) => {
@@ -127,7 +128,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
           {
             onSuccess: () => {
               console.log({ message: "Category Created Successfully", type: "success" });
-              router.replace("/Accounts");
+              router.replace("/Accounts/Categories");
               resolve();
             },
             onError: error => {
@@ -226,11 +227,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
             {/* Icon and Color Selection */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
               <View className="flex-1">
-                <IconPicker
-                  onSelect={handleIconSelect}
-                  label="Icon"
-                  initialIcon={formState.data.icon ?? "CircleHelp"}
-                />
+                <IconPicker onSelect={handleIconSelect} label="Icon" initialIcon={formState.data.icon ?? "BadgeInfo"} />
               </View>
               <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
             </View>

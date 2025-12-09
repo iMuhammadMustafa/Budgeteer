@@ -1,29 +1,32 @@
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { TableNames, ViewNames } from "@/src/types/database//TableNames";
+import { Account, Inserts, Updates } from "@/src/types/database//Tables.Types";
+import { Session } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Account, Inserts, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import { queryClient } from "@/src/providers/QueryProvider";
-import { useAuth } from "@/src/providers/AuthProvider";
-import { Session } from "@supabase/supabase-js";
-import { ConfigurationTypes, TransactionNames } from "@/src/types/db/Config.Types";
-import { getDemoMode } from "@/src/providers/DemoModeGlobal";
-import { useStorageMode } from "../providers/StorageModeProvider";
-import { IAccountRepository, IConfigurationRepository, ITransactionRepository } from "../repositories";
+import { useAuth } from "../providers/AuthProvider";
+import { useQueryClient } from "../providers/QueryProvider";
+import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
+import { IConfigurationRepository } from "../repositories/interfaces/IConfigurationRepository";
+import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
+import { ConfigurationTypes, TransactionNames } from "../types/database/Config.Types";
+import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
 
-export interface IAccountService extends IService<Account, Inserts<TableNames.Accounts>, Updates<TableNames.Accounts>> {
-  getTotalAccountsBalance: () => ReturnType<typeof useQuery<{ totalbalance: number } | null>>;
-  getAccountOpenedTransaction: (id?: string) => ReturnType<typeof useQuery<any>>;
-  updateAccountBalance: () => ReturnType<typeof useMutation<number, Error, { accountId: string; amount: number }>>;
-  updateAccountOpenedTransaction: () => ReturnType<typeof useMutation<any, Error, { id: string; amount: number }>>;
+export interface IAccountService extends IService<Account, TableNames.Accounts> {
+  useGetTotalAccountsBalance: () => ReturnType<typeof useQuery<{ totalbalance: number } | null>>;
+  useGetAccountOpenedTransaction: (id?: string) => ReturnType<typeof useQuery<any>>;
+  useUpdateAccountBalance: () => ReturnType<typeof useMutation<number, Error, { accountId: string; amount: number }>>;
+  useUpdateAccountOpenedTransaction: () => ReturnType<typeof useMutation<any, Error, { id: string; amount: number }>>;
+  useGetAccountRunningBalance: (id?: string) => ReturnType<typeof useQuery<number | null>>;
 }
 
 export function useAccountService(): IAccountService {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   if (!session) throw new Error("Session not found");
 
   const tenantId = session?.user?.user_metadata?.tenantid;
-  const userId = session?.user?.id;
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();
@@ -31,31 +34,9 @@ export function useAccountService(): IAccountService {
   const transactionRepo = dbContext.TransactionRepository();
   const configRepo = dbContext.ConfigurationRepository();
 
-  const findAll = () => {
-    return useQuery<Account[]>({
-      queryKey: [TableNames.Accounts, tenantId, "repo"],
-      queryFn: async () => {
-        return accountRepo.findAll({}, tenantId);
-      },
-      enabled: !!tenantId,
-    });
-  };
-
-  const findById = (id?: string) => {
-    return useQuery<Account | null>({
-      queryKey: [TableNames.Accounts, id, tenantId, "repo"],
-      queryFn: async () => {
-        if (!id) throw new Error("ID is required");
-
-        return accountRepo.findById(id, tenantId);
-      },
-      enabled: !!id && !!tenantId,
-    });
-  };
-
-  const getTotalAccountsBalance = () => {
+  const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
-      queryKey: [ViewNames.StatsTotalAccountBalance, tenantId, "repo"],
+      queryKey: [TableNames.Accounts, "TotalBalance", tenantId],
       queryFn: async () => {
         return accountRepo.getTotalAccountBalance(tenantId);
       },
@@ -63,19 +44,61 @@ export function useAccountService(): IAccountService {
     });
   };
 
-  const getAccountOpenedTransaction = (id?: string) => {
+  const useGetAccountOpenedTransaction = (id?: string) => {
     return useQuery<any>({
-      queryKey: [TableNames.Transactions, id, tenantId, "repo"],
+      queryKey: [TableNames.Transactions, id, tenantId],
       queryFn: async () => {
-        if (!id) throw new Error("ID is required");
-
-        return accountRepo.getAccountOpenedTransaction(id, tenantId);
+        return accountRepo.getAccountOpenedTransaction(id!, tenantId);
       },
       enabled: !!id && !!tenantId,
     });
   };
 
-  const create = () => {
+  const useGetAccountRunningBalance = (id?: string) => {
+    return useQuery<number | null>({
+      queryKey: [TableNames.Accounts, id, "RunningBalance", tenantId],
+      queryFn: async () => {
+        const result = await accountRepo.getAccountRunningBalance(id!, tenantId);
+        return result?.runningbalance ?? null;
+      },
+      enabled: !!id && !!tenantId,
+    });
+  };
+
+  const useUpdateAccountBalance = () => {
+    return useMutation({
+      mutationFn: async ({ accountId, amount }: { accountId: string; amount: number }) => {
+        return await accountRepo.updateAccountBalance(accountId, amount, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      },
+    });
+  };
+  const useUpdateAccountOpenedTransaction = () => {
+    const userId = session?.user.id;
+
+    return useMutation({
+      mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+        const transaction: Updates<TableNames.Transactions> = {
+          id: id,
+          amount: amount,
+          updatedby: userId,
+          updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+        };
+        return await transactionRepo.update(id, transaction, tenantId);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+      },
+    });
+  };
+
+  const useCreate = () => {
     return useMutation({
       mutationFn: async (form: Inserts<TableNames.Accounts>) => {
         return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo);
@@ -88,7 +111,7 @@ export function useAccountService(): IAccountService {
     });
   };
 
-  const update = () => {
+  const useUpdate = () => {
     return useMutation({
       mutationFn: async ({
         form,
@@ -119,7 +142,7 @@ export function useAccountService(): IAccountService {
     });
   };
 
-  const upsert = () => {
+  const useUpsert = () => {
     return useMutation({
       mutationFn: async ({
         form,
@@ -161,6 +184,7 @@ export function useAccountService(): IAccountService {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, _?.id, "RunningBalance", tenantId] });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));
@@ -168,82 +192,16 @@ export function useAccountService(): IAccountService {
     });
   };
 
-  const deleteObj = () => {
-    return useMutation({
-      mutationFn: async ({ id }: { id: string }) => {
-        return await accountRepo.softDelete(id, tenantId);
-      },
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-      },
-    });
-  };
-
-  const restore = () => {
-    return useMutation({
-      mutationFn: async (id: string) => {
-        return await accountRepo.restore(id, tenantId);
-      },
-      onSuccess: async id => {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] }),
-          queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] }),
-        ]);
-      },
-    });
-  };
-
-  const updateAccountBalance = () => {
-    return useMutation({
-      mutationFn: async ({ accountId, amount }: { accountId: string; amount: number }) => {
-        return await accountRepo.updateAccountBalance(accountId, amount, tenantId);
-      },
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-      },
-    });
-  };
-  const updateAccountOpenedTransaction = () => {
-    const transactionRepo = dbContext.TransactionRepository();
-    const userId = session?.user.id;
-
-    return useMutation({
-      mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
-        const transaction: Updates<TableNames.Transactions> = {
-          id: id,
-          amount: amount,
-          updatedby: userId,
-          updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        };
-        return await transactionRepo.update(id, transaction);
-      },
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-      },
-    });
-  };
-
   return {
-    findAll,
-    findById,
-    getTotalAccountsBalance,
-    getAccountOpenedTransaction,
-    create,
-    update,
-    upsert,
-    delete: deleteObj,
-    softDelete: deleteObj,
-    restore,
-    updateAccountBalance,
-    updateAccountOpenedTransaction,
-
-    repo: accountRepo,
+    ...createServiceHooks<Account, TableNames.Accounts>(TableNames.Accounts, accountRepo, tenantId, session),
+    useCreate,
+    useUpdate,
+    useUpsert,
+    useGetTotalAccountsBalance,
+    useGetAccountOpenedTransaction,
+    useUpdateAccountBalance,
+    useUpdateAccountOpenedTransaction,
+    useGetAccountRunningBalance,
   };
 }
 

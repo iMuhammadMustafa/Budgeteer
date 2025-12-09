@@ -1,28 +1,30 @@
-// Real implementation moved from Transactions.api.ts
-
-import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import {
+  Inserts,
+  SearchDistinctTransactions,
   Transaction,
   TransactionsView,
-  SearchDistinctTransactions,
-  Inserts,
   Updates,
-} from "@/src/types/db/Tables.Types";
+} from "@/src/types/database/Tables.Types";
+import { SupaRepository } from "../BaseSupaRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
-import { Database } from "@/src/types/db/database.types";
 
-export class TransactionSupaRepository implements ITransactionRepository {
-  async findAll(searchFilters: TransactionFilters, tenantId: string): Promise<TransactionsView[]> {
-    let query = this.buildQuery(searchFilters, tenantId);
+export class TransactionSupaRepository
+  extends SupaRepository<Transaction | TransactionsView, TableNames.Transactions>
+  implements ITransactionRepository
+{
+  protected tableName = TableNames.Transactions;
+
+  override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
+    let query = this.buildQuery(filters, tenantId);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return data;
   }
 
-  async findById(id: string, tenantId?: string): Promise<TransactionsView | null> {
+  override async findById(id: string, tenantId?: string): Promise<TransactionsView | null> {
     if (!tenantId) throw new Error("Tenant ID is required");
 
     const { data, error } = await supabase
@@ -39,60 +41,7 @@ export class TransactionSupaRepository implements ITransactionRepository {
     return data;
   }
 
-  async create(data: Inserts<TableNames.Transactions>, tenantId?: string): Promise<Transaction> {
-    const { data: result, error } = await supabase.from(TableNames.Transactions).insert(data).select().single();
-
-    if (error) throw error;
-    return result;
-  }
-
-  async update(id: string, data: Updates<TableNames.Transactions>, tenantId?: string): Promise<Transaction | null> {
-    const { data: result, error } = await supabase
-      .from(TableNames.Transactions)
-      .update(data)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") return null; // No rows found
-      throw error;
-    }
-    return result;
-  }
-
-  async delete(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase.from(TableNames.Transactions).delete().eq("id", id);
-    if (error) throw error;
-  }
-
-  async softDelete(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase
-      .from(TableNames.Transactions)
-      .update({
-        isdeleted: true,
-        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-      })
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  async restore(id: string, tenantId?: string): Promise<void> {
-    const { error } = await supabase
-      .from(TableNames.Transactions)
-      .update({
-        isdeleted: false,
-        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-      })
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  async upsert(data: Inserts<TableNames.Transactions> | Updates<TableNames.Transactions>): Promise<Transaction> {
-    throw new Error("Not implemented");
-  }
-
-  async getByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
+  async findByTransferId(id: string, tenantId: string): Promise<TransactionsView> {
     const { data, error } = await supabase
       .from(ViewNames.TransactionsView)
       .select()
@@ -122,7 +71,7 @@ export class TransactionSupaRepository implements ITransactionRepository {
     );
   }
 
-  async createMultipleTransactions(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]> {
+  async createMultiple(transactions: Inserts<TableNames.Transactions>[]): Promise<Transaction[]> {
     //TODO Clean this
     const cleaned = transactions.map(t => {
       if ("mode" in t) {
@@ -147,84 +96,6 @@ export class TransactionSupaRepository implements ITransactionRepository {
 
     if (error) throw error;
     return data;
-  }
-
-  async findByDate(date: string, tenantId: string): Promise<TransactionsView[]> {
-    // Convert the date to local timezone for the start and end of the day
-    const startOfDay = dayjs(date).startOf("day").toISOString();
-    const endOfDay = dayjs(date).endOf("day").toISOString();
-
-    const { data, error } = await supabase
-      .from(ViewNames.TransactionsView)
-      .select("*")
-      .eq("tenantid", tenantId)
-      // .eq("isdeleted", false)
-      .gte("date", startOfDay)
-      .lte("date", endOfDay)
-      .order("date", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-
-  async findByCategory(categoryId: string, type: "category" | "group", tenantId: string): Promise<TransactionsView[]> {
-    // Get the start and end of the current month in local timezone
-    const startOfMonth = dayjs().startOf("month").toISOString();
-    const endOfMonth = dayjs().endOf("month").toISOString();
-
-    const { data, error } = await supabase
-      .from(ViewNames.TransactionsView)
-      .select("*")
-      .eq("tenantid", tenantId)
-      // .eq("isdeleted", false)
-      .gte("date", startOfMonth)
-      .lte("date", endOfMonth)
-      .eq(type === "category" ? "categoryid" : "groupid", categoryId)
-      .order("date", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-
-  async findByMonth(month: string, tenantId: string): Promise<TransactionsView[]> {
-    // Convert the month to local timezone for the start and end of the month
-    const startOfMonth = dayjs(month).startOf("month").toISOString();
-    const endOfMonth = dayjs(month).endOf("month").toISOString();
-
-    const { data, error } = await supabase
-      .from(ViewNames.TransactionsView)
-      .select("*")
-      .eq("tenantid", tenantId)
-      // .eq("isdeleted", false)
-      .gte("date", startOfMonth)
-      .lte("date", endOfMonth)
-      .order("date", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-
-  /**
-   * Finds transactions for a specific account within a date range
-   * Used for statement balance calculations
-   */
-  async findByAccountInDateRange(
-    accountId: string,
-    startDate: Date,
-    endDate: Date,
-    tenantId: string,
-  ): Promise<TransactionsView[]> {
-    const { data, error } = await supabase
-      .from(ViewNames.TransactionsView)
-      .select("*")
-      .eq("tenantid", tenantId)
-      .eq("accountid", accountId)
-      .gte("date", startDate.toISOString())
-      .lte("date", endDate.toISOString())
-      .order("date", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    return data || [];
   }
 
   /**

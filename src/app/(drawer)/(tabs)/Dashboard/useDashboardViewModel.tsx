@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
-import dayjs from "dayjs";
 import { useStatsService } from "@/src/services/Stats.Service";
-import { TransactionsView } from "@/src/types/db/Tables.Types";
-import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
+import { TransactionsView } from "@/src/types/database/Tables.Types";
+import dayjs from "dayjs";
 import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type SelectionType = "calendar" | "pie" | "bar";
 
@@ -17,7 +18,9 @@ type SelectionState = {
 
 export default function useDashboard() {
   const statsService = useStatsService();
-  const dateRanges = statsService.getDateRanges();
+  const transactionService = useTransactionService();
+
+  const dateRanges = statsService.useGetDateRanges();
 
   const [selection, setSelection] = useState<SelectionState>({
     type: null,
@@ -27,19 +30,18 @@ export default function useDashboard() {
   });
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.getStatsDailyTransactions(
+  const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.useGetStatsDailyTransactions(
     dateRanges.currentMonth.start,
     dateRanges.currentMonth.end,
     true,
   );
-
   const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
-    statsService.getStatsMonthlyCategoriesTransactions(dateRanges.currentMonth.start, dateRanges.currentMonth.end);
+    statsService.useGetStatsMonthlyCategoriesTransactions(dateRanges.currentMonth.start, dateRanges.currentMonth.end);
 
   const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } =
-    statsService.getStatsMonthlyTransactionsTypes(dateRanges.currentYear.start, dateRanges.currentYear.end);
+    statsService.useGetStatsMonthlyTransactionsTypes(dateRanges.currentYear.start, dateRanges.currentYear.end);
 
-  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.getStatsNetWorthGrowth(
+  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.useGetStatsNetWorthGrowth(
     dateRanges.currentYear.start,
     dateRanges.currentYear.end,
   );
@@ -56,13 +58,17 @@ export default function useDashboard() {
     [dailyTransactionsThisMonth, monthlyTransactionsGroupsAndCategories, yearlyTransactionsTypes, netWorthGrowth],
   );
 
-  const isLoading = isWeeklyLoading && isMonthlyLoading && isYearlyLoading && isNetWorthLoading;
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLoading(isWeeklyLoading || isMonthlyLoading || isYearlyLoading || isNetWorthLoading);
+  }, [isWeeklyLoading, isMonthlyLoading, isYearlyLoading, isNetWorthLoading]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    statsService.refreshAllQueries();
+    statsService.useRefreshAllQueries();
     setTimeout(() => setRefreshing(false), 1000);
-  }, [statsService.refreshAllQueries]);
+  }, [statsService]);
 
   const handleDayPress = async (day: any) => {
     try {
@@ -78,9 +84,17 @@ export default function useDashboard() {
 
       const startOfDay = dayjs(day.dateString).utc().startOf("day").toISOString();
       const endOfDay = dayjs(day.dateString).utc().endOf("day").toISOString();
-      const transactions = await statsService.fetchTransactions({ startDate: startOfDay, endDate: endOfDay });
+      const { data, isLoading: isTransactionsLoading } = await transactionService.useFindAllView({
+        startDate: startOfDay,
+        endDate: endOfDay,
+      });
+      setIsLoading(isTransactionsLoading);
 
-      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
+      setSelection(prev => ({
+        ...prev,
+        transactions: data ?? [],
+        isLoading: false,
+      }));
     } catch (error) {
       console.error("Error fetching transactions for date:", error);
       setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
@@ -104,9 +118,11 @@ export default function useDashboard() {
       } else {
         filters.groupid = item.id;
       }
-      const transactions = await statsService.fetchTransactions(filters);
+      const { data: transactions, isLoading: isTransactionLoading } = await transactionService.useFindAllView(filters);
 
-      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
+      setIsLoading(isTransactionLoading);
+
+      setSelection(prev => ({ ...prev, transactions: transactions ?? [], isLoading: false }));
     } catch (error) {
       console.error("Error fetching transactions for category:", error);
       setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
@@ -124,9 +140,14 @@ export default function useDashboard() {
 
       const startOfMonth = dayjs(item.x).utc().startOf("month").toISOString();
       const endOfMonth = dayjs(item.x).endOf("month").toISOString();
-      const transactions = await statsService.fetchTransactions({ startDate: startOfMonth, endDate: endOfMonth });
+      const { data: transactions, isLoading: isTransactionLoading } = await transactionService.useFindAllView({
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      });
 
-      setSelection(prev => ({ ...prev, transactions, isLoading: false }));
+      setIsLoading(isTransactionLoading);
+
+      setSelection(prev => ({ ...prev, transactions: transactions ?? [], isLoading: false }));
     } catch (error) {
       console.error("Error fetching transactions for month:", error);
       setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));

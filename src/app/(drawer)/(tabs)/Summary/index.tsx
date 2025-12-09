@@ -1,604 +1,552 @@
-import { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  SafeAreaView,
-  StatusBar,
-  ActivityIndicator,
-  ScrollView,
-  Pressable,
-  Modal,
-  Switch,
-  RefreshControl,
-} from "react-native";
 import dayjs from "dayjs";
-import ExpenseComparison from "@/src/components/ExpenseComparison";
-import { Calendar } from "react-native-calendars";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import { LinearGradient } from "expo-linear-gradient";
-import { RefreshCcw } from "lucide-react-native";
-import { StatsMonthlyCategoriesTransactions } from "@/src/types/db/Tables.Types";
+import { ArrowDown, ArrowUp, RefreshCcw } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+dayjs.extend(quarterOfYear);
+
+import MyIcon from "@/src/components/elements/MyIcon";
 import { useStatsService } from "@/src/services/Stats.Service";
+import { StatsMonthlyCategoriesTransactions } from "@/src/types/database/Tables.Types";
 
-type TimePeriod = "month" | "3months" | "year" | "custom";
+// Types
+type TimePeriod = "monthly" | "quarterly" | "yearly";
 
-// Type for the raw API response
-type CategoryTransaction = {
-  groupname: string | null;
-  type: string | null;
-  groupbudgetamount: number | null;
-  groupbudgetfrequency: string | null;
-  groupicon: string | null;
-  groupcolor: string | null;
-  groupdisplayorder: number | null;
-  categoryname: string | null;
-  categorybudgetamount: number | null;
-  categorybudgetfrequency: string | null;
-  categoryicon: string | null;
-  categorycolor: string | null;
-  categorydisplayorder: number | null;
-  date: string | null;
-  sum: number | null;
-};
-
-// Helper function to calculate budget usage percentage
-const calculateBudgetUsagePercentage = (sum: number, budget: number): number => {
-  if (!budget) return 0;
-  const usage = Math.abs(sum) / budget;
-  return Math.min(usage, 1); // Cap at 100%
-};
-
-// Helper function to get gradient colors based on usage
-const getGradientColors = (usage: number): [string, string] => {
-  if (usage <= 0.5) {
-    // Green to Yellow
-    return ["#4CAF50", "#FFC107"];
-  } else {
-    // Yellow to Red
-    return ["#FFC107", "#F44336"];
-  }
-};
-
-// Budget Progress Bar component
-const BudgetProgressBar = ({
-  usage,
-  budget,
-  spent,
-  label,
-}: {
-  usage: number;
-  budget: number;
-  spent: number;
+interface PeriodData {
   label: string;
-}) => {
-  const gradientColors = getGradientColors(usage);
+  start: string;
+  end: string;
+  isCurrent: boolean;
+}
 
-  return (
-    <View className="mb-2">
-      <View className="flex-row justify-between items-center mb-1">
-        <Text className="text-sm text-foreground">{label}</Text>
-        <Text className="text-sm text-muted-foreground">
-          ${Math.abs(spent).toFixed(2)} / ${budget.toFixed(2)}
-        </Text>
-      </View>
-      <View className="h-2 bg-muted rounded-full overflow-hidden flex-row">
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{
-            flex: usage,
-            height: "100%",
-          }}
-        />
-        <View style={{ flex: 1 - usage }} />
-      </View>
-    </View>
-  );
+interface TransactionData {
+  group: string;
+  category: string;
+  amount: number;
+  budget: number;
+  groupIcon?: string | null;
+  categoryIcon?: string | null;
+  groupBudget?: number | null;
+}
+
+interface PeriodComparison {
+  period: PeriodData;
+  transactions: TransactionData[];
+  totalExpenses: number;
+}
+
+// Constants
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const MIN_COLUMN_WIDTH = 120;
+const CATEGORY_COLUMN_WIDTH = 160;
+
+// Utility functions
+const getGradientColors = (usage: number): [string, string, string] => {
+  //   if (usage <= 0.5) return ["#10b981", "#f59e0b"];
+  //   if (usage <= 0.8) return ["#f59e0b", "#ef4444"];
+  //   return ["#ef4444", "#dc2626"];
+
+  return ["#10b981", "#f59e0b", "#ef4444"];
 };
 
-export default function Summary() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("month");
-  const [currentMonth, setCurrentMonth] = useState(dayjs().format("YYYY-MM"));
-  const [previousMonth, setPreviousMonth] = useState(dayjs().subtract(1, "month").format("YYYY-MM"));
-  const [showBudget, setShowBudget] = useState(false);
+const formatCurrency = (amount: number): string => {
+  return `$${Math.abs(amount).toFixed(2)}`;
+};
 
-  const [showFirstMonthPicker, setShowFirstMonthPicker] = useState(false);
-  const [showSecondMonthPicker, setShowSecondMonthPicker] = useState(false);
-
-  const [firstSelectedMonth, setFirstSelectedMonth] = useState(previousMonth);
-  const [secondSelectedMonth, setSecondSelectedMonth] = useState(currentMonth);
+export default function SummaryIndex() {
+  // State
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("monthly");
   const [refreshing, setRefreshing] = useState(false);
+  const [focusedPeriod, setFocusedPeriod] = useState<number>(0); // Index of current period
+
+  // Services
   const statsService = useStatsService();
 
-  // Get date ranges based on selected time period
-  const getDateRange = () => {
+  // Calculate periods based on time period
+  const periods = useMemo((): PeriodData[] => {
+    const now = dayjs();
+
     switch (timePeriod) {
-      case "month":
-        return {
-          current: {
-            start: dayjs(currentMonth).startOf("month").toISOString(),
-            end: dayjs(currentMonth).endOf("month").toISOString(),
-            label: dayjs(currentMonth).format("MMMM YYYY"),
-          },
-          previous: {
-            start: dayjs(previousMonth).startOf("month").toISOString(),
-            end: dayjs(previousMonth).endOf("month").toISOString(),
-            label: dayjs(previousMonth).format("MMMM YYYY"),
-          },
-        };
-      case "3months":
-        return {
-          current: {
-            start: dayjs().subtract(2, "month").startOf("month").toISOString(),
-            end: dayjs().endOf("month").toISOString(),
-            label: `Last 3 Months`,
-          },
-          previous: {
-            start: dayjs().subtract(5, "month").startOf("month").toISOString(),
-            end: dayjs().subtract(3, "month").endOf("month").toISOString(),
-            label: `Previous 3 Months`,
-          },
-        };
-      case "year":
-        return {
-          current: {
-            start: dayjs().startOf("year").toISOString(),
-            end: dayjs().endOf("year").toISOString(),
-            label: dayjs().format("YYYY"),
-          },
-          previous: {
-            start: dayjs().subtract(1, "year").startOf("year").toISOString(),
-            end: dayjs().subtract(1, "year").endOf("year").toISOString(),
-            label: dayjs().subtract(1, "year").format("YYYY"),
-          },
-        };
-      case "custom":
-        return {
-          current: {
-            start: dayjs(secondSelectedMonth).startOf("month").toISOString(),
-            end: dayjs(secondSelectedMonth).endOf("month").toISOString(),
-            label: dayjs(secondSelectedMonth).format("MMMM YYYY"),
-          },
-          previous: {
-            start: dayjs(firstSelectedMonth).startOf("month").toISOString(),
-            end: dayjs(firstSelectedMonth).endOf("month").toISOString(),
-            label: dayjs(firstSelectedMonth).format("MMMM YYYY"),
-          },
-        };
+      case "monthly":
+        return Array.from({ length: 4 }, (_, i) => {
+          const date = now.subtract(3 - i, "month");
+          return {
+            label: date.format("MMM YYYY"),
+            start: date.startOf("month").toISOString(),
+            end: date.endOf("month").toISOString(),
+            isCurrent: i === 3,
+          };
+        });
+
+      case "quarterly":
+        return Array.from({ length: 4 }, (_, i) => {
+          const date = now.subtract(3 - i, "quarter");
+          const quarter = Math.floor(date.month() / 3) + 1;
+          return {
+            label: `Q${quarter} ${date.year()}`,
+            start: date.startOf("quarter").toISOString(),
+            end: date.endOf("quarter").toISOString(),
+            isCurrent: i === 3,
+          };
+        });
+
+      case "yearly":
+        return Array.from({ length: 4 }, (_, i) => {
+          const date = now.subtract(3 - i, "year");
+          const isCurrentYear = i === 3;
+          return {
+            label: isCurrentYear ? `${date.year()} YTD` : `${date.year()}`,
+            start: date.startOf("year").toISOString(),
+            end: isCurrentYear ? now.toISOString() : date.endOf("year").toISOString(),
+            isCurrent: isCurrentYear,
+          };
+        });
+
+      default:
+        return [];
     }
-  };
+  }, [timePeriod]);
 
-  const dateRange = getDateRange();
+  // Data fetching
+  const queries = periods.map(period =>
+    statsService.useGetStatsMonthlyCategoriesTransactionsRaw(period.start, period.end),
+  );
 
-  // Use Tanstack Query with enabled flag to control when queries run
-  const {
-    data: currentMonthData,
-    isLoading: isCurrentLoading,
-    error: currentError,
-    refetch: refetchCurrent,
-  } = statsService.getStatsMonthlyCategoriesTransactionsRaw(dateRange.current.start, dateRange.current.end);
+  const isLoading = queries.some(q => q.isLoading);
+  const error = queries.find(q => q.error)?.error;
 
-  const {
-    data: previousMonthData,
-    isLoading: isPreviousLoading,
-    error: previousError,
-    refetch: refetchPrevious,
-  } = statsService.getStatsMonthlyCategoriesTransactionsRaw(dateRange.previous.start, dateRange.previous.end);
+  // Data transformation
+  const comparisonData = useMemo((): PeriodComparison[] => {
+    if (queries.some(q => q.isLoading || q.error)) return [];
 
-  const isLoading = isCurrentLoading || isPreviousLoading;
-  const error = currentError || previousError;
-
-  // Handle refresh
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    Promise.all([refetchCurrent(), refetchPrevious()]).finally(() => {
-      setRefreshing(false);
-    });
-  }, [refetchCurrent, refetchPrevious]);
-
-  // Function to manually refresh data
-  const handleRefresh = () => {
-    refetchCurrent();
-    refetchPrevious();
-  };
-
-  // Function to load data for a specific period
-  const loadData = async (period: "current" | "previous") => {
-    if (period === "current") {
-      await refetchCurrent();
-    } else {
-      await refetchPrevious();
-    }
-  };
-
-  // Function to transform data into the required format for ExpenseComparison
-  type ExpenseComparisonData = {
-    date: string;
-    transactions: {
-      category: string;
-      group: string;
-      amount: number;
-      categoryIcon?: string;
-      groupIcon?: string;
-      categoryBudget?: number;
-      groupBudget?: number;
-    }[];
-  };
-
-  /**
-   * Transforms current and previous month data into the format required by ExpenseComparison.
-   * Returns an array with two objects: previous and current period data.
-   */
-  const transformDataForComparison = (): ExpenseComparisonData[] => {
-    if (!Array.isArray(currentMonthData) || !Array.isArray(previousMonthData)) return [];
-
-    // Get all unique categories from both datasets
+    // Get all unique categories across all periods
     const allCategories = new Set<string>();
-
-    currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
-      if (item.groupname && item.categoryname && item.type === "Expense") {
-        allCategories.add(`${item.groupname}:${item.categoryname}`);
+    queries.forEach(q => {
+      if (Array.isArray(q.data)) {
+        q.data.forEach((item: StatsMonthlyCategoriesTransactions) => {
+          if (item.groupname && item.categoryname && item.type === "Expense") {
+            allCategories.add(`${item.groupname}:${item.categoryname}`);
+          }
+        });
       }
     });
 
-    previousMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
-      if (item.groupname && item.categoryname && item.type === "Expense") {
-        allCategories.add(`${item.groupname}:${item.categoryname}`);
-      }
-    });
+    return periods.map((period, periodIndex) => {
+      const queryData = queries[periodIndex].data || [];
 
-    // Create comparison data for previous and current periods
-    const comparisonData: ExpenseComparisonData[] = [
-      {
-        date: dateRange.previous.label,
-        transactions: Array.from(allCategories).map((fullCategory: string) => {
-          const [groupName, categoryName] = fullCategory.split(":");
-          const categoryData = previousMonthData.find(
-            (item: StatsMonthlyCategoriesTransactions) =>
-              item.groupname === groupName && item.categoryname === categoryName && item.type === "Expense",
-          );
-          return {
-            category: categoryName,
-            group: groupName,
-            amount: Math.abs(categoryData?.sum || 0),
-            categoryIcon: categoryData?.categoryicon || undefined,
-            groupIcon: categoryData?.groupicon || undefined,
-            categoryBudget: categoryData?.categorybudgetamount || undefined,
-            groupBudget: categoryData?.groupbudgetamount || undefined,
-          };
-        }),
-      },
-      {
-        date: dateRange.current.label,
-        transactions: Array.from(allCategories).map((fullCategory: string) => {
-          const [groupName, categoryName] = fullCategory.split(":");
-          const categoryData = currentMonthData.find(
-            (item: StatsMonthlyCategoriesTransactions) =>
-              item.groupname === groupName && item.categoryname === categoryName && item.type === "Expense",
-          );
-          return {
-            category: categoryName,
-            group: groupName,
-            amount: Math.abs(categoryData?.sum || 0),
-            categoryIcon: categoryData?.categoryicon || undefined,
-            groupIcon: categoryData?.groupicon || undefined,
-            categoryBudget: categoryData?.categorybudgetamount || undefined,
-            groupBudget: categoryData?.groupbudgetamount || undefined,
-          };
-        }),
-      },
-    ];
-
-    return comparisonData;
-  };
-
-  /**
-   * Calculates budget usage for groups and categories for the current month.
-   * Returns two objects: groupBudgets and categoryBudgets.
-   */
-  const calculateBudgetUsage = (): {
-    groupBudgets: { [key: string]: { spent: number; budget: number } };
-    categoryBudgets: { [key: string]: { spent: number; budget: number } };
-  } => {
-    const groupBudgets: { [key: string]: { spent: number; budget: number } } = {};
-    const categoryBudgets: { [key: string]: { spent: number; budget: number } } = {};
-
-    if (!Array.isArray(currentMonthData)) return { groupBudgets, categoryBudgets };
-
-    currentMonthData.forEach((item: StatsMonthlyCategoriesTransactions) => {
-      if (item.groupname && item.categoryname) {
-        // Add to group totals
-        if (!groupBudgets[item.groupname]) {
-          groupBudgets[item.groupname] = {
-            spent: 0,
-            budget: item.groupbudgetamount || 0,
-          };
-        }
-        groupBudgets[item.groupname].spent += Math.abs(item.sum || 0);
-
-        // Add to category totals
-        const key = `${item.groupname}:${item.categoryname}`;
-        categoryBudgets[key] = {
-          spent: Math.abs(item.sum || 0),
-          budget: item.categorybudgetamount || 0,
+      const transactions: TransactionData[] = Array.from(allCategories).map(fullCategory => {
+        const [groupName, categoryName] = fullCategory.split(":");
+        // Filter all items for this group/category in the period
+        const items = queryData.filter(
+          (item: StatsMonthlyCategoriesTransactions) =>
+            item.groupname === groupName && item.categoryname === categoryName && item.type === "Expense",
+        );
+        // Aggregate amounts and budgets
+        const amount = items.reduce((sum, item) => sum + Math.abs(item.sum || 0), 0);
+        const budget = items.reduce((sum, item) => sum + (item.categorybudgetamount || 0), 0);
+        // Use icons/budgets from the first item (or null)
+        const groupIcon = items[0]?.groupicon ?? null;
+        const categoryIcon = items[0]?.categoryicon ?? null;
+        const groupBudget = items[0]?.groupbudgetamount ?? null;
+        return {
+          group: groupName,
+          category: categoryName,
+          amount,
+          budget,
+          groupIcon,
+          categoryIcon,
+          groupBudget,
         };
-      }
+      });
+
+      const totalExpenses = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        period,
+        transactions,
+        totalExpenses,
+      };
+    });
+  }, [periods, queries]);
+
+  // Group data by categories
+  const groupedData = useMemo(() => {
+    if (!comparisonData.length) return {};
+
+    const grouped: Record<string, Record<string, TransactionData[]>> = {};
+
+    comparisonData.forEach((periodData, periodIndex) => {
+      periodData.transactions.forEach(transaction => {
+        if (!grouped[transaction.group]) {
+          grouped[transaction.group] = {};
+        }
+        if (!grouped[transaction.group][transaction.category]) {
+          grouped[transaction.group][transaction.category] = [];
+        }
+        grouped[transaction.group][transaction.category][periodIndex] = transaction;
+      });
     });
 
-    return { groupBudgets, categoryBudgets };
-  };
+    return grouped;
+  }, [comparisonData]);
 
-  // Month selection handlers
-  const handleMonthSelect = (date: { dateString: string }) => {
-    const formattedDate = dayjs(date.dateString).format("YYYY-MM");
+  // Calculate responsive column widths
+  const columnWidth = Math.max(MIN_COLUMN_WIDTH, (SCREEN_WIDTH - CATEGORY_COLUMN_WIDTH - 32) / periods.length);
 
-    if (showFirstMonthPicker) {
-      setFirstSelectedMonth(formattedDate);
-      setShowFirstMonthPicker(false);
-    } else if (showSecondMonthPicker) {
-      setSecondSelectedMonth(formattedDate);
-      setShowSecondMonthPicker(false);
+  // Refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all(queries.map(q => q.refetch()));
+    } catch (error) {
+      console.error("Failed to refresh data:", error);
+    } finally {
+      setRefreshing(false);
     }
+  }, [queries]);
 
-    if (timePeriod !== "custom") {
-      setTimePeriod("custom");
-    }
-  };
-
-  const renderMonthPicker = (isFirstMonth: boolean) => {
-    const visible = isFirstMonth ? showFirstMonthPicker : showSecondMonthPicker;
-    const setVisible = isFirstMonth ? setShowFirstMonthPicker : setShowSecondMonthPicker;
-
-    return (
-      <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={() => setVisible(false)}>
-        <View className="flex-1 bg-black/50 justify-center items-center">
-          <View className="bg-card rounded-md p-4 w-[90%] max-w-md">
-            <Text className="text-lg font-semibold text-foreground mb-4 text-center">
-              Select {isFirstMonth ? "First" : "Second"} Month
-            </Text>
-
-            <Calendar
-              onDayPress={handleMonthSelect}
-              hideExtraDays
-              markedDates={{
-                [isFirstMonth
-                  ? dayjs(firstSelectedMonth).format("YYYY-MM-DD")
-                  : dayjs(secondSelectedMonth).format("YYYY-MM-DD")]: { selected: true, selectedColor: "#4CAF50" },
-              }}
-              theme={{
-                backgroundColor: "#ffffff",
-                calendarBackground: "#ffffff",
-                textSectionTitleColor: "#b6c1cd",
-                selectedDayBackgroundColor: "#4CAF50",
-                selectedDayTextColor: "#ffffff",
-                todayTextColor: "#4CAF50",
-                dayTextColor: "#2d4150",
-                textDisabledColor: "#d9e1e8",
-                monthTextColor: "#2d4150",
-              }}
-            />
-
-            <Pressable
-              className="bg-danger-500 py-2 px-4 rounded-md mt-4 self-center"
-              onPress={() => setVisible(false)}
-            >
-              <Text className="text-white font-semibold">Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
-  if (isLoading) {
+  // Render loading state
+  if (isLoading && !refreshing) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text className="mt-4 text-base text-muted">Loading expense data...</Text>
+          <ActivityIndicator size="large" color="#10b981" />
+          <Text className="mt-4 text-base text-foreground">Loading expense data...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Render error state
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
-        <View className="flex-1 justify-center items-center p-5">
-          <Text className="text-lg font-bold text-danger-500 mb-2">Failed to load expense data</Text>
-          <Text className="text-sm text-muted text-center">
+        <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+        <View className="flex-1 justify-center items-center px-5">
+          <Text className="text-lg font-bold text-red-500 mb-2">Failed to load expense data</Text>
+          <Text className="text-sm text-muted-foreground text-center mb-4">
             {error instanceof Error ? error.message : "Unknown error occurred"}
           </Text>
-          <Pressable onPress={handleRefresh} className="mt-4 bg-primary py-2 px-4 rounded-md">
-            <Text className="text-white">Try Again</Text>
+          <Pressable onPress={onRefresh} className="bg-success-500 py-3 px-6 rounded-lg">
+            <Text className="text-primary-foreground font-semibold">Try Again</Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
-  const comparisonData = transformDataForComparison();
-  const { groupBudgets, categoryBudgets } = calculateBudgetUsage();
-
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <StatusBar backgroundColor="#1E293B" barStyle="light-content" translucent={false} />
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
+
+      {/* Header */}
+      <View className="flex-row justify-between items-center p-4 bg-card border-b border-border">
+        <Text className="text-2xl font-bold text-foreground">Expense Summary</Text>
+        <Pressable onPress={onRefresh} className="p-2">
+          <RefreshCcw size={24} color="#10b981" />
+        </Pressable>
+      </View>
+
+      {/* Time Period Selector */}
+      <View className="bg-card p-4 border-b border-border">
+        <View className="flex-row bg-popover rounded-lg p-1">
+          {(["monthly", "quarterly", "yearly"] as TimePeriod[]).map(period => (
+            <Pressable
+              key={period}
+              onPress={() => setTimePeriod(period)}
+              className={`flex-1 py-3 px-4 rounded-md items-center ${timePeriod === period ? "bg-primary" : ""}`}
+            >
+              <Text
+                className={`${timePeriod === period ? "text-primary-foreground" : "text-muted-foreground"} font-semibold capitalize`}
+              >
+                {period}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Content */}
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        className="px-2"
+        className="flex-1"
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4CAF50"]}
-            tintColor="#4CAF50"
-            title="Pull to refresh"
-            titleColor="#4CAF50"
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" colors={["#10b981"]} />
         }
       >
-        <View className="items-center py-6">
-          <View className="flex-row items-center justify-between w-full mb-3">
-            <Text className="text-2xl font-bold text-foreground">Expense Comparison</Text>
-            <Pressable onPress={handleRefresh} className="p-2">
-              <RefreshCcw size={24} color="#4CAF50" />
-            </Pressable>
-          </View>
-
-          {/* Budget toggle */}
-          <View className="w-full mb-4 flex-row items-center justify-between bg-card/30 rounded-lg p-3">
-            <Text className="text-foreground">Show Budget Usage</Text>
-            <Switch
-              value={showBudget}
-              onValueChange={setShowBudget}
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={showBudget ? "#4CAF50" : "#f4f3f4"}
-            />
-          </View>
-
-          {/* Time period selector */}
-          <View className="w-full mb-3 bg-card/30 rounded-lg p-1">
-            <View className="flex-row mb-1">
-              <Pressable
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "month" ? "bg-primary" : ""}`}
-                onPress={() => setTimePeriod("month")}
-              >
-                <Text
-                  className={`text-xs font-medium ${timePeriod === "month" ? "text-primary-foreground" : "text-muted-foreground"}`}
-                >
-                  Monthly
-                </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "3months" ? "bg-primary" : ""}`}
-                onPress={() => setTimePeriod("3months")}
-              >
-                <Text
-                  className={`text-xs font-medium ${timePeriod === "3months" ? "text-primary-foreground" : "text-muted-foreground"}`}
-                >
-                  3 Months
-                </Text>
-              </Pressable>
-            </View>
+        {comparisonData.length > 0 ? (
+          <View className="flex-1">
+            {/* Main Table Container - Two Column Layout */}
             <View className="flex-row">
-              <Pressable
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "year" ? "bg-primary" : ""}`}
-                onPress={() => setTimePeriod("year")}
-              >
-                <Text
-                  className={`text-xs font-medium ${timePeriod === "year" ? "text-primary-foreground" : "text-muted-foreground"}`}
-                >
-                  Yearly
-                </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 py-2 px-1 items-center rounded-md ${timePeriod === "custom" ? "bg-primary" : ""}`}
-                onPress={() => setTimePeriod("custom")}
-              >
-                <Text
-                  className={`text-xs font-medium ${timePeriod === "custom" ? "text-primary-foreground" : "text-muted-foreground"}`}
-                >
-                  Custom
-                </Text>
-              </Pressable>
-            </View>
-          </View>
+              {/* --- COLUMN 1: STICKY CATEGORIES (Header + Body) --- */}
+              <View style={{ width: CATEGORY_COLUMN_WIDTH }} className=" border-slate-300">
+                {/* Sticky Category Header */}
+                <View className="bg-popover border-b-2 border-border py-4 px-4">
+                  <Text className="font-bold text-sm text-foreground">Category</Text>
+                </View>
 
-          {timePeriod === "custom" && (
-            <View className="w-full flex-row mb-4 justify-center gap-2">
-              <Pressable
-                className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
-                onPress={() => setShowFirstMonthPicker(true)}
-              >
-                <Text className="text-center text-foreground text-xs">
-                  {dayjs(firstSelectedMonth).format("MMM YYYY")}
-                </Text>
-              </Pressable>
-              <Text className="text-foreground self-center">vs</Text>
-              <Pressable
-                className="flex-1 py-2 px-2 bg-card rounded-md border border-muted"
-                onPress={() => setShowSecondMonthPicker(true)}
-              >
-                <Text className="text-center text-foreground text-xs">
-                  {dayjs(secondSelectedMonth).format("MMM YYYY")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
+                {/* Sticky Category Body */}
+                {Object.entries(groupedData).map(([groupName, categories]) => (
+                  <View key={groupName}>
+                    {/* Group Header - Category Column */}
+                    <View className="bg-popover py-3 border-b border-border px-4" style={{ height: 58 }}>
+                      <View className="flex-row items-center h-full">
+                        <View className="w-7 h-7 items-center justify-center mr-2">
+                          {Object.values(categories)[0]?.[0]?.groupIcon && (
+                            <MyIcon
+                              name={Object.values(categories)[0][0].groupIcon!}
+                              size={18}
+                              className="text-foreground"
+                            />
+                          )}
+                        </View>
+                        <Text className="font-bold text-base text-foreground flex-1">{groupName}</Text>
+                      </View>
+                    </View>
 
-          <Text className="text-sm text-muted-foreground mb-4 text-center">
-            Comparing: {dateRange.previous.label} vs {dateRange.current.label}
-          </Text>
+                    {/* Category Rows - Category Column */}
+                    {Object.entries(categories).map(([categoryName, categoryTransactions], categoryIndex) => {
+                      // Calculate if any period has a budget to determine row height
+                      const hasBudget = periods.some((_, periodIndex) => {
+                        const transaction = categoryTransactions[periodIndex];
+                        const amount = transaction?.amount || 0;
+                        const budget = transaction?.budget || 0;
+                        return budget > 0 && amount > 0;
+                      });
 
-          {/* Load Data Buttons */}
-          <View className="w-full flex-row gap-2 mb-4">
-            <Pressable className="flex-1 py-2 px-4 bg-primary rounded-md" onPress={() => loadData("previous")}>
-              <Text className="text-white text-center">Load {dateRange.previous.label}</Text>
-            </Pressable>
-            <Pressable className="flex-1 py-2 px-4 bg-primary rounded-md" onPress={() => loadData("current")}>
-              <Text className="text-white text-center">Load {dateRange.current.label}</Text>
-            </Pressable>
-          </View>
+                      // Dynamic height: base height + budget bar space if needed
+                      const rowHeight = hasBudget ? 50 : 50;
 
-          {/* Budget Usage Section */}
-          {showBudget && (
-            <View className="w-full mb-6 bg-card/30 rounded-lg p-4">
-              <Text className="text-lg font-semibold text-foreground mb-4">Budget Usage</Text>
-
-              {/* Group Budgets */}
-              <View className="mb-4">
-                <Text className="text-base font-medium text-foreground mb-2">Groups</Text>
-                {Object.entries(groupBudgets).map(([groupName, { spent, budget }]) => (
-                  <BudgetProgressBar
-                    key={groupName}
-                    label={groupName}
-                    usage={calculateBudgetUsagePercentage(spent, budget)}
-                    spent={spent}
-                    budget={budget}
-                  />
+                      return (
+                        <View
+                          key={`${groupName}-${categoryName}`}
+                          className={`${
+                            categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
+                          } py-2 border-b border-border px-4`}
+                          style={{ height: rowHeight }}
+                        >
+                          <View className="flex-row items-center pl-4 h-full">
+                            <View className="w-6 h-6 items-center justify-center mr-2">
+                              {categoryTransactions[0]?.categoryIcon && (
+                                <MyIcon
+                                  name={categoryTransactions[0].categoryIcon!}
+                                  size={16}
+                                  className="text-muted-foreground"
+                                />
+                              )}
+                            </View>
+                            <Text className="text-sm text-muted-foreground flex-1" numberOfLines={2}>
+                              {categoryName}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
                 ))}
+
+                {/* Totals Row - Category Column */}
+                <View className="bg-primary py-4 border-t-2 border-border px-4">
+                  <Text className="font-bold text-base text-primary-foreground">Total</Text>
+                </View>
               </View>
 
-              {/* Category Budgets */}
-              <View>
-                <Text className="text-base font-medium text-foreground mb-2">Categories</Text>
-                {Object.entries(categoryBudgets).map(([key, { spent, budget }]) => {
-                  const [groupName, categoryName] = key.split(":");
-                  return (
-                    <BudgetProgressBar
-                      key={key}
-                      label={`${groupName} • ${categoryName}`}
-                      usage={calculateBudgetUsagePercentage(spent, budget)}
-                      spent={spent}
-                      budget={budget}
-                    />
-                  );
-                })}
-              </View>
-            </View>
-          )}
+              {/* --- COLUMN 2: SCROLLABLE DATA (Header + Body) --- */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} className="bg-card">
+                <View>
+                  {/* Scrollable Period Headers */}
+                  <View className="flex-row bg-popover border-b-2 border-border py-4">
+                    {periods.map((period, index) => (
+                      <View key={index} style={{ width: columnWidth }} className="px-2">
+                        <Text className="font-bold text-sm text-foreground text-center" numberOfLines={2}>
+                          {period.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
 
-          {comparisonData.length > 0 ? (
-            <View className="w-full items-center mb-6">
-              <View className="w-full">
-                <ExpenseComparison data={comparisonData} />
-              </View>
+                  {/* Scrollable Data Body */}
+                  {Object.entries(groupedData).map(([groupName, categories]) => (
+                    <View key={groupName}>
+                      {/* Group Header - Data Columns */}
+                      <View className="flex-row bg-popover py-3 border-b border-border" style={{ height: 58 }}>
+                        {periods.map((period, periodIndex) => {
+                          const groupTotal = Object.values(categories).reduce(
+                            (sum, categoryTransactions) => sum + (categoryTransactions[periodIndex]?.amount || 0),
+                            0,
+                          );
+                          const previousTotal =
+                            periodIndex > 0
+                              ? Object.values(categories).reduce(
+                                  (sum, categoryTransactions) =>
+                                    sum + (categoryTransactions[periodIndex - 1]?.amount || 0),
+                                  0,
+                                )
+                              : null;
+
+                          const hasIncrease = previousTotal !== null && groupTotal > previousTotal;
+                          const hasDecrease = previousTotal !== null && groupTotal < previousTotal;
+
+                          return (
+                            <View
+                              key={periodIndex}
+                              style={{ width: columnWidth }}
+                              className="px-2 items-center justify-center h-full"
+                            >
+                              <View className="flex-row items-center justify-center" style={{ gap: 4 }}>
+                                <Text
+                                  className={`font-semibold text-sm text-center ${
+                                    hasIncrease
+                                      ? "text-red-500"
+                                      : hasDecrease
+                                        ? "text-success-500"
+                                        : "text-typography-700"
+                                  }`}
+                                >
+                                  {formatCurrency(groupTotal)}
+                                </Text>
+                                {hasIncrease && <ArrowUp size={14} color="#ef4444" />}
+                                {hasDecrease && <ArrowDown size={14} color="#10b981" />}
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+
+                      {/* Category Rows - Data Columns */}
+                      {Object.entries(categories).map(([categoryName, categoryTransactions], categoryIndex) => {
+                        // Calculate if any period has a budget to determine row height
+                        const hasBudget = periods.some((_, periodIndex) => {
+                          const transaction = categoryTransactions[periodIndex];
+                          const amount = transaction?.amount || 0;
+                          const budget = transaction?.budget || 0;
+                          return budget > 0 && amount > 0;
+                        });
+
+                        // Dynamic height: base height + budget bar space if needed
+                        const rowHeight = hasBudget ? 50 : 50;
+
+                        return (
+                          <View
+                            key={`${groupName}-${categoryName}`}
+                            className={`flex-row ${
+                              categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
+                            } py-2 border-b border-border`}
+                            style={{ height: rowHeight }}
+                          >
+                            {periods.map((period, periodIndex) => {
+                              const transaction = categoryTransactions[periodIndex];
+                              const amount = transaction?.amount || 0;
+                              const budget = transaction?.budget || 0;
+                              const budgetUsage = budget > 0 ? Math.min(amount / budget, 1) : 0;
+
+                              const previousAmount =
+                                periodIndex > 0 ? categoryTransactions[periodIndex - 1]?.amount || 0 : null;
+
+                              const hasIncrease = previousAmount !== null && amount > previousAmount;
+                              const hasDecrease = previousAmount !== null && amount < previousAmount;
+
+                              return (
+                                <View key={periodIndex} style={{ width: columnWidth }} className="px-2">
+                                  <View className="items-center justify-center h-full">
+                                    <View className="flex-row items-center justify-center mb-1" style={{ gap: 4 }}>
+                                      <Text
+                                        className={`text-sm text-center ${
+                                          hasIncrease
+                                            ? "text-red-500"
+                                            : hasDecrease
+                                              ? "text-success-500"
+                                              : "text-typography-700"
+                                        } font-medium`}
+                                        // } ${amount > 0 ? "font-medium" : "font-normal"}`}
+                                      >
+                                        {formatCurrency(amount)}
+                                      </Text>
+                                      {hasBudget ? (
+                                        <Text className="text-sm text-muted-foreground">
+                                          / {formatCurrency(budget)}
+                                        </Text>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {hasIncrease && <ArrowUp size={12} color="#ef4444" />}
+                                      {hasDecrease && <ArrowDown size={12} color="#10b981" />}
+                                    </View>
+
+                                    {/* Budget Progress Bar */}
+                                    {budget > 0 && amount > 0 && (
+                                      <View className="w-full flex items-center">
+                                        <View
+                                          style={{ width: columnWidth / 2 }}
+                                          className="h-2 bg-gray-200 rounded-full overflow-hidden relative"
+                                        >
+                                          <LinearGradient
+                                            colors={getGradientColors(budgetUsage)}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 0 }}
+                                            style={{
+                                              width: `${budgetUsage * 100}%`,
+                                              height: "100%",
+                                            }}
+                                          />
+                                        </View>
+                                      </View>
+                                    )}
+                                  </View>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+
+                  {/* Totals Row - Data Columns */}
+                  <View className="flex-row bg-primary py-4 border-t-2 border-border">
+                    {comparisonData.map((periodData, periodIndex) => {
+                      const previousTotal = periodIndex > 0 ? comparisonData[periodIndex - 1].totalExpenses : null;
+                      const hasIncrease = previousTotal !== null && periodData.totalExpenses > previousTotal;
+                      const hasDecrease = previousTotal !== null && periodData.totalExpenses < previousTotal;
+
+                      return (
+                        <View
+                          key={periodIndex}
+                          style={{ width: columnWidth }}
+                          className="px-2 items-center justify-center h-full"
+                        >
+                          <View className="flex-row items-center justify-center" style={{ gap: 6 }}>
+                            <Text className="font-bold text-base text-primary-foreground text-center">
+                              {formatCurrency(periodData.totalExpenses)}
+                            </Text>
+                            {hasIncrease && <ArrowUp size={16} color="#fca5a5" />}
+                            {hasDecrease && <ArrowDown size={16} color="#86efac" />}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              </ScrollView>
             </View>
-          ) : (
-            <View className="justify-center items-center p-5">
-              <Text className="text-base text-muted-foreground text-center">
-                No transaction data available for comparison
-              </Text>
-            </View>
-          )}
-        </View>
+          </View>
+        ) : (
+          <View className="flex-1 justify-center items-center p-10 bg-white">
+            <Text className="text-base text-slate-500 text-center">No transaction data available for comparison</Text>
+          </View>
+        )}
       </ScrollView>
-
-      {/* Month picker modals */}
-      {renderMonthPicker(true)}
-      {renderMonthPicker(false)}
     </SafeAreaView>
   );
 }

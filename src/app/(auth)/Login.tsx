@@ -1,95 +1,55 @@
-import { SafeAreaView, Text, TextInput, Pressable, View } from "react-native";
-import { Link } from "expo-router";
-import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
-import useAuthViewModel from "./useAuthViewModel";
+import Button from "@/src/components/elements/Button";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import supabase from "@/src/providers/Supabase";
+import { StorageMode } from "@/src/types/StorageMode";
+import { Link, router } from "expo-router";
+import { useState } from "react";
+import { Alert, Text, TextInput, View } from "react-native";
 
 export default function Login() {
-  const {
-    handleModeSelection,
-    handleBackToModeSelection,
-    signInWithEmail,
-    loading,
-    user,
-    selectedMode,
-    onTextChange,
-    isValid,
-  } = useAuthViewModel();
+  const [user, setUser] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const { setStorageMode } = useStorageMode();
+  const { setSession } = useAuth();
 
-  if (!selectedMode) {
-    return <ModeSelectionComponent loading={loading} handleModeSelection={handleModeSelection} />;
-  }
+  const isValid = !loading && user.email.length > 0 && user.password.length > 0;
+
+  const onTextChange = (field: "email" | "password", text: string) => {
+    setUser(prev => ({ ...prev, [field]: text }));
+  };
+
+  const signInWithEmail = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: user?.email,
+      password: user?.password,
+    });
+
+    if (error) {
+      Alert.alert(error.message);
+      setLoading(false);
+      return;
+    }
+
+    await setStorageMode(StorageMode.Cloud);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    setSession(session, StorageMode.Cloud);
+    setLoading(false);
+    router.navigate("/Dashboard");
+  };
 
   return (
-    <LoginForm
-      loading={loading}
-      user={user}
-      onTextChange={onTextChange}
-      handleBackToModeSelection={handleBackToModeSelection}
-      signInWithEmail={signInWithEmail}
-      isValid={isValid}
-    />
-  );
-}
-
-function ModeSelectionComponent({
-  loading,
-  handleModeSelection,
-}: {
-  loading: boolean;
-  handleModeSelection: (mode: StorageMode) => void;
-}) {
-  return (
-    <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
-      <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
-      <Text className="text-foreground text-lg mb-8 text-center opacity-70">Choose how you'd like to use the app</Text>
-
-      <View className="space-y-4">
-        {Object.values(StorageModeConfig).map(mode => (
-          <Pressable
-            key={mode.id}
-            className="p-6 border border-primary rounded-lg bg-white shadow-sm"
-            onPress={() => handleModeSelection(mode.id)}
-            disabled={loading}
-          >
-            <View className="flex-row items-center mb-2">
-              <Text className="text-2xl mr-3">{mode.icon}</Text>
-              <Text className="text-foreground text-xl font-semibold flex-1">{mode.title}</Text>
-            </View>
-            <Text className="text-foreground opacity-70 ml-8">{mode.description}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {loading && (
-        <View className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-}
-
-function LoginForm({
-  loading,
-  user,
-  onTextChange,
-
-  handleBackToModeSelection,
-  signInWithEmail,
-  isValid,
-}: {
-  loading: boolean;
-  user: { email: string; password: string };
-  onTextChange: (field: "email" | "password", value: string) => void;
-  handleBackToModeSelection: () => void;
-  signInWithEmail: () => void;
-  isValid: boolean;
-}) {
-  return (
-    <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
-      <Pressable onPress={handleBackToModeSelection} className="mb-4">
-        <Text className="text-blue-500 text-lg">← Back to mode selection</Text>
-      </Pressable>
+    <View className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
+      <Button
+        variant="ghost"
+        label="Back to mode selection"
+        onPress={() => router.navigate("/")}
+        leftIcon="ArrowLeft"
+        className="self-start text-blue-600 text-center"
+      />
 
       <View className="flex-row items-center mb-6">
         <Text className="text-2xl mr-3">☁️</Text>
@@ -113,27 +73,23 @@ function LoginForm({
         onChangeText={text => onTextChange("password", text)}
         value={user.password}
       />
-      <Pressable
-        className={`p-4 mb-4 bg-primary rounded-lg items-center ${isValid ? "" : "opacity-50"}`}
+
+      <Button
+        label={loading ? "Signing in..." : "Sign In"}
         onPress={signInWithEmail}
         disabled={!isValid}
-      >
-        <Text className="text-foreground font-semibold" selectable={false}>
-          {loading ? "Signing in..." : "Sign In"}
-        </Text>
-      </Pressable>
-
+        variant="primary"
+        className="mb-4 bg"
+      />
       <Link href="/Register" className="p-4 mb-4 bg-secondary rounded-lg items-center text-center">
         <Text className="text-foreground font-semibold" selectable={false}>
           Create Account
         </Text>
       </Link>
 
-      <Pressable className="mt-2">
-        <Text className="text-blue-500 text-center" selectable={false}>
-          Forgot Password?
-        </Text>
-      </Pressable>
-    </SafeAreaView>
+      <Text className="text-blue-500 text-center cursor-pointer" selectable={false}>
+        Forgot Password?
+      </Text>
+    </View>
   );
 }

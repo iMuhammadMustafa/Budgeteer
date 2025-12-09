@@ -1,9 +1,9 @@
 # Repository Pattern Implementation
 
-Thi### Using Repository Classes (Recommended)
+### Using Repository Classes
 
-````typescript
-import { AccountCategorySupaRepository } from '@/src/repositories';
+```typescript
+import { AccountCategorySupaRepository } from "@/src/repositories";
 
 // Create an instance
 const accountCategoryRepo = new AccountCategorySupaRepository();
@@ -14,7 +14,9 @@ const category = await accountCategoryRepo.findById(id, tenantId);
 const newCategory = await accountCategoryRepo.create(categoryData, tenantId);
 const updatedCategory = await accountCategoryRepo.update(id, updateData, tenantId);
 await accountCategoryRepo.softDelete(id, tenantId);
-```ns the repository pattern implementation for the Budgeteer application. All Supabase functions have been wrapped in repository classes that implement their corresponding interfaces.
+```
+
+All functions have been wrapped in repository classes that implement their corresponding interfaces.
 
 ## Repository Classes
 
@@ -50,7 +52,7 @@ interface IRepository<T, InsertType, UpdateType> {
   softDelete(id: string, tenantId?: string): Promise<void>;
   restore(id: string, tenantId?: string): Promise<void>;
 }
-````
+```
 
 ## Usage Examples
 
@@ -69,23 +71,6 @@ const newCategory = await accountCategoryRepo.create(categoryData, tenantId);
 const updatedCategory = await accountCategoryRepo.update(id, updateData, tenantId);
 await accountCategoryRepo.softDelete(id, tenantId);
 ```
-
-### Using Legacy Functions (For Backward Compatibility)
-
-```typescript
-import { getAllAccountCategories, getAccountCategoryById } from "@/src/repositories";
-
-// Legacy functions still work
-const categories = await getAllAccountCategories(tenantId);
-const category = await getAccountCategoryById(id, tenantId);
-```
-
-## Migration Strategy
-
-1. **Phase 1**: Repository classes are created alongside existing functions
-2. **Phase 2**: New code should use repository classes
-3. **Phase 3**: Gradually migrate existing code to use repository classes
-4. **Phase 4**: Remove legacy functions (optional)
 
 ## Special Repository Methods
 

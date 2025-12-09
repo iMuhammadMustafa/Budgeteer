@@ -1,43 +1,63 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { IRepository } from "../repositories";
+import { IRepository } from "../repositories/interfaces/IRepository";
+import { QueryFilters } from "../types/apis/QueryFilters";
+import { TableNames, ViewNames } from "../types/database/TableNames";
+import { Inserts, Updates } from "../types/database/Tables.Types";
 
-export interface IReadableService<T> {
-  findAll: (searchFilters?: any) => ReturnType<typeof useQuery<T[]>>;
-  findById: (id?: string) => ReturnType<typeof useQuery<T | null>>;
+export interface IReadService<TModel> {
+  useFindAll: (searchFilters?: QueryFilters) => ReturnType<typeof useQuery<TModel[]>>;
+  useFindById: (id?: string) => ReturnType<typeof useQuery<TModel | null>>;
 }
-export interface IWritableService<T, TInsert, TUpdate> {
-  create: () => ReturnType<typeof useMutation<T, unknown, TInsert>>;
-  update: () => ReturnType<
-    typeof useMutation<T | null | undefined, unknown, { form: TUpdate; original?: T; props?: any }>
+export interface IWriteService<TModel, TTable extends TableNames> {
+  useCreate: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
+  useUpdate: () => ReturnType<
+    typeof useMutation<TModel | null | undefined, unknown, { form: Updates<TTable>; original?: TModel; props?: any }>
   >;
-  upsert: () => ReturnType<
-    typeof useMutation<T | null | undefined, unknown, { form: TInsert | TUpdate; original?: T; props?: any }>
+  useUpsert: () => ReturnType<
+    typeof useMutation<
+      TModel | null | undefined,
+      unknown,
+      { form: Inserts<TTable> | Updates<TTable>; original?: TModel; props?: any }
+    >
   >;
 }
-export interface IDeleteService<T> {
-  softDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: T | undefined }>>;
-  delete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: T | undefined }>>;
-  restore: () => ReturnType<typeof useMutation<void, unknown, string>>;
+export interface IMultipleWriteService<TModel, TTable extends TableNames> {
+  useCreateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Inserts<TTable>[]}>>;
+  useUpdateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Updates<TTable>[]}>>;
+  useDeleteMultiple?: () => ReturnType<typeof useMutation<void, unknown, { id: string[]}>>;
+
 }
 
-export interface IService<T, TInsert, TUpdate>
-  extends IReadableService<T>,
-    IWritableService<T, TInsert, TUpdate>,
-    IDeleteService<T> {
-  repo: IRepository<T, TInsert, TUpdate>;
+export interface IDeleteService<TModel> {
+  useSoftDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
+  useDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
+  useRestore: () => ReturnType<typeof useMutation<void, unknown, string>>;
 }
-export interface IServiceWithView<T, TInsert, TUpdate, TView> extends IDeleteService<TView> {
-  findAll: (searchFilters?: any) => ReturnType<typeof useQuery<TView[]>>;
-  findById: (id?: string) => ReturnType<typeof useQuery<T | TView | null>>;
 
-  create: () => ReturnType<typeof useMutation<T, unknown, TInsert>>;
+export interface IService<TModel, TTable extends TableNames>
+  extends IReadService<TModel>,
+    IWriteService<TModel, TTable>,
+    IMultipleWriteService<TModel, TTable>,
+    IDeleteService<TModel> {
+  repo: IRepository<TModel, TTable>;
+}
+export interface IServiceWithView<TModel, TTable extends TableNames, TView extends ViewNames>
+  extends IDeleteService<TView> {
+  useFindAll: (searchFilters?: any) => ReturnType<typeof useQuery<TView[]>>;
+  useFindById: (id?: string) => ReturnType<typeof useQuery<TModel | TView | null>>;
 
-  update: () => ReturnType<
-    typeof useMutation<T | null | undefined, unknown, { form: TUpdate; original: T; props?: any }>
+  useCreate: () => ReturnType<typeof useMutation<TModel, unknown, Inserts<TTable>>>;
+
+  useUpdate: () => ReturnType<
+    typeof useMutation<TModel | null | undefined, unknown, { form: Updates<TTable>; original: TModel; props?: any }>
   >;
-  upsert: () => ReturnType<
-    typeof useMutation<T | null | undefined, unknown, { form: TInsert | TUpdate; original?: T; props?: any }>
+  useUpsert: () => ReturnType<
+    typeof useMutation<
+      TModel | null | undefined,
+      unknown,
+      { form: Inserts<TTable> | Updates<TTable>; original?: TModel; props?: any }
+    >
   >;
 
-  repo: IRepository<T | TView, TInsert, TUpdate>;
+  repo: IRepository<TModel | TView, TTable>;
 }

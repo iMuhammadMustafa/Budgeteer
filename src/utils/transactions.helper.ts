@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { Inserts, TransactionsView } from "../types/db/Tables.Types";
-import { GroupedData } from "../types/pages/Transactions.types";
-import { TableNames } from "../types/db/TableNames";
 import { TransactionFilters } from "../types/apis/TransactionFilters";
+import { GroupedData } from "../types/components/Transactions.types";
+import { TableNames } from "../types/database/TableNames";
+import { Inserts, TransactionsView } from "../types/database/Tables.Types";
 
 export const getTransactionProp = (type: string | null) => {
   const transactionProp = { iconName: "CircleHelp", color: "danger-100", textColor: "foreground", size: 20 };
@@ -74,6 +74,6 @@ export const duplicateTransaction = (item: TransactionsView) => {
 };
 
 export const initialSearchFilters: TransactionFilters = {
-  startIndex: 0,
-  endIndex: 10,
+  offset: 0,
+  limit: 10,
 };

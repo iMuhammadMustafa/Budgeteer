@@ -1,25 +1,24 @@
-import React, { memo, useCallback, useMemo, useEffect } from "react";
-import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
+import { memo, useCallback, useMemo } from "react";
+import { Platform, ScrollView, Text, View } from "react-native";
 
-import { Inserts, TransactionGroup, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
-import { TransactionGroupFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
-import { useFormState } from "../hooks/useFormState";
-import { useFormSubmission } from "../hooks/useFormSubmission";
+import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import IconPicker from "@/src/components/elements/IconPicker";
+import FormContainer from "@/src/components/form-builder/FormContainer";
+import FormField from "@/src/components/form-builder/FormField";
+import FormSection from "@/src/components/form-builder/FormSection";
+import { useFormState } from "@/src/components/form-builder/hooks/useFormState";
+import { useFormSubmission } from "@/src/components/form-builder/hooks/useFormSubmission";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
+import { FormFieldConfig, TransactionGroupFormData, ValidationSchema } from "@/src/types/components/forms.types";
+import { TableNames } from "@/src/types/database/TableNames";
+import { Inserts, TransactionGroup, Updates } from "@/src/types/database/Tables.Types";
 import {
   commonValidationRules,
   createCategoryNameValidation,
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
-import FormContainer from "./FormContainer";
-import FormField from "./FormField";
-import FormSection from "./FormSection";
-import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
-import TextInputField from "../TextInputField";
-import IconPicker from "../IconPicker";
-import Button from "../Button";
-import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type TransactionGroupFormType = Inserts<TableNames.TransactionGroups> | Updates<TableNames.TransactionGroups>;
 
@@ -29,9 +28,13 @@ export const initialState: TransactionGroupFormData = {
   description: "",
   budgetamount: 0,
   budgetfrequency: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
+  createdby: "",
+  updatedby: "",
+  isdeleted: false,
+  tenantid: "",
 };
 
 // Validation schema for TransactionGroupForm
@@ -40,11 +43,9 @@ const validationSchema: ValidationSchema<TransactionGroupFormData> = {
   type: [commonValidationRules.required("Transaction type is required")],
   description: createDescriptionValidation(false),
   budgetamount: [
-    commonValidationRules.required("Budget amount is required"),
     commonValidationRules.min(0, "Budget amount must be 0 or greater"),
     commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
-  budgetfrequency: [commonValidationRules.required("Budget frequency is required")],
   icon: [commonValidationRules.required("Icon is required")],
   color: [commonValidationRules.required("Color is required")],
   displayorder: [
@@ -80,9 +81,9 @@ const createFormFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
       { id: "Income", label: "Income", value: "Income" },
       { id: "Expense", label: "Expense", value: "Expense" },
       { id: "Transfer", label: "Transfer", value: "Transfer" },
-      { id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: true },
-      { id: "Initial", label: "Initial", value: "Initial", disabled: true },
-      { id: "Refund", label: "Refund", value: "Refund", disabled: true },
+      { id: "Adjustment", label: "Adjustment", value: "Adjustment" },
+      { id: "Initial", label: "Initial", value: "Initial" },
+      { id: "Refund", label: "Refund", value: "Refund" },
     ],
     description: "Choose the type of transactions this group will contain",
   },
@@ -92,7 +93,7 @@ const createFormFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this group appears in lists (lower numbers appear first)",
+    description: "Order in which this group appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -102,7 +103,6 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     name: "budgetamount",
     label: "Budget Amount",
     type: "number",
-    required: true,
     placeholder: "0.00",
     description: "The budget amount for this group",
   },
@@ -110,7 +110,6 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     name: "budgetfrequency",
     label: "Budget Frequency",
     type: "select",
-    required: true,
     options: [
       { id: "Daily", label: "Daily", value: "Daily" },
       { id: "Weekly", label: "Weekly", value: "Weekly" },
@@ -142,7 +141,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
   );
 
   // Form submission handling
-  const { mutate } = useTransactionGroupService().upsert();
+  const { mutate } = useTransactionGroupService().useUpsert();
 
   const handleSubmit = useCallback(
     async (data: TransactionGroupFormData) => {
@@ -154,8 +153,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
           },
           {
             onSuccess: () => {
-              console.log({ message: "Transaction Group Created Successfully", type: "success" });
-              router.replace("/Categories");
+              router.replace("/Categories/Groups");
               resolve();
             },
             onError: error => {

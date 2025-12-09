@@ -1,16 +1,17 @@
 // Real implementation moved from Recurrings.api.ts
-import { FunctionNames, TableNames } from "@/src/types/db/TableNames";
-import dayjs from "dayjs";
 import supabase from "@/src/providers/Supabase";
-import { Recurring, Inserts, Updates } from "@/src/types/db/Tables.Types";
+import { TableNames } from "@/src/types/database/TableNames";
+import { Recurring } from "@/src/types/database/Tables.Types";
+// import { RecurringFilters, RecurringType } from "@/src/types/recurring";
+import { SupaRepository } from "../BaseSupaRepository";
 import { IRecurringRepository } from "../interfaces/IRecurringRepository";
-import { RecurringFilters } from "@/src/types/recurring";
-import { RecurringType } from "@/src/types/recurring";
 
-export class RecurringSupaRepository implements IRecurringRepository {
-  async findAll(filters?: any, tenantId?: string): Promise<Recurring[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
+export class RecurringSupaRepository
+  extends SupaRepository<Recurring, TableNames.Recurrings>
+  implements IRecurringRepository
+{
+  protected tableName = TableNames.Recurrings;
+  override async findAll(tenantId: string): Promise<Recurring[]> {
     let query = supabase
       .from(TableNames.Recurrings)
       .select(
@@ -21,23 +22,14 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .eq("tenantid", tenantId)
       .eq("isdeleted", false);
 
-    if (filters) {
-      // Example: apply filters if provided
-      // if (filters.isactive !== undefined) {
-      //   query = query.eq("isactive", filters.isactive);
-      // }
-    }
-
     query = query.order("nextoccurrencedate").order("name");
 
     const { data, error } = await query;
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data as unknown as Recurring[];
   }
 
-  async findById(id: string, tenantId?: string): Promise<Recurring | null> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
+  override async findById(id: string, tenantId: string): Promise<Recurring | null> {
     const { data, error } = await supabase
       .from(TableNames.Recurrings)
       .select(
@@ -48,267 +40,203 @@ export class RecurringSupaRepository implements IRecurringRepository {
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
       .eq("id", id)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") return null; // No rows found
-      throw new Error(error.message);
-    }
-    return data as unknown as Recurring | null;
-  }
-
-  async create(data: Inserts<TableNames.Recurrings>, tenantId?: string): Promise<Recurring> {
-    const { data: result, error } = await supabase
-      .from(TableNames.Recurrings)
-      .insert({ ...data, tenantid: tenantId || data.tenantid })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return result;
-  }
-
-  async update(id: string, data: Updates<TableNames.Recurrings>, tenantId?: string): Promise<Recurring | null> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
-    const { data: result, error } = await supabase
-      .from(TableNames.Recurrings)
-      .update({ ...data, updatedat: dayjs().toISOString() })
-      .eq("id", id)
-      .eq("tenantid", tenantId)
-      .select()
       .single();
 
     if (error) {
       if (error.code === "PGRST116") return null; // No rows found
       throw error;
     }
-    return result;
+    return data as unknown as Recurring | null;
   }
 
-  async delete(id: string, tenantId?: string): Promise<void> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  // // Enhanced query methods for due transactions and auto-apply filtering
+  // async findDueRecurringTransactions(tenantId: string, asOfDate?: Date): Promise<Recurring[]> {
+  //
 
-    const { error } = await supabase.from(TableNames.Recurrings).delete().eq("id", id).eq("tenantid", tenantId);
-    if (error) throw error;
-  }
+  //   const checkDate = asOfDate || new Date();
 
-  async softDelete(id: string, tenantId?: string): Promise<void> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  //   let query = supabase
+  //     .from(TableNames.Recurrings)
+  //     .select(
+  //       `*,
+  //        source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*),
+  //        category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
+  //     )
+  //     .eq("tenantid", tenantId)
+  //     .eq("isdeleted", false)
+  //     .eq("isactive", true)
+  //     .lte("nextoccurrencedate", checkDate.toISOString());
 
-    const { error } = await supabase
-      .from(TableNames.Recurrings)
-      .update({
-        isdeleted: true,
-        updatedat: dayjs().toISOString(),
-      })
-      .eq("id", id)
-      .eq("tenantid", tenantId);
-    if (error) throw error;
-  }
+  //   const { data, error } = await query.order("nextoccurrencedate");
+  //   if (error) throw error;
+  //   return data as unknown as Recurring[];
+  // }
 
-  async restore(id: string, tenantId?: string): Promise<void> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  // async findByAutoApplyEnabled(tenantId: string, enabled: boolean): Promise<Recurring[]> {
+  //
 
-    const { error } = await supabase
-      .from(TableNames.Recurrings)
-      .update({
-        isdeleted: false,
-        updatedat: dayjs().toISOString(),
-      })
-      .eq("id", id)
-      .eq("tenantid", tenantId);
-    if (error) throw error;
-  }
+  //   const { data, error } = await supabase
+  //     .from(TableNames.Recurrings)
+  //     .select(
+  //       `*,
+  //        source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*),
+  //        category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
+  //     )
+  //     .eq("tenantid", tenantId)
+  //     .eq("isdeleted", false)
+  //     .eq("autoapplyenabled", enabled)
+  //     .order("nextoccurrencedate");
 
-  // Enhanced query methods for due transactions and auto-apply filtering
-  async findDueRecurringTransactions(tenantId: string, asOfDate?: Date): Promise<Recurring[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  //   if (error) throw error;
+  //   return data as unknown as Recurring[];
+  // }
 
-    const checkDate = asOfDate || new Date();
+  // async findByRecurringType(tenantId: string, type: RecurringType): Promise<Recurring[]> {
+  //
 
-    let query = supabase
-      .from(TableNames.Recurrings)
-      .select(
-        `*, 
-         source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
-      )
-      .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
-      .eq("isactive", true)
-      .lte("nextoccurrencedate", checkDate.toISOString());
+  //   const { data, error } = await supabase
+  //     .from(TableNames.Recurrings)
+  //     .select(
+  //       `*,
+  //        source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*),
+  //        category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
+  //     )
+  //     .eq("tenantid", tenantId)
+  //     .eq("isdeleted", false)
+  //     .eq("recurringtype", type)
+  //     .order("nextoccurrencedate");
 
-    const { data, error } = await query.order("nextoccurrencedate");
-    if (error) throw new Error(error.message);
-    return data as unknown as Recurring[];
-  }
+  //   if (error) throw error;
+  //   return data as unknown as Recurring[];
+  // }
 
-  async findByAutoApplyEnabled(tenantId: string, enabled: boolean): Promise<Recurring[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  // // Filtering with new criteria
+  // async findAllFiltered(filters?: RecurringFilters, tenantId: string): Promise<Recurring[]> {
+  //
 
-    const { data, error } = await supabase
-      .from(TableNames.Recurrings)
-      .select(
-        `*, 
-         source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
-      )
-      .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
-      .eq("autoapplyenabled", enabled)
-      .order("nextoccurrencedate");
+  //   let query = supabase
+  //     .from(TableNames.Recurrings)
+  //     .select(
+  //       `*,
+  //        source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*),
+  //        category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
+  //     )
+  //     .eq("tenantid", tenantId)
+  //     .eq("isdeleted", false);
 
-    if (error) throw new Error(error.message);
-    return data as unknown as Recurring[];
-  }
+  //   if (filters) {
+  //     if (filters.recurringType !== undefined) {
+  //       query = query.eq("recurringtype", filters.recurringType);
+  //     }
+  //     if (filters.autoApplyEnabled !== undefined) {
+  //       query = query.eq("autoapplyenabled", filters.autoApplyEnabled);
+  //     }
+  //     if (filters.isActive !== undefined) {
+  //       query = query.eq("isactive", filters.isActive);
+  //     }
+  //     if (filters.isDue && filters.asOfDate) {
+  //       query = query.lte("nextoccurrencedate", filters.asOfDate.toISOString());
+  //     }
+  //   }
 
-  async findByRecurringType(tenantId: string, type: RecurringType): Promise<Recurring[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  //   query = query.order("nextoccurrencedate").order("name");
 
-    const { data, error } = await supabase
-      .from(TableNames.Recurrings)
-      .select(
-        `*, 
-         source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
-      )
-      .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
-      .eq("recurringtype", type)
-      .order("nextoccurrencedate");
+  //   const { data, error } = await query;
+  //   if (error) throw error;
+  //   return data as unknown as Recurring[];
+  // }
 
-    if (error) throw new Error(error.message);
-    return data as unknown as Recurring[];
-  }
+  // // Batch operation methods for updating next occurrence dates and failed attempts
+  // async updateNextOccurrenceDates(updates: { id: string; nextDate: Date }[]): Promise<void> {
+  //   if (updates.length === 0) return;
 
-  // Filtering with new criteria
-  async findAllFiltered(filters?: RecurringFilters, tenantId?: string): Promise<Recurring[]> {
-    if (!tenantId) throw new Error("Tenant ID is required");
+  //   // Use a transaction to update multiple records
+  //   const updatePromises = updates.map(update =>
+  //     supabase
+  //       .from(TableNames.Recurrings)
+  //       .update({
+  //         nextoccurrencedate: update.nextDate.toISOString(),
+  //         updatedat: dayjs().toISOString(),
+  //       })
+  //       .eq("id", update.id),
+  //   );
 
-    let query = supabase
-      .from(TableNames.Recurrings)
-      .select(
-        `*, 
-         source_account:${TableNames.Accounts}!recurrings_sourceaccountid_fkey(*), 
-         category:${TableNames.TransactionCategories}!recurrings_categoryid_fkey(*)`,
-      )
-      .eq("tenantid", tenantId)
-      .eq("isdeleted", false);
+  //   const results = await Promise.allSettled(updatePromises);
 
-    if (filters) {
-      if (filters.recurringType !== undefined) {
-        query = query.eq("recurringtype", filters.recurringType);
-      }
-      if (filters.autoApplyEnabled !== undefined) {
-        query = query.eq("autoapplyenabled", filters.autoApplyEnabled);
-      }
-      if (filters.isActive !== undefined) {
-        query = query.eq("isactive", filters.isActive);
-      }
-      if (filters.isDue && filters.asOfDate) {
-        query = query.lte("nextoccurrencedate", filters.asOfDate.toISOString());
-      }
-    }
+  //   // Check for any failures
+  //   const failures = results.filter(result => result.status === "rejected");
+  //   if (failures.length > 0) {
+  //     throw new Error(`Failed to update ${failures.length} recurring transactions`);
+  //   }
+  // }
 
-    query = query.order("nextoccurrencedate").order("name");
+  // async incrementFailedAttempts(recurringIds: string[]): Promise<void> {
+  //   if (recurringIds.length === 0) return;
 
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-    return data as unknown as Recurring[];
-  }
+  //   // Use RPC function for atomic increment or fallback to individual updates
+  //   const updatePromises = recurringIds.map(id =>
+  //     supabase
+  //       .from(TableNames.Recurrings)
+  //       .update({
+  //         failedattempts: supabase.rpc("increment_failed_attempts", { recurring_id: id }),
+  //         updatedat: dayjs().toISOString(),
+  //       })
+  //       .eq("id", id),
+  //   );
 
-  // Batch operation methods for updating next occurrence dates and failed attempts
-  async updateNextOccurrenceDates(updates: { id: string; nextDate: Date }[]): Promise<void> {
-    if (updates.length === 0) return;
+  //   const results = await Promise.allSettled(updatePromises);
 
-    // Use a transaction to update multiple records
-    const updatePromises = updates.map(update =>
-      supabase
-        .from(TableNames.Recurrings)
-        .update({
-          nextoccurrencedate: update.nextDate.toISOString(),
-          updatedat: dayjs().toISOString(),
-        })
-        .eq("id", update.id),
-    );
+  //   // Check for any failures
+  //   const failures = results.filter(result => result.status === "rejected");
+  //   if (failures.length > 0) {
+  //     throw new Error(`Failed to increment failed attempts for ${failures.length} recurring transactions`);
+  //   }
+  // }
 
-    const results = await Promise.allSettled(updatePromises);
+  // async resetFailedAttempts(recurringIds: string[]): Promise<void> {
+  //   if (recurringIds.length === 0) return;
 
-    // Check for any failures
-    const failures = results.filter(result => result.status === "rejected");
-    if (failures.length > 0) {
-      throw new Error(`Failed to update ${failures.length} recurring transactions`);
-    }
-  }
+  //   const updatePromises = recurringIds.map(id =>
+  //     supabase
+  //       .from(TableNames.Recurrings)
+  //       .update({
+  //         failedattempts: 0,
+  //         updatedat: dayjs().toISOString(),
+  //       })
+  //       .eq("id", id),
+  //   );
 
-  async incrementFailedAttempts(recurringIds: string[]): Promise<void> {
-    if (recurringIds.length === 0) return;
+  //   const results = await Promise.allSettled(updatePromises);
 
-    // Use RPC function for atomic increment or fallback to individual updates
-    const updatePromises = recurringIds.map(id =>
-      supabase
-        .from(TableNames.Recurrings)
-        .update({
-          failedattempts: supabase.rpc("increment_failed_attempts", { recurring_id: id }),
-          updatedat: dayjs().toISOString(),
-        })
-        .eq("id", id),
-    );
+  //   // Check for any failures
+  //   const failures = results.filter(result => result.status === "rejected");
+  //   if (failures.length > 0) {
+  //     throw new Error(`Failed to reset failed attempts for ${failures.length} recurring transactions`);
+  //   }
+  // }
 
-    const results = await Promise.allSettled(updatePromises);
+  // // Transfer-specific methods
+  // async findRecurringTransfers(tenantId: string): Promise<Recurring[]> {
+  //   return this.findByRecurringType(tenantId, RecurringType.Transfer);
+  // }
 
-    // Check for any failures
-    const failures = results.filter(result => result.status === "rejected");
-    if (failures.length > 0) {
-      throw new Error(`Failed to increment failed attempts for ${failures.length} recurring transactions`);
-    }
-  }
+  // async findCreditCardPayments(tenantId: string): Promise<Recurring[]> {
+  //   return this.findByRecurringType(tenantId, RecurringType.CreditCardPayment);
+  // }
 
-  async resetFailedAttempts(recurringIds: string[]): Promise<void> {
-    if (recurringIds.length === 0) return;
+  // // Auto-apply management
+  // async updateAutoApplyStatus(recurringId: string, enabled: boolean, tenantId: string): Promise<void> {
+  //
 
-    const updatePromises = recurringIds.map(id =>
-      supabase
-        .from(TableNames.Recurrings)
-        .update({
-          failedattempts: 0,
-          updatedat: dayjs().toISOString(),
-        })
-        .eq("id", id),
-    );
+  //   const { error } = await supabase
+  //     .from(TableNames.Recurrings)
+  //     .update({
+  //       autoapplyenabled: enabled,
+  //       updatedat: dayjs().toISOString(),
+  //     })
+  //     .eq("id", recurringId)
+  //     .eq("tenantid", tenantId);
 
-    const results = await Promise.allSettled(updatePromises);
-
-    // Check for any failures
-    const failures = results.filter(result => result.status === "rejected");
-    if (failures.length > 0) {
-      throw new Error(`Failed to reset failed attempts for ${failures.length} recurring transactions`);
-    }
-  }
-
-  // Transfer-specific methods
-  async findRecurringTransfers(tenantId: string): Promise<Recurring[]> {
-    return this.findByRecurringType(tenantId, RecurringType.Transfer);
-  }
-
-  async findCreditCardPayments(tenantId: string): Promise<Recurring[]> {
-    return this.findByRecurringType(tenantId, RecurringType.CreditCardPayment);
-  }
-
-  // Auto-apply management
-  async updateAutoApplyStatus(recurringId: string, enabled: boolean, tenantId?: string): Promise<void> {
-    if (!tenantId) throw new Error("Tenant ID is required");
-
-    const { error } = await supabase
-      .from(TableNames.Recurrings)
-      .update({
-        autoapplyenabled: enabled,
-        updatedat: dayjs().toISOString(),
-      })
-      .eq("id", recurringId)
-      .eq("tenantid", tenantId);
-
-    if (error) throw error;
-  }
+  //   if (error) throw error;
+  // }
 }

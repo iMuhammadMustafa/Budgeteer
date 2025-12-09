@@ -1,101 +1,41 @@
-import { useCallback, useState } from "react";
-import { TabView } from "react-native-tab-view";
-import { TableNames } from "@/src/types/db/TableNames";
-import { Tab, TabBar, TabHeader } from "@/src/components/MyTabs";
-import { Text, View, ActivityIndicator, Pressable } from "react-native";
-import Button from "@/src/components/Button";
-import MyModal from "@/src/components/MyModal";
-import TextInputField from "@/src/components/TextInputField";
-import { AccountSelecterDropdown } from "@/src/components/DropDownField";
-import MyIcon from "@/src/utils/Icons.Helper";
+import Button from "@/src/components/elements/Button";
+import { AccountSelecterDropdown } from "@/src/components/elements/DropdownField";
+import MyModal from "@/src/components/elements/MyModal";
+import TextInputField from "@/src/components/elements/TextInputField";
+import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
+import MyTab from "@/src/components/MyTab";
+import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
+import { TableNames } from "@/src/types/database/TableNames";
+import { useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 
-export default function Accounts() {
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "first", title: "Accounts" },
-    { key: "second", title: "Categories" },
-  ]);
-
-  const renderScene = useCallback(({ route }: any) => {
-    switch (route.key) {
-      case "first":
-        return <AccountsRoute />;
-      case "second":
-        return <AccountsCategoriesRoute />;
-      default:
-        return <AccountsRoute />;
-    }
-  }, []);
-
-  return (
-    <TabView
-      navigationState={{ index, routes }}
-      tabBarPosition="top"
-      onIndexChange={setIndex}
-      className="bg-background"
-      lazy={true}
-      renderScene={renderScene}
-      renderTabBar={props => (
-        <TabBar>
-          <Bar {...props} setIndex={setIndex} />
-        </TabBar>
-      )}
-    />
-  );
-}
-
-const Bar = (props: any) => (
-  <>
-    <TabHeader title="Accounts" isSelected={props.navigationState.index === 0} onPress={() => props.setIndex(0)} />
-    <TabHeader title="Categories" isSelected={props.navigationState.index === 1} onPress={() => props.setIndex(1)} />
-  </>
-);
-
-const AccountsRoute = () => {
+export default function AccountsIndex() {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
-  const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.getTotalAccountsBalance();
-  const { data: accounts, isLoading: isLoadingAccounts } = accountService.findAll();
-  const { mutate: createTransaction, isPending: isCreating } = transactionService.create();
+  const accountCategoryService = useAccountCategoryService();
+
+  const { data: accounts, isLoading, error } = accountService.useFindAll();
+  const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
+  const { data: accountCategories } = accountCategoryService.useFindAll();
+  const { mutate: createTransaction, isPending: isCreating } = transactionService.useCreate();
+
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
 
-  const FooterContent = () => {
-    if (isLoadingTotalBalance) {
-      return <ActivityIndicator animating={true} className="my-1" />;
-    }
-    if (totalBalanceData) {
-      return (
-        <View className="bg-white border-t border-border items-center rounded-b-lg shadow-md">
-          <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
-          <Text className="font-md font-pbold text-primary-focus text-foreground">
-            {totalBalanceData.totalbalance.toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD", // TODO: Make currency dynamic based on user settings
-            })}
-          </Text>
-        </View>
-      );
-    }
-    return null;
-  };
-
-  // Prefill modal when opened
   const openTransferModal = (account: any) => {
     setModalState({ open: true, account });
     setAmount("");
     setSourceAccountId(null);
   };
 
-  const handlePayOff = () => {
-    if (modalState.account) {
-      setAmount(Math.abs(Number(modalState.account.balance)).toString());
-    }
-  };
+  const detailsContent = (item: any) =>
+    `Balance: ${item.balance.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    })}`;
 
   const handleTransfer = () => {
     if (!modalState.account || !sourceAccountId || !amount || isNaN(Number(amount))) return;
@@ -115,84 +55,110 @@ const AccountsRoute = () => {
     setSourceAccountId(null);
   };
 
-  const customRenderItem = (item: any, isSelected: boolean, onLongPress: () => void, onPress: () => void) => (
-    <View key={item.id} className={`flex-row p-2 px-4 ${isSelected ? "bg-gray-200" : ""}`}>
-      <Pressable className={`flex-1`} onLongPress={onLongPress} onPress={onPress}>
-        <View className="flex-row items-center">
-          <View className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.iconColor}`}>
-            {item.icon && <MyIcon name={item.icon} size={18} className="color-card-foreground" />}
-          </View>
-          <View className="flex-1">
-            <Text className="text-md text-foreground">{item.name}</Text>
-            <Text className="text-md text-foreground">{`Balance: ${item.balance.toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            })}`}</Text>
-          </View>
-        </View>
-      </Pressable>
-      <Pressable onPress={() => openTransferModal(item)}>
-        <MyIcon name="ArrowRightLeft" size={20} className="text-foreground" />
-      </Pressable>
-    </View>
-  );
-
-  const accountTransferModal = () => {
-    return (
-      <MyModal
-        isOpen={modalState.open}
-        setIsOpen={(open: boolean) => setModalState({ open, account: open ? modalState.account : null })}
-      >
-        <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
-
-        <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
-        <AccountSelecterDropdown
-          label="Source"
-          selectedValue={sourceAccountId}
-          onSelect={item => setSourceAccountId(item?.id ?? null)}
-          accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
-          isModal={true}
-          groupBy="group"
-        />
-        <View className="flex-row gap-4">
-          <Button
-            label={isCreating ? "Transferring..." : "Submit Transfer"}
-            onPress={handleTransfer}
-            isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
-            className="flex-1"
-          />
-          <Button label="Pay Off" onPress={handlePayOff} className="flex-1" />
-        </View>
-      </MyModal>
-    );
-  };
-
   return (
     <>
-      <Tab
+      <MyTab
         title="Accounts"
+        detailsUrl={"/Accounts/Upsert?accountId="}
         queryKey={[TableNames.Accounts]}
-        onGet={accountService.findAll}
-        onDelete={accountService.delete}
-        upsertUrl={"/Accounts/Upsert?accountId="}
-        groupedBy={"category.name"}
-        Footer={<FooterContent />}
-        customRenderItem={customRenderItem}
+        service={accountService}
+        groupBy={"category.name"}
+        Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}
+        detailsContent={detailsContent}
+        customAction={(item: any) => (
+          <Button rightIcon="ArrowLeftRight" variant="ghost" onPress={() => openTransferModal(item)} />
+        )}
+        UpsertModal={(item: any) => <AccountForm account={item} />}
+        initialState={initialState}
       />
-      {accountTransferModal()}
+      {modalState.open && (
+        <AccountTransferModal
+          modalState={modalState}
+          setModalState={setModalState}
+          amount={amount}
+          setAmount={setAmount}
+          sourceAccountId={sourceAccountId}
+          setSourceAccountId={setSourceAccountId}
+          accounts={accounts}
+          handleTransfer={handleTransfer}
+          isCreating={isCreating}
+        />
+      )}
     </>
   );
+}
+
+const FooterContent = ({
+  isLoadingTotalBalance,
+  totalBalanceData,
+}: {
+  isLoadingTotalBalance: boolean;
+  totalBalanceData: { totalbalance: number } | null | undefined;
+}) => {
+  if (isLoadingTotalBalance) {
+    return <ActivityIndicator animating={true} className="my-1" />;
+  }
+  if (totalBalanceData) {
+    return (
+      <View className="bg-white border-t border-border items-center rounded-b-lg shadow-md">
+        <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
+        <Text className="font-md font-pbold text-primary-focus text-foreground">
+          {totalBalanceData.totalbalance.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD", // TODO: Make currency dynamic based on user settings
+          })}
+        </Text>
+      </View>
+    );
+  }
+  return null;
 };
 
-const AccountsCategoriesRoute = () => {
-  const accountCategoryService = useAccountCategoryService();
+const AccountTransferModal = ({
+  modalState,
+  setModalState,
+  amount,
+  setAmount,
+  sourceAccountId,
+  setSourceAccountId,
+  accounts,
+  handleTransfer,
+  isCreating,
+}: {
+  modalState: { open: boolean; account: any | null };
+  setModalState: (state: { open: boolean; account: any | null }) => void;
+  amount: string;
+  setAmount: (amount: string) => void;
+  sourceAccountId: string | null;
+  setSourceAccountId: (id: string | null) => void;
+  accounts: any[] | undefined;
+  handleTransfer: () => void;
+  isCreating: boolean;
+}) => {
   return (
-    <Tab
-      title="Categories"
-      queryKey={[TableNames.AccountCategories]}
-      onGet={accountCategoryService.findAll}
-      onDelete={accountCategoryService.delete}
-      upsertUrl={"/Accounts/Categories/Upsert?categoryId="}
-    />
+    <MyModal
+      isOpen={modalState.open}
+      setIsOpen={(open: boolean) => setModalState({ open, account: open ? modalState.account : null })}
+    >
+      <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
+
+      <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
+      <AccountSelecterDropdown
+        label="Source"
+        selectedValue={sourceAccountId}
+        onSelect={item => setSourceAccountId(item?.id ?? null)}
+        accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
+        isModal={true}
+        groupBy="group"
+      />
+      <View className="flex-row gap-4">
+        <Button
+          label={isCreating ? "Transferring..." : "Submit Transfer"}
+          onPress={handleTransfer}
+          isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
+          className="flex-1"
+        />
+      </View>
+    </MyModal>
   );
 };

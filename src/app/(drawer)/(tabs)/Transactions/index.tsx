@@ -1,8 +1,10 @@
-import { router } from "expo-router";
-import { Text, SafeAreaView, ActivityIndicator, FlatList, View } from "react-native";
-import DaysList from "@/src/components/pages/Transactions/Days";
-import TransactionsPageHeader from "@/src/components/pages/Transactions/PageHeader";
-import TransactionSearchModal from "@/src/components/pages/Transactions/SearchModal";
+import SkeletonList from "@/src/components/elements/SkeletonList";
+import DaysList from "@/src/components/Transactions/Days";
+import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
+import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
+import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
+import { FlatList, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import useTransactions from "./useTransactions";
 
 export default function Transactions() {
@@ -28,47 +30,16 @@ export default function Transactions() {
     params,
     status,
     loadMore,
+    handleSearchSubmit,
+    handleSearchReset,
   } = useTransactions();
 
-  // Handle search submission
-  const handleSearchSubmit = (formValues: any) => {
-    setShowSearch(false);
-    
-    if (formValues) {
-      // Apply filters
-      setFilters(formValues);
-      
-      // Update URL params
-      router.setParams(formValues);
-      
-      // Refresh transactions list with new filters
-      refreshTransactions();
-    } else {
-      // If no values, just close the modal
-      router.replace({ pathname: "/Transactions" });
-    }
-  };
-
-  // Handle search reset
-  const handleSearchReset = () => {
-    // Clear filters
-    setFilters({});
-    
-    // Reset URL params
-    router.replace({ pathname: "/Transactions" });
-    
-    // Close search modal
-    setShowSearch(false);
-    
-    // Refresh the list with cleared filters
-    refreshTransactions();
-  };
-
-  if (error) return (
-    <View className="flex-1 justify-center items-center">
-      <Text className="text-danger-500">Error: {error.message}</Text>
-    </View>
-  );
+  if (error)
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-danger-500">Error: {error.message}</Text>
+      </View>
+    );
 
   return (
     <SafeAreaView className="w-full h-full bg-background">
@@ -83,10 +54,10 @@ export default function Transactions() {
         setShowSearch={setShowSearch}
       />
 
-      <TransactionSearchModal
+      <TransactionSearchForm
         isOpen={showSearch}
         setIsOpen={setShowSearch}
-        searchParams={params || filters}
+        filters={params || filters}
         accounts={accounts ?? []}
         categories={categories ?? []}
         onSubmit={handleSearchSubmit}
@@ -94,9 +65,7 @@ export default function Transactions() {
       />
 
       {isLoading && days.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
+        <SkeletonList length={5} customSkeleton={<DaySkeleton />} />
       ) : days.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <Text className="text-xl text-muted">No transactions found</Text>
@@ -118,14 +87,7 @@ export default function Transactions() {
               handlePress={handlePress}
             />
           )}
-          ListFooterComponent={
-            status === "pending" ? (
-              <View className="py-4 flex items-center">
-                <ActivityIndicator size="small" color="#0000ff" />
-                <Text className="text-muted pt-2">Loading more...</Text>
-              </View>
-            ) : null
-          }
+          ListFooterComponent={status === "pending" ? <DaySkeleton /> : null}
         />
       )}
     </SafeAreaView>

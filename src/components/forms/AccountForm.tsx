@@ -1,28 +1,32 @@
-import { useEffect, useMemo, useCallback } from "react";
-import { Platform, SafeAreaView, ScrollView, View, Text } from "react-native";
 import { router } from "expo-router";
+import { useCallback, useMemo } from "react";
+import { Platform, ScrollView, Text, View } from "react-native";
 
-import { Account, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
-import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
-import { useFormState } from "../hooks/useFormState";
-import { useFormSubmission } from "../hooks/useFormSubmission";
-import FormContainer from "./FormContainer";
-import FormField from "./FormField";
-import FormSection from "./FormSection";
-import { ColorsPickerDropdown } from "../DropDownField";
-import IconPicker from "../IconPicker";
-import { useAccountService } from "@/src/services/Accounts.Service";
+import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import IconPicker from "@/src/components/elements/IconPicker";
+import FormContainer from "@/src/components/form-builder/FormContainer";
+import FormField from "@/src/components/form-builder/FormField";
+import FormSection from "@/src/components/form-builder/FormSection";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
-import { createAccountNameValidation, commonValidationRules } from "@/src/utils/form-validation";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
+import { TableNames } from "@/src/types/database/TableNames";
+import { Account, Updates } from "@/src/types/database/Tables.Types";
+import { commonValidationRules, createAccountNameValidation } from "@/src/utils/form-validation";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useFormState } from "../form-builder/hooks/useFormState";
+import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 
 export default function AccountForm({ account }: { account: AccountFormData }) {
   const accountService = useAccountService();
   const accountCategoryService = useAccountCategoryService();
-  const { data: accountCategories } = accountCategoryService.findAll();
-  const { data: openTransaction } = accountService.getAccountOpenedTransaction(account.id);
-  const { mutate: updateAccount } = accountService.upsert();
-  const { mutate: updateOpenBalance } = accountService.updateAccountOpenedTransaction();
+  const { data: accountCategories } = accountCategoryService.useFindAll();
+  const { data: openTransaction } = accountService.useGetAccountOpenedTransaction(account.id);
+  const { mutate: updateAccount } = accountService.useUpsert();
+  const { mutate: updateOpenBalance } = accountService.useUpdateAccountOpenedTransaction();
+  const { data: runningBalance, isLoading: isLoadingRunningBalance } = accountService.useGetAccountRunningBalance(
+    account.id,
+  );
 
   const initialFormData: AccountFormData = useMemo(
     () => ({
@@ -30,7 +34,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
       openBalance: openTransaction?.amount || null,
       addAdjustmentTransaction: true,
     }),
-    [account, openTransaction],
+    [account, openTransaction?.amount],
   );
 
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
@@ -52,10 +56,6 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   const { formState, updateField, validateForm, resetForm, setInitialFormData, isValid, isDirty } =
     useFormState<AccountFormData>(initialFormData, validationSchema);
 
-  useEffect(() => {
-    setInitialFormData(initialFormData);
-  }, [initialFormData, setInitialFormData]);
-
   const handleSubmit = useCallback(
     async (data: AccountFormData) => {
       // Handle open balance update if needed
@@ -75,7 +75,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
           },
           {
             onSuccess: () => {
-              router.navigate("/Accounts");
+              router.replace("/Accounts");
               resolve();
             },
             onError: error => {
@@ -105,18 +105,24 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   }, [validateForm, submit, formState.data]);
 
   const handleSyncRunningBalance = useCallback(() => {
-    if (account.runningbalance !== null && account.runningbalance !== undefined && account.id) {
+    if (runningBalance !== null && runningBalance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
         id: account.id,
-        balance: account.runningbalance,
+        balance: runningBalance,
       };
       updateAccount({
         form: updatedAccount,
         original: account as Account,
         props: { addAdjustmentTransaction: false },
       });
+      // Also update form state to reflect new balance
+      // updateField("balance", runningBalance);
+      setInitialFormData({
+        ...formState.data,
+        balance: runningBalance,
+      });
     }
-  }, [account, updateAccount]);
+  }, [account, updateAccount, runningBalance, setInitialFormData, formState.data]);
 
   const handleOpenBalanceChange = useCallback(
     (value: any) => {
@@ -150,6 +156,12 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     updateField("balance", adjustedBalance);
   }, [openTransaction?.amount, account.balance, formState.data.openBalance, updateField]);
 
+  const handleIconSelect = useCallback(
+    (icon: string) => {
+      updateField("icon", icon);
+    },
+    [updateField],
+  );
   // Custom reset handler that preserves open balance field
   const handleReset = useCallback(() => {
     // Store the current open balance since it's managed as a separate form
@@ -166,7 +178,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     // Use setInitialFormData to reset without triggering dirty state
     // This properly resets the form while preserving the open balance
     setInitialFormData(resetData);
-  }, [initialFormData, formState.data.openBalance, setInitialFormData]);
+  }, [initialFormData, formState.data.openBalance, setInitialFormData, openTransaction?.amount]);
 
   // Prepare dropdown options for categories
   const categoryOptions = useMemo(
@@ -183,8 +195,8 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
 
   // Check if running balance sync is needed
   const needsRunningBalanceSync = useMemo(
-    () => account.id && formState.data.runningbalance !== undefined && account.runningbalance !== account.balance,
-    [account.id, account.runningbalance, account.balance, formState.data.runningbalance],
+    () => account.id && runningBalance !== account.balance,
+    [account.id, runningBalance, account.balance],
   );
 
   // Check if selected category is a liability (for statement date field)
@@ -192,6 +204,14 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     () => accountCategories?.find(cat => cat.id === formState.data.categoryid)?.type === "Liability",
     [accountCategories, formState.data.categoryid],
   );
+
+  if (isLoadingRunningBalance) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1">
@@ -254,8 +274,8 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker
-                  onSelect={(icon: any) => updateField("icon", icon)}
-                  initialIcon={formState.data.icon ?? "CircleHelp"}
+                  onSelect={(icon: any) => handleIconSelect(icon)}
+                  initialIcon={formState.data.icon ?? "BadgeInfo"}
                 />
               </View>
               <ColorsPickerDropdown
@@ -343,7 +363,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
                       type: "number",
                       disabled: true,
                     }}
-                    value={formState.data.runningbalance?.toString()}
+                    value={runningBalance}
                     onChange={() => {}} // Read-only field
                   />
                 </View>
@@ -457,7 +477,7 @@ export const initialState: AccountFormData = {
   currency: "USD",
   description: "",
   notes: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
   owner: "",
@@ -466,7 +486,6 @@ export const initialState: AccountFormData = {
   isdeleted: false,
   createdby: null,
   updatedby: null,
-  runningbalance: null,
   openBalance: null,
   addAdjustmentTransaction: true,
 };

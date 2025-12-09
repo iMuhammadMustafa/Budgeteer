@@ -1,15 +1,97 @@
-import { SafeAreaView, ScrollView, View } from "react-native";
-
-import BudgeteerLanding from "@/src/components/pages/VLanding";
+import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
+import { router } from "expo-router";
+import { useCallback } from "react";
+import { Text, View } from "react-native";
+import Button from "../components/elements/Button";
+import { useAuth } from "../providers/AuthProvider";
+import { useStorageMode } from "../providers/StorageModeProvider";
+import { useTheme } from "../providers/ThemeProvider";
+import { WATERMELONDB_DEFAULTS } from "../types/database/watermelon/constants";
 
 export default function Index() {
+  const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
+  const { session, setSession, isLoading: isAuthLoading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const isLoading = isStorageLoading || isAuthLoading;
+
+  const handleLogin = useCallback(
+    async (mode: any) => {
+      if (storageMode && session) return router.push("/Dashboard");
+
+      if (mode.id === StorageMode.Cloud) {
+        console.log("Navigating to Login screen for Cloud storage mode");
+        return router.push("/Login");
+      }
+
+      await setStorageMode(mode.id);
+      if (mode.id === StorageMode.Local) {
+        await setSession(
+          {
+            user: {
+              id: WATERMELONDB_DEFAULTS.userId,
+              email: "local@local.com",
+              user_metadata: {
+                tenantid: WATERMELONDB_DEFAULTS.tenantId,
+                full_name: "Local User",
+              },
+              app_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            },
+            access_token: "local-access-token",
+            refresh_token: "local-refresh-token",
+            expires_in: 3600,
+            token_type: "bearer",
+          },
+          StorageMode.Local,
+        );
+      }
+    },
+    [session, setSession, storageMode, setStorageMode],
+  );
+
+  if (isLoading) return <Text>Loading...</Text>;
   return (
-    <SafeAreaView className="flex-1 bg-background-100">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 justify-center items-center">
-          <BudgeteerLanding />
+    <>
+      {/* <StickyTable /> */}
+      <View className="flex-1 items-center bg-background">
+        <View className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
+          <Text className="text-foreground text-3xl font-bold mb-4 text-center">Welcome to Budgeteer</Text>
+          <Text className="text-foreground text-lg mb-8 text-center opacity-70">
+            Choose how you would like to use the app
+          </Text>
+
+          <View className="space-y-4">
+            {Object.values(StorageModeConfig).map(mode => (
+              <Button
+                key={mode.id}
+                className="p-6 border border-primary rounded-lg bg-card shadow-sm text-foreground"
+                onPress={async () => await handleLogin(mode)}
+                disabled={isLoading}
+                label={`${mode.icon} ${mode.title}`}
+                bottomDescription={mode.description}
+                textContainerClasses="flex flex-col items-center"
+                textClasses="text-foreground"
+              />
+            ))}
+          </View>
+
+          {isLoading && (
+            <View className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <Text className="text-blue-600 text-center">Initializing storage mode...</Text>
+            </View>
+          )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <View className="absolute top-10 right-5">
+          <Button
+            onPress={toggleTheme}
+            label={theme === "light" ? "🌙" : "☀️"}
+            accessibilityLabel="Go to Theme Settings"
+            variant="ghost"
+          />
+        </View>
+      </View>
+    </>
   );
 }

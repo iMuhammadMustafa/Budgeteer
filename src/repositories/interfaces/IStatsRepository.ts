@@ -1,11 +1,11 @@
 import {
   StatsDailyTransactions,
-  StatsMonthlyTransactionsTypes,
-  StatsMonthlyCategoriesTransactions,
   StatsMonthlyAccountsTransactions,
+  StatsMonthlyCategoriesTransactions,
+  StatsMonthlyTransactionsTypes,
   StatsNetWorthGrowth,
   TransactionType,
-} from "@/src/types/db/Tables.Types";
+} from "@/src/types/database/Tables.Types";
 
 export interface IStatsRepository {
   getStatsDailyTransactions(

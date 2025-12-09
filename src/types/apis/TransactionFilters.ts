@@ -1,12 +1,5 @@
-import { TransactionType } from "../db/Tables.Types";
-
-export interface QueryFilters {
-  startDate?: string;
-  endDate?: string;
-
-  offset?: number;
-  limit?: number;
-}
+import { TransactionType } from "../database/Tables.Types";
+import { QueryFilters } from "./QueryFilters";
 
 export interface TransactionFilters extends QueryFilters {
   name?: string;
@@ -23,7 +16,7 @@ export interface TransactionFilters extends QueryFilters {
   tags?: string[];
 }
 
-export const initalTransactionSearchParams: TransactionFilters = {
+export const initialTransactionSearchParams: TransactionFilters = {
   offset: 0,
   limit: 20,
 };

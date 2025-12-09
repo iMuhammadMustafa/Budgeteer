@@ -1,23 +1,23 @@
-import React, { memo, useCallback, useMemo, useEffect } from "react";
-import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
-import { Inserts, TransactionCategory, Updates } from "@/src/types/db/Tables.Types";
-import { TableNames } from "@/src/types/db/TableNames";
-import { TransactionCategoryFormData, ValidationSchema, FormFieldConfig } from "@/src/types/components/forms.types";
-import { useFormState } from "../hooks/useFormState";
-import { useFormSubmission } from "../hooks/useFormSubmission";
+import DropdownField, { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import IconPicker from "@/src/components/elements/IconPicker";
+import FormContainer from "@/src/components/form-builder/FormContainer";
+import FormField from "@/src/components/form-builder/FormField";
+import FormSection from "@/src/components/form-builder/FormSection";
+import { useFormState } from "@/src/components/form-builder/hooks/useFormState";
+import { useFormSubmission } from "@/src/components/form-builder/hooks/useFormSubmission";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
+import { FormFieldConfig, TransactionCategoryFormData, ValidationSchema } from "@/src/types/components/forms.types";
+import { TableNames } from "@/src/types/database/TableNames";
+import { Inserts, TransactionCategory, Updates } from "@/src/types/database/Tables.Types";
 import {
   commonValidationRules,
   createCategoryNameValidation,
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
-import FormContainer from "./FormContainer";
-import FormField from "./FormField";
-import FormSection from "./FormSection";
-import DropdownField, { ColorsPickerDropdown } from "../DropDownField";
-import IconPicker from "../IconPicker";
-import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
-import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { router } from "expo-router";
+import { memo, useCallback, useMemo } from "react";
+import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
 
 export type TransactionCategoryFormType =
   | Inserts<TableNames.TransactionCategories>
@@ -28,10 +28,15 @@ export const initialState: TransactionCategoryFormData = {
   description: "",
   budgetamount: 0,
   budgetfrequency: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
   groupid: "",
+  createdby: "",
+  updatedby: "",
+  isdeleted: false,
+  tenantid: "",
+  type: "Expense",
 };
 
 // Validation schema for TransactionCategoryForm
@@ -106,7 +111,7 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this category appears in lists (lower numbers appear first)",
+    description: "Order in which this category appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -120,7 +125,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
   const transactionGroupService = useTransactionGroupService();
 
   // Load transaction groups
-  const { data: categoryGroups, isLoading: isGroupsLoading } = transactionGroupService.findAll();
+  const { data: categoryGroups, isLoading: isGroupsLoading } = transactionGroupService.useFindAll();
 
   // Initialize form data from props
   const initialFormData: TransactionCategoryFormData = useMemo(
@@ -138,11 +143,12 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
   );
 
   // Form submission handling
-  const { mutate } = transactionCategoryService.upsert();
+  const { mutate } = transactionCategoryService.useUpsert();
 
   const handleSubmit = useCallback(
     async (data: TransactionCategoryFormData) => {
       await new Promise<void>((resolve, reject) => {
+        data.group = undefined;
         mutate(
           {
             form: data,

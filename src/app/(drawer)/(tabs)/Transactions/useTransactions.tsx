@@ -1,18 +1,18 @@
-import { use, useEffect, useState } from "react";
-import { BackHandler, Platform } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@/src/providers/QueryProvider";
 import * as Haptics from "expo-haptics";
-import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { BackHandler, Platform } from "react-native";
 
-import { TableNames, ViewNames } from "@/src/types/db/TableNames";
-import { TransactionsView } from "@/src/types/db/Tables.Types";
+import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { TransactionsView } from "@/src/types/database/Tables.Types";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { duplicateTransaction, groupTransactions, initialSearchFilters } from "@/src/utils/transactions.helper";
 
-import { useTransactionService } from "@/src/services/Transactions.Service";
 import { useTransactionCategoryService } from "@/src/services//TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
+import { duplicateTransaction, groupTransactions } from "@/src/utils/transactions.helper";
 
 export default function useTransactions() {
   const router = useRouter();
@@ -22,15 +22,15 @@ export default function useTransactions() {
 
   const transactionService = useTransactionService();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
-    transactionService.findAllInfinite(params);
+    transactionService.useFindAllInfinite(params);
   const transactions = data?.pages.flatMap(page => page);
 
   const transactionCategoriesService = useTransactionCategoryService();
   const accountsService = useAccountService();
-  const { data: accounts } = accountsService.findAll();
-  const { data: categories } = transactionCategoriesService.findAll();
-  const addMutation = transactionService.create();
-  const deleteMutation = transactionService.delete();
+  const { data: accounts } = accountsService.useFindAll();
+  const { data: categories } = transactionCategoriesService.useFindAll();
+  const addMutation = transactionService.useCreate();
+  const deleteMutation = transactionService.useDelete();
 
   const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
@@ -67,7 +67,12 @@ export default function useTransactions() {
         const newTransaction = duplicateTransaction(item);
 
         await addMutation.mutateAsync(newTransaction, {
-          onSuccess: () => console.log({ message: "Transaction Created Successfully", type: "success" }),
+          onSuccess: async () => {
+            console.log({ message: "Transaction Created Successfully", type: "success" });
+            await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+            await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+          },
         });
       }
     } catch (error) {
@@ -109,6 +114,7 @@ export default function useTransactions() {
       setSelectedTransactions(updatedSelections);
 
       // Update selected sum
+
       setSelectedSum(
         updatedSelections.reduce((acc, curr) => {
           return acc + (curr?.amount ?? 0);
@@ -190,6 +196,39 @@ export default function useTransactions() {
   pageParams: data.pageParams.slice(1),
 }))
   */
+  // Handle search submission
+  const handleSearchSubmit = (formValues: any) => {
+    setShowSearch(false);
+
+    if (formValues) {
+      // Apply filters
+      setFilters(formValues);
+
+      // Update URL params
+      router.setParams(formValues);
+
+      // Refresh transactions list with new filters
+      refreshTransactions();
+    } else {
+      // If no values, just close the modal
+      router.replace({ pathname: "/Transactions" });
+    }
+  };
+
+  // Handle search reset
+  const handleSearchReset = () => {
+    // Clear filters
+    setFilters({});
+
+    // Reset URL params
+    router.replace({ pathname: "/Transactions" });
+
+    // Close search modal
+    setShowSearch(false);
+
+    // Refresh the list with cleared filters
+    refreshTransactions();
+  };
 
   return {
     transactions,
@@ -219,6 +258,8 @@ export default function useTransactions() {
     categories,
     status,
     loadMore,
+    handleSearchSubmit,
+    handleSearchReset,
   };
 }
 
@@ -238,5 +279,5 @@ const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
       backHandler.remove();
       if (Platform.OS === "web") window.removeEventListener("keydown", () => {});
     };
-  }, [selectionMode]);
+  }, [selectionMode, backAction]);
 };

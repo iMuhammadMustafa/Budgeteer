@@ -3,13 +3,13 @@
  * This file contains validation functions, built-in validators, and validation helpers
  */
 
+import { RecurringType } from "@/src/services/Recurrings.Service";
 import {
-  ValidationRule,
-  ValidationResult,
   FormValidationResult,
+  ValidationResult,
+  ValidationRule,
   ValidationSchema,
-} from "../types/components/forms.types";
-import { RecurringType } from "../types/recurring";
+} from "@/src/types/components/forms.types";
 
 // ============================================================================
 // Built-in Validators
@@ -309,7 +309,7 @@ export const createAmountValidation = (): ValidationRule[] => [
  */
 export const createDateValidation = (): ValidationRule[] => [
   commonValidationRules.required("Date is required"),
-  commonValidationRules.custom(notFutureDateValidator, "Date cannot be in the future"),
+  // commonValidationRules.custom(notFutureDateValidator, "Date cannot be in the future"),
 ];
 
 /**

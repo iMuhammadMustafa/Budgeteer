@@ -1,18 +1,19 @@
-import { Text, View, Pressable, Modal, TextInput, Platform } from "react-native";
-import * as Haptics from "expo-haptics";
-import { Tab } from "@/src/components/MyTabs";
-import { TableNames } from "@/src/types/db/TableNames";
+import MyIcon from "@/src/components/elements/MyIcon";
+import MyModal from "@/src/components/elements/MyModal";
+import RecurringStatusBadges from "@/src/components/elements/RecurringStatusBadges";
+import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
+import MyTab from "@/src/components/MyTab";
+import { useRecurringService } from "@/src/services/Recurrings.Service";
+import { TableNames } from "@/src/types/database/TableNames";
+import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
-import MyIcon from "@/src/utils/Icons.Helper";
 import { useState } from "react";
-import { useRecurringService } from "@/src/services/Recurring.Service";
-import { RecurringStatusBadges } from "@/src/components/RecurringStatusBadges";
-import { Recurring } from "@/src/types/db/Tables.Types";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 export default function RecurringsScreen() {
   const recurringsService = useRecurringService();
 
-  const { mutate: executeRecurring, isPending: isApplying } = recurringsService.executeRecurring();
+  const { mutate: executeRecurring, isPending: isApplying } = recurringsService.useExecuteRecurring();
 
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,7 +33,7 @@ export default function RecurringsScreen() {
         recurring: item,
         overrides: {
           amount: finalAmount ?? undefined,
-          date: new Date().toISOString(),
+          date: item.isdateflexible ? dayjs().toISOString() : undefined,
         },
       },
       {
@@ -47,21 +48,14 @@ export default function RecurringsScreen() {
   };
 
   const renderRecurringItem = (item: Recurring, isSelected: boolean, onLongPress: () => void, onPress: () => void) => {
-    // console.log(customRecurringDetails(item));
     return (
-      <Pressable
-        key={item.id}
-        className={`flex-row items-center px-5 py-3 border-b border-gray-200 text-foreground ${isSelected ? "bg-info-100" : "bg-background"}`}
-        onLongPress={onLongPress}
-        onPress={onPress}
-      >
+      <>
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-md text-foreground font-semibold flex-1">{item.name}</Text>
           </View>
-          <Text className="text-sm text-muted-foreground mb-2">{customRecurringDetails(item)}</Text>
+          <Text className="text-sm text-muted-foreground mb-2">{<RecurringDetails item={item} />}</Text>
           <RecurringStatusBadges recurring={item} />
-          {item.description && <Text className="text-xs text-muted-foreground mt-2">{item.description}</Text>}
         </View>
         <Pressable
           onPress={e => {
@@ -85,36 +79,33 @@ export default function RecurringsScreen() {
         >
           <MyIcon name="Check" size={20} className="text-foreground" />
         </Pressable>
-      </Pressable>
+      </>
     );
   };
-
+  const handleClose = () => {
+    console.log("RequestingClose");
+    setModalVisible(false);
+    setAmountInput("");
+    setPendingRecurring(null);
+    setMode("minus");
+  };
   return (
     <>
       <View className="flex-1 bg-background">
-        <Tab
-          title="Recurring Transactions"
-          queryKey={[TableNames.Recurrings]}
-          onGet={recurringsService.findAll}
-          onDelete={recurringsService.delete}
-          upsertUrl="/Recurrings/Upsert?id="
-          selectable={true}
+        <MyTab
           customRenderItem={renderRecurringItem}
-          // customFilterComponent={<RecurringFiltersComponent filters={filters} onFiltersChange={setFilters} />}
+          title="Recurring Transactions"
+          detailsUrl={"/Recurrings/Upsert?id="}
+          queryKey={[TableNames.Recurrings]}
+          service={recurringsService}
+          initialState={initialRecurringState}
+          UpsertModal={item => <RecurringForm recurring={item} />}
         />
       </View>
-      <Modal
-        visible={modalVisible}
-        transparent
-        onRequestClose={() => {
-          setModalVisible(false);
-          setAmountInput("");
-          setPendingRecurring(null);
-          setMode("minus");
-        }}
-      >
-        <View className="flex-1 bg-black/40 justify-center items-center">
-          <View className="bg-card rounded-xl p-6 w-4/5 items-center">
+
+      {modalVisible && (
+        <MyModal isOpen={modalVisible} setIsOpen={setModalVisible} onClose={handleClose}>
+          <View className="bg-card rounded-xl p-6 items-center">
             <Text className="text-lg font-bold mb-2 text-foreground">
               {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible
                 ? "Execute Flexible Transaction"
@@ -145,7 +136,7 @@ export default function RecurringsScreen() {
                 disabled={pendingRecurring?.type === "Transfer"}
                 onPress={() => {
                   if (pendingRecurring?.type === "Transfer") return;
-                  if (Platform.OS !== "web") Haptics.selectionAsync();
+                  // if (Platform.OS !== "web") Haptics.selectionAsync();
                   setMode(m => (m === "plus" ? "minus" : "plus"));
                 }}
               >
@@ -189,13 +180,13 @@ export default function RecurringsScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
-      </Modal>
+        </MyModal>
+      )}
     </>
   );
 }
 
-const customRecurringDetails = (item: Recurring) => {
+const RecurringDetails = ({ item }: { item: Recurring }) => {
   const autoApplyEnabled = item.autoapplyenabled || false;
   const isAmountFlexible = item.isamountflexible || false;
   const isDateFlexible = item.isdateflexible || false;

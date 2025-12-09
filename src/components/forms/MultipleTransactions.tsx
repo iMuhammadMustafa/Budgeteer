@@ -1,33 +1,29 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
 import dayjs from "dayjs";
+import { router } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import {
-  MultipleTransactionsFormData,
   MultipleTransactionItemData,
-  ValidationSchema,
+  MultipleTransactionsFormData,
   OptionItem,
+  ValidationSchema,
 } from "@/src/types/components/forms.types";
-import { useFormState } from "../hooks/useFormState";
-import { useFormSubmission } from "../hooks/useFormSubmission";
-import FormContainer from "./FormContainer";
-import FormField from "./FormField";
-import FormSection from "./FormSection";
-import GenerateUuid from "@/src/utils/UUID.Helper";
-import { TransactionFormType } from "./TransactionForm";
-import MyIcon from "@/src/utils/Icons.Helper";
-import { queryClient } from "@/src/providers/QueryProvider";
-import { ViewNames } from "@/src/types/db/TableNames";
-import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+
+import { useQueryClient } from "@/src/providers/QueryProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import {
-  commonValidationRules,
-  createAmountValidation,
-  createDateValidation,
-  createDescriptionValidation,
-} from "@/src/utils/form-validation";
+import { ViewNames } from "@/src/types/database/TableNames";
+import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
+import GenerateUuid from "@/src/utils/uuid.Helper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import MyIcon from "../elements/MyIcon";
+import FormContainer from "../form-builder/FormContainer";
+import FormField from "../form-builder/FormField";
+import FormSection from "../form-builder/FormSection";
+import { useFormState, useFormSubmission } from "../form-builder/hooks";
+import { TransactionFormType } from "./TransactionForm";
 
 // Generate initial state for multiple transactions form
 const generateInitialState = (): MultipleTransactionsFormData => {
@@ -87,12 +83,13 @@ const convertTransactionToMultipleForm = (transaction: TransactionFormType): Mul
 
 function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
   // Services
+  const queryClient = useQueryClient();
   const transactionCategoriesService = useTransactionCategoryService();
-  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.findAll();
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.useFindAll();
   const accountsService = useAccountService();
-  const { data: accounts, isLoading: isAccountsLoading } = accountsService.findAll();
+  const { data: accounts, isLoading: isAccountsLoading } = accountsService.useFindAll();
   const transactionService = useTransactionService();
-  const submitAllMutation = transactionService.createMultipleTransactionsRepo();
+  const submitAllMutation = transactionService.useCreateMultipleTransactions();
 
   // State for tracking amounts and mode
   const [mode, setMode] = useState<"plus" | "minus">("minus");
@@ -120,15 +117,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Initialize form state
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
-
-  if (isCategoriesLoading || isAccountsLoading) {
-    return (
-      <SafeAreaView className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text className="mt-2 text-foreground">Loading...</Text>
-      </SafeAreaView>
-    );
-  }
 
   // Initialize mode and maxAmount when transaction changes
   useEffect(() => {
@@ -167,7 +155,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         totalAmount,
       };
 
-      await submitAllMutation.mutateAsync(submissionData, {
+      await submitAllMutation.mutateAsync(submissionData as any, {
         onSuccess: async () => {
           console.log({
             message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
@@ -178,7 +166,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         },
       });
     },
-    [submitAllMutation, transaction?.id, mode, currentAmount],
+    [submitAllMutation, transaction?.id, mode, currentAmount, queryClient],
   );
 
   // Form submission hook
@@ -229,7 +217,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         id: item.id,
         label: item.name || "",
         value: item.id,
-        group: item.categoryname || "Other",
+        group: item.category?.name || "Other",
       }))
       .sort((a, b) => {
         if (a.group !== b.group) {
@@ -279,6 +267,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Check if amounts balance
   const isBalanced = Math.abs(currentAmount - (mode === "minus" ? -maxAmount : maxAmount)) < 0.01;
 
+  if (isCategoriesLoading || isAccountsLoading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text className="mt-2 text-foreground">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView className="flex-1">
       <ScrollView className="flex-1">
@@ -593,7 +589,7 @@ const TransactionCard = ({
       // Calculate remaining amount available
       const otherTransactionsTotal = Object.entries(formState.data.transactions)
         .filter(([transactionId]) => transactionId !== id)
-        .reduce((total, [, trans]) => total + (trans.amount || 0), 0);
+        .reduce((total, [, trans]) => total + ((trans as any).amount || 0), 0);
 
       const availableAmount = maxAmount - otherTransactionsTotal;
 
