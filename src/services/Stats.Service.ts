@@ -145,11 +145,11 @@ export function useStatsService(): IStatsService {
     });
   };
 
-  const useRefreshAllQueries = () => {
-    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsDailyTransactions] });
-    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] });
-    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyTransactionsTypes] });
-    queryClient.invalidateQueries({ queryKey: [ViewNames.StatsNetWorthGrowth] });
+  const useRefreshAllQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.StatsDailyTransactions] });
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyCategoriesTransactions] });
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.StatsMonthlyTransactionsTypes] });
+    await queryClient.invalidateQueries({ queryKey: [ViewNames.StatsNetWorthGrowth] });
   };
 
   const useGetDateRanges = () => ({

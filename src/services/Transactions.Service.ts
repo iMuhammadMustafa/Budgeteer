@@ -165,7 +165,9 @@ export function useTransactionService(): ITransactionService {
         )) as Transaction;
       },
       onSuccess: async (_, data) => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));

@@ -67,7 +67,12 @@ export default function useTransactions() {
         const newTransaction = duplicateTransaction(item);
 
         await addMutation.mutateAsync(newTransaction, {
-          onSuccess: () => console.log({ message: "Transaction Created Successfully", type: "success" }),
+          onSuccess: async () => {
+            console.log({ message: "Transaction Created Successfully", type: "success" });
+            await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+            await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+          },
         });
       }
     } catch (error) {
@@ -274,5 +279,5 @@ const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
       backHandler.remove();
       if (Platform.OS === "web") window.removeEventListener("keydown", () => {});
     };
-  }, [selectionMode]);
+  }, [selectionMode, backAction]);
 };

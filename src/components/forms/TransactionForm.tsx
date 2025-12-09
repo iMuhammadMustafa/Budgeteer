@@ -107,7 +107,6 @@ const calculateFinalAmount = (data: TransactionFormType, currentMode: "plus" | "
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
-  console.log("Fk TransactionForm render with transaction:", transaction);
   const {
     onSubmit,
     isValid,
@@ -254,6 +253,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               />
             </View>
 
+        {/* TODO: Convert to Switcher */}
             <View className="flex-1">
               <FormField
                 config={{
@@ -270,7 +270,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 onChange={handleTypeChange}
                 onBlur={() => setFieldTouched("type")}
               />
-            </View>
+            </View>         
           </View>
 
           {/* Account Information Section */}
