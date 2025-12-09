@@ -7,6 +7,7 @@ import MyTab from "@/src/components/MyTab";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
+import { TableNames } from "@/src/types/database/TableNames";
 import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
@@ -59,7 +60,7 @@ export default function AccountsIndex() {
       <MyTab
         title="Accounts"
         detailsUrl={"/Accounts/Upsert?accountId="}
-        queryKey={["accounts"]}
+        queryKey={[TableNames.Accounts]}
         service={accountService}
         groupBy={"category.name"}
         Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}

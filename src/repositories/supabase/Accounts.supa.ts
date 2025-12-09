@@ -75,4 +75,15 @@ export class AccountSupaRepository extends SupaRepository<Account, TableNames.Ac
     }
     return data as { totalbalance: number } | null;
   }
+
+  async getAccountRunningBalance(accountid: string, tenantId: string): Promise<{ runningbalance: number } | null> {
+    const { data, error } = await supabase
+      .from(ViewNames.ViewAccountsWithRunningBalance)
+      .select("runningbalance")
+      .eq("tenantid", tenantId)
+      .eq("id", accountid)
+      .single();
+    if (error) throw error;
+    return data as { runningbalance: number } | null;
+  }
 }

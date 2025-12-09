@@ -28,7 +28,7 @@ export const initialState: TransactionGroupFormData = {
   description: "",
   budgetamount: 0,
   budgetfrequency: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
   createdby: "",
@@ -43,11 +43,9 @@ const validationSchema: ValidationSchema<TransactionGroupFormData> = {
   type: [commonValidationRules.required("Transaction type is required")],
   description: createDescriptionValidation(false),
   budgetamount: [
-    commonValidationRules.required("Budget amount is required"),
     commonValidationRules.min(0, "Budget amount must be 0 or greater"),
     commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
-  budgetfrequency: [commonValidationRules.required("Budget frequency is required")],
   icon: [commonValidationRules.required("Icon is required")],
   color: [commonValidationRules.required("Color is required")],
   displayorder: [
@@ -95,7 +93,7 @@ const createFormFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this group appears in lists (lower numbers appear first)",
+    description: "Order in which this group appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -105,7 +103,6 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     name: "budgetamount",
     label: "Budget Amount",
     type: "number",
-    required: true,
     placeholder: "0.00",
     description: "The budget amount for this group",
   },
@@ -113,7 +110,6 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
     name: "budgetfrequency",
     label: "Budget Frequency",
     type: "select",
-    required: true,
     options: [
       { id: "Daily", label: "Daily", value: "Daily" },
       { id: "Weekly", label: "Weekly", value: "Weekly" },
@@ -157,8 +153,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
           },
           {
             onSuccess: () => {
-              console.log({ message: "Transaction Group Created Successfully", type: "success" });
-              router.replace("/Categories");
+              router.replace("/Categories/Groups");
               resolve();
             },
             onError: error => {

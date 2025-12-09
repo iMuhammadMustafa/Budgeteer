@@ -16,8 +16,8 @@ export class TransactionCategorySupaRepository
       .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
       .eq("tenantid", tenantId)
       .eq("isdeleted", false)
-      .order("displayorder", { ascending: false })
       .order("group(displayorder)", { ascending: false })
+      .order("displayorder", { ascending: false })
       .order("name");
     if (error) throw error;
     return data as unknown as TransactionCategory[];

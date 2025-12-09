@@ -6,4 +6,5 @@ export interface IAccountRepository extends IRepository<Account, TableNames.Acco
   updateAccountBalance(accountid: string, amount: number, tenantId: string): Promise<number>;
   getAccountOpenedTransaction(accountid: string, tenantId: string): Promise<{ id: string; amount: number }>;
   getTotalAccountBalance(tenantId: string): Promise<{ totalbalance: number } | null>;
+  getAccountRunningBalance(accountid: string, tenantId: string): Promise<{ runningbalance: number } | null>;
 }
