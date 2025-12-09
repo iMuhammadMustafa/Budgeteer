@@ -82,7 +82,7 @@ const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this category appears in lists (lower numbers appear first)",
+    description: "Order in which this category appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -128,7 +128,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
           {
             onSuccess: () => {
               console.log({ message: "Category Created Successfully", type: "success" });
-              router.replace("/Accounts");
+              router.replace("/Accounts/Categories");
               resolve();
             },
             onError: error => {

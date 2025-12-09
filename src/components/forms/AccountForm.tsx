@@ -24,6 +24,9 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   const { data: openTransaction } = accountService.useGetAccountOpenedTransaction(account.id);
   const { mutate: updateAccount } = accountService.useUpsert();
   const { mutate: updateOpenBalance } = accountService.useUpdateAccountOpenedTransaction();
+  const { data: runningBalance, isLoading: isLoadingRunningBalance } = accountService.useGetAccountRunningBalance(
+    account.id,
+  );
 
   const initialFormData: AccountFormData = useMemo(
     () => ({
@@ -31,7 +34,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
       openBalance: openTransaction?.amount || null,
       addAdjustmentTransaction: true,
     }),
-    [account, openTransaction],
+    [account, openTransaction, runningBalance],
   );
 
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
@@ -102,15 +105,21 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   }, [validateForm, submit, formState.data]);
 
   const handleSyncRunningBalance = useCallback(() => {
-    if (account.runningbalance !== null && account.runningbalance !== undefined && account.id) {
+    if (runningBalance !== null && runningBalance !== undefined && account.id) {
       const updatedAccount: Updates<TableNames.Accounts> = {
         id: account.id,
-        balance: account.runningbalance,
+        balance: runningBalance,
       };
       updateAccount({
         form: updatedAccount,
         original: account as Account,
         props: { addAdjustmentTransaction: false },
+      });
+      // Also update form state to reflect new balance
+      // updateField("balance", runningBalance);
+      setInitialFormData({
+        ...formState.data,
+        balance: runningBalance,
       });
     }
   }, [account, updateAccount]);
@@ -186,8 +195,8 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
 
   // Check if running balance sync is needed
   const needsRunningBalanceSync = useMemo(
-    () => account.id && formState.data.runningbalance !== undefined && account.runningbalance !== account.balance,
-    [account.id, account.runningbalance, account.balance, formState.data.runningbalance],
+    () => account.id && runningBalance !== account.balance,
+    [account.id, runningBalance, account.balance],
   );
 
   // Check if selected category is a liability (for statement date field)
@@ -195,6 +204,14 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
     () => accountCategories?.find(cat => cat.id === formState.data.categoryid)?.type === "Liability",
     [accountCategories, formState.data.categoryid],
   );
+
+  if (isLoadingRunningBalance) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1">
@@ -346,7 +363,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
                       type: "number",
                       disabled: true,
                     }}
-                    value={formState.data.runningbalance?.toString()}
+                    value={runningBalance}
                     onChange={() => {}} // Read-only field
                   />
                 </View>
@@ -469,7 +486,6 @@ export const initialState: AccountFormData = {
   isdeleted: false,
   createdby: null,
   updatedby: null,
-  runningbalance: null,
   openBalance: null,
   addAdjustmentTransaction: true,
 };

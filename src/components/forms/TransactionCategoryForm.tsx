@@ -28,7 +28,7 @@ export const initialState: TransactionCategoryFormData = {
   description: "",
   budgetamount: 0,
   budgetfrequency: "",
-  icon: "CircleHelp",
+  icon: "BadgeInfo",
   color: "info-100",
   displayorder: 0,
   groupid: "",
@@ -111,7 +111,7 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
     type: "number",
     required: true,
     placeholder: "0",
-    description: "Order in which this category appears in lists (lower numbers appear first)",
+    description: "Order in which this category appears in lists (higher numbers appear first)",
   },
 ];
 
@@ -148,6 +148,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
   const handleSubmit = useCallback(
     async (data: TransactionCategoryFormData) => {
       await new Promise<void>((resolve, reject) => {
+        data.group = undefined;
         mutate(
           {
             form: data,
