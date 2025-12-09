@@ -10,6 +10,7 @@ export class TransactionGroupWatermelonRepository
   implements ITransactionGroupRepository
 {
   protected tableName = TableNames.TransactionGroups;
+  protected orderByField = "displayorder";
 
   protected mapFromWatermelon(model: TransactionGroup): TransactionGroupType {
     return mapTransactionGroupFromWatermelon(model);

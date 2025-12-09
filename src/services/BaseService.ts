@@ -12,7 +12,7 @@ export function useBaseFindAll<TEntity, TTable extends TableNames>(
   repo: IRepository<TEntity, TTable>,
 ) {
   return useQuery<TEntity[]>({
-    queryKey: [tableName, tenantId, "repo"],
+    queryKey: [tableName, tenantId],
     queryFn: async () => {
       return repo.findAll(tenantId);
     },
@@ -27,7 +27,7 @@ export function useBaseFindById<TModel, TTable extends TableNames>(
   id?: string,
 ) {
   return useQuery<TModel | null>({
-    queryKey: [tableName, id, tenantId, "repo"],
+    queryKey: [tableName, id, tenantId],
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       return repo.findById(id, tenantId);
@@ -69,6 +69,7 @@ export function useBaseUpdate<TModel, TTable extends TableNames>(
 ) {
   return useMutation({
     mutationFn: async ({ form, original }: { form: Updates<TTable>; original?: TModel }) => {
+      console.log(form);
       if (options?.customUpdate) {
         return await options.customUpdate(form, session, original);
       }
@@ -93,6 +94,7 @@ export function useBaseUpsert<TModel, TTable extends TableNames>(
 ) {
   return useMutation({
     mutationFn: async ({ form, original }: { form: Inserts<TTable> | Updates<TTable>; original?: TModel }) => {
+      console.log(form);
       if (options?.customUpsert) {
         return await options.customUpsert(form, session, original);
       }
@@ -176,6 +178,7 @@ async function createBaseRepoHelper<TTModel, TTable extends TableNames>(
   form.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   form.createdby = userId;
   form.tenantid = tenantid;
+  form.updatedby = userId;
 
   const newEntity = await repository.create(form, tenantid);
 
@@ -210,6 +213,7 @@ export default function createServiceHooks<TEntity, TTable extends TableNames>(
     customUpdate?: (form: Updates<TTable>, session: Session, original?: TEntity) => Promise<TEntity>;
     customUpsert?: (form: Inserts<TTable> | Updates<TTable>, session: Session, original?: TEntity) => Promise<TEntity>;
   },
+  relatedTablesToInvalidate?: TableNames[],
 ) {
   return {
     useFindAll: () => useBaseFindAll<TEntity, TTable>(tableName, tenantId, repo),

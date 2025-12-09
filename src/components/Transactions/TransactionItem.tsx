@@ -72,7 +72,7 @@ export default function TransactionItem({
               {transaction.accountname} {" | "}
               {transaction.runningbalance?.toLocaleString("en", {
                 style: "currency",
-                currency: transaction.currency!,
+                currency: transaction.currency || "USD",
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

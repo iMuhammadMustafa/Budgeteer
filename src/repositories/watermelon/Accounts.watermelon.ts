@@ -11,11 +11,12 @@ export class AccountWatermelonRepository
   extends BaseWatermelonRepository<Account, TableNames.Accounts, AccountType>
   implements IAccountRepository
 {
+  protected orderByField?: string | undefined;
   protected tableName = TableNames.Accounts;
 
-    protected override mapFromWatermelon(model: Account): AccountType {
-      return mapAccountFromWatermelon(model);
-    }
+  protected override mapFromWatermelon(model: Account): AccountType {
+    return mapAccountFromWatermelon(model);
+  }
 
   override async findAll(tenantId: string, filters?: any): Promise<AccountType[]> {
     const db = await this.getDb();
@@ -97,7 +98,6 @@ export class AccountWatermelonRepository
 
     const mappedAccount = mapAccountFromWatermelon(model, categoryQuery[0] as any);
 
-
     return { ...mappedAccount, runningbalance };
   }
 
@@ -161,8 +161,53 @@ export class AccountWatermelonRepository
 
     return { totalbalance: totalBalance };
   }
-}
 
+  async getAccountRunningBalance(accountid: string, tenantId: string): Promise<{ runningbalance: number } | null> {
+    const db = await getWatermelonDB();
+
+    const query = await db
+      .get(TableNames.Accounts)
+      .query(Q.where("id", accountid), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+    const account = query[0];
+
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    // Fetch all transactions for this account (not deleted, not void) to calcualte the open balance
+    const transactions = await db
+      .get(TableNames.Transactions)
+      .query(
+        Q.where("accountid", accountid),
+        Q.where("isdeleted", false),
+        Q.where("tenantid", tenantId),
+        Q.where("isvoid", false),
+      );
+
+    // Sort transactions ASC (for running sum)
+    const sortedAsc = [...transactions].sort((a, b) => sortTransactionCallBack(a, b));
+    // Calculate running balances for each transaction
+    let running = 0;
+    const runningBalances: { [txid: string]: number } = {};
+    for (const tx of sortedAsc) {
+      const t = tx as Transaction;
+      running += t.amount;
+      runningBalances[t.id] = running;
+    }
+    // Find the latest transaction (DESC order)
+    const sortedDesc = [...transactions].sort((a, b) => sortTransactionCallBack(b, a));
+    let runningbalance: number;
+
+    if (sortedDesc.length > 0) {
+      const latestTx = sortedDesc[0];
+      runningbalance = runningBalances[latestTx.id] ?? 0;
+    } else {
+      runningbalance = mapAccountFromWatermelon(account as any).balance;
+    }
+
+    return { runningbalance };
+  }
+}
 function sortTransactionCallBack(a: any, b: any): number {
   const ta = a as Transaction;
   const tb = b as Transaction;

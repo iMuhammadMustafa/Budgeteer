@@ -10,6 +10,7 @@ export class AccountCategoryWatermelonRepository
   implements IAccountCategoryRepository
 {
   protected tableName = TableNames.AccountCategories;
+  protected orderByField? = "displayorder";
   protected override mapFromWatermelon(model: AccountCategory): AccountCategoryType {
     return mapAccountCategoryFromWatermelon(model);
   }

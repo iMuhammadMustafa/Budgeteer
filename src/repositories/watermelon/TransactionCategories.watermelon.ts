@@ -11,6 +11,7 @@ export class TransactionCategoryWatermelonRepository
   implements ITransactionCategoryRepository
 {
   protected tableName = TableNames.TransactionCategories;
+  protected orderByField?: "displayorder";
 
   protected override mapFromWatermelon(model: TransactionCategory): TransactionCategoryType {
     return mapTransactionCategoryFromWatermelon(model);
@@ -49,18 +50,33 @@ export class TransactionCategoryWatermelonRepository
       });
     }
 
-    const results = await db.get(this.tableName).query(...conditions);
+    const results = await db.get(this.tableName).query(...conditions, Q.sortBy("displayorder", "desc"));
 
     const categoriesWithGroups: TransactionCategoryType[] = [];
     for (const category of results as TransactionCategory[]) {
       const groupQuery = await db
         .get(TableNames.TransactionGroups)
-        .query(Q.where("id", category.groupid), Q.where("isdeleted", false), Q.where("tenantid", tenantId));
-        
+        .query(
+          Q.where("id", category.groupid),
+          Q.where("isdeleted", false),
+          Q.where("tenantid", tenantId),
+          Q.sortBy("displayorder", "desc"),
+        );
+
       const mappedCategory = mapTransactionCategoryFromWatermelon(category, groupQuery[0] as any);
 
       categoriesWithGroups.push(mappedCategory);
     }
+    categoriesWithGroups.sort((b, a) => {
+      const groupA = a.group?.displayorder ?? 0;
+      const groupB = b.group?.displayorder ?? 0;
+      if (groupA !== groupB) {
+        return groupA - groupB;
+      }
+      const catA = a.displayorder ?? 0;
+      const catB = b.displayorder ?? 0;
+      return catA - catB;
+    });
 
     return categoriesWithGroups;
   }

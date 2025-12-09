@@ -77,7 +77,7 @@ export function useStatsService(): IStatsService {
     type: TransactionType = "Expense",
   ) => {
     return useQuery({
-      queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, type, tenantId, "repo"],
+      queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, type, tenantId],
       queryFn: async () => {
         const data = await statsRepo.getStatsDailyTransactions(tenantId, startDate, endDate, type);
         return getStatsDailyTransactionsHelper(data, week);
@@ -87,7 +87,7 @@ export function useStatsService(): IStatsService {
 
   const useGetStatsMonthlyTransactionsTypes = (startDate?: string, endDate?: string) => {
     return useQuery({
-      queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate, tenantId, "repo"],
+      queryKey: [ViewNames.StatsMonthlyTransactionsTypes, startDate, endDate, tenantId],
       queryFn: async () => {
         const data = await statsRepo.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
         return getStatsMonthlyTransactionsTypesHelper(data);
@@ -101,7 +101,7 @@ export function useStatsService(): IStatsService {
       groups: (PieData & { id: string })[];
       categories: (PieData & { id: string })[];
     }>({
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId, "repo"],
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, startDate, endDate, tenantId],
       queryFn: async () => {
         const data = await statsRepo.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
         return getStatsMonthlyCategoriesTransactionsDashboardHelper(data);
@@ -112,7 +112,7 @@ export function useStatsService(): IStatsService {
 
   const useGetStatsMonthlyAccountsTransactions = (startDate?: string, endDate?: string) => {
     return useQuery<StatsMonthlyAccountsTransactions[]>({
-      queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate, tenantId, "repo"],
+      queryKey: [ViewNames.StatsMonthlyAccountsTransactions, startDate, endDate, tenantId],
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         return statsRepo.getStatsMonthlyAccountsTransactions(tenantId, startDate, endDate);
@@ -124,7 +124,7 @@ export function useStatsService(): IStatsService {
   // New: Raw monthly categories transactions (no dashboard helper)
   const useGetStatsMonthlyCategoriesTransactionsRaw = (startDate?: string, endDate?: string) => {
     return useQuery<StatsMonthlyCategoriesTransactions[]>({
-      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, "raw", startDate, endDate, tenantId, "repo"],
+      queryKey: [ViewNames.StatsMonthlyCategoriesTransactions, "raw", startDate, endDate, tenantId],
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         return statsRepo.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
@@ -135,7 +135,7 @@ export function useStatsService(): IStatsService {
 
   const useGetStatsNetWorthGrowth = (startDate?: string, endDate?: string) => {
     return useQuery<LineChartPoint[]>({
-      queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId, "repo"],
+      queryKey: [ViewNames.StatsNetWorthGrowth, startDate, endDate, tenantId],
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         const data = await statsRepo.getStatsNetWorthGrowth(tenantId, startDate, endDate);

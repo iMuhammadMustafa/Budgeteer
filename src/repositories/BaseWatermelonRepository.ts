@@ -5,11 +5,14 @@ import { getWatermelonDB } from "../types/database/watermelon";
 import { getDefaultTenantId } from "../types/database/watermelon/constants";
 import { IRepository } from "./interfaces/IRepository";
 
-export abstract class BaseWatermelonRepository<TModel extends Model, TTable extends TableNames, TMapped>
-  implements IRepository<TMapped, TTable>
-{
+export abstract class BaseWatermelonRepository<
+  TModel extends Model,
+  TTable extends TableNames,
+  TMapped,
+> implements IRepository<TMapped, TTable> {
   // Abstract properties that concrete repositories must define
   protected abstract tableName: string;
+  protected abstract orderByField?: string;
 
   // Abstract method for mapping WatermelonDB models to the expected type
   protected mapFromWatermelon(model: TModel): TMapped {
@@ -59,7 +62,13 @@ export abstract class BaseWatermelonRepository<TModel extends Model, TTable exte
       });
     }
 
-    const query = db.get(this.tableName).query(...conditions);
+    let query;
+    if (this.orderByField) {
+      query = db.get(this.tableName).query(...conditions, Q.sortBy(this.orderByField, "desc"));
+    } else {
+      query = db.get(this.tableName).query(...conditions);
+    }
+
     const results = await query;
 
     return (results as TModel[]).map(model => this.mapFromWatermelon(model));
