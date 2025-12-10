@@ -24,6 +24,28 @@ export default function Index() {
       }
 
       await setStorageMode(mode.id);
+      if (mode.id === StorageMode.Demo) {
+        await setSession(
+          {
+            user: {
+              id: WATERMELONDB_DEFAULTS.userId,
+              email: "local@local.com",
+              user_metadata: {
+                tenantid: WATERMELONDB_DEFAULTS.tenantId,
+                full_name: "Local User",
+              },
+              app_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            },
+            access_token: "local-access-token",
+            refresh_token: "local-refresh-token",
+            expires_in: 3600,
+            token_type: "bearer",
+          },
+          StorageMode.Local,
+        );
+      }
       if (mode.id === StorageMode.Local) {
         await setSession(
           {
@@ -46,6 +68,7 @@ export default function Index() {
           StorageMode.Local,
         );
       }
+      return router.push("/Dashboard");
     },
     [session, setSession, storageMode, setStorageMode],
   );
