@@ -5,6 +5,7 @@ import { StorageMode } from "@/src/types/StorageMode";
 import { storage } from "@/src/utils/storageUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { seedWatermelonDemoDB } from "../types/database/watermelon/seedDemo";
 
 type StorageModeContextType = {
   isLoading: boolean;
@@ -16,6 +17,7 @@ type StorageModeContextType = {
 
 export const STORAGE_KEYS = {
   LOCAL_SESSION: "budgeteer-local-session",
+  DEMO_SESSION: "budgeteer-demo-session",
   STORAGE_MODE: "budgeteer-storage-mode",
 } as const;
 
@@ -62,6 +64,10 @@ export default function StorageModeProvider({ children }: { children: React.Reac
       await initializeWatermelonDB();
 
       await seedWatermelonDB();
+    }
+    if (mode === StorageMode.Demo) {
+      await initializeWatermelonDB();
+      await seedWatermelonDemoDB();
     }
     setStorageMode(mode);
     setIsLoading(false);

@@ -1,19 +1,15 @@
-import React, { useState } from "react";
-import { View, useWindowDimensions, Text, Platform, FlatList } from "react-native";
+import { LineChartPoint } from "@/src/types/components/Charts.types";
+import { convertThemeToReactNativeColors } from "@/src/utils/theme.config";
+import { FlatList, Platform, Text, View, useWindowDimensions } from "react-native";
 import {
   VictoryAxis,
   VictoryChart,
+  VictoryGroup,
   VictoryLabel,
   VictoryLine,
   VictoryScatter,
   VictoryTheme,
-  VictoryTooltip,
-  VictoryLegend,
-  VictoryVoronoiContainer,
-  VictoryGroup,
 } from "victory-native";
-import { LineChartPoint } from "@/src/types/components/Charts.types";
-import { convertThemeToReactNativeColors } from "@/src/utils/theme.config";
 
 // Define props for the Line chart component
 export type LineProps = {
@@ -136,7 +132,7 @@ export default function Line({ data, label, color, hideY }: LineProps) {
             initialNumToRender={5}
             contentContainerClassName={`justify-center ${!showLegend ? "flex flex-wrap px-5" : ""}`}
             renderItem={({ item, index }) => (
-              <View className="flex-row gap-3 items-center me-2 my-1">
+              <View className="flex-row gap-3 justify-center items-center me-2 my-1">
                 <View
                   style={{ width: 10, height: 10, backgroundColor: index < colors.length ? colors[index] : "red" }}
                 />
