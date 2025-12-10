@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { View, Text, useWindowDimensions } from "react-native";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 import { DoubleBarPoint } from "@/src/types/components/Charts.types";
+import { useState } from "react";
+import { Text, useWindowDimensions, View } from "react-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 
 export default function NetEarningsChart({
   data,
@@ -19,7 +19,7 @@ export default function NetEarningsChart({
   const chartHeight = chartWidth * 0.75;
 
   const barWidth = 10; // A reasonable bar width
-  const spaceBetweenBars = (chartWidth - 30) / (data.length * 3); // Adjust the space based on the number of bars
+  const spaceBetweenBars = (chartWidth - 30) / (data.length * 2.5); // Adjust the space based on the number of bars
   const offset = spaceBetweenBars - barWidth / 2;
 
   const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
@@ -30,9 +30,9 @@ export default function NetEarningsChart({
       <VictoryChart
         width={chartWidth}
         height={chartHeight}
-        domainPadding={{ x: 80, y: 10 }}
+        domainPadding={{ x: 50, y: 10 }}
         theme={VictoryTheme.material}
-        padding={{ top: 40, bottom: 50, left: 60, right: 40 }}
+        padding={{ top: 40, bottom: 50, left: 50, right: 20 }}
       >
         <VictoryAxis
           tickFormat={t => t}

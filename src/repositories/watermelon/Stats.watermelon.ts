@@ -9,7 +9,9 @@ import {
 import { getWatermelonDB } from "@/src/types/database/watermelon";
 import { Q } from "@nozbe/watermelondb";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { IStatsRepository } from "../interfaces/IStatsRepository";
+dayjs.extend(utc);
 
 export class StatsWatermelonRepository implements IStatsRepository {
   private async getDb() {
@@ -227,44 +229,56 @@ export class StatsWatermelonRepository implements IStatsRepository {
   async getStatsNetWorthGrowth(tenantId: string, startDate?: string, endDate?: string): Promise<StatsNetWorthGrowth[]> {
     const db = await this.getDb();
 
-    // Get all accounts for the tenant
+    // Load accounts and transactions once to avoid many DB queries.
     const accounts = await db.get("accounts").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+    const transactions = await db.get("transactions").query(Q.where("tenantid", tenantId), Q.where("isdeleted", false));
 
-    const startMonth = startDate ? dayjs(startDate).startOf("month") : dayjs().startOf("year");
-    const endMonth = endDate ? dayjs(endDate).endOf("month") : dayjs().endOf("year");
+    // Treat provided ISO datetimes as local calendar dates: extract YYYY-MM-DD (UTC-normalized)
+    // then build local Day.js objects so month boundaries align with local date.
+    const startMonth = startDate
+      ? dayjs(dayjs.utc(startDate).format("YYYY-MM-DD")).startOf("month")
+      : dayjs().startOf("year");
+    const endMonth = endDate ? dayjs(dayjs.utc(endDate).format("YYYY-MM-DD")).endOf("month") : dayjs().endOf("year");
 
     const result: StatsNetWorthGrowth[] = [];
 
-    // Generate monthly data points
-    let currentMonth = startMonth;
+    let currentMonth = startMonth.clone();
     while (currentMonth.isBefore(endMonth) || currentMonth.isSame(endMonth, "month")) {
       const monthStr = currentMonth.format("YYYY-MM-01");
+      const monthEnd = currentMonth.endOf("month");
 
-      // Calculate net worth for this month
-      // This is a simplified calculation - in reality you'd need to consider
-      // account balances at specific points in time
-      let totalAssets = 0;
-      let totalLiabilities = 0;
+      let totalNetWorth = 0;
 
       for (const account of accounts) {
-        const balance = (account as any).balance || 0;
-        // TODO: Determine if account is asset or liability from category
-        // For now, assume positive balances are assets, negative are liabilities
-        if (balance >= 0) {
-          totalAssets += balance;
-        } else {
-          totalLiabilities += Math.abs(balance);
-        }
+        const acc: any = account;
+        const currentBalance = acc.balance || 0;
+
+        // Sum of transactions for this account that occur after the month end
+        const sumAfter = transactions
+          .filter((t: any) => {
+            const tAccountId = t.accountid ?? t.accountId;
+            if (tAccountId !== acc.id) return false;
+            const isVoid = t.isvoid ?? t.isVoid ?? false;
+            if (isVoid) return false;
+            // Normalize transaction instant to a local calendar date by taking its UTC YYYY-MM-DD
+            const tDate = t.date ? dayjs(dayjs.utc(t.date).format("YYYY-MM-DD")) : null;
+            if (!tDate) return false;
+            return tDate.isAfter(monthEnd, "day");
+          })
+          .reduce((s: number, t: any) => s + (t.amount || 0), 0);
+
+        // Approximate balance at month end: current balance minus transactions that happened after month end
+        const balanceAtMonthEnd = currentBalance - sumAfter;
+
+        totalNetWorth += balanceAtMonthEnd;
       }
 
-      result.push({
-        month: monthStr,
-        total_net_worth: totalAssets - totalLiabilities,
-        tenantid: tenantId,
-      });
+      result.push({ month: monthStr, total_net_worth: totalNetWorth, tenantid: tenantId });
 
       currentMonth = currentMonth.add(1, "month");
     }
+
+    console.log(result);
 
     return result;
   }
