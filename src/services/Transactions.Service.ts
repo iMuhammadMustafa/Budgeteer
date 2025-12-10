@@ -44,7 +44,8 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
       queryFn: async () => {
-        return transactionRepo.findAll(tenantId, searchFilters) as Promise<TransactionsView[]>;
+        const res = transactionRepo.findAll(tenantId, searchFilters);
+        return res as Promise<TransactionsView[]>;
       },
       enabled: !!tenantId,
     });

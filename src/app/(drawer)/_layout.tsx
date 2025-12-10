@@ -94,13 +94,7 @@ const Footer = () => {
         )}
       </View>
       <Button label="Logout" onPress={logout} variant="destructive" rightIcon="LogOut" size="sm" />
-      <Button
-        label="Clear Cache"
-        onPress={async () => await queryClient.clear()}
-        variant="ghost"
-        size="sm"
-        rightIcon="Trash"
-      />
+      <Button label="Clear Cache" onPress={() => queryClient.clear()} variant="ghost" size="sm" rightIcon="Trash" />
     </>
   );
 };

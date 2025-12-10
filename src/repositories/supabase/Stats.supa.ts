@@ -19,13 +19,18 @@ export class StatsSupaRepository implements IStatsRepository {
     endDate?: string,
     type?: TransactionType,
   ): Promise<StatsDailyTransactions[]> {
-    const { data, error } = await supabase
+    let query = supabase
       .from(ViewNames.StatsDailyTransactions)
       .select()
       .eq("tenantid", tenantId)
-      .eq("type", type ?? "Expense")
       .gte("date", startDate ?? dayjs().startOf("week").toISOString())
       .lte("date", endDate ?? dayjs().endOf("week").toISOString());
+
+    if (type) {
+      query = query.eq("type", type);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data;

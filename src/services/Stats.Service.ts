@@ -70,12 +70,7 @@ export function useStatsService(): IStatsService {
   const transactionRepo = dbContext.TransactionRepository();
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
-  const useGetStatsDailyTransactions = (
-    startDate: string,
-    endDate: string,
-    week = false,
-    type: TransactionType = "Expense",
-  ) => {
+  const useGetStatsDailyTransactions = (startDate: string, endDate: string, week = false, type?: TransactionType) => {
     return useQuery({
       queryKey: [ViewNames.StatsDailyTransactions, startDate, endDate, type, tenantId],
       queryFn: async () => {
@@ -206,6 +201,7 @@ const getStatsDailyTransactionsHelper = async (
         x,
         y: dayData?.y ?? 0,
         color: dayData?.color ?? "rgba(255, 255, 255, 0.6)",
+        item: dayData?.item,
       };
     });
   }
@@ -218,6 +214,8 @@ const getStatsDailyTransactionsHelper = async (
     acc[day] = { dots };
     return acc;
   }, {});
+  console.log("All Data:", data);
+  console.log("Calendar Data:", calendarData);
 
   return { barsData, calendarData };
 };

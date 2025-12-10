@@ -2,33 +2,32 @@ import { useStatsService } from "@/src/services/Stats.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
-import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
-import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 
-type SelectionType = "calendar" | "pie" | "bar";
+export enum DashboardViewSelectionType {
+  CALENDAR = "calendar",
+  PIE = "pie",
+  BAR = "bar",
+}
 
-type SelectionState = {
-  type: SelectionType | null;
-  data: any;
-  transactions: TransactionsView[];
-  isLoading: boolean;
-};
+export interface IDetailsViewProps {
+  type: DashboardViewSelectionType;
+  date?: string;
+  label?: string;
+  startDate?: string;
+  endDate?: string;
+  pieType?: "category" | "group";
+  itemId?: string;
+  itemLabel?: string;
+  month?: string;
+}
 
 export default function useDashboard() {
   const statsService = useStatsService();
   const transactionService = useTransactionService();
-
   const dateRanges = statsService.useGetDateRanges();
-
-  const [selection, setSelection] = useState<SelectionState>({
-    type: null,
-    data: null,
-    transactions: [],
-    isLoading: false,
-  });
-  const [refreshing, setRefreshing] = useState(false);
 
   const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.useGetStatsDailyTransactions(
     dateRanges.currentMonth.start,
@@ -46,6 +45,25 @@ export default function useDashboard() {
     dateRanges.currentYear.end,
   );
 
+  const params = useLocalSearchParams() as Partial<IDetailsViewProps>;
+  const filters = useMemo<TransactionFilters>(() => {
+    const baseFilters: TransactionFilters = {};
+    if (params.startDate) baseFilters.startDate = params.startDate;
+    if (params.endDate) baseFilters.endDate = params.endDate;
+
+    if (params.type === DashboardViewSelectionType.PIE && params.itemId && params.pieType) {
+      if (params.pieType === "category") {
+        baseFilters.categoryid = params.itemId;
+      }
+      if (params.pieType === "group") {
+        baseFilters.groupid = params.itemId;
+      }
+    }
+
+    return baseFilters;
+  }, [params]);
+  const { data: filteredTransactions, isLoading: isFiltersLoading } = transactionService.useFindAllView(filters);
+
   const dashboardData = useMemo(
     () => ({
       weeklyTransactionTypesData: dailyTransactionsThisMonth?.barsData,
@@ -54,15 +72,21 @@ export default function useDashboard() {
       monthlyGroups: monthlyTransactionsGroupsAndCategories.groups,
       yearlyTransactionsTypes,
       netWorthGrowth,
+      filteredTransactions,
     }),
-    [dailyTransactionsThisMonth, monthlyTransactionsGroupsAndCategories, yearlyTransactionsTypes, netWorthGrowth],
+    [
+      dailyTransactionsThisMonth,
+      monthlyTransactionsGroupsAndCategories,
+      yearlyTransactionsTypes,
+      netWorthGrowth,
+      filteredTransactions,
+    ],
   );
 
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    setIsLoading(isWeeklyLoading || isMonthlyLoading || isYearlyLoading || isNetWorthLoading);
-  }, [isWeeklyLoading, isMonthlyLoading, isYearlyLoading, isNetWorthLoading]);
+  const [isLocalLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const isLoading =
+    isWeeklyLoading || isMonthlyLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isLocalLoading;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -70,107 +94,91 @@ export default function useDashboard() {
     setTimeout(() => setRefreshing(false), 1000);
   }, [statsService]);
 
-  const handleDayPress = async (day: any) => {
-    try {
-      const localDate = dayjs(day.dateString).local();
-      const dateString = localDate.format("YYYY-MM-DD");
+  const handleDayPress = useCallback((day: any, type: DashboardViewSelectionType) => {
+    const dateString = dayjs(day.dateString).local().format("YYYY-MM-DD");
+    const startOfDay = dayjs(day.dateString).utc().startOf("day").toISOString();
+    const endOfDay = dayjs(day.dateString).utc().endOf("day").toISOString();
 
-      setSelection({
-        type: "calendar",
-        data: { date: dateString, label: localDate.format("MMM D, YYYY") },
-        transactions: [],
-        isLoading: true,
-      });
-
-      const startOfDay = dayjs(day.dateString).utc().startOf("day").toISOString();
-      const endOfDay = dayjs(day.dateString).utc().endOf("day").toISOString();
-      const { data, isLoading: isTransactionsLoading } = await transactionService.useFindAllView({
+    router.push({
+      pathname: "/Dashboard/Details",
+      params: {
+        type: type,
+        date: dateString,
+        label: dateString,
         startDate: startOfDay,
         endDate: endOfDay,
-      });
-      setIsLoading(isTransactionsLoading);
+      },
+    });
+  }, []);
 
-      setSelection(prev => ({
-        ...prev,
-        transactions: data ?? [],
-        isLoading: false,
-      }));
-    } catch (error) {
-      console.error("Error fetching transactions for date:", error);
-      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
-    }
-  };
+  const handlePiePress = useCallback((item: PieData, type: "category" | "group") => {
+    const startOfMonth = dayjs().utc().startOf("month").toISOString();
+    const endOfMonth = dayjs().utc().endOf("month").toISOString();
 
-  const handlePiePress = async (item: PieData, type: "category" | "group") => {
-    try {
-      setSelection({
-        type: "pie",
-        data: { item, type, label: `${type === "category" ? "Category" : "Group"}: ${item.x}` },
-        transactions: [],
-        isLoading: true,
-      });
-
-      const startOfMonth = dayjs().utc().startOf("month").toISOString();
-      const endOfMonth = dayjs().utc().endOf("month").toISOString();
-      let filters: TransactionFilters = { startDate: startOfMonth, endDate: endOfMonth };
-      if (type === "category") {
-        filters.categoryid = item.id;
-      } else {
-        filters.groupid = item.id;
-      }
-      const { data: transactions, isLoading: isTransactionLoading } = await transactionService.useFindAllView(filters);
-
-      setIsLoading(isTransactionLoading);
-
-      setSelection(prev => ({ ...prev, transactions: transactions ?? [], isLoading: false }));
-    } catch (error) {
-      console.error("Error fetching transactions for category:", error);
-      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
-    }
-  };
-
-  const handleBarPress = async (item: DoubleBarPoint) => {
-    try {
-      setSelection({
-        type: "bar",
-        data: { item, label: `Month: ${item.x}` },
-        transactions: [],
-        isLoading: true,
-      });
-
-      const startOfMonth = dayjs(item.x).utc().startOf("month").toISOString();
-      const endOfMonth = dayjs(item.x).endOf("month").toISOString();
-      const { data: transactions, isLoading: isTransactionLoading } = await transactionService.useFindAllView({
+    router.push({
+      pathname: "/Dashboard/Details",
+      params: {
+        type: DashboardViewSelectionType.PIE,
+        pieType: type,
+        itemId: item.id,
+        itemLabel: item.x,
+        label: `${type === "category" ? "Category" : "Group"}: ${item.x}`,
         startDate: startOfMonth,
         endDate: endOfMonth,
-      });
+      },
+    });
+  }, []);
 
-      setIsLoading(isTransactionLoading);
+  const handleBarPress = useCallback((item: DoubleBarPoint) => {
+    const startOfMonth = dayjs(item.x).utc().startOf("month").toISOString();
+    const endOfMonth = dayjs(item.x).endOf("month").toISOString();
+    router.push({
+      pathname: "/Dashboard/Details",
+      params: {
+        type: "bar",
+        month: item.x,
+        label: `Month: ${item.x}`,
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      },
+    });
+  }, []);
 
-      setSelection(prev => ({ ...prev, transactions: transactions ?? [], isLoading: false }));
-    } catch (error) {
-      console.error("Error fetching transactions for month:", error);
-      setSelection(prev => ({ ...prev, transactions: [], isLoading: false }));
-    }
-  };
+  const handleBackToOverview = useCallback(() => {
+    router.replace("/Dashboard");
+  }, []);
 
-  const handleBackToOverview = () => {
-    setSelection({ type: null, data: null, transactions: [], isLoading: false });
-  };
-
-  const handleTransactionPress = (transaction: any) => {
+  const handleTransactionPress = useCallback((transaction: any) => {
     if (transaction.id) {
       router.push({
         pathname: "/AddTransaction",
         params: { id: transaction.id },
       });
     }
-  };
+  }, []);
+
+  const handleViewAllNavigation = useCallback(() => {
+    const navigationParams: any = {};
+    if (params.type === "calendar") {
+      navigationParams.startDate = params.startDate;
+      navigationParams.endDate = params.endDate;
+    } else if (params.type === "pie") {
+      const key = params.pieType === "category" ? "categoryid" : "groupid";
+      navigationParams[key] = params.itemId;
+    } else if (params.type === "bar") {
+      navigationParams.startDate = params.startDate;
+      navigationParams.endDate = params.endDate;
+    }
+
+    router.push({
+      pathname: "/Transactions",
+      params: navigationParams,
+    });
+  }, [params]);
 
   return {
     ...dashboardData,
     isLoading,
-    selection,
     refreshing,
     onRefresh,
     handleDayPress,
@@ -178,5 +186,8 @@ export default function useDashboard() {
     handleBarPress,
     handleTransactionPress,
     handleBackToOverview,
+    filters,
+    params,
+    handleViewAllNavigation,
   };
 }

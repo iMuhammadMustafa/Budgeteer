@@ -171,6 +171,9 @@ export class TransactionSupaRepository
     if (searchFilters.categoryid) {
       query = query.eq("categoryid", searchFilters.categoryid);
     }
+    if (searchFilters.groupid) {
+      query = query.eq("groupid", searchFilters.groupid);
+    }
     if (searchFilters.accountid) {
       query = query.eq("accountid", searchFilters.accountid);
     }

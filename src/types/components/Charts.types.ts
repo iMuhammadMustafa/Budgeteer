@@ -3,11 +3,13 @@ export type BarProps = {
   label: string;
   color?: any;
   hideY?: boolean;
+  selectedDate?: string | null;
+  onDayPress?: (day: any) => void;
 };
 
 export type BarDataType = {
   x: string;
-  y: Number;
+  y: number;
   color?: string;
   item?: any;
 };

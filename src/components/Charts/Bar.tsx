@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { View, Dimensions, useWindowDimensions, Text, Platform } from "react-native";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 import { BarProps } from "@/src/types/components/Charts.types";
+import { useState } from "react";
+import { Platform, Text, useWindowDimensions, View } from "react-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 
-export default function Bar({ data, label, color, hideY }: BarProps) {
+export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
   const { width } = useWindowDimensions();
   const chartWidth = Math.min(width, 600);
   const chartHeight = chartWidth;
 
-  const [selectedSlice, setSelectedSlice] = useState(null);
+  const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   return (
     <View className="p-2  m-auto bg-card my-2 rounded-md border border-muted">
       <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
@@ -52,7 +52,9 @@ export default function Bar({ data, label, color, hideY }: BarProps) {
                   setSelectedSlice(null);
                 },
                 onPress: (_, props) => {
+                  console.log(props.datum);
                   setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  onDayPress && onDayPress({ dateString: props.datum.item.date });
                 },
               },
             },

@@ -29,10 +29,13 @@ export class StatsWatermelonRepository implements IStatsRepository {
     const conditions = [
       Q.where("tenantid", tenantId),
       Q.where("isdeleted", false),
-      Q.where("type", type ?? "Expense"),
       Q.where("date", Q.gte(startDate ?? dayjs().startOf("week").format("YYYY-MM-DD"))),
       Q.where("date", Q.lte(endDate ?? dayjs().endOf("week").format("YYYY-MM-DD"))),
     ];
+
+    if (type) {
+      conditions.push(Q.where("type", type));
+    }
 
     const transactions = await db.get("transactions").query(...conditions);
 
@@ -277,9 +280,6 @@ export class StatsWatermelonRepository implements IStatsRepository {
 
       currentMonth = currentMonth.add(1, "month");
     }
-
-    console.log(result);
-
     return result;
   }
 }
