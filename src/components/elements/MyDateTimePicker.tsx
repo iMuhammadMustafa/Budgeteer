@@ -102,9 +102,21 @@ export default function MyDateTimePicker({
               // setShowDate(false); // Optionally close on change
             }}
           />
-          <Pressable onPress={() => setShowDate(false)} className="mt-2 p-2 bg-primary rounded-md">
-            <Text className="text-white text-center">Done</Text>
-          </Pressable>
+          <View className="mt-2 flex-row space-x-2">
+            <Pressable
+              onPress={() => {
+                const today = dayjs();
+                setPickerDate(today);
+                onChange(today.toISOString());
+              }}
+              className="flex-1 p-2 bg-green-100 rounded-md"
+            >
+              <Text className="text-center text-foreground">Today</Text>
+            </Pressable>
+            <Pressable onPress={() => setShowDate(false)} className="flex-1 p-2 bg-primary rounded-md">
+              <Text className="text-white text-center">Pick</Text>
+            </Pressable>
+          </View>
         </DateTimePickerContainer>
       )}
     </View>
@@ -127,7 +139,13 @@ const DateTimePickerContainer = ({
   <>
     {!isModal ? (
       <View className="m-auto">
-        <View className={`max-w-[${layout.width / 2}px]`}>{children}</View>
+        <View
+          // Use a fixed width based on the measured button layout so the picker
+          // doesn't jump when month label width changes. Guard against 0 width.
+          style={{ width: layout.width > 0 ? layout.width / 2 : undefined }}
+        >
+          {children}
+        </View>
       </View>
     ) : (
       <MyModal isOpen={isVisible} setIsOpen={setIsVisible} onClose={() => setIsVisible(false)}>
