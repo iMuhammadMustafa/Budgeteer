@@ -204,7 +204,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             touched={formState.touched.date}
             onChange={value => {
               if (value) {
-                const formattedDate = dayjs(value);
+                const formattedDate = dayjs(value)
+                  .minute(dayjs().minute())
+                  .second(dayjs().second())
+                  .local()
+                  .toISOString();
                 updateField("date", formattedDate);
               }
             }}
@@ -253,7 +257,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               />
             </View>
 
-        {/* TODO: Convert to Switcher */}
+            {/* TODO: Convert to Switcher */}
             <View className="flex-1">
               <FormField
                 config={{
@@ -270,7 +274,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 onChange={handleTypeChange}
                 onBlur={() => setFieldTouched("type")}
               />
-            </View>         
+            </View>
           </View>
 
           {/* Account Information Section */}
@@ -380,7 +384,6 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 }
 
 const useTransactionForm = ({ transaction }: { transaction: TransactionFormType }) => {
-    // ...existing code...
   const transactionCategoryService = useTransactionCategoryService();
   const accountService = useAccountService();
   const transactionService = useTransactionService();

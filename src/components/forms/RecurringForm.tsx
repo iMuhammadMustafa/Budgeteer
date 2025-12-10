@@ -371,6 +371,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
 
       setFormData({
         ...(recurringToEdit as any), // Cast to any to allow additional form fields like frequency, interval
+        amount: Math.abs(recurringToEdit.amount || 0), // Ensure amount is positive for form
         type: (recurringToEdit.type as TransactionType) || "Expense", // Set type, default if not present
         frequency: freq,
         interval: interv,
@@ -382,6 +383,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
         nextoccurrencedate: dayjs(recurringToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
         enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
       });
+      setMode(recurringToEdit.amount && recurringToEdit.amount < 0 ? "minus" : "plus");
     } else if (!isEdit) {
       setFormData({ ...initialRecurringState });
     }
@@ -546,6 +548,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
         onSuccess: () => {
           //TODO: Close Modal
           // router.back();
+          router.replace("/(drawer)/(tabs)/Recurrings");
         },
         onSettled: () => setIsSubmitting(false),
       },
