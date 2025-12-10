@@ -15,11 +15,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-dayjs.extend(quarterOfYear);
-
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useStatsService } from "@/src/services/Stats.Service";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/database/Tables.Types";
+
+dayjs.extend(quarterOfYear);
 
 // Types
 type TimePeriod = "monthly" | "quarterly" | "yearly";
