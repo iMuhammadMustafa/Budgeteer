@@ -11,8 +11,33 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Suspense } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, LogBox, Platform } from "react-native";
 import QueryProvider from "../providers/QueryProvider";
+
+// Suppress known third-party library warnings for web platform
+if (Platform.OS === "web") {
+  LogBox.ignoreLogs([
+    "Unknown event handler property",
+    "React does not recognize the `accessibilityHint` prop",
+    "React does not recognize the `backgroundColor` prop",
+  ]);
+
+  // Suppress console warnings for web-specific React Native props
+  const originalWarn = console.warn;
+  console.warn = (...args) => {
+    const message = args[0];
+    if (
+      typeof message === "string" &&
+      (message.includes("Unknown event handler property") ||
+        message.includes("React does not recognize the") ||
+        message.includes("accessibilityHint") ||
+        message.includes("backgroundColor"))
+    ) {
+      return;
+    }
+    originalWarn(...args);
+  };
+}
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
