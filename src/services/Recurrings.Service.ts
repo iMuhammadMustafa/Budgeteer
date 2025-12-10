@@ -1,11 +1,14 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { TableNames } from "@/src/types/database//TableNames";
+import { TableNames, ViewNames } from "@/src/types/database//TableNames";
 import { Inserts, Recurring } from "@/src/types/database//Tables.Types";
 import { Session } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
 import { queryClient } from "../providers/QueryProvider";
+import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
+import { IRecurringRepository } from "../repositories/interfaces/IRecurringRepository";
+import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
 import GenerateUuid from "../utils/uuid.Helper";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
@@ -36,6 +39,7 @@ export function useRecurringService(): IRecurringService {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
       },
       onError: error => {
@@ -55,25 +59,25 @@ export const executeRecurringHelper = async (
   recurring: Recurring,
   overrides: ExecutionOverrides | undefined,
   session: Session,
-  recurringRepo: any,
-  transactionRepo: any,
-  accountRepo: any,
+  recurringRepo: IRecurringRepository,
+  transactionRepo: ITransactionRepository,
+  accountRepo: IAccountRepository,
 ): Promise<ApplyResult> => {
   const userId = session.user.id;
   const tenantId = session.user.user_metadata.tenantid;
 
+  let updatedReucrring: Recurring | null = { ...recurring };
   try {
-
     const transactions: Inserts<TableNames.Transactions>[] = [];
     const transactionId = GenerateUuid();
     const transferTransactionId = GenerateUuid();
-    
+
     let transaction: Inserts<TableNames.Transactions> = {
       id: transactionId,
       name: recurring.name,
       description: overrides?.description ?? recurring.description,
       amount: overrides?.amount ?? recurring.amount ?? 0,
-      date: overrides?.date ?? recurring.nextoccurrencedate ??  dayjs().toISOString(),
+      date: overrides?.date ?? recurring.nextoccurrencedate ?? dayjs().toISOString(),
       accountid: recurring.sourceaccountid,
       payee: recurring.payeename,
       notes: overrides?.notes ?? recurring.notes,
@@ -114,10 +118,10 @@ export const executeRecurringHelper = async (
     //}
     transactions.push(transaction);
 
-    await transactionRepo.createMultipleTransactions(transactions, tenantId);
-    await accountRepo.updateAccountBalance(recurring.sourceaccountid, transaction.amount, tenantId);
+    await transactionRepo.createMultiple(transactions, tenantId);
+    await accountRepo.updateAccountBalance(recurring.sourceaccountid, transaction.amount ?? 0, tenantId);
     if (recurring.recurringtype === RecurringType.Transfer && recurring.transferaccountid) {
-      await accountRepo.updateAccountBalance(recurring.transferaccountid, transferTransaction.amount, tenantId);
+      await accountRepo.updateAccountBalance(recurring.transferaccountid, transferTransaction.amount ?? 0, tenantId);
     }
 
     let updateData: any = {
@@ -135,16 +139,16 @@ export const executeRecurringHelper = async (
       ).toISOString();
     }
 
-    recurring = await recurringRepo.update(recurring.id, updateData, tenantId);
+    updatedReucrring = await recurringRepo.update(recurring.id, updateData, tenantId);
 
     return {
       success: true,
       transactionId: transactions[0].id,
-      recurring,
+      recurring: updatedReucrring!,
     };
   } catch (error) {
     // Increment failed attempts on error
-    recurring = await recurringRepo.update(
+    updatedReucrring = await recurringRepo.update(
       recurring.id,
       {
         failedattempts: recurring.failedattempts ? recurring.failedattempts + 1 : 1,
