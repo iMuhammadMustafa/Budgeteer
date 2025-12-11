@@ -17,7 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFormState } from "../form-builder/hooks/useFormState";
 import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 
-export default function AccountForm({ account }: { account: AccountFormData }) {
+export default function AccountForm({
+  account,
+  onSuccess,
+}: {
+  account: AccountFormData;
+  onSuccess?: (account: Account) => void;
+}) {
   const accountService = useAccountService();
   const accountCategoryService = useAccountCategoryService();
   const { data: accountCategories } = accountCategoryService.useFindAll();
@@ -74,8 +80,14 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
             props: { addAdjustmentTransaction: data.addAdjustmentTransaction || false },
           },
           {
-            onSuccess: () => {
-              router.replace("/Accounts");
+            onSuccess: savedAccount => {
+              if (onSuccess && savedAccount) {
+                // If callback provided, call it (for nested form usage)
+                onSuccess(savedAccount);
+              } else {
+                // Otherwise, navigate away (for standalone usage)
+                router.replace("/Accounts");
+              }
               resolve();
             },
             onError: error => {
@@ -86,7 +98,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
         );
       });
     },
-    [updateAccount, updateOpenBalance, openTransaction, account],
+    [updateAccount, updateOpenBalance, openTransaction, account, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -470,7 +482,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
   );
 }
 
-export const initialState: AccountFormData = {
+export const initalAccountFormData: AccountFormData = {
   name: "",
   categoryid: "",
   balance: 0,

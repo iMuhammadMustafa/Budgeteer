@@ -21,6 +21,8 @@ import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
+import AccountForm, { initalAccountFormData } from "./AccountForm";
+import TransactionCategoryForm, { initialState as initialCategoryState } from "./TransactionCategoryForm";
 
 export type TransactionFormType = TransactionFormData & {
   mode?: "plus" | "minus";
@@ -130,6 +132,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     accountOptions,
     transferAccountOptions,
     error,
+    handleAccountCreated,
+    handleCategoryCreated,
   } = useTransactionForm({ transaction });
 
   return (
@@ -248,12 +252,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   required: true,
                   options: categoryOptions,
                   group: "group.name",
+                  popUp: true,
+                  nestedForm: <TransactionCategoryForm category={initialCategoryState} />,
                 }}
                 value={formState.data.categoryid}
                 error={formState.errors.categoryid}
                 touched={formState.touched.categoryid}
                 onChange={value => updateField("categoryid", value)}
                 onBlur={() => setFieldTouched("categoryid")}
+                onNestedFormSuccess={handleCategoryCreated}
               />
             </View>
 
@@ -289,12 +296,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     required: true,
                     options: accountOptions,
                     group: "category.name",
+                    popUp: true,
+                    nestedForm: <AccountForm account={initalAccountFormData} />,
                   }}
                   value={formState.data.accountid}
                   error={formState.errors.accountid}
                   touched={formState.touched.accountid}
                   onChange={value => updateField("accountid", value)}
                   onBlur={() => setFieldTouched("accountid")}
+                  onNestedFormSuccess={handleAccountCreated}
                 />
               </View>
 
@@ -713,6 +723,26 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const isEdit = !!transaction.id;
   const isLoading = isSubmitting || isCategoriesLoading || isAccountLoading;
 
+  // Handle successful account creation from nested form
+  const handleAccountCreated = useCallback(
+    (newAccount: any) => {
+      if (newAccount && newAccount.id) {
+        updateField("accountid", newAccount.id);
+      }
+    },
+    [updateField],
+  );
+
+  // Handle successful category creation from nested form
+  const handleCategoryCreated = useCallback(
+    (newCategory: any) => {
+      if (newCategory && newCategory.id) {
+        updateField("categoryid", newCategory.id);
+      }
+    },
+    [updateField],
+  );
+
   return {
     formState,
     updateField,
@@ -739,5 +769,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     isEdit,
     isLoading,
     findByName: transactionService.useFindByName,
+    handleAccountCreated,
+    handleCategoryCreated,
   };
 };

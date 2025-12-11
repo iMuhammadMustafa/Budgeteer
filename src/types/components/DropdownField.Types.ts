@@ -1,11 +1,13 @@
 export interface DropDownProps {
-  options: Array<OptionItem>;
+  options: OptionItem[];
   onSelect: (item: OptionItem | null) => void;
   selectedValue?: string | null;
   label: string;
   isModal?: boolean;
   groupBy?: string;
   isWritable?: boolean;
+  nestedForm?: React.ReactNode;
+  onNestedFormSuccess?: (newItem: any) => void;
 }
 
 export interface OptionItem {
@@ -32,6 +34,10 @@ export type ListContainerProps = {
   buttonLayout: { height: number; width: number; top: number; y: number; x: number };
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  nestedForm?: React.ReactNode;
+  isNestedFormOpen: boolean;
+  setIsNestedFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onNestedFormSuccess?: (newItem: any) => void;
 };
 export type RenderOptionProps = {
   isModal: boolean;

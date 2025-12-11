@@ -10,7 +10,16 @@ import MyDateTimePicker from "../elements/MyDateTimePicker";
  * with error display, validation states, and accessibility support.
  * Supports: text, number, select, date, textarea, switch field types.
  */
-function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur, className = "" }: FormFieldProps<T>) {
+function FormFieldComponent<T>({
+  config,
+  value,
+  error,
+  touched,
+  onChange,
+  onBlur,
+  className = "",
+  onNestedFormSuccess,
+}: FormFieldProps<T>) {
   const { name, label, type, required = false, placeholder, options = [], disabled = false, description } = config;
 
   const hasError = touched && error;
@@ -147,6 +156,8 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
               }}
               isModal={config.popUp}
               groupBy={config.group}
+              nestedForm={config.nestedForm}
+              onNestedFormSuccess={onNestedFormSuccess || config.onNestedFormSuccess}
             />
           </View>
         );

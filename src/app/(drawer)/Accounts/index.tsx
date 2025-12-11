@@ -2,7 +2,7 @@ import Button from "@/src/components/elements/Button";
 import { AccountSelecterDropdown } from "@/src/components/elements/DropdownField";
 import MyModal from "@/src/components/elements/MyModal";
 import TextInputField from "@/src/components/elements/TextInputField";
-import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
+import AccountForm, { initalAccountFormData } from "@/src/components/forms/AccountForm";
 import MyTab from "@/src/components/MyTab";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
@@ -69,7 +69,7 @@ export default function AccountsIndex() {
           <Button rightIcon="ArrowLeftRight" variant="ghost" onPress={() => openTransferModal(item)} />
         )}
         UpsertModal={(item: any) => <AccountForm account={item} />}
-        initialState={initialState}
+        initialState={initalAccountFormData}
       />
       {modalState.open && (
         <AccountTransferModal

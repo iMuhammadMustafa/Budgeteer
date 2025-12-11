@@ -54,6 +54,8 @@ export interface FormFieldConfig<T> {
   description?: string;
   popUp?: boolean;
   group?: string;
+  nestedForm?: ReactNode;
+  onNestedFormSuccess?: (newItem: any) => void;
 }
 
 /**
@@ -189,6 +191,7 @@ export interface FormFieldProps<T> {
   onChange: (value: any) => void;
   onBlur?: () => void;
   className?: string;
+  onNestedFormSuccess?: (newItem: any) => void;
 }
 
 /**

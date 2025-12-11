@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { cloneElement, isValidElement, useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Platform, Pressable, Text, View } from "react-native";
 
 import {
@@ -9,6 +9,7 @@ import {
   RenderOptionProps,
 } from "@/src/types/components/DropdownField.Types";
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
+import Button from "./Button";
 import MyIcon from "./MyIcon";
 import MyModal from "./MyModal";
 
@@ -20,75 +21,117 @@ function DropdownField({
   isModal = Platform.OS !== "web",
   groupBy,
   isWritable = false,
+  nestedForm,
+  onNestedFormSuccess,
 }: DropDownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isNestedFormOpen, setIsNestedFormOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<OptionItem | null>(null);
   const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0, y: 0, x: 0 });
 
-  const groupedOptions = groupBy ? [...new Set(options.map(option => option.group))] : options;
+  const groupedOptions = useMemo(
+    () => (groupBy ? [...new Set(options.map(option => option.group))] : options),
+    [groupBy, options],
+  );
 
   useEffect(() => {
-    if (options) {
+    if (options && selectedValue) {
       const item = options.find(i => i.id === selectedValue) ?? null;
       setSelectedItem(item);
     }
   }, [selectedValue, options]);
 
   useEffect(() => {
-    if (selectedItem) {
-      onSelect(selectedItem);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleOutsideClick = (event: any) => {
+    const handleOutsideClick = () => {
       setIsOpen(false);
     };
-    if (isOpen) {
-      if (Platform.OS === "web") {
-        document.addEventListener("click", handleOutsideClick);
-      }
-    }
 
-    return () => {
-      if (Platform.OS === "web") {
+    if (isOpen && Platform.OS === "web") {
+      // Small timeout to prevent immediate closing
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("click", handleOutsideClick);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
         document.removeEventListener("click", handleOutsideClick);
-      }
-    };
+      };
+    }
   }, [isOpen]);
 
-  const toggleDropdown = (): void => {
-    setIsOpen(!isOpen);
-  };
+  const toggleDropdown = useCallback((e?: any) => {
+    if (e && Platform.OS === "web") {
+      e.stopPropagation();
+    }
+    setIsOpen(prev => !prev);
+  }, []);
 
-  const onItemPress = (item: OptionItem): void => {
-    setSelectedItem(item);
-    onSelect(item);
-    setIsOpen(false);
-  };
+  const onItemPress = useCallback(
+    (item: OptionItem) => {
+      setSelectedItem(item);
+      onSelect(item);
+      setIsOpen(false);
+    },
+    [onSelect],
+  );
 
-  const onButtonLayout = (event: any) => {
+  const onButtonLayout = useCallback((event: any) => {
     const { height, width, y, top, x } = event.nativeEvent.layout;
     setButtonLayout({ height, width, top, y, x });
-  };
+  }, []);
+
+  const handleNestedFormClose = useCallback(
+    (newItem?: any) => {
+      setIsNestedFormOpen(false);
+      if (newItem && onNestedFormSuccess) {
+        onNestedFormSuccess(newItem);
+        // Don't close the main dropdown immediately - let user see the new item
+      }
+    },
+    [onNestedFormSuccess],
+  );
+
+  // Clone nested form with onSuccess prop if it exists
+  const wrappedNestedForm = useMemo(() => {
+    if (!nestedForm || !onNestedFormSuccess) return nestedForm;
+
+    // Clone the React element and inject the onSuccess prop
+    if (isValidElement(nestedForm)) {
+      return cloneElement(nestedForm, {
+        onSuccess: handleNestedFormClose,
+      } as any);
+    }
+
+    return nestedForm;
+  }, [nestedForm, onNestedFormSuccess, handleNestedFormClose]);
 
   return (
     <>
-      <View onLayout={onButtonLayout} className="my-1 flex-1 -z-10 relative">
-        {/* <Text className="text-foreground ">{label}</Text> */}
+      <View onLayout={onButtonLayout} className="my-1 flex-1 relative">
         {isWritable ? (
           <Text>Not Yet implemented</Text>
         ) : (
-          <Pressable className="p-3 rounded border border-gray-300 bg-white items-center" onPress={toggleDropdown}>
-            <Text selectable={false} className="-z-10">
-              {selectedItem ? selectedItem.label : label ? label : "Select"}
-            </Text>
+          <Pressable
+            className="p-3 rounded border border-gray-300 bg-white items-center"
+            onPress={toggleDropdown}
+            style={Platform.OS === "web" ? { zIndex: isOpen ? 1000 : 1 } : undefined}
+          >
+            <Text selectable={false}>{selectedItem ? selectedItem.label : label ? label : "Select"}</Text>
           </Pressable>
         )}
       </View>
 
       {options && isOpen && (
-        <ListContainer isModal={isModal} buttonLayout={buttonLayout} isOpen={isOpen} setIsOpen={setIsOpen}>
+        <ListContainer
+          isModal={isModal}
+          buttonLayout={buttonLayout}
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+          nestedForm={wrappedNestedForm}
+          isNestedFormOpen={isNestedFormOpen}
+          setIsNestedFormOpen={setIsNestedFormOpen}
+          onNestedFormSuccess={handleNestedFormClose}
+        >
           <RenderList groupedOptions={groupedOptions} options={options} isModal={isModal} onItemPress={onItemPress} />
         </ListContainer>
       )}
@@ -96,17 +139,47 @@ function DropdownField({
   );
 }
 
-function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: ListContainerProps) {
+function ListContainer({
+  children,
+  buttonLayout,
+  isOpen,
+  setIsOpen,
+  isModal,
+  nestedForm,
+  isNestedFormOpen,
+  setIsNestedFormOpen,
+  onNestedFormSuccess,
+}: ListContainerProps) {
+  const handleNestedFormClose = useCallback(() => {
+    setIsNestedFormOpen(false);
+  }, [setIsNestedFormOpen]);
+
   return (
     <>
       {isModal ? (
         <MyModal isOpen={isOpen} setIsOpen={setIsOpen}>
-          {children}
+          <>
+            {nestedForm && (
+              <MyModal isOpen={isNestedFormOpen} setIsOpen={handleNestedFormClose}>
+                {nestedForm}
+              </MyModal>
+            )}
+            <>
+              {nestedForm && <Button label="Add New" onPress={() => setIsNestedFormOpen(true)} className="mb-2" />}
+              {children}
+            </>
+          </>
         </MyModal>
       ) : (
         <View
-          style={{ width: buttonLayout.width, top: buttonLayout.y + buttonLayout.height, left: buttonLayout.x }}
-          className="bg-card shadow-md rounded-md z-100 absolute"
+          style={{
+            width: buttonLayout.width,
+            top: buttonLayout.y + buttonLayout.height,
+            left: buttonLayout.x,
+            zIndex: 9999,
+            position: "absolute",
+          }}
+          className="bg-card shadow-md rounded-md"
         >
           {children}
         </View>
@@ -116,39 +189,44 @@ function ListContainer({ children, buttonLayout, isOpen, setIsOpen, isModal }: L
 }
 
 function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderListProps) {
+  const renderItem = useCallback(
+    ({ item }: { item: OptionItem | string | undefined }) => {
+      if (typeof item === "string") {
+        return (
+          <>
+            <Text selectable={false} className="p-2 bg-gray-100 text-dark text-sm text-center">
+              {item}
+            </Text>
+            <View
+              className={`flex-row flex-wrap border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
+            >
+              {options
+                .filter(option => option.group === item)
+                .map(option => (
+                  <RenderOption key={option.id} isModal={isModal} option={option} onItemPress={onItemPress} isGrouped />
+                ))}
+            </View>
+          </>
+        );
+      }
+
+      return item ? <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} /> : null;
+    },
+    [isModal, options, onItemPress],
+  );
+
+  const keyExtractor = useCallback(
+    (item: OptionItem | string | undefined, index: number) =>
+      index.toString() + (item ? (typeof item === "string" ? item : item.id) : ""),
+    [],
+  );
+
   return (
     <FlatList
       data={groupedOptions}
-      keyExtractor={(item, index) => index.toString() + (item ? (typeof item === "string" ? item : item.id) : "")}
-      renderItem={({ item }: { item: OptionItem | string | undefined }) => (
-        <>
-          {typeof item === "string" ? (
-            <>
-              <Text selectable={false} className="p-2 bg-gray-100 text-dark text-sm  text-center">
-                {item}
-              </Text>
-              <View
-                className={`flex-row flex-wrap border-b border-gray-300 w-full my-1 ${Platform.OS === "web" ? "items-center justify-center" : ""}`}
-              >
-                {options
-                  .filter(option => option.group === item)
-                  .map(option => (
-                    <RenderOption
-                      key={option.id}
-                      isModal={isModal}
-                      option={option}
-                      onItemPress={onItemPress}
-                      isGrouped
-                    />
-                  ))}
-              </View>
-            </>
-          ) : (
-            item && <RenderOption isModal={isModal} option={item} onItemPress={onItemPress} />
-          )}
-        </>
-      )}
-      className={`rounded-md ${isModal ? "max-h-[300px]" : "max-h-40 border border-gray-300 relative z-10"}`}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      className={`rounded-md ${isModal ? "max-h-[300px]" : "max-h-40 border border-gray-300"}`}
       contentContainerStyle={{
         backgroundColor: "white",
         padding: isModal ? 8 : 0,
@@ -160,38 +238,43 @@ function RenderList({ groupedOptions, isModal, options, onItemPress }: RenderLis
   );
 }
 
-const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionProps) => (
-  <Pressable
-    key={option.id}
-    className={`p-2 relative z-10 gap-2 items-center max-w-48   ${isModal ? "" : "flex-row items-center justify-center"} ${isGrouped ? "" : "border-b border-gray-300 m-auto"}`}
-    disabled={option.disabled}
-    onPress={() => onItemPress(option)}
-  >
-    {option.icon && (
-      <MyIcon
-        name={option.icon}
-        className={`text-base ${option.iconColorClass ? option.iconColorClass : "text-black"}`}
-      />
-    )}
-    <Text
-      selectable={false}
-      className={`text-base relative text-center z-10  ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
+const RenderOption = ({ isModal, option, onItemPress, isGrouped }: RenderOptionProps) => {
+  const handlePress = useCallback(() => {
+    if (!option.disabled) {
+      onItemPress(option);
+    }
+  }, [option, onItemPress]);
+
+  return (
+    <Pressable
+      key={option.id}
+      className={`p-2 gap-2 items-center max-w-48 ${isModal ? "" : "flex-row items-center justify-center"} ${isGrouped ? "" : "border-b border-gray-300 m-auto"} ${option.disabled ? "opacity-50" : ""}`}
+      disabled={option.disabled}
+      onPress={handlePress}
     >
-      {option.label}
-    </Text>
-    {!isModal && option.details && (
-      <Text className={`text-base relative z-10 ${option.disabled ? "text-muted" : "text-dark"}`}> - </Text>
-    )}
-    {option.details && (
+      {option.icon && (
+        <MyIcon
+          name={option.icon}
+          className={`text-base ${option.iconColorClass ? option.iconColorClass : "text-black"}`}
+        />
+      )}
       <Text
         selectable={false}
-        className={`text-base relative text-center z-10 ${option.disabled ? "text-muted" : "text-dark"}`}
+        className={`text-base text-center ${option.disabled ? "text-muted" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"}`}
       >
-        {option.details}
+        {option.label}
       </Text>
-    )}
-  </Pressable>
-);
+      {!isModal && option.details && (
+        <Text className={`text-base ${option.disabled ? "text-muted" : "text-dark"}`}> - </Text>
+      )}
+      {option.details && (
+        <Text selectable={false} className={`text-base text-center ${option.disabled ? "text-muted" : "text-dark"}`}>
+          {option.details}
+        </Text>
+      )}
+    </Pressable>
+  );
+};
 
 export const MyCategoriesDropdown = ({
   selectedValue,

@@ -117,9 +117,10 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
 
 interface TransactionCategoryFormProps {
   category: TransactionCategoryFormType;
+  onSuccess?: (category: TransactionCategory) => void;
 }
 
-function TransactionCategoryFormComponent({ category }: TransactionCategoryFormProps) {
+function TransactionCategoryFormComponent({ category, onSuccess }: TransactionCategoryFormProps) {
   // Services
   const transactionCategoryService = useTransactionCategoryService();
   const transactionGroupService = useTransactionGroupService();
@@ -155,9 +156,15 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
             original: category as TransactionCategory,
           },
           {
-            onSuccess: () => {
+            onSuccess: savedCategory => {
               console.log({ message: "Category Created Successfully", type: "success" });
-              router.replace("/Categories");
+              if (onSuccess) {
+                // If callback provided, call it (for nested form usage)
+                onSuccess(savedCategory);
+              } else {
+                // Otherwise, navigate away (for standalone usage)
+                router.replace("/Categories");
+              }
               resolve();
             },
             onError: error => {
@@ -168,7 +175,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
         );
       });
     },
-    [mutate, category],
+    [mutate, category, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
