@@ -28,18 +28,22 @@ const AuthContext = createContext<AuthContextType | undefined>({
 });
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { storageMode, isDatabaseReady } = useStorageMode();
+  const { storageMode, isLoading: isStorageLoading, setStorageMode } = useStorageMode();
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const user = session?.user ?? null;
   const isLoggedIn = !!user;
 
   useEffect(() => {
     const fetchSession = async () => {
-      if (storageMode === null || !isDatabaseReady) {
+      if (isStorageLoading) return;
+
+      if (storageMode === null) {
         setSession(null);
+        setIsLoading(false);
         return;
       }
+
       setIsLoading(true);
 
       switch (storageMode) {
@@ -50,7 +54,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           }
           break;
         case StorageMode.Demo:
-          console.log("Using demo storage mode");
+          const demoSession = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
+          if (demoSession) {
+            setSession(JSON.parse(demoSession));
+          }
           break;
         case StorageMode.Cloud:
           const {
@@ -67,7 +74,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     };
 
     fetchSession();
-  }, [storageMode, isDatabaseReady]);
+  }, [storageMode, isStorageLoading]);
 
   const handleSetSession = useCallback(async (newSession: Session | null, newStorageMode: StorageMode | null) => {
     if (newStorageMode === StorageMode.Local || newStorageMode === StorageMode.Demo) {
@@ -88,13 +95,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const logout = useCallback(async () => {
-    if (storageMode === StorageMode.Cloud) {
-      await supabase.auth.signOut();
-    } else {
-      await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    switch (storageMode) {
+      case StorageMode.Local:
+        await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+      case StorageMode.Demo:
+        await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+        break;
+      case StorageMode.Cloud:
+        await supabase.auth.signOut();
+        break;
     }
     setSession(null);
     queryClient.clear();
+    queryClient.resetQueries();
     router.replace("/");
   }, [storageMode]);
 
