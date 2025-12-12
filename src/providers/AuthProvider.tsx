@@ -10,6 +10,7 @@ import supabase from "./Supabase";
 interface AuthContextType {
   session: Session | null;
   user: Session["user"] | null;
+  tenantId?: string;
   setSession: (newSession: Session | null, currentStorageMode: StorageMode | null) => Promise<void>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -34,40 +35,65 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const user = session?.user ?? null;
   const isLoggedIn = !!user;
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      if (storageMode === null || !isDatabaseReady) {
-        setSession(null);
-        return;
-      }
-      setIsLoading(true);
+  const tenantId = session?.user?.app_metadata?.tenant_id;
 
+  const fetchSession = useCallback(async () => {
+    // Wait for StorageModeProvider to finish initialization
+    if (!isDatabaseReady) {
+      return;
+    }
+
+    // Only proceed if we have a valid storage mode
+    if (storageMode === null) {
+      setSession(null);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
       switch (storageMode) {
         case StorageMode.Local:
           const localSession = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
           if (localSession) {
             setSession(JSON.parse(localSession));
+          } else {
+            setSession(null);
           }
           break;
         case StorageMode.Demo:
-          console.log("Using demo storage mode");
+          const demoSession = await storage.getItem(STORAGE_KEYS.DEMO_SESSION);
+          if (demoSession) {
+            setSession(JSON.parse(demoSession));
+          } else {
+            setSession(null);
+          }
           break;
         case StorageMode.Cloud:
           const {
-            data: { session },
-            error,
+            data: { session: cloudSession },
           } = await supabase.auth.getSession();
-          if (session) setSession(session);
+          setSession(cloudSession ?? null);
           break;
         default:
           console.warn("Unknown storage mode:", storageMode);
+          setSession(null);
           break;
       }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setSession(null);
+    } finally {
       setIsLoading(false);
-    };
-
-    fetchSession();
+    }
   }, [storageMode, isDatabaseReady]);
+
+  // Fetch session when storage mode and database are ready
+  useEffect(() => {
+    if (isDatabaseReady) {
+      fetchSession();
+    }
+  }, [isDatabaseReady, storageMode, fetchSession]);
 
   const handleSetSession = useCallback(async (newSession: Session | null, newStorageMode: StorageMode | null) => {
     if (newStorageMode === StorageMode.Local || newStorageMode === StorageMode.Demo) {
@@ -98,9 +124,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     router.replace("/");
   }, [storageMode]);
 
+  console.log({ session, user, tenantId, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout });
+
   return (
     <AuthContext.Provider
-      value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
+      value={{ session, user, tenantId, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
     >
       {children}
     </AuthContext.Provider>

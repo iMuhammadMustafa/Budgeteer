@@ -35,43 +35,79 @@ export default function StorageModeProvider({ children }: { children: React.Reac
   const [storageMode, setStorageMode] = useState<StorageMode | null>(null);
   const dbContext = useMemo(() => createRepositoryFactory(storageMode), [storageMode]);
 
+  // Initialize storage mode and database on mount
   useEffect(() => {
-    const fetchStorageMode = async () => {
+    const initializeStorageMode = async () => {
       setIsLoading(true);
-      const mode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
-      if (mode) {
-        setStorageMode(mode as StorageMode);
+      try {
+        const mode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
+        console.log("Fetched storage mode from storage:", mode);
+
+        if (mode) {
+          const parsedMode = mode as StorageMode;
+          setStorageMode(parsedMode);
+
+          // Initialize database based on the loaded mode
+          console.log("Initializing database for storage mode:", parsedMode);
+          if (parsedMode === StorageMode.Local) {
+            await initializeWatermelonDB();
+            await seedWatermelonDB();
+          } else if (parsedMode === StorageMode.Demo) {
+            await initializeWatermelonDB();
+            await seedWatermelonDemoDB();
+          }
+        } else {
+          // No saved mode yet - just mark as ready to let AuthProvider handle it
+          setStorageMode(null);
+        }
+      } catch (error) {
+        console.error("Error initializing storage mode:", error);
+      } finally {
+        setIsLoading(false);
+        setIsDatabaseReady(true);
       }
-      setIsLoading(false);
-      setIsDatabaseReady(true);
     };
 
-    fetchStorageMode();
+    initializeStorageMode();
   }, []);
 
   const handleSetStorageMode = useCallback(async (mode: StorageMode | null) => {
-    if (!mode) {
-      setStorageMode(null);
-      await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
-      return;
-    }
-
     setIsLoading(true);
     setIsDatabaseReady(false);
-    await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
 
-    if (mode === StorageMode.Local) {
-      await initializeWatermelonDB();
+    try {
+      if (!mode) {
+        // Clearing storage mode
+        setStorageMode(null);
+        await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+        setIsDatabaseReady(true);
+        return;
+      }
 
-      await seedWatermelonDB();
+      // Save mode to storage first
+      await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
+
+      // Initialize database based on mode
+      if (mode === StorageMode.Local) {
+        await initializeWatermelonDB();
+        await seedWatermelonDB();
+      } else if (mode === StorageMode.Demo) {
+        await initializeWatermelonDB();
+        await seedWatermelonDemoDB();
+      }
+      // Cloud mode doesn't need local database initialization
+
+      // Update state after everything is initialized
+      setStorageMode(mode);
+    } catch (error) {
+      console.error("Error setting storage mode:", error);
+      // Revert on error
+      setStorageMode(null);
+      await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+    } finally {
+      setIsLoading(false);
+      setIsDatabaseReady(true);
     }
-    if (mode === StorageMode.Demo) {
-      await initializeWatermelonDB();
-      await seedWatermelonDemoDB();
-    }
-    setStorageMode(mode);
-    setIsLoading(false);
-    setIsDatabaseReady(true);
   }, []);
 
   return (

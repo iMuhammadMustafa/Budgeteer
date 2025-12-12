@@ -12,6 +12,8 @@ export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
   const { isLoading, session } = useAuth();
 
+  console.log("Rendering DrawerLayout, isLoading:", isLoading, "session:", session);
+
   if (isLoading || !session) return <ActivityIndicator className="flex-1" />;
   return (
     <Drawer

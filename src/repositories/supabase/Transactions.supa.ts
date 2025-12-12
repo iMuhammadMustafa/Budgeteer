@@ -153,6 +153,10 @@ export class TransactionSupaRepository
         .eq("tenantid", tenantId);
     }
 
+    if (!searchFilters) {
+      return query;
+    }
+
     if (searchFilters.startDate) {
       query = query.gte("date", searchFilters.startDate);
     }
