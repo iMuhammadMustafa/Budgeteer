@@ -60,7 +60,6 @@ export class TransactionWatermelonRepository
     const conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
     // Apply search filters
-    console.log("Filters in findAll:", filters);
     if (filters.startDate) {
       conditions.push(Q.where("date", Q.gte(filters.startDate)));
     }
