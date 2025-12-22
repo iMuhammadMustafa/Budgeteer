@@ -1,9 +1,10 @@
 import DashboardCharts from "@/src/components/Charts/DashboardCharts";
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { router } from "expo-router";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -24,45 +25,50 @@ export default function DetailView() {
 
   return (
     <SafeAreaView className="w-full h-full flex-1 bg-background">
-      <View className="p-4 bg-card/20 mb-4 rounded-md mx-4 mt-4">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold text-foreground flex-1">{params.label}</Text>
-          <View className="flex-row gap-2">
-            <Pressable className="py-2 px-4 bg-primary/80 rounded-md" onPress={handleViewAllNavigation}>
-              <Text className="text-white font-medium">View All</Text>
-            </Pressable>
-            <Pressable className="py-2 px-4 bg-primary rounded-md" onPress={() => router.replace("/Dashboard")}>
-              <Text className="text-white font-medium">Back</Text>
-            </Pressable>
+      <ScrollView className="flex-1">
+        <View className="mx-4 mt-2">
+          <View className="flex-row justify-between items-center mb-2">
+            <Button
+              variant="ghost"
+              leftIcon="ArrowLeft"
+              className="py-0 px-2"
+              textClasses="font-bold"
+              iconSize={22}
+              label={params.label}
+              size="lg"
+              onPress={() => router.replace("/Dashboard")}
+            />
+            <View className="flex-row gap-2">
+              <Button variant="primary" onPress={handleViewAllNavigation} label="View All" />
+            </View>
           </View>
+
+          <DashboardCharts
+            weeklyTransactionTypesData={weeklyTransactionTypesData}
+            dailyTransactionTypesData={dailyTransactionTypesData}
+            monthlyCategories={monthlyCategories}
+            monthlyGroups={monthlyGroups}
+            handleDayPress={handleDayPress}
+            handlePiePress={handlePiePress}
+            params={params}
+          />
         </View>
 
-        <DashboardCharts
-          weeklyTransactionTypesData={weeklyTransactionTypesData}
-          dailyTransactionTypesData={dailyTransactionTypesData}
-          monthlyCategories={monthlyCategories}
-          monthlyGroups={monthlyGroups}
-          handleDayPress={handleDayPress}
-          handlePiePress={handlePiePress}
-          params={params}
-        />
-      </View>
-
-      <View className="flex-1 px-4">
-        <Text className="text-lg font-semibold text-foreground mb-2">Transactions</Text>
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="small" color="#0000ff" />
-            <Text className="mt-2 text-muted">Loading transactions...</Text>
-          </View>
-        ) : !filteredTransactions || filteredTransactions.length === 0 ? (
-          <View className="flex-1 justify-center items-center p-4">
-            <Text className="text-muted">No transactions found</Text>
-          </View>
-        ) : (
-          <TransactionsListComponent transactions={filteredTransactions} onPress={handleTransactionPress} />
-        )}
-      </View>
+        <View className="flex-1 px-4">
+          {isLoading ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="small" color="#0000ff" />
+              <Text className="mt-2 text-muted">Loading transactions...</Text>
+            </View>
+          ) : !filteredTransactions || filteredTransactions.length === 0 ? (
+            <View className="flex-1 justify-center items-center p-4">
+              <Text className="text-muted">No transactions found</Text>
+            </View>
+          ) : (
+            <TransactionsListComponent transactions={filteredTransactions} onPress={handleTransactionPress} />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
