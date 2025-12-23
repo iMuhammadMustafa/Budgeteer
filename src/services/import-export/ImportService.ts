@@ -108,6 +108,9 @@ export class ImportService {
       let totalRecords = 0;
       let processedRecords = 0;
 
+      // Track imported/skipped IDs across tables for dependency resolution
+      const importedIdsByTable = new Map<TableNames, Set<string>>();
+
       // Import each file in order
       for (let i = 0; i < sortedFiles.length; i++) {
         const { file, tableName } = sortedFiles[i];
@@ -115,20 +118,34 @@ export class ImportService {
         try {
           // Import or validate the table
           const result = importOptions.validateOnly
-            ? await this.adapter.validateImport(tableName, file.content, tenantId)
-            : await this.adapter.importTable(tableName, file.content, tenantId, importOptions, progress => {
-                // Calculate overall progress
-                const overallProgress = processedRecords + progress.currentModelProgress;
+            ? await this.adapter.validateImport(tableName, file.content, tenantId, importedIdsByTable)
+            : await this.adapter.importTable(
+                tableName,
+                file.content,
+                tenantId,
+                importOptions,
+                progress => {
+                  // Calculate overall progress
+                  const overallProgress = processedRecords + progress.currentModelProgress;
 
-                // Call user's progress callback
-                if (onProgress) {
-                  onProgress({
-                    ...progress,
-                    overallProgress,
-                    overallTotal: totalRecords,
-                  });
-                }
-              });
+                  // Call user's progress callback
+                  if (onProgress) {
+                    onProgress({
+                      ...progress,
+                      overallProgress,
+                      overallTotal: totalRecords,
+                    });
+                  }
+                },
+                importedIdsByTable,
+              );
+
+          // Store skipped record IDs for dependency resolution
+          if (result.skippedRecordIds && result.skippedRecordIds.length > 0) {
+            const idsSet = importedIdsByTable.get(tableName) || new Set<string>();
+            result.skippedRecordIds.forEach(id => idsSet.add(id));
+            importedIdsByTable.set(tableName, idsSet);
+          }
 
           // Aggregate results
           allErrors.push(...result.errors);

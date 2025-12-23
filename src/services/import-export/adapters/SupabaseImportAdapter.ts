@@ -13,12 +13,12 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { parseCSV, parseValueFromCSV } from "@/src/utils/csv.utils";
 import {
   buildDependencyMap,
+  filterRecordFields,
   isDuplicate,
   sanitizeRecord,
   validateBatchDependencies,
   validateHeaders,
   validateRecords,
-  filterRecordFields,
 } from "@/src/utils/import-validation.utils";
 import { IImportAdapter } from "./IImportAdapter";
 
@@ -103,7 +103,12 @@ export class SupabaseImportAdapter implements IImportAdapter {
   /**
    * Validate import without actually importing
    */
-  async validateImport(tableName: TableNames, csvContent: string, tenantId: string): Promise<ImportResult> {
+  async validateImport(
+    tableName: TableNames,
+    csvContent: string,
+    tenantId: string,
+    additionalDependencyIds?: Map<TableNames, Set<string>>,
+  ): Promise<ImportResult> {
     const errors: ImportError[] = [];
     const warnings: string[] = [];
     const config = getModelConfig(tableName);
@@ -156,6 +161,13 @@ export class SupabaseImportAdapter implements IImportAdapter {
 
       // Get dependency data
       const dependencyData = await this.getDependencyData(tableName, tenantId);
+      if (additionalDependencyIds) {
+        additionalDependencyIds.forEach((ids, t) => {
+          if (!dependencyData.has(t)) dependencyData.set(t, new Set());
+          const set = dependencyData.get(t)!;
+          ids.forEach(id => set.add(id));
+        });
+      }
 
       // Validate dependencies
       const dependencyErrors = validateBatchDependencies(records, tableName, dependencyData);
@@ -215,6 +227,7 @@ export class SupabaseImportAdapter implements IImportAdapter {
     tenantId: string,
     options: ImportOptions,
     onProgress?: (progress: ImportProgress) => void,
+    additionalDependencyIds?: Map<TableNames, Set<string>>,
   ): Promise<ImportResult> {
     const errors: ImportError[] = [];
     const warnings: string[] = [];
@@ -294,6 +307,16 @@ export class SupabaseImportAdapter implements IImportAdapter {
 
       // Get dependency data
       const dependencyData = await this.getDependencyData(tableName, tenantId);
+      if (additionalDependencyIds) {
+        additionalDependencyIds.forEach((ids, t) => {
+          if (!dependencyData.has(t)) dependencyData.set(t, new Set());
+          const set = dependencyData.get(t)!;
+          ids.forEach(id => set.add(id));
+        });
+      }
+
+      // Track all processed record IDs (both imported and skipped) to add to dependency data for subsequent imports
+      const processedRecordIds = new Set<string>();
 
       // Notify importing phase
       if (onProgress) {
@@ -329,9 +352,22 @@ export class SupabaseImportAdapter implements IImportAdapter {
             // Filter record fields based on configuration
             const filtered = filterRecordFields(sanitized, tableName, "import");
 
-            // Check for duplicates
+            // Check for duplicates by ID (primary check)
+            const recordId = filtered.id || filtered.ID;
+            if (
+              recordId &&
+              existingRecords.some((existing: any) => existing.id?.toLowerCase() === recordId.toLowerCase())
+            ) {
+              skippedCount++;
+              if (recordId) processedRecordIds.add(recordId.toLowerCase());
+              warnings.push(`Row ${rowNumber}: Duplicate record with id '${recordId}' skipped`);
+              continue;
+            }
+
+            // Secondary check using configured unique fields
             if (options.skipDuplicates && isDuplicate(filtered, existingRecords, config.uniqueFields)) {
               skippedCount++;
+              if (recordId) processedRecordIds.add(recordId.toLowerCase());
               warnings.push(`Row ${rowNumber}: Duplicate record skipped`);
               continue;
             }
@@ -358,21 +394,34 @@ export class SupabaseImportAdapter implements IImportAdapter {
             // Convert CSV values to proper types
             const typedRecord = this.convertCSVRecord(filtered, config.dateFields);
 
+            // Force the tenantid to match the import tenant (override any tenantid in the CSV)
+            typedRecord.tenantid = tenantId;
+
             // Import record
             await repository.create(typedRecord as any, tenantId);
             importedCount++;
+            // Track imported ID for dependency resolution
+            if (recordId) processedRecordIds.add(recordId.toLowerCase());
           } catch (error) {
-            failedCount++;
-            errors.push({
-              modelName: config.displayName,
-              rowNumber,
-              recordId: record.id || undefined,
-              errorType: ImportErrorType.DATABASE_ERROR,
-              message: `Failed to import: ${error instanceof Error ? error.message : String(error)}`,
-            });
+            const errorMessage = error instanceof Error ? error.message : String(error);
 
-            if (!options.continueOnError) {
-              throw error;
+            // Check if this is a duplicate key error from Supabase
+            if (errorMessage.includes("duplicate key") || errorMessage.includes("unique constraint")) {
+              skippedCount++;
+              warnings.push(`Row ${rowNumber}: Duplicate key skipped - ${errorMessage}`);
+            } else {
+              failedCount++;
+              errors.push({
+                modelName: config.displayName,
+                rowNumber,
+                recordId: record.id || undefined,
+                errorType: ImportErrorType.DATABASE_ERROR,
+                message: `Failed to import: ${errorMessage}`,
+              });
+
+              if (!options.continueOnError) {
+                throw error;
+              }
             }
           }
 
@@ -423,6 +472,7 @@ export class SupabaseImportAdapter implements IImportAdapter {
         summary,
         errors,
         warnings,
+        skippedRecordIds: Array.from(processedRecordIds),
       };
     } catch (error) {
       if (onProgress) {

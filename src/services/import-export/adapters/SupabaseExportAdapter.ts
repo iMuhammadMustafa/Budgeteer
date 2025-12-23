@@ -1,4 +1,5 @@
 import { getExportFileName, getModelConfig } from "@/src/config/ImportExport.config";
+import supabase from "@/src/providers/Supabase";
 import { IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
 import { ExportedFile, ExportPhase, ExportProgress } from "@/src/types/ImportExport.types";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
@@ -35,9 +36,14 @@ export class SupabaseExportAdapter implements IExportAdapter {
    */
   async getRecordCount(tableName: TableNames, tenantId: string): Promise<number> {
     try {
-      const repository = this.getRepositoryForTable(tableName);
-      const records = await repository.findAll(tenantId);
-      return records.length;
+      const { count, error } = await supabase
+        .from(tableName)
+        .select("*", { count: "exact", head: true })
+        .eq("tenantid", tenantId)
+        .eq("isdeleted", false);
+
+      if (error) throw error;
+      return count || 0;
     } catch (error) {
       console.error(`Failed to get record count for ${tableName}:`, error);
       return 0;
@@ -73,9 +79,6 @@ export class SupabaseExportAdapter implements IExportAdapter {
     }
 
     try {
-      // Get repository
-      const repository = this.getRepositoryForTable(tableName);
-
       // Notify start of fetching
       if (onProgress) {
         onProgress({
@@ -88,15 +91,23 @@ export class SupabaseExportAdapter implements IExportAdapter {
         });
       }
 
-      // Fetch all records
-      const records = await repository.findAll(tenantId);
+      // Fetch all records directly from the table (not from views)
+      const { data: records, error } = await supabase
+        .from(tableName)
+        .select("*")
+        .eq("tenantid", tenantId)
+        .eq("isdeleted", false);
+
+      if (error) {
+        throw error;
+      }
 
       // Notify fetching complete, start generating
       if (onProgress) {
         onProgress({
           currentModel: config.displayName,
-          currentModelProgress: records.length,
-          currentModelTotal: records.length,
+          currentModelProgress: records?.length || 0,
+          currentModelTotal: records?.length || 0,
           overallProgress: 0,
           overallTotal: 0,
           phase: ExportPhase.GENERATING,
@@ -104,7 +115,9 @@ export class SupabaseExportAdapter implements IExportAdapter {
       }
 
       // Convert records to CSV-safe format
-      const csvRecords = records.map((record: any) => this.convertRecordToCSV(record, config.dateFields, tableName));
+      const csvRecords = (records || []).map((record: any) =>
+        this.convertRecordToCSV(record, config.dateFields, tableName),
+      );
 
       // Generate CSV content
       const csvContent = generateCSV(csvRecords);
@@ -114,15 +127,15 @@ export class SupabaseExportAdapter implements IExportAdapter {
         modelName: config.displayName,
         fileName: getExportFileName(tableName),
         content: csvContent,
-        recordCount: records.length,
+        recordCount: records?.length || 0,
       };
 
       // Notify complete
       if (onProgress) {
         onProgress({
           currentModel: config.displayName,
-          currentModelProgress: records.length,
-          currentModelTotal: records.length,
+          currentModelProgress: records?.length || 0,
+          currentModelTotal: records?.length || 0,
           overallProgress: 0,
           overallTotal: 0,
           phase: ExportPhase.COMPLETE,

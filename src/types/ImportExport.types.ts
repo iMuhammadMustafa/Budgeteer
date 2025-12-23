@@ -21,6 +21,7 @@ export interface ImportResult {
   summary: ImportSummary;
   errors: ImportError[];
   warnings: string[];
+  skippedRecordIds?: string[];
 }
 
 export interface ImportSummary {

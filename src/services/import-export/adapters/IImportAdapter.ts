@@ -22,6 +22,7 @@ export interface IImportAdapter {
     tenantId: string,
     options: ImportOptions,
     onProgress?: (progress: ImportProgress) => void,
+    additionalDependencyIds?: Map<TableNames, Set<string>>,
   ): Promise<ImportResult>;
 
   /**
@@ -32,7 +33,12 @@ export interface IImportAdapter {
    * @param tenantId - The tenant ID for the data
    * @returns Import result with validation errors (no data is imported)
    */
-  validateImport(tableName: TableNames, csvContent: string, tenantId: string): Promise<ImportResult>;
+  validateImport(
+    tableName: TableNames,
+    csvContent: string,
+    tenantId: string,
+    additionalDependencyIds?: Map<TableNames, Set<string>>,
+  ): Promise<ImportResult>;
 
   /**
    * Check if records with given IDs already exist in the database

@@ -151,12 +151,29 @@ export function validateRecordDependencies(
     return errors;
   }
 
-  // Map of foreign key fields to their parent table
-  const foreignKeyMap: Record<string, TableNames> = {
-    categoryid: TableNames.AccountCategories,
-    accountid: TableNames.Accounts,
-    groupid: TableNames.TransactionGroups,
-  };
+  // Map of foreign key fields to their parent table (context-specific)
+  const foreignKeyMap: Record<string, TableNames> = {};
+
+  // Build the foreign key map based on the table's dependencies
+  config.dependencies.forEach(depTable => {
+    switch (depTable) {
+      case TableNames.AccountCategories:
+        foreignKeyMap.categoryid = TableNames.AccountCategories;
+        break;
+      case TableNames.Accounts:
+        // Handle multiple possible field names for Accounts
+        foreignKeyMap.accountid = TableNames.Accounts;
+        foreignKeyMap.sourceaccountid = TableNames.Accounts;
+        foreignKeyMap.transferaccountid = TableNames.Accounts;
+        break;
+      case TableNames.TransactionCategories:
+        foreignKeyMap.categoryid = TableNames.TransactionCategories;
+        break;
+      case TableNames.TransactionGroups:
+        foreignKeyMap.groupid = TableNames.TransactionGroups;
+        break;
+    }
+  });
 
   // Check each dependency
   for (const [field, parentTable] of Object.entries(foreignKeyMap)) {
@@ -363,6 +380,7 @@ export function filterRecordFields(
 
   const filtered: CSVRecord = {};
   const fieldsToIgnore = new Set<string>();
+  const requiredFieldsSet = new Set(config.requiredFields.map(f => f.toLowerCase()));
 
   // Add ignored fields (both modes)
   if (config.ignoredFields) {
@@ -379,6 +397,12 @@ export function filterRecordFields(
   // Process each field in the record
   Object.entries(record).forEach(([key, value]) => {
     const normalizedKey = key.toLowerCase().trim();
+
+    // Always include required fields, regardless of filters
+    if (requiredFieldsSet.has(normalizedKey)) {
+      filtered[normalizedKey] = value;
+      return;
+    }
 
     // Skip if field is in ignore list
     if (fieldsToIgnore.has(normalizedKey)) {

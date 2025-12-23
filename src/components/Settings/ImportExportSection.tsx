@@ -22,7 +22,7 @@ import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-nativ
  */
 export default function ImportExportSection() {
   const { session } = useAuth();
-  const { storageMode, dbContext, isDatabaseReady } = useStorageMode();
+  const { storageMode, dbContext, isLoading } = useStorageMode();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
@@ -75,7 +75,7 @@ export default function ImportExportSection() {
 
   const handleExport = useCallback(
     async (format: "json" | "csv") => {
-      if (!storageMode || !dbContext || !isDatabaseReady || !tenantid) {
+      if (!storageMode || !dbContext || isLoading || !tenantid) {
         showAlert("Error", "Database not ready. Please wait and try again.");
         return;
       }
@@ -161,11 +161,11 @@ export default function ImportExportSection() {
         setExportProgress(null);
       }
     },
-    [storageMode, dbContext, isDatabaseReady, tenantid, selectedModels, availableModels, showAlert, saveFile],
+    [storageMode, dbContext, isLoading, tenantid, selectedModels, availableModels, showAlert, saveFile],
   );
 
   const handleImport = useCallback(async () => {
-    if (!storageMode || !dbContext || !isDatabaseReady || !tenantid) {
+    if (!storageMode || !dbContext || isLoading || !tenantid) {
       showAlert("Error", "Database not ready. Please wait and try again.");
       return;
     }
@@ -269,7 +269,7 @@ export default function ImportExportSection() {
       setIsImporting(false);
       setImportProgress(null);
     }
-  }, [storageMode, dbContext, isDatabaseReady, tenantid, selectedModels, availableModels, showAlert, showConfirm]);
+  }, [storageMode, dbContext, tenantid, isLoading, selectedModels, availableModels, showAlert, showConfirm]);
 
   const renderProgress = (progress: ExportProgress | ImportProgress, type: "export" | "import") => {
     if (!progress) return null;
@@ -329,7 +329,7 @@ export default function ImportExportSection() {
     }
   };
 
-  if (!isDatabaseReady) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center p-4">
         <ActivityIndicator size="large" />
