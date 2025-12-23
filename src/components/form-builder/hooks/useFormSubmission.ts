@@ -120,7 +120,7 @@ export function useFormSubmission<T>(
         setIsSubmitting(false);
       }
     },
-    [onError, showErrorMessage, maxRetries],
+    [onError, showErrorMessage, maxRetries, submitInternal],
   );
 
   // Internal submission function with error handling

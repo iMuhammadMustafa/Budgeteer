@@ -19,8 +19,9 @@ export default function MyModal({
   const idRef = useRef<number>(nextModalId++);
 
   useEffect(() => {
+    const currentId = idRef.current;
     const handleEscKey = (e: KeyboardEvent) => {
-      if (modalStack[modalStack.length - 1] !== idRef.current) return;
+      if (modalStack[modalStack.length - 1] !== currentId) return;
       if (e.key === "Escape") {
         e.stopImmediatePropagation?.();
         e.stopPropagation();
@@ -33,7 +34,7 @@ export default function MyModal({
     }
 
     const handleBackButton = () => {
-      if (modalStack[modalStack.length - 1] !== idRef.current) return false;
+      if (modalStack[modalStack.length - 1] !== currentId) return false;
       if (isOpen) {
         setIsOpen(false);
         return true;
@@ -45,7 +46,7 @@ export default function MyModal({
       Platform.OS === "android" ? BackHandler.addEventListener("hardwareBackPress", handleBackButton) : undefined;
 
     return () => {
-      const idx = modalStack.indexOf(idRef.current);
+      const idx = modalStack.indexOf(currentId);
       if (idx !== -1) modalStack.splice(idx, 1);
       if (backHandler) {
         backHandler.remove();
@@ -61,7 +62,6 @@ export default function MyModal({
     <Modal
       visible={isOpen}
       onDismiss={() => {
-        console.log("Fkkk");
         if (onClose) onClose();
         setIsOpen(false);
       }}

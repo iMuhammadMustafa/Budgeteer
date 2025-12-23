@@ -1,5 +1,5 @@
 export interface DropDownProps {
-  options: Array<OptionItem>;
+  options: OptionItem[];
   onSelect: (item: OptionItem | null) => void;
   selectedValue?: string | null;
   label: string;

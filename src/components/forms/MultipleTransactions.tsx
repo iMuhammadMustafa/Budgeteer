@@ -116,14 +116,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
 
-  if (isCategoriesLoading || isAccountsLoading) {
-    return (
-      <SafeAreaView className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text className="mt-2 text-foreground">Loading...</Text>
-      </SafeAreaView>
-    );
-  }
+  const isDataLoading = isCategoriesLoading || isAccountsLoading;
 
   // Initialize mode and maxAmount when transaction changes
   useEffect(() => {
@@ -276,178 +269,185 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1">
-        <FormContainer
-          onSubmit={onSubmit}
-          isValid={isValid && isBalanced && !isSubmitting}
-          isLoading={isSubmitting}
-          submitLabel="Save Multiple Transactions"
-          showReset={isDirty}
-          onReset={handleReset}
-        >
-          {/* Basic Information Section */}
-          <FormSection
-            title="Transaction Group Details"
-            description="Enter the common information for all transactions"
+      {isDataLoading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text className="mt-2 text-foreground">Loading...</Text>
+        </View>
+      ) : (
+        <ScrollView className="flex-1">
+          <FormContainer
+            onSubmit={onSubmit}
+            isValid={isValid && isBalanced && !isSubmitting}
+            isLoading={isSubmitting}
+            submitLabel="Save Multiple Transactions"
+            showReset={isDirty}
+            onReset={handleReset}
           >
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-              <FormField
-                config={{
-                  name: "payee",
-                  label: "Payee",
-                  type: "text",
-                  required: true,
-                  placeholder: "Enter payee name",
-                }}
-                value={formState.data.payee}
-                error={formState.errors.payee}
-                touched={formState.touched.payee}
-                onChange={value => updateField("payee", value)}
-                onBlur={() => setFieldTouched("payee")}
-                className="flex-1"
-              />
+            {/* Basic Information Section */}
+            <FormSection
+              title="Transaction Group Details"
+              description="Enter the common information for all transactions"
+            >
+              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+                <FormField
+                  config={{
+                    name: "payee",
+                    label: "Payee",
+                    type: "text",
+                    required: true,
+                    placeholder: "Enter payee name",
+                  }}
+                  value={formState.data.payee}
+                  error={formState.errors.payee}
+                  touched={formState.touched.payee}
+                  onChange={value => updateField("payee", value)}
+                  onBlur={() => setFieldTouched("payee")}
+                  className="flex-1"
+                />
 
-              <FormField
-                config={{
-                  name: "description",
-                  label: "Description",
-                  type: "text",
-                  placeholder: "Enter description",
-                }}
-                value={formState.data.description}
-                error={formState.errors.description}
-                touched={formState.touched.description}
-                onChange={value => updateField("description", value)}
-                onBlur={() => setFieldTouched("description")}
-                className="flex-1"
-              />
-            </View>
-
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-              {/* Total Amount with Mode Toggle */}
-              <View className="flex-1 flex-row items-center">
-                <Pressable
-                  className={`${
-                    mode === "plus" ? "bg-success-400" : "bg-danger-400"
-                  } border border-muted rounded-lg me-2 p-1.5`}
-                  onPress={handleModeToggle}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Toggle amount sign, currently ${mode}`}
-                >
-                  {mode === "minus" ? (
-                    <MyIcon name="Minus" size={24} className="text-gray-100" />
-                  ) : (
-                    <MyIcon name="Plus" size={24} className="text-gray-100" />
-                  )}
-                </Pressable>
-
-                <View className="flex-1">
-                  <FormField
-                    config={{
-                      name: "totalAmount",
-                      label: "Total Amount",
-                      type: "number",
-                      required: true,
-                      placeholder: "0.00",
-                    }}
-                    value={maxAmount.toString()}
-                    onChange={handleMaxAmountChange}
-                    className="flex-1"
-                  />
-                </View>
+                <FormField
+                  config={{
+                    name: "description",
+                    label: "Description",
+                    type: "text",
+                    placeholder: "Enter description",
+                  }}
+                  value={formState.data.description}
+                  error={formState.errors.description}
+                  touched={formState.touched.description}
+                  onChange={value => updateField("description", value)}
+                  onBlur={() => setFieldTouched("description")}
+                  className="flex-1"
+                />
               </View>
 
-              <FormField
-                config={{
-                  name: "date",
-                  label: "Date",
-                  type: "date",
-                  required: true,
-                }}
-                value={formState.data.date}
-                error={formState.errors.date}
-                touched={formState.touched.date}
-                onChange={value => {
-                  if (value) {
-                    const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
-                    updateField("date", formattedDate);
-                  }
-                }}
-                onBlur={() => setFieldTouched("date")}
-                className="flex-1"
+              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+                {/* Total Amount with Mode Toggle */}
+                <View className="flex-1 flex-row items-center">
+                  <Pressable
+                    className={`${
+                      mode === "plus" ? "bg-success-400" : "bg-danger-400"
+                    } border border-muted rounded-lg me-2 p-1.5`}
+                    onPress={handleModeToggle}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Toggle amount sign, currently ${mode}`}
+                  >
+                    {mode === "minus" ? (
+                      <MyIcon name="Minus" size={24} className="text-gray-100" />
+                    ) : (
+                      <MyIcon name="Plus" size={24} className="text-gray-100" />
+                    )}
+                  </Pressable>
+
+                  <View className="flex-1">
+                    <FormField
+                      config={{
+                        name: "totalAmount",
+                        label: "Total Amount",
+                        type: "number",
+                        required: true,
+                        placeholder: "0.00",
+                      }}
+                      value={maxAmount.toString()}
+                      onChange={handleMaxAmountChange}
+                      className="flex-1"
+                    />
+                  </View>
+                </View>
+
+                <FormField
+                  config={{
+                    name: "date",
+                    label: "Date",
+                    type: "date",
+                    required: true,
+                  }}
+                  value={formState.data.date}
+                  error={formState.errors.date}
+                  touched={formState.touched.date}
+                  onChange={value => {
+                    if (value) {
+                      const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
+                      updateField("date", formattedDate);
+                    }
+                  }}
+                  onBlur={() => setFieldTouched("date")}
+                  className="flex-1"
+                />
+              </View>
+
+              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+                <FormField
+                  config={{
+                    name: "type",
+                    label: "Type",
+                    type: "select",
+                    required: true,
+                    options: transactionTypeOptions,
+                  }}
+                  value={formState.data.type}
+                  error={formState.errors.type}
+                  touched={formState.touched.type}
+                  onChange={value => updateField("type", value)}
+                  onBlur={() => setFieldTouched("type")}
+                  className="flex-1"
+                />
+
+                <FormField
+                  config={{
+                    name: "accountid",
+                    label: "Account",
+                    type: "select",
+                    required: true,
+                    options: accountOptions,
+                  }}
+                  value={formState.data.accountid}
+                  error={formState.errors.accountid}
+                  touched={formState.touched.accountid}
+                  onChange={value => updateField("accountid", value)}
+                  onBlur={() => setFieldTouched("accountid")}
+                  className="flex-1"
+                />
+              </View>
+            </FormSection>
+
+            {/* Transactions List Section */}
+            <FormSection
+              title="Individual Transactions"
+              description="Break down the total amount into individual transactions"
+            >
+              <TransactionsCreationList
+                formState={formState}
+                updateField={updateField}
+                setFieldTouched={setFieldTouched}
+                maxAmount={maxAmount}
+                currentAmount={currentAmount}
+                categoryOptions={categoryOptions}
+                mode={mode}
               />
-            </View>
+            </FormSection>
 
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-              <FormField
-                config={{
-                  name: "type",
-                  label: "Type",
-                  type: "select",
-                  required: true,
-                  options: transactionTypeOptions,
-                }}
-                value={formState.data.type}
-                error={formState.errors.type}
-                touched={formState.touched.type}
-                onChange={value => updateField("type", value)}
-                onBlur={() => setFieldTouched("type")}
-                className="flex-1"
+            {/* Summary Section */}
+            <FormSection title="Summary">
+              <TransactionsSummary
+                maxAmount={maxAmount}
+                currentAmount={currentAmount}
+                mode={mode}
+                isBalanced={isBalanced}
               />
+            </FormSection>
 
-              <FormField
-                config={{
-                  name: "accountid",
-                  label: "Account",
-                  type: "select",
-                  required: true,
-                  options: accountOptions,
-                }}
-                value={formState.data.accountid}
-                error={formState.errors.accountid}
-                touched={formState.touched.accountid}
-                onChange={value => updateField("accountid", value)}
-                onBlur={() => setFieldTouched("accountid")}
-                className="flex-1"
-              />
-            </View>
-          </FormSection>
-
-          {/* Transactions List Section */}
-          <FormSection
-            title="Individual Transactions"
-            description="Break down the total amount into individual transactions"
-          >
-            <TransactionsCreationList
-              formState={formState}
-              updateField={updateField}
-              setFieldTouched={setFieldTouched}
-              maxAmount={maxAmount}
-              currentAmount={currentAmount}
-              categoryOptions={categoryOptions}
-              mode={mode}
-            />
-          </FormSection>
-
-          {/* Summary Section */}
-          <FormSection title="Summary">
-            <TransactionsSummary
-              maxAmount={maxAmount}
-              currentAmount={currentAmount}
-              mode={mode}
-              isBalanced={isBalanced}
-            />
-          </FormSection>
-
-          {/* Display submission error if any */}
-          {error && (
-            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">Error: {error.message}</Text>
-            </View>
-          )}
-        </FormContainer>
-      </ScrollView>
+            {/* Display submission error if any */}
+            {error && (
+              <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <Text className="text-red-700 text-sm">Error: {error.message}</Text>
+              </View>
+            )}
+          </FormContainer>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

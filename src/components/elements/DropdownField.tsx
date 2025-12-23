@@ -38,7 +38,7 @@ function DropdownField({
     if (selectedItem) {
       onSelect(selectedItem);
     }
-  }, []);
+  }, [selectedItem, onSelect]);
 
   useEffect(() => {
     const handleOutsideClick = (event: any) => {

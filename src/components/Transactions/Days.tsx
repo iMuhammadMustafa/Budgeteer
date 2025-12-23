@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { FlatList, Text, View } from "react-native";
 
 import Divider from "@/src/components/elements/Divider";
@@ -7,7 +8,7 @@ import TransactionItem from "@/src/components/Transactions/TransactionItem";
 import { GroupedData } from "@/src/types/components/Transactions.types";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 
-dayjs.extend(require("dayjs/plugin/relativeTime"));
+dayjs.extend(relativeTime);
 
 export default function DaysList({
   day,

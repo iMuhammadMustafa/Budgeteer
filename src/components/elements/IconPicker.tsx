@@ -158,7 +158,7 @@ const useResponsiveColumns = () => {
     if (width < 768) return 6; // Tablet portrait
     if (width < 1024) return 8; // Tablet landscape
     return 10; // Desktop
-  }, [dimensions.width]);
+  }, [dimensions]);
 };
 
 // Memoized icon item component for better performance
@@ -196,6 +196,8 @@ const IconItemComponent = memo(
   },
 );
 
+IconItemComponent.displayName = "IconItemComponent";
+
 function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSelect }: IconPickerProps) {
   // State management
   const [selectedIcon, setSelectedIcon] = useState<string>(initialIcon || DEFAULT_ICON);
@@ -218,7 +220,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
   useEffect(() => {
     setSelectedIcon(initialIcon || DEFAULT_ICON);
     loadRecentIcons();
-  }, [initialIcon]);
+  }, [initialIcon, loadRecentIcons]);
 
   // Load recent icons from storage
   const loadRecentIcons = useCallback(async () => {

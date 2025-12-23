@@ -1,6 +1,6 @@
 import MyIcon from "@/src/components/elements/MyIcon";
 import MyModal from "@/src/components/elements/MyModal";
-import RecurringStatusBadges from "@/src/components/elements/RecurringStatusBadges";
+import { RecurringStatusBadges } from "@/src/components/elements/RecurringStatusBadges";
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
 import MyTab from "@/src/components/MyTab";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
