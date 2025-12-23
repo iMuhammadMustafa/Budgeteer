@@ -4,4 +4,6 @@ export interface QueryFilters {
 
   offset?: number;
   limit?: number;
+
+  deleted?: boolean;
 }

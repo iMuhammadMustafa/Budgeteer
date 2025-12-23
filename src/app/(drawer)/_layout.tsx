@@ -74,6 +74,14 @@ export default function DrawerLayout() {
           drawerIcon: ({ color }: any) => <MyIcon name="Settings" color={color} size={24} />,
         }}
       />
+      <Drawer.Screen
+        name="Restore"
+        options={{
+          drawerLabel: "Restore",
+          title: "Restore",
+          drawerIcon: ({ color }: any) => <MyIcon name="History" color={color} size={24} />,
+        }}
+      />
     </Drawer>
   );
 }

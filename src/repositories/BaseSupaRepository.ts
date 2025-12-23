@@ -8,12 +8,12 @@ import { IRepository } from "./interfaces/IRepository";
 export abstract class SupaRepository<TModel, TTable extends TableNames> implements IRepository<TModel, TTable> {
   protected abstract tableName: string;
 
-  async findAll(tenantId: string, filters: QueryFilters): Promise<TModel[]> {
+  async findAll(tenantId: string, filters: QueryFilters = {}): Promise<TModel[]> {
     const { data, error } = await supabase
       .from(this.tableName)
       .select()
       .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
+      .eq("isdeleted", filters?.deleted ?? false)
       .order("displayorder", { ascending: false })
       .order("name");
     if (error) throw error;
@@ -59,6 +59,11 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
   }
 
   async delete(id: string, tenantId: string): Promise<void> {
+    // Default delete behavior is soft delete
+    return this.softDelete(id, tenantId);
+  }
+
+  async hardDelete(id: string, tenantId: string): Promise<void> {
     const { error } = await supabase.from(this.tableName).delete().eq("id", id).eq("tenantid", tenantId);
     if (error) throw error;
   }
@@ -77,12 +82,14 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
 
   async restore(id: string, tenantId: string): Promise<void> {
     const { error } = await supabase
-      .from(TableNames.AccountCategories)
+      .from(this.tableName)
       .update({
         isdeleted: false,
         updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", true);
     if (error) throw error;
   }
 }

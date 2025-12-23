@@ -22,6 +22,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   detailsUrl,
   icons = true,
   customRenderItem,
+  showDeleted = false,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -40,6 +41,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     onLongPress: () => void,
     onPress: () => void,
   ) => React.ReactNode;
+  showDeleted?: boolean;
 }) {
   const {
     selectedItems,
@@ -60,6 +62,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     groupBy,
     detailsUrl: detailsUrl,
     initialState,
+    showDeleted,
   });
   if (isLoading) return <SkeletonList length={20} />;
   return (
@@ -188,17 +191,19 @@ const useMyTab = <TModel, TTable extends TableNames>({
   groupBy,
   detailsUrl,
   initialState,
+  showDeleted,
 }: {
   queryKey: string[];
   service: IService<TModel, TTable>;
   groupBy?: string;
   detailsUrl: Href;
   initialState?: any;
+  showDeleted?: boolean;
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
 
-  const { data, isLoading, error } = service.useFindAll();
+  const { data, isLoading, error } = showDeleted ? service.useFindAllDeleted() : service.useFindAll();
   const { mutate } = service.useSoftDelete();
 
   const [isOpen, setIsOpen] = useState(false);

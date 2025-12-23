@@ -1,3 +1,4 @@
+import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { TableNames } from "@/src/types/database/TableNames";
 import {
   Inserts,
@@ -12,6 +13,7 @@ export interface ITransactionRepository extends IRepository<Transaction | Transa
   findByTransferId(id: string, tenantId: string): Promise<TransactionsView>;
   findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>;
+  findAllDeleted(tenantId: string, filters: TransactionFilters): Promise<Transaction[]>;
 
   getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number>;
   createMultiple(
