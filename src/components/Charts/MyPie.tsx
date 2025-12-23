@@ -154,7 +154,11 @@ export default function MyPie({
                   \n$${selectedSlice?.y}`
                     : ""
                 }
-                events={{ onPress: () => setSelectedSlice(null), onClick: () => setSelectedSlice(null) }}
+                events={
+                  Platform.OS === "web"
+                    ? ({ onClick: () => setSelectedSlice(null) } as any)
+                    : ({ onPress: () => setSelectedSlice(null) } as any)
+                }
               />
             ) : (
               <></>

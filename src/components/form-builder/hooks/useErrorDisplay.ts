@@ -1,40 +1,17 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { FormError, FormErrorState } from '@/src/types/components/forms.types';
-import { 
-  createFormErrorState, 
-  updateErrorState,
-  isRecoverableError,
+import {
+  FormError,
+  FormErrorState,
+  UseErrorDisplayOptions,
+  UseErrorDisplayReturn,
+} from "@/src/types/components/forms.types";
+import {
+  createFormErrorState,
   getRetryDelay,
+  isRecoverableError,
   logFormError,
-  reportFormError 
-} from '@/src/utils/form-errors';
-
-/**
- * Options for useErrorDisplay hook
- */
-interface UseErrorDisplayOptions {
-  maxRetries?: number;
-  autoRetry?: boolean;
-  logErrors?: boolean;
-  reportErrors?: boolean;
-  onRetry?: (error: FormError) => Promise<void>;
-  onMaxRetriesReached?: (error: FormError) => void;
-}
-
-/**
- * Return type for useErrorDisplay hook
- */
-interface UseErrorDisplayReturn {
-  errorState: FormErrorState;
-  showError: (error: FormError) => void;
-  showErrors: (errors: FormError[]) => void;
-  clearError: (field?: string) => void;
-  clearAllErrors: () => void;
-  retryError: (error: FormError) => Promise<void>;
-  isRetrying: boolean;
-  retryCount: number;
-  canRetry: (error: FormError) => boolean;
-}
+  reportFormError,
+} from "@/src/utils/form-errors";
+import React, { useCallback, useRef, useState } from "react";
 
 /**
  * Custom hook for managing error display and recovery in forms
@@ -53,58 +30,67 @@ export function useErrorDisplay(options: UseErrorDisplayOptions = {}): UseErrorD
   const [errorState, setErrorState] = useState<FormErrorState>(() => createFormErrorState());
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Forward declare retryError for use in showError
+  const retryErrorRef = useRef<((error: FormError) => Promise<void>) | undefined>(undefined);
 
   /**
    * Shows a single error
    */
-  const showError = useCallback((error: FormError) => {
-    setErrorState(prevState => {
-      const newState = { ...prevState };
-      newState.addError(error);
-      return updateErrorState(newState);
-    });
+  const showError = useCallback(
+    (error: FormError) => {
+      setErrorState(prevState => {
+        const newState = { ...prevState };
+        newState.addError(error);
+        return { ...newState };
+      });
 
-    // Log error if enabled
-    if (logErrors) {
-      logFormError(error, 'useErrorDisplay');
-    }
+      // Log error if enabled
+      if (logErrors) {
+        logFormError(error, "useErrorDisplay");
+      }
 
-    // Report error if enabled
-    if (reportErrors) {
-      reportFormError(error, { retryCount, maxRetries });
-    }
+      // Report error if enabled
+      if (reportErrors) {
+        reportFormError(error, { retryCount, maxRetries });
+      }
 
-    // Auto-retry if enabled and error is recoverable
-    if (autoRetry && isRecoverableError(error) && retryCount < maxRetries && onRetry) {
-      const delay = getRetryDelay(error, retryCount + 1);
-      
-      retryTimeoutRef.current = setTimeout(() => {
-        retryError(error);
-      }, delay);
-    }
-  }, [logErrors, reportErrors, autoRetry, retryCount, maxRetries, onRetry]);
+      // Auto-retry if enabled and error is recoverable
+      if (autoRetry && isRecoverableError(error) && retryCount < maxRetries && onRetry && retryErrorRef.current) {
+        const delay = getRetryDelay(error, retryCount + 1);
+
+        retryTimeoutRef.current = setTimeout(() => {
+          retryErrorRef.current?.(error);
+        }, delay);
+      }
+    },
+    [logErrors, reportErrors, autoRetry, retryCount, maxRetries, onRetry],
+  );
 
   /**
    * Shows multiple errors
    */
-  const showErrors = useCallback((errors: FormError[]) => {
-    setErrorState(prevState => {
-      const newState = { ...prevState };
-      errors.forEach(error => newState.addError(error));
-      return updateErrorState(newState);
-    });
+  const showErrors = useCallback(
+    (errors: FormError[]) => {
+      setErrorState(prevState => {
+        const newState = { ...prevState };
+        errors.forEach(error => newState.addError(error));
+        return { ...newState };
+      });
 
-    // Log and report errors
-    errors.forEach(error => {
-      if (logErrors) {
-        logFormError(error, 'useErrorDisplay');
-      }
-      if (reportErrors) {
-        reportFormError(error, { retryCount, maxRetries });
-      }
-    });
-  }, [logErrors, reportErrors, retryCount, maxRetries]);
+      // Log and report errors
+      errors.forEach(error => {
+        if (logErrors) {
+          logFormError(error, "useErrorDisplay");
+        }
+        if (reportErrors) {
+          reportFormError(error, { retryCount, maxRetries });
+        }
+      });
+    },
+    [logErrors, reportErrors, retryCount, maxRetries],
+  );
 
   /**
    * Clears a specific field error or all errors
@@ -117,7 +103,7 @@ export function useErrorDisplay(options: UseErrorDisplayOptions = {}): UseErrorD
       } else {
         newState.clearErrors();
       }
-      return updateErrorState(newState);
+      return { ...newState };
     });
 
     // Clear retry timeout if clearing all errors
@@ -138,56 +124,65 @@ export function useErrorDisplay(options: UseErrorDisplayOptions = {}): UseErrorD
   /**
    * Retries a failed operation for a specific error
    */
-  const retryError = useCallback(async (error: FormError) => {
-    if (!isRecoverableError(error) || retryCount >= maxRetries || !onRetry) {
-      return;
-    }
-
-    setIsRetrying(true);
-    setRetryCount(prev => prev + 1);
-
-    try {
-      await onRetry(error);
-      
-      // Clear the error if retry was successful
-      if (error.field) {
-        clearError(error.field);
-      } else {
-        clearAllErrors();
+  const retryError = useCallback(
+    async (error: FormError) => {
+      if (!isRecoverableError(error) || retryCount >= maxRetries || !onRetry) {
+        return;
       }
-      
-      // Reset retry count on success
-      setRetryCount(0);
-    } catch (retryError) {
-      const newRetryCount = retryCount + 1;
-      
-      if (newRetryCount >= maxRetries) {
-        // Max retries reached
-        if (onMaxRetriesReached) {
-          onMaxRetriesReached(error);
+
+      setIsRetrying(true);
+      setRetryCount(prev => prev + 1);
+
+      try {
+        await onRetry(error);
+
+        // Clear the error if retry was successful
+        if (error.field) {
+          clearError(error.field);
+        } else {
+          clearAllErrors();
         }
-        
-        if (logErrors) {
-          logFormError(error, `Max retries (${maxRetries}) reached`);
+
+        // Reset retry count on success
+        setRetryCount(0);
+      } catch (retryErrorException) {
+        const newRetryCount = retryCount + 1;
+
+        if (newRetryCount >= maxRetries) {
+          // Max retries reached
+          if (onMaxRetriesReached) {
+            onMaxRetriesReached(error);
+          }
+
+          if (logErrors) {
+            logFormError(error, `Max retries (${maxRetries}) reached`);
+          }
+        } else {
+          // Schedule next retry
+          const delay = getRetryDelay(error, newRetryCount + 1);
+          retryTimeoutRef.current = setTimeout(() => {
+            retryErrorRef.current?.(error);
+          }, delay);
         }
-      } else {
-        // Schedule next retry
-        const delay = getRetryDelay(error, newRetryCount + 1);
-        retryTimeoutRef.current = setTimeout(() => {
-          retryError(error);
-        }, delay);
+      } finally {
+        setIsRetrying(false);
       }
-    } finally {
-      setIsRetrying(false);
-    }
-  }, [retryCount, maxRetries, onRetry, onMaxRetriesReached, logErrors, clearError, clearAllErrors]);
+    },
+    [retryCount, maxRetries, onRetry, onMaxRetriesReached, logErrors, clearError, clearAllErrors],
+  );
+
+  // Assign retryError to ref for use in showError
+  retryErrorRef.current = retryError;
 
   /**
    * Checks if an error can be retried
    */
-  const canRetry = useCallback((error: FormError) => {
-    return isRecoverableError(error) && retryCount < maxRetries;
-  }, [retryCount, maxRetries]);
+  const canRetry = useCallback(
+    (error: FormError) => {
+      return isRecoverableError(error) && retryCount < maxRetries;
+    },
+    [retryCount, maxRetries],
+  );
 
   // Cleanup timeout on unmount
   React.useEffect(() => {

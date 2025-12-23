@@ -780,7 +780,6 @@ export const seedWatermelonDB = async (database?: Database): Promise<void> => {
           accountCategory.color = categoryData.color;
           accountCategory.icon = categoryData.icon;
           accountCategory.displayorder = categoryData.displayorder;
-          accountCategory.statementdate = categoryData.statementdate;
           accountCategory.tenantid = categoryData.tenantid;
           accountCategory.isdeleted = categoryData.isdeleted;
           accountCategory.createdby = categoryData.createdby || null;

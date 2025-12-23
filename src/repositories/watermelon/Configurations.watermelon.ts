@@ -11,6 +11,7 @@ export class ConfigurationWatermelonRepository
   implements IConfigurationRepository
 {
   protected tableName = TableNames.Configurations;
+  protected orderByField = "key";
 
   protected override mapFromWatermelon(model: Configuration): ConfigurationType {
     return mapConfigurationFromWatermelon(model);

@@ -11,6 +11,7 @@ export class RecurringWatermelonRepository
   implements IRecurringRepository
 {
   protected tableName = TableNames.Recurrings;
+  protected orderByField = "name";
 
   protected override mapFromWatermelon(model: Recurring): RecurringType {
     return mapRecurringFromWatermelon(model);

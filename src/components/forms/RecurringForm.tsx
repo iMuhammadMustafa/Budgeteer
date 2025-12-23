@@ -400,7 +400,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
       if (name === "recurringType") {
         if (value === RecurringType.Transfer) {
           newState.type = "Transfer";
-          newState.categoryid = null; // Transfers don't have categories
+          newState.categoryid = null as any; // Transfers don't have categories
         } else if (value === RecurringType.CreditCardPayment) {
           newState.type = "Transfer"; // Credit card payments are transfers
           newState.isAmountFlexible = true; // Credit card payments always have flexible amounts
@@ -408,14 +408,14 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
           // Keep categoryid as it's required for credit card payments
         } else {
           // Standard recurring transaction
-          newState.transferaccountid = null;
+          newState.transferaccountid = undefined;
         }
       }
 
       // Handle transaction type changes
       if (name === "type") {
         if (value === "Transfer") {
-          newState.categoryid = null; // Transfers don't have categories
+          newState.categoryid = undefined; // Transfers don't have categories
         } else {
           newState.transferaccountid = null; // Other types don't have a destination account
         }

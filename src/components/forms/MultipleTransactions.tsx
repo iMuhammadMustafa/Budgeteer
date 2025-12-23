@@ -146,23 +146,23 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     async (data: MultipleTransactionsFormData) => {
       const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
 
-      // Convert form data to the format expected by the service
-      const submissionData = {
-        transactions: {
-          originalTransactionId: data.originalTransactionId,
-          payee: data.payee,
-          date: dayjs(data.date),
-          description: data.description,
-          type: data.type,
-          isvoid: data.isvoid,
-          accountid: data.accountid,
-          groupid: data.groupid,
-          transactions: data.transactions,
-        },
-        totalAmount,
-      };
+      // Convert form data to array of transaction inserts
+      const transactions = Object.values(data.transactions).map(trans => ({
+        payee: data.payee,
+        date: data.date,
+        description: data.description,
+        type: data.type as any,
+        isvoid: data.isvoid,
+        accountid: data.accountid,
+        groupid: data.groupid,
+        categoryid: trans.categoryid,
+        amount: mode === "minus" ? -Math.abs(trans.amount) : Math.abs(trans.amount),
+        notes: trans.notes,
+        tags: trans.tags,
+        name: trans.name,
+      }));
 
-      await submitAllMutation.mutateAsync(submissionData, {
+      await submitAllMutation.mutateAsync(transactions, {
         onSuccess: async () => {
           console.log({
             message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
@@ -224,7 +224,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         id: item.id,
         label: item.name || "",
         value: item.id,
-        group: item.categoryname || "Other",
+        group: item.category?.name || "Other",
       }))
       .sort((a, b) => {
         if (a.group !== b.group) {
@@ -588,7 +588,7 @@ const TransactionCard = ({
       // Calculate remaining amount available
       const otherTransactionsTotal = Object.entries(formState.data.transactions)
         .filter(([transactionId]) => transactionId !== id)
-        .reduce((total, [, trans]) => total + (trans.amount || 0), 0);
+        .reduce((total: number, [, trans]) => total + ((trans as MultipleTransactionItemData).amount || 0), 0);
 
       const availableAmount = maxAmount - otherTransactionsTotal;
 

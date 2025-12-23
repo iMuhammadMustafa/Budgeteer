@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -24,7 +24,6 @@ export type Database = {
           id: string
           isdeleted: boolean
           name: string
-          statementdate: number | null
           tenantid: string
           type: Database["public"]["Enums"]["accounttypes"]
           updatedat: string | null
@@ -39,7 +38,6 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           name: string
-          statementdate?: number | null
           tenantid?: string
           type?: Database["public"]["Enums"]["accounttypes"]
           updatedat?: string | null
@@ -54,7 +52,6 @@ export type Database = {
           id?: string
           isdeleted?: boolean
           name?: string
-          statementdate?: number | null
           tenantid?: string
           type?: Database["public"]["Enums"]["accounttypes"]
           updatedat?: string | null
@@ -78,6 +75,7 @@ export type Database = {
           name: string
           notes: string | null
           owner: string | null
+          statementdate: number | null
           tenantid: string
           updatedat: string | null
           updatedby: string | null
@@ -97,6 +95,7 @@ export type Database = {
           name: string
           notes?: string | null
           owner?: string | null
+          statementdate?: number | null
           tenantid?: string
           updatedat?: string | null
           updatedby?: string | null
@@ -116,6 +115,7 @@ export type Database = {
           name?: string
           notes?: string | null
           owner?: string | null
+          statementdate?: number | null
           tenantid?: string
           updatedat?: string | null
           updatedby?: string | null
@@ -206,7 +206,7 @@ export type Database = {
         Row: {
           amount: number | null
           autoapplyenabled: boolean | null
-          categoryid: string | null
+          categoryid: string
           createdat: string | null
           createdby: string | null
           currencycode: string
@@ -238,7 +238,7 @@ export type Database = {
         Insert: {
           amount?: number | null
           autoapplyenabled?: boolean | null
-          categoryid?: string | null
+          categoryid: string
           createdat?: string | null
           createdby?: string | null
           currencycode?: string
@@ -270,7 +270,7 @@ export type Database = {
         Update: {
           amount?: number | null
           autoapplyenabled?: boolean | null
-          categoryid?: string | null
+          categoryid?: string
           createdat?: string | null
           createdby?: string | null
           currencycode?: string
@@ -359,236 +359,6 @@ export type Database = {
           {
             foreignKeyName: "recurrings_transfer_account_id_fkey"
             columns: ["transferaccountid"]
-            isOneToOne: false
-            referencedRelation: "view_accounts_with_runningbalance"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recurringz: {
-        Row: {
-          amount: number | null
-          categoryid: string | null
-          createdat: string | null
-          createdby: string | null
-          currencycode: string
-          description: string | null
-          enddate: string | null
-          id: string
-          isactive: boolean | null
-          isdeleted: boolean | null
-          lastexecutedat: string | null
-          name: string
-          nextoccurrencedate: string
-          notes: string | null
-          payeename: string | null
-          recurrencerule: string
-          sourceaccountid: string
-          tenantid: string
-          type: Database["public"]["Enums"]["transactiontypes"] | null
-          updatedat: string | null
-          updatedby: string | null
-        }
-        Insert: {
-          amount?: number | null
-          categoryid?: string | null
-          createdat?: string | null
-          createdby?: string | null
-          currencycode?: string
-          description?: string | null
-          enddate?: string | null
-          id?: string
-          isactive?: boolean | null
-          isdeleted?: boolean | null
-          lastexecutedat?: string | null
-          name: string
-          nextoccurrencedate: string
-          notes?: string | null
-          payeename?: string | null
-          recurrencerule: string
-          sourceaccountid: string
-          tenantid: string
-          type?: Database["public"]["Enums"]["transactiontypes"] | null
-          updatedat?: string | null
-          updatedby?: string | null
-        }
-        Update: {
-          amount?: number | null
-          categoryid?: string | null
-          createdat?: string | null
-          createdby?: string | null
-          currencycode?: string
-          description?: string | null
-          enddate?: string | null
-          id?: string
-          isactive?: boolean | null
-          isdeleted?: boolean | null
-          lastexecutedat?: string | null
-          name?: string
-          nextoccurrencedate?: string
-          notes?: string | null
-          payeename?: string | null
-          recurrencerule?: string
-          sourceaccountid?: string
-          tenantid?: string
-          type?: Database["public"]["Enums"]["transactiontypes"] | null
-          updatedat?: string | null
-          updatedby?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reminders_category_id_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "stats_monthlycategoriestransactions"
-            referencedColumns: ["categoryid"]
-          },
-          {
-            foreignKeyName: "reminders_category_id_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactioncategories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_category_id_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["categoryid"]
-          },
-          {
-            foreignKeyName: "reminders_source_account_id_fkey"
-            columns: ["sourceaccountid"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_source_account_id_fkey"
-            columns: ["sourceaccountid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["accountid"]
-          },
-          {
-            foreignKeyName: "reminders_source_account_id_fkey"
-            columns: ["sourceaccountid"]
-            isOneToOne: false
-            referencedRelation: "view_accounts_with_runningbalance"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reoccurrings: {
-        Row: {
-          amount: number
-          categoryid: string | null
-          createdat: string | null
-          createdby: string | null
-          currencycode: string
-          description: string | null
-          enddate: string | null
-          id: string
-          isactive: boolean | null
-          isdeleted: boolean | null
-          lastexecutedat: string | null
-          name: string
-          nextoccurrencedate: string
-          notes: string | null
-          payeename: string | null
-          recurrencerule: string
-          sourceaccountid: string
-          tenantid: string
-          type: Database["public"]["Enums"]["transactiontypes"]
-          updatedat: string | null
-          updatedby: string | null
-        }
-        Insert: {
-          amount: number
-          categoryid?: string | null
-          createdat?: string | null
-          createdby?: string | null
-          currencycode?: string
-          description?: string | null
-          enddate?: string | null
-          id?: string
-          isactive?: boolean | null
-          isdeleted?: boolean | null
-          lastexecutedat?: string | null
-          name: string
-          nextoccurrencedate: string
-          notes?: string | null
-          payeename?: string | null
-          recurrencerule: string
-          sourceaccountid: string
-          tenantid: string
-          type?: Database["public"]["Enums"]["transactiontypes"]
-          updatedat?: string | null
-          updatedby?: string | null
-        }
-        Update: {
-          amount?: number
-          categoryid?: string | null
-          createdat?: string | null
-          createdby?: string | null
-          currencycode?: string
-          description?: string | null
-          enddate?: string | null
-          id?: string
-          isactive?: boolean | null
-          isdeleted?: boolean | null
-          lastexecutedat?: string | null
-          name?: string
-          nextoccurrencedate?: string
-          notes?: string | null
-          payeename?: string | null
-          recurrencerule?: string
-          sourceaccountid?: string
-          tenantid?: string
-          type?: Database["public"]["Enums"]["transactiontypes"]
-          updatedat?: string | null
-          updatedby?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reoccurrings_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "stats_monthlycategoriestransactions"
-            referencedColumns: ["categoryid"]
-          },
-          {
-            foreignKeyName: "reoccurrings_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactioncategories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reoccurrings_categoryid_fkey"
-            columns: ["categoryid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["categoryid"]
-          },
-          {
-            foreignKeyName: "reoccurrings_sourceaccountid_fkey"
-            columns: ["sourceaccountid"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reoccurrings_sourceaccountid_fkey"
-            columns: ["sourceaccountid"]
-            isOneToOne: false
-            referencedRelation: "transactionsview"
-            referencedColumns: ["accountid"]
-          },
-          {
-            foreignKeyName: "reoccurrings_sourceaccountid_fkey"
-            columns: ["sourceaccountid"]
             isOneToOne: false
             referencedRelation: "view_accounts_with_runningbalance"
             referencedColumns: ["id"]
@@ -1172,10 +942,7 @@ export type Database = {
         Args: { accountid: string; amount: number }
         Returns: number
       }
-      uuid_generate_v7: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      uuid_generate_v7: { Args: never; Returns: string }
     }
     Enums: {
       accounttypes: "Asset" | "Liability"
