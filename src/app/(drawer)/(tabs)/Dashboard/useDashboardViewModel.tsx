@@ -24,16 +24,39 @@ export interface IDetailsViewProps {
   month?: string;
 }
 
-export default function useDashboard() {
+export default function useDashboard(options?: { fetchTransactions?: boolean }) {
   const statsService = useStatsService();
   const transactionService = useTransactionService();
   const dateRanges = statsService.useGetDateRanges();
+  const params = useLocalSearchParams() as Partial<IDetailsViewProps>;
+  const fetchTransactions = options?.fetchTransactions ?? false;
+
+  const initialMonthFromParams = useMemo(() => {
+    if (params.startDate && params.endDate) {
+      return {
+        start: dayjs(params.startDate).utc().startOf("month").format("YYYY-MM-DD"),
+        end: dayjs(params.endDate).utc().endOf("month").format("YYYY-MM-DD"),
+      };
+    }
+    return dateRanges.currentMonth;
+  }, [params, dateRanges]);
+
+  const initialYearFromParams = useMemo(() => {
+    if (params.startDate) {
+      const base = dayjs(params.startDate).utc();
+      return {
+        start: base.startOf("year").toISOString(),
+        end: base.endOf("year").toISOString(),
+      };
+    }
+    return dateRanges.currentYear;
+  }, [params, dateRanges]);
 
   // Period cursors (independent per-chart)
-  const [weekBaseDate, setWeekBaseDate] = useState<string>(dayjs().toISOString());
-  const [dailyMonthCursor, setDailyMonthCursor] = useState<{ start: string; end: string }>(dateRanges.currentMonth);
-  const [piesMonthCursor, setPiesMonthCursor] = useState<{ start: string; end: string }>(dateRanges.currentMonth);
-  const [yearCursor, setYearCursor] = useState<{ start: string; end: string }>(dateRanges.currentYear);
+  const [weekBaseDate, setWeekBaseDate] = useState<string>(params.startDate ?? dayjs().toISOString());
+  const [dailyMonthCursor, setDailyMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
+  const [piesMonthCursor, setPiesMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
+  const [yearCursor, setYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
 
   // Fetch raw daily transactions for the calendar + weekly bar (month-bound)
   const { data: dailyTransactionsRaw = [], isLoading: isDailyLoading } = statsService.useGetStatsDailyTransactionsRaw(
@@ -54,11 +77,25 @@ export default function useDashboard() {
     yearCursor.end,
   );
 
-  const params = useLocalSearchParams() as Partial<IDetailsViewProps>;
-  const filters = useMemo<TransactionFilters>(() => {
+  const filters = useMemo<TransactionFilters | undefined>(() => {
+    if (!fetchTransactions) return undefined;
+
     const baseFilters: TransactionFilters = {};
-    if (params.startDate) baseFilters.startDate = params.startDate;
-    if (params.endDate) baseFilters.endDate = params.endDate;
+
+    // Period window based on current view selection
+    if (params.type === DashboardViewSelectionType.BAR) {
+      baseFilters.startDate = dayjs(weekBaseDate).utc().startOf("week").toISOString();
+      baseFilters.endDate = dayjs(weekBaseDate).utc().endOf("week").toISOString();
+    } else if (params.type === DashboardViewSelectionType.PIE) {
+      baseFilters.startDate = dayjs(piesMonthCursor.start).utc().startOf("day").toISOString();
+      baseFilters.endDate = dayjs(piesMonthCursor.end).utc().endOf("day").toISOString();
+    } else if (params.type === DashboardViewSelectionType.CALENDAR) {
+      baseFilters.startDate = dayjs(dailyMonthCursor.start).utc().startOf("day").toISOString();
+      baseFilters.endDate = dayjs(dailyMonthCursor.end).utc().endOf("day").toISOString();
+    } else {
+      if (params.startDate) baseFilters.startDate = params.startDate;
+      if (params.endDate) baseFilters.endDate = params.endDate;
+    }
 
     if (params.type === DashboardViewSelectionType.PIE && params.itemId && params.pieType) {
       if (params.pieType === "category") {
@@ -70,8 +107,11 @@ export default function useDashboard() {
     }
 
     return baseFilters;
-  }, [params]);
-  const { data: filteredTransactions, isLoading: isFiltersLoading } = transactionService.useFindAllView(filters);
+  }, [fetchTransactions, params, weekBaseDate, piesMonthCursor, dailyMonthCursor]);
+
+  const transactionsQuery = fetchTransactions && filters ? transactionService.useFindAllView(filters) : undefined;
+  const filteredTransactions = fetchTransactions ? transactionsQuery?.data : undefined;
+  const isFiltersLoading = fetchTransactions ? (transactionsQuery?.isLoading ?? false) : false;
 
   // Derived weekly bars and calendar data from raw daily
   const { weeklyTransactionTypesData, dailyTransactionTypesData } = useMemo(() => {
@@ -131,38 +171,49 @@ export default function useDashboard() {
     });
   }, []);
 
-  const handlePiePress = useCallback((item: PieData, type: "category" | "group") => {
-    const startOfMonth = dayjs().utc().startOf("month").toISOString();
-    const endOfMonth = dayjs().utc().endOf("month").toISOString();
+  const handlePiePress = useCallback(
+    (item: PieData, type: "category" | "group") => {
+      // Keep the currently selected monthly period when drilling into pies
+      const startOfMonth = piesMonthCursor.start;
+      const endOfMonth = piesMonthCursor.end;
 
-    router.push({
-      pathname: "/Dashboard/Details",
-      params: {
-        type: DashboardViewSelectionType.PIE,
-        pieType: type,
-        itemId: item.id,
-        itemLabel: item.x,
-        label: `${type === "category" ? "Category" : "Group"}: ${item.x}`,
-        startDate: startOfMonth,
-        endDate: endOfMonth,
-      },
-    });
-  }, []);
+      router.push({
+        pathname: "/Dashboard/Details",
+        params: {
+          type: DashboardViewSelectionType.PIE,
+          pieType: type,
+          itemId: item.id,
+          itemLabel: item.x,
+          label: `${type === "category" ? "Category" : "Group"}: ${item.x}`,
+          startDate: startOfMonth,
+          endDate: endOfMonth,
+        },
+      });
+    },
+    [piesMonthCursor],
+  );
 
-  const handleBarPress = useCallback((item: DoubleBarPoint) => {
-    const startOfMonth = dayjs(item.x).utc().startOf("month").toISOString();
-    const endOfMonth = dayjs(item.x).endOf("month").toISOString();
-    router.push({
-      pathname: "/Dashboard/Details",
-      params: {
-        type: "bar",
-        month: item.x,
-        label: `Month: ${item.x}`,
-        startDate: startOfMonth,
-        endDate: endOfMonth,
-      },
-    });
-  }, []);
+  const handleBarPress = useCallback(
+    (item: DoubleBarPoint) => {
+      // Anchor monthly drilldowns to the currently selected year
+      const baseYear = dayjs(yearCursor.start);
+      const monthStart = baseYear.month(dayjs(item.x, "MMM").month()).utc().startOf("month");
+      const startOfMonth = monthStart.toISOString();
+      const endOfMonth = monthStart.endOf("month").toISOString();
+
+      router.push({
+        pathname: "/Dashboard/Details",
+        params: {
+          type: "bar",
+          month: item.x,
+          label: `Month: ${item.x}`,
+          startDate: startOfMonth,
+          endDate: endOfMonth,
+        },
+      });
+    },
+    [yearCursor],
+  );
 
   const handleBackToOverview = useCallback(() => {
     router.replace("/Dashboard");

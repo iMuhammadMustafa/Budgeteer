@@ -1,10 +1,11 @@
 import DashboardCharts from "@/src/components/Charts/DashboardCharts";
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
+import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { router } from "expo-router";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -22,7 +23,7 @@ export default function DetailView() {
     isLoading,
     handleViewAllNavigation,
     periodControls,
-  } = useDashboard();
+  } = useDashboard({ fetchTransactions: true });
 
   return (
     <SafeAreaView className="w-full h-full flex-1 bg-background">
@@ -58,10 +59,7 @@ export default function DetailView() {
 
         <View className="flex-1 px-4">
           {isLoading ? (
-            <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="small" color="#0000ff" />
-              <Text className="mt-2 text-muted">Loading transactions...</Text>
-            </View>
+            <DaySkeleton />
           ) : !filteredTransactions || filteredTransactions.length === 0 ? (
             <View className="flex-1 justify-center items-center p-4">
               <Text className="text-muted">No transactions found</Text>

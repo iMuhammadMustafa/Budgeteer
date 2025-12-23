@@ -1,6 +1,6 @@
 import { DoubleBarPoint } from "@/src/types/components/Charts.types";
-import { useState } from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
 
 export default function NetEarningsChart({
@@ -15,22 +15,31 @@ export default function NetEarningsChart({
   highlightedBar?: string;
 }) {
   const { width } = useWindowDimensions();
-  const chartWidth = Math.min(width, 600);
+
+  const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
 
-  const barWidth = 10; // A reasonable bar width
-  const spaceBetweenBars = (chartWidth - 30) / (data.length * 2.5); // Adjust the space based on the number of bars
+  const barWidth = 20; // A reasonable bar width
+  const spaceBetweenBars = chartWidth / (data.length * 1.5); // Adjust the space based on the number of bars
   const offset = spaceBetweenBars - barWidth / 2;
 
   const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
 
+  const calculateDomainPadding = useMemo(() => {
+    const dataLength = data.length;
+    if (dataLength <= 2) return 200;
+    if (dataLength <= 5) return 100;
+    if (dataLength <= 10) return 50;
+    return Math.max(20, 500 / dataLength); // For larger datasets, use inverse relationship
+  }, [data.length]);
+
   return (
-    <View className="bg-card p-2 m-auto my-1 rounded-md border border-muted">
-      <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
+    <>
+      <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
       <VictoryChart
-        width={chartWidth}
+        width={chartWidth * (width > 700 ? 1.7 : 1)}
         height={chartHeight}
-        domainPadding={{ x: 50, y: 10 }}
+        domainPadding={{ x: calculateDomainPadding, y: 10 }}
         theme={VictoryTheme.material}
         padding={{ top: 40, bottom: 50, left: 50, right: 20 }}
       >
@@ -154,6 +163,6 @@ export default function NetEarningsChart({
           }
         />
       </VictoryChart>
-    </View>
+    </>
   );
 }

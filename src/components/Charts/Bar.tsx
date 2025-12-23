@@ -1,17 +1,18 @@
 import { BarProps } from "@/src/types/components/Charts.types";
 import { useState } from "react";
-import { Platform, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 
 export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
   const { width } = useWindowDimensions();
-  const chartWidth = Math.min(width, 600);
-  const chartHeight = chartWidth;
+
+  const chartWidth = Math.min(width * 0.95, 700); // Use 95% of width or max 600
+  const chartHeight = chartWidth * 0.6; // Adjust height relative to width
 
   const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   return (
-    <View className="p-2  m-auto bg-card my-2 rounded-md border border-muted">
-      <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
+    <>
+      <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
 
       <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>
         {Platform.OS === "web" ? (
@@ -61,6 +62,6 @@ export default function Bar({ data, label, color, hideY, selectedDate, onDayPres
           ]}
         />
       </VictoryChart>
-    </View>
+    </>
   );
 }

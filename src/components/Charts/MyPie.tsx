@@ -65,7 +65,7 @@ export default function MyPie({
   }));
 
   return (
-    <View className="gap-2 py-1 my-1 bg-card w-[99%] m-auto rounded-md border border-muted">
+    <>
       <Text className={`text-center text-xl font-bold text-foreground`}>{label}</Text>
 
       <View
@@ -73,7 +73,7 @@ export default function MyPie({
       >
         <View style={{ width: chartWidth }} className="overflow-visible">
           <VictoryContainer
-            width={chartWidth * 1.3}
+            width={chartWidth * 1.25}
             height={chartHeight}
             theme={VictoryTheme.material}
             disableContainerEvents
@@ -89,7 +89,7 @@ export default function MyPie({
               innerRadius={Platform.OS === "web" ? chartWidth * 0.18 : undefined}
               labelRadius={d => (Platform.OS === "web" ? chartWidth * 0.28 : Number(d.innerRadius) + 100)}
               padAngle={1}
-              origin={{ x: chartWidth * 0.5, y: chartHeight * 0.5 }}
+              origin={{ x: chartWidth * 0.6, y: chartHeight * 0.5 }}
               style={{
                 parent: { overflow: "visible", backgroundColor: "red" },
 
@@ -141,8 +141,8 @@ export default function MyPie({
                 }
                 textAnchor="middle"
                 verticalAnchor="middle"
-                x={chartWidth * 0.5}
-                y={chartHeight * 0.48}
+                x={chartWidth * 0.6}
+                y={chartHeight * 0.5}
                 style={{
                   fontSize: 14,
                   fontWeight: "bold",
@@ -190,6 +190,6 @@ export default function MyPie({
           />
         </View>
       </View>
-    </View>
+    </>
   );
 }
