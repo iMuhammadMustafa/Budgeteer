@@ -21,6 +21,7 @@ export default function DetailView() {
     filteredTransactions,
     isLoading,
     handleViewAllNavigation,
+    periodControls,
   } = useDashboard();
 
   return (
@@ -51,6 +52,7 @@ export default function DetailView() {
             handleDayPress={handleDayPress}
             handlePiePress={handlePiePress}
             params={params}
+            periodControls={periodControls}
           />
         </View>
 
