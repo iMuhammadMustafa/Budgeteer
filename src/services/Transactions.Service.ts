@@ -22,11 +22,11 @@ import { IService } from "./IService";
 export interface ITransactionService extends IService<Transaction, TableNames.Transactions> {
   useFindAllView: (searchFilters?: TransactionFilters) => ReturnType<typeof useQuery<TransactionsView[]>>;
   useFindAllInfinite: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<TransactionsView[]>>;
+  useFindDeleted: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<Transaction[]>>;
   useFindByName: (text: string) => Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   useGetByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   useCreateMultipleTransactions: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   useUpdateTransferTransaction: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
-  useCustomSoftDelete: () => ReturnType<typeof useMutation<void, Error, { id: string; item?: any }>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -117,28 +117,21 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
-  const useCustomSoftDelete = () => {
-    return useMutation({
-      mutationFn: async ({ id, item }: { id: string; item?: any }) => {
-        await transactionRepo.softDelete(id, tenantId);
-
-        if (!item) return;
-
-        if (item.isvoid !== true && item.accountid && item.amount) {
-          await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
-        }
-
-        if (item.transferid) {
-          await transactionRepo.softDelete(item.transferid, tenantId);
-          if (item.isvoid !== true && item.transferaccountid && item.amount) {
-            await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
-          }
-        }
+  const useFindDeleted = (searchFilters: TransactionFilters) => {
+    const pageSize = searchFilters.limit ?? 10;
+    return useInfiniteQuery<Transaction[]>({
+      queryKey: [TableNames.Transactions, "deleted", tenantId, "infinite", pageSize],
+      initialPageParam: 0,
+      queryFn: async ({ pageParam = 0 }) => {
+        const offset = (pageParam as number) * pageSize;
+        const limit = pageSize;
+        const res = (await transactionRepo.findAllDeleted(tenantId, { offset, limit })) as Transaction[];
+        return res;
       },
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      enabled: !!tenantId,
+      getNextPageParam: (lastPage, allPages) => {
+        if (!lastPage || lastPage.length < pageSize) return undefined;
+        return allPages.length;
       },
     });
   };
@@ -176,6 +169,53 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
+  const useSoftDelete = () => {
+    return useMutation({
+      mutationFn: async ({ id, item }: { id: string; item?: any }) => {
+        await transactionRepo.softDelete(id, tenantId);
+        if (!item) return;
+        if (item.isvoid !== true && item.accountid && item.amount) {
+          await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
+        }
+        if (item.transferid) {
+          await transactionRepo.softDelete(item.transferid, tenantId);
+          if (item.isvoid !== true && item.transferaccountid && item.amount) {
+            await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
+          }
+        }
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  const useRestore = () => {
+    return useMutation({
+      mutationFn: async ({ id, item }: { id: string; item?: any }) => {
+        await transactionRepo.restore(id, tenantId);
+        if (item) {
+          if (item.isvoid !== true && item.accountid && item.amount) {
+            await accountRepo.updateAccountBalance(item.accountid, item.amount, tenantId);
+          }
+          if (item.transferid) {
+            await transactionRepo.restore(item.transferid, tenantId);
+            if (item.isvoid !== true && item.transferaccountid && item.amount) {
+              await accountRepo.updateAccountBalance(item.transferaccountid, -item.amount, tenantId);
+            }
+          }
+        }
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
   return {
     ...createServiceHooks<Transaction, TableNames.Transactions>(
       TableNames.Transactions,
@@ -193,16 +233,17 @@ export function useTransactionService(): ITransactionService {
         },
       },
     ),
+    useDelete: useSoftDelete,
+    useSoftDelete,
     useUpsert,
-    useDelete: useCustomSoftDelete,
-    useSoftDelete: useCustomSoftDelete,
     useFindAllView,
     useFindAllInfinite,
+    useFindDeleted,
     useFindByName,
     useGetByTransferId,
     useCreateMultipleTransactions,
     useUpdateTransferTransaction,
-    useCustomSoftDelete,
+    useRestore,
   };
 }
 

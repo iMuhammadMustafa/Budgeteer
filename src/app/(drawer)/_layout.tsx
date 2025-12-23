@@ -2,19 +2,32 @@ import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
+import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
+import { useEffect } from "react";
 import { ActivityIndicator, Platform, Text, View } from "react-native";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { isLoading, session } = useAuth();
+  const { isLoading: isAuthLoading, session } = useAuth();
+  const { isLoading: isStorageLoading } = useStorageMode();
+
+  const isLoading = isAuthLoading || isStorageLoading;
+
+  useEffect(() => {
+    if (!session && !isLoading) {
+      router.replace("/");
+    }
+  }, [session, isLoading]);
 
   console.log("Rendering DrawerLayout, isLoading:", isLoading, "session:", session);
 
   if (isLoading || !session) return <ActivityIndicator className="flex-1" />;
+
   return (
     <Drawer
       screenOptions={{
@@ -63,6 +76,14 @@ export default function DrawerLayout() {
           drawerIcon: ({ color }: any) => <MyIcon name="Settings" color={color} size={24} />,
         }}
       />
+      <Drawer.Screen
+        name="Restore"
+        options={{
+          drawerLabel: "Restore",
+          title: "Restore",
+          drawerIcon: ({ color }: any) => <MyIcon name="History" color={color} size={24} />,
+        }}
+      />
     </Drawer>
   );
 }
@@ -70,6 +91,7 @@ export default function DrawerLayout() {
 const Footer = () => {
   const { isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
   const { logout } = useAuth();
+  const { setStorageMode } = useStorageMode();
 
   return (
     <>
@@ -95,8 +117,26 @@ const Footer = () => {
           />
         )}
       </View>
-      <Button label="Logout" onPress={logout} variant="destructive" rightIcon="LogOut" size="sm" />
-      <Button label="Clear Cache" onPress={() => queryClient.clear()} variant="ghost" size="sm" rightIcon="Trash" />
+      <Button
+        label="Logout"
+        onPress={() => {
+          logout();
+          setStorageMode(null);
+        }}
+        variant="destructive"
+        rightIcon="LogOut"
+        size="sm"
+      />
+      <Button
+        label="Clear Cache"
+        onPress={() => {
+          queryClient.clear();
+          queryClient.resetQueries();
+        }}
+        variant="ghost"
+        size="sm"
+        rightIcon="Trash"
+      />
     </>
   );
 };

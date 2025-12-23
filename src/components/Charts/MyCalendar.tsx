@@ -1,8 +1,8 @@
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { MyCalendarProps } from "@/src/types/components/Charts.types";
+import { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { MyCalendarProps } from "@/src/types/components/Charts.types";
-import { useTheme } from "@/src/providers/ThemeProvider";
-import { useMemo } from "react";
 
 export default function MyCalendar({ data, label, onDayPress, selectedDate }: MyCalendarProps) {
   const themeContext = useTheme();
@@ -35,8 +35,8 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate }: My
   }, [textColor]);
 
   return (
-    <View className="p-4 m-auto bg-card my-2 rounded-md border border-muted">
-      <Text className="text-start text-xl font-bold text-foreground">{label}</Text>
+    <View className="mx-6">
+      <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
       <Calendar
         hideArrows
         disableMonthChange

@@ -1,23 +1,23 @@
-import { useState } from "react";
-import { FlatList, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
-import { VictoryContainer, VictoryLabel, VictoryLegend, VictoryPie, VictoryTheme } from "victory-native";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { PieData, PieProps } from "@/src/types/components/Charts.types";
+import { useState } from "react";
+import { FlatList, Platform, Text, useWindowDimensions, View } from "react-native";
+import { VictoryContainer, VictoryLabel, VictoryPie, VictoryTheme } from "victory-native";
 
-export default function MyPie({ 
-  data = [], 
-  label = "Chart", 
+export default function MyPie({
+  data = [],
+  label = "Chart",
   maxItemsOnChart = 10,
   onPiePress,
-  highlightedSlice 
-}: PieProps & { 
+  highlightedSlice,
+}: PieProps & {
   onPiePress?: (item: PieData) => void;
   highlightedSlice?: string;
 }) {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const [selectedSlice, setSelectedSlice] = useState<PieData | null>(
-    highlightedSlice ? data.find(item => item.x === highlightedSlice) || null : null
+    highlightedSlice ? data.find(item => item.x === highlightedSlice) || null : null,
   );
   const chartWidth = Math.min(width, 600);
   const chartHeight = Math.min(width, 600);
@@ -43,6 +43,15 @@ export default function MyPie({
     "#FFB6C1",
     "#F4A460",
     "#20B2AA",
+    "#87CEEB",
+    "#9370DB",
+    "#FF6347",
+    "#40E0D0",
+    "#D2691E",
+    "#6495ED",
+    "#FF4500",
+    "#2E8B57",
+    "#1E90FF",
   ];
   const sortedData = [...data].filter(item => item.y > 0).sort((a, b) => b.y - a.y);
   const topItems = sortedData.slice(0, maxItemsOnChart); // Top 5 items
@@ -56,7 +65,7 @@ export default function MyPie({
   }));
 
   return (
-    <View className="gap-2 py-1 my-1 bg-card w-[99%] m-auto rounded-md border border-muted">
+    <>
       <Text className={`text-center text-xl font-bold text-foreground`}>{label}</Text>
 
       <View
@@ -64,7 +73,7 @@ export default function MyPie({
       >
         <View style={{ width: chartWidth }} className="overflow-visible">
           <VictoryContainer
-            width={chartWidth * 1.3}
+            width={chartWidth * 1.25}
             height={chartHeight}
             theme={VictoryTheme.material}
             disableContainerEvents
@@ -80,7 +89,7 @@ export default function MyPie({
               innerRadius={Platform.OS === "web" ? chartWidth * 0.18 : undefined}
               labelRadius={d => (Platform.OS === "web" ? chartWidth * 0.28 : Number(d.innerRadius) + 100)}
               padAngle={1}
-              origin={{ x: chartWidth * 0.5, y: chartHeight * 0.5 }}
+              origin={{ x: chartWidth * 0.6, y: chartHeight * 0.5 }}
               style={{
                 parent: { overflow: "visible", backgroundColor: "red" },
 
@@ -107,7 +116,7 @@ export default function MyPie({
                     onPress: (_, props) => {
                       const newSelectedSlice = selectedSlice?.x === props.datum.x ? null : props.datum;
                       setSelectedSlice(newSelectedSlice);
-                      
+
                       // Call the onPiePress callback if provided
                       if (onPiePress && newSelectedSlice) {
                         onPiePress(newSelectedSlice);
@@ -132,8 +141,8 @@ export default function MyPie({
                 }
                 textAnchor="middle"
                 verticalAnchor="middle"
-                x={chartWidth * 0.5}
-                y={chartHeight * 0.48}
+                x={chartWidth * 0.6}
+                y={chartHeight * 0.5}
                 style={{
                   fontSize: 14,
                   fontWeight: "bold",
@@ -181,6 +190,6 @@ export default function MyPie({
           />
         </View>
       </View>
-    </View>
+    </>
   );
 }

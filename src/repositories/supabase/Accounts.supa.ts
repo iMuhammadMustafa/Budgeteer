@@ -7,12 +7,12 @@ import { IAccountRepository } from "../interfaces/IAccountRepository";
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
   protected tableName = TableNames.Accounts;
 
-  override async findAll(tenantId: string): Promise<Account[]> {
+  override async findAll(tenantId: string, filters: { deleted?: boolean } = {}): Promise<Account[]> {
     const { data, error } = await supabase
       .from(TableNames.Accounts)
       .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
       .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
+      .eq("isdeleted", filters?.deleted ?? false)
       .order("category(displayorder)", { ascending: false })
       .order("displayorder", { ascending: false })
       .order("name")

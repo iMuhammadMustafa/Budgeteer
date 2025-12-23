@@ -18,6 +18,7 @@ export default function DashboardIndex() {
     handleDayPress,
     handlePiePress,
     handleBarPress,
+    periodControls,
   } = useDashboard();
 
   if (isLoading) {
@@ -60,6 +61,7 @@ export default function DashboardIndex() {
           handleDayPress={handleDayPress}
           handlePiePress={handlePiePress}
           handleBarPress={handleBarPress}
+          periodControls={periodControls}
         />
       </ScrollView>
     </SafeAreaView>

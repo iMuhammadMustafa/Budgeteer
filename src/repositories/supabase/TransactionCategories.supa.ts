@@ -15,7 +15,7 @@ export class TransactionCategorySupaRepository
       .from(TableNames.TransactionCategories)
       .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)
       .eq("tenantid", tenantId)
-      .eq("isdeleted", false)
+      .eq("isdeleted", filters?.deleted ?? false)
       .order("group(displayorder)", { ascending: false })
       .order("displayorder", { ascending: false })
       .order("name");

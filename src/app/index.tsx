@@ -6,7 +6,7 @@ import Button from "../components/elements/Button";
 import { useAuth } from "../providers/AuthProvider";
 import { useStorageMode } from "../providers/StorageModeProvider";
 import { useTheme } from "../providers/ThemeProvider";
-import { WATERMELONDB_DEFAULTS } from "../types/database/watermelon/constants";
+import { WATERMELONDB_DEFAULTS, WATERMELONDB_DEMO } from "../types/database/watermelon/constants";
 
 export default function Index() {
   const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
@@ -19,42 +19,19 @@ export default function Index() {
       if (storageMode && session) return router.push("/Dashboard");
 
       if (mode.id === StorageMode.Cloud) {
-        console.log("Navigating to Login screen for Cloud storage mode");
         return router.push("/Login");
       }
 
       await setStorageMode(mode.id);
-      if (mode.id === StorageMode.Demo) {
-        await setSession(
-          {
-            user: {
-              id: WATERMELONDB_DEFAULTS.userId,
-              email: "local@local.com",
-              user_metadata: {
-                tenantid: WATERMELONDB_DEFAULTS.tenantId,
-                full_name: "Local User",
-              },
-              app_metadata: {},
-              aud: "authenticated",
-              created_at: new Date().toISOString(),
-            },
-            access_token: "local-access-token",
-            refresh_token: "local-refresh-token",
-            expires_in: 3600,
-            token_type: "bearer",
-          },
-          StorageMode.Local,
-        );
-      }
       if (mode.id === StorageMode.Local) {
         await setSession(
           {
             user: {
               id: WATERMELONDB_DEFAULTS.userId,
-              email: "local@local.com",
+              email: WATERMELONDB_DEFAULTS.email,
               user_metadata: {
                 tenantid: WATERMELONDB_DEFAULTS.tenantId,
-                full_name: "Local User",
+                full_name: WATERMELONDB_DEFAULTS.name,
               },
               app_metadata: {},
               aud: "authenticated",
@@ -68,6 +45,29 @@ export default function Index() {
           StorageMode.Local,
         );
       }
+      if (mode.id === StorageMode.Demo) {
+        await setSession(
+          {
+            user: {
+              id: WATERMELONDB_DEMO.userId,
+              email: WATERMELONDB_DEMO.email,
+              user_metadata: {
+                tenantid: WATERMELONDB_DEMO.tenantId,
+                full_name: WATERMELONDB_DEMO.name,
+              },
+              app_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            },
+            access_token: "demo-access-token",
+            refresh_token: "demo-refresh-token",
+            expires_in: 3600,
+            token_type: "bearer",
+          },
+          StorageMode.Demo,
+        );
+      }
+      console.log("Navigating to Dashboard");
       return router.push("/Dashboard");
     },
     [session, setSession, storageMode, setStorageMode],

@@ -10,7 +10,6 @@ import supabase from "./Supabase";
 interface AuthContextType {
   session: Session | null;
   user: Session["user"] | null;
-  tenantId?: string;
   setSession: (newSession: Session | null, currentStorageMode: StorageMode | null) => Promise<void>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -29,71 +28,53 @@ const AuthContext = createContext<AuthContextType | undefined>({
 });
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { storageMode, isDatabaseReady } = useStorageMode();
+  const { storageMode, isLoading: isStorageLoading, setStorageMode } = useStorageMode();
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const user = session?.user ?? null;
   const isLoggedIn = !!user;
 
-  const tenantId = session?.user?.app_metadata?.tenant_id;
+  useEffect(() => {
+    const fetchSession = async () => {
+      if (isStorageLoading) return;
 
-  const fetchSession = useCallback(async () => {
-    // Wait for StorageModeProvider to finish initialization
-    if (!isDatabaseReady) {
-      return;
-    }
+      if (storageMode === null) {
+        setSession(null);
+        setIsLoading(false);
+        return;
+      }
 
-    // Only proceed if we have a valid storage mode
-    if (storageMode === null) {
-      setSession(null);
-      return;
-    }
+      setIsLoading(true);
 
-    setIsLoading(true);
-
-    try {
       switch (storageMode) {
         case StorageMode.Local:
           const localSession = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
           if (localSession) {
             setSession(JSON.parse(localSession));
-          } else {
-            setSession(null);
           }
           break;
         case StorageMode.Demo:
-          const demoSession = await storage.getItem(STORAGE_KEYS.DEMO_SESSION);
+          const demoSession = await storage.getItem(STORAGE_KEYS.LOCAL_SESSION);
           if (demoSession) {
             setSession(JSON.parse(demoSession));
-          } else {
-            setSession(null);
           }
           break;
         case StorageMode.Cloud:
           const {
-            data: { session: cloudSession },
+            data: { session },
+            error,
           } = await supabase.auth.getSession();
-          setSession(cloudSession ?? null);
+          if (session) setSession(session);
           break;
         default:
           console.warn("Unknown storage mode:", storageMode);
-          setSession(null);
           break;
       }
-    } catch (error) {
-      console.error("Error fetching session:", error);
-      setSession(null);
-    } finally {
       setIsLoading(false);
-    }
-  }, [storageMode, isDatabaseReady]);
+    };
 
-  // Fetch session when storage mode and database are ready
-  useEffect(() => {
-    if (isDatabaseReady) {
-      fetchSession();
-    }
-  }, [isDatabaseReady, storageMode, fetchSession]);
+    fetchSession();
+  }, [storageMode, isStorageLoading]);
 
   const handleSetSession = useCallback(async (newSession: Session | null, newStorageMode: StorageMode | null) => {
     if (newStorageMode === StorageMode.Local || newStorageMode === StorageMode.Demo) {
@@ -114,21 +95,25 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const logout = useCallback(async () => {
-    if (storageMode === StorageMode.Cloud) {
-      await supabase.auth.signOut();
-    } else {
-      await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+    switch (storageMode) {
+      case StorageMode.Local:
+        await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+      case StorageMode.Demo:
+        await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+        break;
+      case StorageMode.Cloud:
+        await supabase.auth.signOut();
+        break;
     }
     setSession(null);
     queryClient.clear();
+    queryClient.resetQueries();
     router.replace("/");
   }, [storageMode]);
 
-  console.log({ session, user, tenantId, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout });
-
   return (
     <AuthContext.Provider
-      value={{ session, user, tenantId, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
+      value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
     >
       {children}
     </AuthContext.Provider>

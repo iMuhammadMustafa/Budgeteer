@@ -326,6 +326,18 @@ export class TransactionWatermelonRepository
     } as TransactionsView;
   }
 
+  async findAllDeleted(tenantId: string, filters: { offset?: number; limit?: number }): Promise<TransactionType[]> {
+    const db = await this.getDb();
+    const results = (await db
+      .get(this.tableName)
+      .query(Q.where("tenantid", tenantId), Q.where("isdeleted", true))) as Transaction[];
+
+    const offset = filters.offset ?? 0;
+    const limit = filters.limit ?? results.length;
+    const sliced = results.slice(offset, offset + limit);
+    return sliced.map(tx => mapTransactionFromWatermelon(tx));
+  }
+
   async findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]> {
     const db = await this.getDb();
     const query = db

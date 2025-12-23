@@ -9,6 +9,7 @@
  * All local data will be associated with this tenant
  */
 export const WATERMELONDB_DEFAULT_TENANT_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
+export const WATERMELONDB_DEMO_TENANT_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
 
 /**
  * Default user ID for WatermelonDB operations
@@ -16,6 +17,7 @@ export const WATERMELONDB_DEFAULT_TENANT_ID = "d8d5efae-da25-4b50-870f-8774b83d7
  * All local data will be created/updated by this user
  */
 export const WATERMELONDB_DEFAULT_USER_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
+export const WATERMELONDB_DEMO_USER_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
 
 /**
  * Default currency code for WatermelonDB operations
@@ -65,6 +67,21 @@ export const WATERMELONDB_DEFAULTS = {
   budgetAmount: 0,
   displayOrder: 0,
   isDeleted: false,
+  email: "local@local.com",
+  name: "Local User",
+} as const;
+
+export const WATERMELONDB_DEMO = {
+  tenantId: WATERMELONDB_DEMO_TENANT_ID,
+  userId: WATERMELONDB_DEMO_USER_ID,
+  currency: WATERMELONDB_DEFAULT_CURRENCY,
+  budgetFrequency: WATERMELONDB_DEFAULT_BUDGET_FREQUENCY,
+  color: WATERMELONDB_DEFAULT_COLOR,
+  budgetAmount: 0,
+  displayOrder: 0,
+  isDeleted: false,
+  email: "demo@local.com",
+  name: "Demo User",
 } as const;
 
 export default {
