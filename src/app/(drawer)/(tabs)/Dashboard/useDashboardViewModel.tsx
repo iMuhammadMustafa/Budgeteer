@@ -1,4 +1,4 @@
-import { useStatsService } from "@/src/services/Stats.Service";
+import { getStatsDailyTransactionsHelper, useStatsService } from "@/src/services/Stats.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
@@ -29,20 +29,29 @@ export default function useDashboard() {
   const transactionService = useTransactionService();
   const dateRanges = statsService.useGetDateRanges();
 
-  const { data: dailyTransactionsThisMonth, isLoading: isWeeklyLoading } = statsService.useGetStatsDailyTransactions(
-    dateRanges.currentMonth.start,
-    dateRanges.currentMonth.end,
-    true,
-  );
-  const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
-    statsService.useGetStatsMonthlyCategoriesTransactions(dateRanges.currentMonth.start, dateRanges.currentMonth.end);
+  // Period cursors (independent per-chart)
+  const [weekBaseDate, setWeekBaseDate] = useState<string>(dayjs().toISOString());
+  const [dailyMonthCursor, setDailyMonthCursor] = useState<{ start: string; end: string }>(dateRanges.currentMonth);
+  const [piesMonthCursor, setPiesMonthCursor] = useState<{ start: string; end: string }>(dateRanges.currentMonth);
+  const [yearCursor, setYearCursor] = useState<{ start: string; end: string }>(dateRanges.currentYear);
 
+  // Fetch raw daily transactions for the calendar + weekly bar (month-bound)
+  const { data: dailyTransactionsRaw = [], isLoading: isDailyLoading } = statsService.useGetStatsDailyTransactionsRaw(
+    dailyMonthCursor.start,
+    dailyMonthCursor.end,
+  );
+
+  // Fetch monthly categories/groups (month-bound)
+  const { data: monthlyTransactionsGroupsAndCategories = { groups: [], categories: [] }, isLoading: isMonthlyLoading } =
+    statsService.useGetStatsMonthlyCategoriesTransactions(piesMonthCursor.start, piesMonthCursor.end);
+
+  // Fetch yearly charts (year-bound)
   const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } =
-    statsService.useGetStatsMonthlyTransactionsTypes(dateRanges.currentYear.start, dateRanges.currentYear.end);
+    statsService.useGetStatsMonthlyTransactionsTypes(yearCursor.start, yearCursor.end);
 
   const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.useGetStatsNetWorthGrowth(
-    dateRanges.currentYear.start,
-    dateRanges.currentYear.end,
+    yearCursor.start,
+    yearCursor.end,
   );
 
   const params = useLocalSearchParams() as Partial<IDetailsViewProps>;
@@ -64,10 +73,20 @@ export default function useDashboard() {
   }, [params]);
   const { data: filteredTransactions, isLoading: isFiltersLoading } = transactionService.useFindAllView(filters);
 
+  // Derived weekly bars and calendar data from raw daily
+  const { weeklyTransactionTypesData, dailyTransactionTypesData } = useMemo(() => {
+    const derived = getStatsDailyTransactionsHelper(dailyTransactionsRaw, true, weekBaseDate);
+    const calendarDerived = getStatsDailyTransactionsHelper(dailyTransactionsRaw, false);
+    return {
+      weeklyTransactionTypesData: derived.barsData,
+      dailyTransactionTypesData: calendarDerived.calendarData,
+    };
+  }, [dailyTransactionsRaw, weekBaseDate]);
+
   const dashboardData = useMemo(
     () => ({
-      weeklyTransactionTypesData: dailyTransactionsThisMonth?.barsData,
-      dailyTransactionTypesData: dailyTransactionsThisMonth?.calendarData,
+      weeklyTransactionTypesData,
+      dailyTransactionTypesData,
       monthlyCategories: monthlyTransactionsGroupsAndCategories.categories,
       monthlyGroups: monthlyTransactionsGroupsAndCategories.groups,
       yearlyTransactionsTypes,
@@ -75,7 +94,8 @@ export default function useDashboard() {
       filteredTransactions,
     }),
     [
-      dailyTransactionsThisMonth,
+      weeklyTransactionTypesData,
+      dailyTransactionTypesData,
       monthlyTransactionsGroupsAndCategories,
       yearlyTransactionsTypes,
       netWorthGrowth,
@@ -86,7 +106,7 @@ export default function useDashboard() {
   const [isLocalLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isLoading =
-    isWeeklyLoading || isMonthlyLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isLocalLoading;
+    isDailyLoading || isMonthlyLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isLocalLoading;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -176,6 +196,105 @@ export default function useDashboard() {
     });
   }, [params]);
 
+  // Period labels
+  const weekLabel = useMemo(() => {
+    const start = dayjs(weekBaseDate).local().startOf("week");
+    const end = dayjs(weekBaseDate).local().endOf("week");
+    const sameMonth = start.month() === end.month();
+    const startFmt = sameMonth ? start.format("MMM D") : start.format("MMM D");
+    const endFmt = end.format("MMM D, YYYY");
+    return `Week: ${startFmt} – ${endFmt}`;
+  }, [weekBaseDate]);
+
+  const monthLabel = useMemo(() => dayjs(piesMonthCursor.start).format("MMM YYYY"), [piesMonthCursor]);
+  const calendarLabel = useMemo(() => dayjs(dailyMonthCursor.start).format("MMM YYYY"), [dailyMonthCursor]);
+  const yearLabel = useMemo(() => dayjs(yearCursor.start).format("YYYY"), [yearCursor]);
+
+  // Period navigation handlers
+  const onPrevWeek = useCallback(() => {
+    const next = dayjs(weekBaseDate).subtract(1, "week");
+    setWeekBaseDate(next.toISOString());
+    // If crossing month, update daily month cursor (refetch only daily dataset)
+    if (
+      next.month() !== dayjs(dailyMonthCursor.start).month() ||
+      next.year() !== dayjs(dailyMonthCursor.start).year()
+    ) {
+      setDailyMonthCursor({
+        start: next.utc().startOf("month").format("YYYY-MM-DD"),
+        end: next.utc().endOf("month").format("YYYY-MM-DD"),
+      });
+    }
+  }, [weekBaseDate, dailyMonthCursor]);
+
+  const onNextWeek = useCallback(() => {
+    const next = dayjs(weekBaseDate).add(1, "week");
+    setWeekBaseDate(next.toISOString());
+    if (
+      next.month() !== dayjs(dailyMonthCursor.start).month() ||
+      next.year() !== dayjs(dailyMonthCursor.start).year()
+    ) {
+      setDailyMonthCursor({
+        start: next.utc().startOf("month").format("YYYY-MM-DD"),
+        end: next.utc().endOf("month").format("YYYY-MM-DD"),
+      });
+    }
+  }, [weekBaseDate, dailyMonthCursor]);
+
+  const onPrevMonth = useCallback(() => {
+    const base = dayjs(piesMonthCursor.start).subtract(1, "month");
+    setPiesMonthCursor({
+      start: base.utc().startOf("month").format("YYYY-MM-DD"),
+      end: base.utc().endOf("month").format("YYYY-MM-DD"),
+    });
+  }, [piesMonthCursor]);
+
+  const onNextMonth = useCallback(() => {
+    const base = dayjs(piesMonthCursor.start).add(1, "month");
+    setPiesMonthCursor({
+      start: base.utc().startOf("month").format("YYYY-MM-DD"),
+      end: base.utc().endOf("month").format("YYYY-MM-DD"),
+    });
+  }, [piesMonthCursor]);
+
+  const onPrevCalendarMonth = useCallback(() => {
+    const base = dayjs(dailyMonthCursor.start).subtract(1, "month");
+    setDailyMonthCursor({
+      start: base.utc().startOf("month").format("YYYY-MM-DD"),
+      end: base.utc().endOf("month").format("YYYY-MM-DD"),
+    });
+  }, [dailyMonthCursor]);
+
+  const onNextCalendarMonth = useCallback(() => {
+    const base = dayjs(dailyMonthCursor.start).add(1, "month");
+    setDailyMonthCursor({
+      start: base.utc().startOf("month").format("YYYY-MM-DD"),
+      end: base.utc().endOf("month").format("YYYY-MM-DD"),
+    });
+  }, [dailyMonthCursor]);
+
+  const onPrevYear = useCallback(() => {
+    const base = dayjs(yearCursor.start).subtract(1, "year");
+    setYearCursor({
+      start: base.utc().startOf("year").toISOString(),
+      end: base.utc().endOf("year").toISOString(),
+    });
+  }, [yearCursor]);
+
+  const onNextYear = useCallback(() => {
+    const base = dayjs(yearCursor.start).add(1, "year");
+    setYearCursor({
+      start: base.utc().startOf("year").toISOString(),
+      end: base.utc().endOf("year").toISOString(),
+    });
+  }, [yearCursor]);
+
+  const periodControls = {
+    week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek },
+    month: { label: monthLabel, prev: onPrevMonth, next: onNextMonth },
+    calendar: { label: calendarLabel, prev: onPrevCalendarMonth, next: onNextCalendarMonth },
+    year: { label: yearLabel, prev: onPrevYear, next: onNextYear },
+  };
+
   return {
     ...dashboardData,
     isLoading,
@@ -189,5 +308,6 @@ export default function useDashboard() {
     filters,
     params,
     handleViewAllNavigation,
+    periodControls,
   };
 }
