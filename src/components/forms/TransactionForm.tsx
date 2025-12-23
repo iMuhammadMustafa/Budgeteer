@@ -130,6 +130,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     accountOptions,
     transferAccountOptions,
     error,
+    showOneMoreSuccess,
+    isOneMoreSubmitting,
   } = useTransactionForm({ transaction });
 
   return (
@@ -153,15 +155,23 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               leftIcon="Trash"
               size="sm"
             />
-            <Button
-              label="One More"
-              variant="primary"
-              className="bg-primary-300 rounded-md"
-              disabled={isLoading}
-              onPress={handleOnMoreSubmit}
-              leftIcon="Plus"
-              size="sm"
-            />
+            <View className="relative">
+              <Button
+                label="One More"
+                variant="primary"
+                className="bg-primary-300 rounded-md"
+                disabled={isLoading || showOneMoreSuccess}
+                onPress={handleOnMoreSubmit}
+                leftIcon="Plus"
+                size="sm"
+                loading={isOneMoreSubmitting}
+              />
+              {showOneMoreSuccess && (
+                <View className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                  <MyIcon name="Check" size={12} className="text-white" />
+                </View>
+              )}
+            </View>
           </View>
 
           <View className="mb-2 z-50">
@@ -393,6 +403,8 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { mutate: upsertTransaction } = transactionService.useUpsert();
 
   const [mode, setMode] = useState<"plus" | "minus">("minus");
+  const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
+  const [isOneMoreSubmitting, setIsOneMoreSubmitting] = useState(false);
 
   const initialFormData: TransactionFormType = useMemo(
     () => ({
@@ -441,7 +453,11 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
     onSuccess: () => {
-      console.log("Transaction saved successfully");
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      setShowOneMoreSuccess(true);
+      setTimeout(() => setShowOneMoreSuccess(false), 2000);
     },
     onError: error => {
       console.error("Failed to save transaction:", error);
@@ -458,6 +474,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const handleOnMoreSubmit = useCallback(() => {
     if (validateForm()) {
+      setIsOneMoreSubmitting(true);
       const updatedDate = dayjs(formState.data.date).local().add(1, "second").format("YYYY-MM-DDTHH:mm:ss");
 
       const newTransactionData: TransactionFormType = {
@@ -467,6 +484,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
       submit(formState.data).then(() => {
         setFormData(newTransactionData);
+        setIsOneMoreSubmitting(false);
       });
     }
   }, [validateForm, submit, formState.data, setFormData]);
@@ -739,5 +757,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     isEdit,
     isLoading,
     findByName: transactionService.useFindByName,
+    showOneMoreSuccess,
+    isOneMoreSubmitting,
   };
 };
