@@ -11,7 +11,6 @@ export default class AccountCategory extends Model implements Tables<TableNames.
   @field("color") color!: string;
   @field("icon") icon!: string;
   @field("displayorder") displayorder!: number;
-  @field("statementdate") statementdate!: number | null;
 
   @field("tenantid") tenantid!: string;
   @field("isdeleted") isdeleted!: boolean;

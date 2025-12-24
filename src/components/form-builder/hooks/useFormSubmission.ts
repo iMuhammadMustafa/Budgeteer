@@ -3,10 +3,7 @@
  * Provides submission handling, loading states, error handling, success callbacks, and retry mechanisms
  */
 
-import {
-  UseFormSubmissionOptions,
-  UseFormSubmissionReturn
-} from '@/src/types/components/forms.types';
+import { UseFormSubmissionOptions, UseFormSubmissionReturn } from "@/src/types/components/forms.types";
 import {
   createNetworkError,
   createSubmissionError,
@@ -14,9 +11,9 @@ import {
   getUserFriendlyErrorMessage,
   isRecoverableError,
   logFormError,
-  reportFormError
-} from '@/src/utils/form-errors';
-import { useCallback, useRef, useState } from 'react';
+  reportFormError,
+} from "@/src/utils/form-errors";
+import { useCallback, useRef, useState } from "react";
 
 /**
  * Custom hook for handling form submissions with error recovery and retry mechanisms
@@ -26,15 +23,9 @@ import { useCallback, useRef, useState } from 'react';
  */
 export function useFormSubmission<T>(
   onSubmit: (data: T) => Promise<void>,
-  options: UseFormSubmissionOptions = {}
+  options: UseFormSubmissionOptions = {},
 ): UseFormSubmissionReturn<T> {
-  const {
-    onSuccess,
-    onError,
-    resetOnSuccess = false,
-    showSuccessMessage = false,
-    showErrorMessage = true,
-  } = options;
+  const { onSuccess, onError, resetOnSuccess = false, showSuccessMessage = false, showErrorMessage = true } = options;
 
   // State management
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +33,7 @@ export function useFormSubmission<T>(
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Refs for tracking retry attempts and cleanup
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 0;
 
@@ -73,7 +64,7 @@ export function useFormSubmission<T>(
 
     if (showSuccessMessage) {
       // You could integrate with a notification system here
-      console.log('Form submitted successfully');
+      console.log("Form submitted successfully");
     }
 
     if (onSuccess) {
@@ -89,81 +80,91 @@ export function useFormSubmission<T>(
   }, [onSuccess, resetOnSuccess, showSuccessMessage, clearRetryTimeout]);
 
   // Handle submission error
-  const handleError = useCallback((submitError: Error, data: T) => {
-    const friendlyMessage = getUserFriendlyErrorMessage(submitError);
-    const formError = submitError.name === 'NetworkError' 
-      ? createNetworkError(friendlyMessage)
-      : createSubmissionError(friendlyMessage);
+  const handleError = useCallback(
+    (submitError: Error, data: T) => {
+      const friendlyMessage = getUserFriendlyErrorMessage(submitError);
+      const formError =
+        submitError.name === "NetworkError"
+          ? createNetworkError(friendlyMessage)
+          : createSubmissionError(friendlyMessage);
 
-    setError(submitError);
-    setIsSuccess(false);
+      setError(submitError);
+      setIsSuccess(false);
 
-    // Log error for debugging
-    logFormError(formError, 'Form Submission');
+      // Log error for debugging
+      logFormError(formError, "Form Submission");
 
-    // Report error to tracking service
-    reportFormError(formError, { formData: data, retryCount: retryCountRef.current });
+      // Report error to tracking service
+      reportFormError(formError, { formData: data, retryCount: retryCountRef.current });
 
-    if (showErrorMessage) {
-      // You could integrate with a notification system here
-      console.error('Form submission failed:', friendlyMessage);
-    }
+      if (showErrorMessage) {
+        // You could integrate with a notification system here
+        console.error("Form submission failed:", friendlyMessage);
+      }
 
-    if (onError) {
-      onError(submitError);
-    }
+      if (onError) {
+        onError(submitError);
+      }
 
-    // Attempt retry for recoverable errors
-    if (isRecoverableError(formError) && retryCountRef.current < maxRetries) {
-      const retryDelay = getRetryDelay(formError, retryCountRef.current + 1);
-      
-      console.log(`Retrying submission in ${retryDelay}ms (attempt ${retryCountRef.current + 1}/${maxRetries})`);
-      
-      retryTimeoutRef.current = setTimeout(() => {
-        retryCountRef.current += 1;
-        submitInternal(data);
-      }, retryDelay);
-    } else {
-      setIsSubmitting(false);
-    }
-  }, [onError, showErrorMessage, maxRetries]);
+      // Attempt retry for recoverable errors
+      if (isRecoverableError(formError) && retryCountRef.current < maxRetries) {
+        const retryDelay = getRetryDelay(formError, retryCountRef.current + 1);
+
+        console.log(`Retrying submission in ${retryDelay}ms (attempt ${retryCountRef.current + 1}/${maxRetries})`);
+
+        retryTimeoutRef.current = setTimeout(() => {
+          retryCountRef.current += 1;
+          submitInternal(data);
+        }, retryDelay);
+      } else {
+        setIsSubmitting(false);
+      }
+    },
+    [onError, showErrorMessage, maxRetries, submitInternal],
+  );
 
   // Internal submission function with error handling
-  const submitInternal = useCallback(async (data: T) => {
-    try {
-      await onSubmit(data);
-      handleSuccess();
-    } catch (submitError) {
-      const error = submitError instanceof Error ? submitError : new Error(String(submitError));
-      handleError(error, data);
-    }
-  }, [onSubmit, handleSuccess, handleError]);
+  const submitInternal = useCallback(
+    async (data: T) => {
+      try {
+        await onSubmit(data);
+        handleSuccess();
+      } catch (submitError) {
+        const error = submitError instanceof Error ? submitError : new Error(String(submitError));
+        handleError(error, data);
+      }
+    },
+    [onSubmit, handleSuccess, handleError],
+  );
 
   // Main submit function
-  const submit = useCallback(async (data: T): Promise<void> => {
-    // Clear any previous state
-    setError(null);
-    setIsSuccess(false);
-    clearRetryTimeout();
-    
-    // Don't allow multiple simultaneous submissions
-    if (isSubmitting) {
-      console.warn('Form submission already in progress');
-      return;
-    }
+  const submit = useCallback(
+    async (data: T): Promise<void> => {
+      // Clear any previous state
+      setError(null);
+      setIsSuccess(false);
+      clearRetryTimeout();
 
-    setIsSubmitting(true);
-    retryCountRef.current = 0;
+      // Don't allow multiple simultaneous submissions
+      if (isSubmitting) {
+        console.warn("Form submission already in progress");
+        return;
+      }
 
-    // Validate data is not null/undefined
-    if (!data || typeof data !== 'object') {
-      const validationError = new Error('Invalid form data provided');
-      handleError(validationError, data);
-      return;
-    }
+      setIsSubmitting(true);
+      retryCountRef.current = 0;
 
-    await submitInternal(data);
-  }, [isSubmitting, submitInternal, handleError, clearRetryTimeout]);
+      // Validate data is not null/undefined
+      if (!data || typeof data !== "object") {
+        const validationError = new Error("Invalid form data provided");
+        handleError(validationError, data);
+        return;
+      }
+
+      await submitInternal(data);
+    },
+    [isSubmitting, submitInternal, handleError, clearRetryTimeout],
+  );
 
   // Cleanup effect would be handled by the component using this hook
   // We provide the cleanup function for manual cleanup if needed

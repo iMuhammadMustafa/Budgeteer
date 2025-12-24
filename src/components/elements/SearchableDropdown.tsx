@@ -66,7 +66,7 @@ export default function SearchableDropdown({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [inputText, ignoreFetch]);
+  }, [inputText, ignoreFetch, initalValue]);
 
   useEffect(() => {
     const applySearch = async () => {
@@ -74,7 +74,7 @@ export default function SearchableDropdown({
         setIsLoading(true);
 
         const tenantId = session?.user?.user_metadata?.tenantid;
-        const data = await searchAction(depouncedText, tenantId);
+        const data = await searchAction(depouncedText, tenantId as string);
         setSuggestions(data);
         setIsLoading(false);
       } else {
@@ -82,7 +82,7 @@ export default function SearchableDropdown({
       }
     };
     applySearch();
-  }, [depouncedText]);
+  }, [depouncedText, ignoreFetch, searchAction, session?.user?.user_metadata?.tenantid]);
 
   const handleChange = (val: string) => {
     setIgnoreFetch(false);

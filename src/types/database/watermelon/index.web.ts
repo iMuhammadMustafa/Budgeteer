@@ -39,6 +39,7 @@ export const isWatermelonDBReady = (): boolean => {
 };
 
 export const clearWatermelonDB = async (databaseName: string = "budgeteerdb"): Promise<void> => {
+  console.log("Clearing WatermelonDB...");
   resetWatermelonDBConnection();
 
   if (Platform.OS === "web") {

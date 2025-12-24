@@ -98,6 +98,21 @@ export class TransactionSupaRepository
     return data;
   }
 
+  async findAllDeleted(
+    tenantId: string,
+    filters: { offset?: number; limit?: number },
+  ): Promise<Transaction[]> {
+    let query = supabase.from(TableNames.Transactions).select().eq("tenantid", tenantId).eq("isdeleted", true);
+
+    if (filters.offset !== undefined && filters.limit !== undefined && filters.limit > 0 && filters.offset >= 0) {
+      query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data as Transaction[];
+  }
+
   /**
    * Gets the account balance at a specific date
    * Calculates balance by summing all transactions up to that date

@@ -257,6 +257,33 @@ export interface UseFormSubmissionReturn<T> {
   reset: () => void;
 }
 
+/**
+ * Options for useErrorDisplay hook
+ */
+export interface UseErrorDisplayOptions {
+  maxRetries?: number;
+  autoRetry?: boolean;
+  logErrors?: boolean;
+  reportErrors?: boolean;
+  onRetry?: (error: FormError) => Promise<void>;
+  onMaxRetriesReached?: (error: FormError) => void;
+}
+
+/**
+ * Return type for useErrorDisplay hook
+ */
+export interface UseErrorDisplayReturn {
+  errorState: FormErrorState;
+  showError: (error: FormError) => void;
+  showErrors: (errors: FormError[]) => void;
+  clearError: (field?: string) => void;
+  clearAllErrors: () => void;
+  retryError: (error: FormError) => Promise<void>;
+  isRetrying: boolean;
+  retryCount: number;
+  canRetry: (error: FormError) => boolean;
+}
+
 // ============================================================================
 // Form-Specific Data Types
 // ============================================================================
@@ -264,7 +291,7 @@ export interface UseFormSubmissionReturn<T> {
 /**
  * Account form data type
  */
-export interface AccountFormData extends Omit<Account, "id" | "createdat" | "updatedat"> {
+export interface AccountFormData extends Omit<Account, "id" | "createdat" | "updatedat" | "statementdate"> {
   id?: string;
   runningbalance?: number | null;
   openBalance?: number | null;

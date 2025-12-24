@@ -60,7 +60,6 @@ export class TransactionWatermelonRepository
     const conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
     // Apply search filters
-    console.log("Filters in findAll:", filters);
     if (filters.startDate) {
       conditions.push(Q.where("date", Q.gte(filters.startDate)));
     }
@@ -322,6 +321,18 @@ export class TransactionWatermelonRepository
       type: mapped.type,
       updatedat: mapped.updatedat,
     } as TransactionsView;
+  }
+
+  async findAllDeleted(tenantId: string, filters: { offset?: number; limit?: number }): Promise<TransactionType[]> {
+    const db = await this.getDb();
+    const results = (await db
+      .get(this.tableName)
+      .query(Q.where("tenantid", tenantId), Q.where("isdeleted", true))) as Transaction[];
+
+    const offset = filters.offset ?? 0;
+    const limit = filters.limit ?? results.length;
+    const sliced = results.slice(offset, offset + limit);
+    return sliced.map(tx => mapTransactionFromWatermelon(tx));
   }
 
   async findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]> {

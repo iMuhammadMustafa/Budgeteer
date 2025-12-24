@@ -6,7 +6,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   coalesce(sum(amount), 0) as sum,
   tenantid
   FROM transactions
-  where isdeleted = false
+  WHERE isdeleted = false
   GROUP BY
   type,
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
@@ -23,6 +23,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyAccountsTransactions WITH (security_invoker)
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
   coalesce(sum(amount), 0) as sum
   FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
+  WHERE t.isdeleted = false
   GROUP BY
   t.accountid, 
   a.name,
@@ -57,6 +58,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoke
   FROM transactiongroups tg 
   LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
   LEFT JOIN transactions t ON tc.id = t.categoryid
+  WHERE t.isdeleted = false
 
   GROUP BY
   tg.id,
@@ -88,6 +90,7 @@ CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
   sum(t.amount) AS sum,
   t.tenantid
   FROM transactions t
+  WHERE t.isdeleted = false
   GROUP BY 
   t.type, 
   t.tenantid,
@@ -108,7 +111,8 @@ AS
     transactions.transferaccountid,
     transactions.tenantid
    FROM transactions
-  WHERE (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
+  WHERE transactions.isdeleted = false
+    AND (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
   ORDER BY transactions.name, transactions.date DESC;
 
 DROP MATERIALIZED VIEW IF EXISTS TransactionsView;

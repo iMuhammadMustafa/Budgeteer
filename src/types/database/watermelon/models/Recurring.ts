@@ -27,7 +27,7 @@ export default class Recurring extends Model implements Tables<TableNames.Recurr
   @field("recurringtype") recurringtype!: Enums<EnumNames.RecurringTypes> | null;
   @field("type") type!: Enums<EnumNames.TransactionTypes>;
 
-  @field("categoryid") categoryid!: string | null;
+  @field("categoryid") categoryid!: string;
   @field("sourceaccountid") sourceaccountid!: string;
   @field("transferaccountid") transferaccountid!: string | null;
 

@@ -20,7 +20,6 @@ import {
   TransactionGroup,
 } from "@/src/types/database/Tables.Types";
 
-
 type Profile = Tables<"profiles">;
 
 export const mapAccountCategoryFromWatermelon = (model: WatermelonAccountCategory): AccountCategory => {
@@ -37,13 +36,13 @@ export const mapAccountCategoryFromWatermelon = (model: WatermelonAccountCategor
     createdby: model.createdby || null,
     updatedat: model.updatedat ? new Date(model.updatedat).toISOString() : null,
     updatedby: model.updatedby || null,
-    statementdate: model.statementdate,
-
   };
 };
 
-export const mapAccountFromWatermelon = (model: WatermelonAccount & { runningbalance?: number | null | undefined;
-  category?: WatermelonAccountCategory}, category?: WatermelonAccountCategory): Account => {
+export const mapAccountFromWatermelon = (
+  model: WatermelonAccount & { runningbalance?: number | null | undefined; category?: WatermelonAccountCategory },
+  category?: WatermelonAccountCategory,
+): Account => {
   return {
     id: model.id,
     name: model.name,
@@ -62,8 +61,10 @@ export const mapAccountFromWatermelon = (model: WatermelonAccount & { runningbal
     createdby: model.createdby || null,
     updatedat: model.updatedat ? new Date(model.updatedat).toISOString() : null,
     updatedby: model.updatedby || null,
+    statementdate: model.statementdate || null,
     category: category ? mapAccountCategoryFromWatermelon(category) : undefined,
-    runningbalance: model.runningbalance !== undefined && model.runningbalance !== null ? Number(model.runningbalance) : undefined,
+    runningbalance:
+      model.runningbalance !== undefined && model.runningbalance !== null ? Number(model.runningbalance) : undefined,
   };
 };
 
@@ -87,7 +88,10 @@ export const mapTransactionGroupFromWatermelon = (model: WatermelonTransactionGr
   };
 };
 
-export const mapTransactionCategoryFromWatermelon = (model: WatermelonTransactionCategory & { group?: WatermelonTransactionGroup }, group?: WatermelonTransactionGroup): TransactionCategory => {
+export const mapTransactionCategoryFromWatermelon = (
+  model: WatermelonTransactionCategory & { group?: WatermelonTransactionGroup },
+  group?: WatermelonTransactionGroup,
+): TransactionCategory => {
   return {
     id: model.id,
     name: model.name || null,
@@ -105,7 +109,6 @@ export const mapTransactionCategoryFromWatermelon = (model: WatermelonTransactio
     createdby: model.createdby || null,
     updatedat: model.updatedat ? new Date(model.updatedat).toISOString() : null,
     updatedby: model.updatedby || null,
-
 
     group: group ? mapTransactionGroupFromWatermelon(group) : undefined,
   };
@@ -132,7 +135,7 @@ export const mapTransactionFromWatermelon = (model: WatermelonTransaction): Tran
     createdat: new Date(model.createdat).toISOString(),
     createdby: model.createdby || null,
     updatedat: model.updatedat ? new Date(model.updatedat).toISOString() : null,
-    updatedby: model.updatedby || null,   
+    updatedby: model.updatedby || null,
   };
 };
 
@@ -157,7 +160,7 @@ export const mapRecurringFromWatermelon = (model: WatermelonRecurring): Recurrin
     id: model.id,
     name: model.name,
     sourceaccountid: model.sourceaccountid,
-    categoryid: model.categoryid || null,
+    categoryid: model.categoryid || "",
     amount: model.amount || null,
     type: model.type as any,
     description: model.description || null,
@@ -186,7 +189,6 @@ export const mapRecurringFromWatermelon = (model: WatermelonRecurring): Recurrin
     maxfailedattempts: model.maxfailedattempts,
     recurringtype: model.recurringtype,
     transferaccountid: model.transferaccountid,
- 
   };
 };
 

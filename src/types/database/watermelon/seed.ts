@@ -780,7 +780,6 @@ export const seedWatermelonDB = async (database?: Database): Promise<void> => {
           accountCategory.color = categoryData.color;
           accountCategory.icon = categoryData.icon;
           accountCategory.displayorder = categoryData.displayorder;
-          accountCategory.statementdate = categoryData.statementdate;
           accountCategory.tenantid = categoryData.tenantid;
           accountCategory.isdeleted = categoryData.isdeleted;
           accountCategory.createdby = categoryData.createdby || null;
@@ -845,6 +844,7 @@ export const seedWatermelonDB = async (database?: Database): Promise<void> => {
  * Clears all seed data from the database
  */
 export const clearSeedData = async (database?: Database): Promise<void> => {
+  console.log("Starting to clear seed data from WatermelonDB database...");
   try {
     const db = database || (await getWatermelonDB());
 
@@ -854,22 +854,22 @@ export const clearSeedData = async (database?: Database): Promise<void> => {
       // Clear in reverse order of dependencies
       const configurations = await db.get(Configuration.table).query().fetch();
       for (const config of configurations) {
-        await config.markAsDeleted();
+        await config.destroyPermanently();
       }
 
       const transactionCategories = await db.get(TransactionCategory.table).query().fetch();
       for (const category of transactionCategories) {
-        await category.markAsDeleted();
+        await category.destroyPermanently();
       }
 
       const accountCategories = await db.get(AccountCategory.table).query().fetch();
       for (const category of accountCategories) {
-        await category.markAsDeleted();
+        await category.destroyPermanently();
       }
 
       const transactionGroups = await db.get(TransactionGroup.table).query().fetch();
       for (const group of transactionGroups) {
-        await group.markAsDeleted();
+        await group.destroyPermanently();
       }
     });
 

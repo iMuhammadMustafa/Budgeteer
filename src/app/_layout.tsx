@@ -14,6 +14,10 @@ import { Suspense } from "react";
 import { ActivityIndicator, LogBox, Platform } from "react-native";
 import QueryProvider from "../providers/QueryProvider";
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(relativeTime);
+
 // Suppress known third-party library warnings for web platform
 if (Platform.OS === "web") {
   LogBox.ignoreLogs([
@@ -38,10 +42,6 @@ if (Platform.OS === "web") {
     originalWarn(...args);
   };
 }
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(relativeTime);
 
 export default function RootLayout() {
   return (

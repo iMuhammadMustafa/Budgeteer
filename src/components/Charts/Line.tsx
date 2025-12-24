@@ -60,7 +60,7 @@ export default function Line({ data, label, color, hideY }: LineProps) {
   const lineChartColor = color || themeColors.primary;
 
   return (
-    <View className="gap-2 py-1 my-1 bg-card w-[99%] m-auto rounded-md border border-muted">
+    <>
       <Text className={`text-center text-xl font-bold text-foreground`}>{label}</Text>
 
       <View
@@ -152,6 +152,6 @@ export default function Line({ data, label, color, hideY }: LineProps) {
           />
         </View>
       </View>
-    </View>
+    </>
   );
 }

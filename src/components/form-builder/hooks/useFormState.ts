@@ -232,7 +232,7 @@ export function useFormState<T extends Record<string, any>>(
         };
       });
     },
-    [initialData, validationSchema],
+    [validationSchema],
   );
 
   // Memoized computed values

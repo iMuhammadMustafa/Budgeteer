@@ -52,11 +52,11 @@ export abstract class BaseWatermelonRepository<
     }
 
     conditions.push(Q.where("tenantid", tenantId));
-    conditions.push(Q.where("isdeleted", false));
+    conditions.push(Q.where("isdeleted", filters?.deleted ?? false));
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
+        if (value !== undefined && value !== null && key !== "deleted") {
           conditions.push(Q.where(key, value as any));
         }
       });
@@ -135,6 +135,11 @@ export abstract class BaseWatermelonRepository<
   }
 
   async delete(id: string, tenantId: string): Promise<void> {
+    // Default delete behavior is soft delete
+    return this.softDelete(id, tenantId);
+  }
+
+  async hardDelete(id: string, tenantId: string): Promise<void> {
     const db = await this.getDb();
 
     await db.write(async () => {

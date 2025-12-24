@@ -32,6 +32,11 @@ export interface IStatsService {
       calendarData: MyCalendarData;
     }>
   >;
+  useGetStatsDailyTransactionsRaw: (
+    startDate: string,
+    endDate: string,
+    type?: TransactionType,
+  ) => ReturnType<typeof useQuery<StatsDailyTransactions[]>>;
   useGetStatsMonthlyTransactionsTypes: (
     startDate?: string,
     endDate?: string,
@@ -77,6 +82,18 @@ export function useStatsService(): IStatsService {
         const data = await statsRepo.getStatsDailyTransactions(tenantId, startDate, endDate, type);
         return getStatsDailyTransactionsHelper(data, week);
       },
+      placeholderData: (prev: any) => prev,
+    });
+  };
+
+  const useGetStatsDailyTransactionsRaw = (startDate: string, endDate: string, type?: TransactionType) => {
+    return useQuery<StatsDailyTransactions[]>({
+      queryKey: [ViewNames.StatsDailyTransactions, "raw", startDate, endDate, type, tenantId],
+      queryFn: async () => {
+        return statsRepo.getStatsDailyTransactions(tenantId, startDate, endDate, type);
+      },
+      enabled: !!tenantId,
+      placeholderData: (prev: any) => prev,
     });
   };
 
@@ -88,6 +105,7 @@ export function useStatsService(): IStatsService {
         return getStatsMonthlyTransactionsTypesHelper(data);
       },
       enabled: !!tenantId,
+      placeholderData: (prev: any) => prev,
     });
   };
 
@@ -102,6 +120,7 @@ export function useStatsService(): IStatsService {
         return getStatsMonthlyCategoriesTransactionsDashboardHelper(data);
       },
       enabled: !!tenantId,
+      placeholderData: (prev: any) => prev,
     });
   };
 
@@ -137,6 +156,7 @@ export function useStatsService(): IStatsService {
         return getStatsNetWorthGrowthHelper(data);
       },
       enabled: !!tenantId,
+      placeholderData: (prev: any) => prev,
     });
   };
 
@@ -160,6 +180,7 @@ export function useStatsService(): IStatsService {
 
   return {
     useGetStatsDailyTransactions,
+    useGetStatsDailyTransactionsRaw,
     useGetStatsMonthlyTransactionsTypes,
     useGetStatsMonthlyCategoriesTransactions,
     useGetStatsMonthlyAccountsTransactions,
@@ -170,33 +191,37 @@ export function useStatsService(): IStatsService {
     statsRepo,
   };
 }
-const getStatsDailyTransactionsHelper = async (
+export const getStatsDailyTransactionsHelper = (
   data: StatsDailyTransactions[],
   week = false,
-): Promise<{
+  baseDate?: string,
+): {
   barsData?: BarDataType[];
   calendarData: MyCalendarData;
-}> => {
+} => {
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
-    const today = dayjs().format("ddd");
+    const base = baseDate ? dayjs(baseDate) : dayjs();
+    const todayLabel = base.format("ddd");
+    const start = base.startOf("week").local();
+    const end = base.endOf("week").local();
+
     const thisWeekData = data
-      .filter(
-        (item: any) =>
-          dayjs(item.date).local() >= dayjs().startOf("week").local() &&
-          dayjs(item.date).local() <= dayjs().endOf("week").local(),
-      )
+      .filter((item: any) => {
+        const d = dayjs(item.date).local();
+        return d >= start && d <= end;
+      })
       .map((item: any) => {
         const x = dayjs(item.date).format("ddd");
         const y = Math.abs(item.sum ?? 0);
         const color = (item.sum ?? 0) > 0 ? "rgba(76, 175, 80, 0.6)" : "rgba(244, 67, 54, 0.6)";
         return { x, y, color, item };
       });
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     barsData = daysOfWeek.map(day => {
       const dayData = thisWeekData.find((x: any) => x.x === day);
-      const x = today === day ? "Today" : day;
+      const x = todayLabel === day ? "Today" : day;
       return {
         x,
         y: dayData?.y ?? 0,
@@ -214,8 +239,6 @@ const getStatsDailyTransactionsHelper = async (
     acc[day] = { dots };
     return acc;
   }, {});
-  console.log("All Data:", data);
-  console.log("Calendar Data:", calendarData);
 
   return { barsData, calendarData };
 };

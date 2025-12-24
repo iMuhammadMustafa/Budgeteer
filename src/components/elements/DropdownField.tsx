@@ -42,6 +42,12 @@ function DropdownField({
   }, [selectedValue, options]);
 
   useEffect(() => {
+    if (selectedItem) {
+      onSelect(selectedItem);
+    }
+  }, [selectedItem, onSelect]);
+
+  useEffect(() => {
     const handleOutsideClick = () => {
       setIsOpen(false);
     };

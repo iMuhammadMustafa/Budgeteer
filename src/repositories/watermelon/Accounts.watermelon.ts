@@ -23,10 +23,10 @@ export class AccountWatermelonRepository
     const conditions = [];
 
     conditions.push(Q.where("tenantid", tenantId));
-    conditions.push(Q.where("isdeleted", false));
+    conditions.push(Q.where("isdeleted", filters?.deleted ?? false));
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
+        if (value !== undefined && value !== null && !["deleted"].includes(key)) {
           conditions.push(Q.where(key, value as any));
         }
       });

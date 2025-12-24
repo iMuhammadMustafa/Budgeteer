@@ -10,11 +10,26 @@ export function useBaseFindAll<TEntity, TTable extends TableNames>(
   tableName: TableNames,
   tenantId: string,
   repo: IRepository<TEntity, TTable>,
+  filters?: any,
 ) {
   return useQuery<TEntity[]>({
-    queryKey: [tableName, tenantId],
+    queryKey: [tableName, tenantId, filters],
     queryFn: async () => {
-      return repo.findAll(tenantId);
+      return repo.findAll(tenantId, filters ?? {});
+    },
+    enabled: !!tenantId,
+  });
+}
+
+export function useBaseFindAllDeleted<TEntity, TTable extends TableNames>(
+  tableName: TableNames,
+  tenantId: string,
+  repo: IRepository<TEntity, TTable>,
+) {
+  return useQuery<TEntity[]>({
+    queryKey: [tableName, "deleted", tenantId],
+    queryFn: async () => {
+      return repo.findAll(tenantId, { deleted: true });
     },
     enabled: !!tenantId,
   });
@@ -124,10 +139,32 @@ export function useBaseDelete<TModel, TTable extends TableNames>(
   repo: IRepository<TModel, TTable>,
   tenantId: string,
   session: any,
+  options?: {
+    customDelete?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
+  },
+) {
+  return useMutation({
+    mutationFn: async (vars: { id: string; item?: any }) => {
+      if (options?.customDelete) {
+        return await options.customDelete(vars, session);
+      }
+      return await repo.softDelete(vars.id, tenantId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [tableName] });
+    },
+  });
+}
+
+export function useBaseHardDelete<TModel, TTable extends TableNames>(
+  tableName: TableNames,
+  repo: IRepository<TModel, TTable>,
+  tenantId: string,
+  session: any,
 ) {
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
-      return await repo.delete(id, tenantId);
+      return await repo.hardDelete(id, tenantId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [tableName] });
@@ -140,10 +177,16 @@ export function useBaseSoftDelete<TModel, TTable extends TableNames>(
   repo: IRepository<TModel, TTable>,
   tenantId: string,
   session: any,
+  options?: {
+    customSoftDelete?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
+  },
 ) {
   return useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      return await repo.softDelete(id, tenantId);
+    mutationFn: async (vars: { id: string; item?: any }) => {
+      if (options?.customSoftDelete) {
+        return await options.customSoftDelete(vars, session);
+      }
+      return await repo.softDelete(vars.id, tenantId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [tableName] });
@@ -156,10 +199,16 @@ export function useBaseRestore<TModel, TTable extends TableNames>(
   repo: IRepository<TModel, TTable>,
   tenantId: string,
   session: any,
+  options?: {
+    customRestore?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
+  },
 ) {
   return useMutation({
-    mutationFn: async (id: string) => {
-      return await repo.restore(id, tenantId);
+    mutationFn: async (vars: { id: string; item?: any }) => {
+      if (options?.customRestore) {
+        return await options.customRestore(vars, session);
+      }
+      return await repo.restore(vars.id, tenantId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [tableName] });
@@ -212,18 +261,23 @@ export default function createServiceHooks<TEntity, TTable extends TableNames>(
     customCreate?: (form: Inserts<TTable>, session: Session) => Promise<TEntity>;
     customUpdate?: (form: Updates<TTable>, session: Session, original?: TEntity) => Promise<TEntity>;
     customUpsert?: (form: Inserts<TTable> | Updates<TTable>, session: Session, original?: TEntity) => Promise<TEntity>;
+    customSoftDelete?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
+    customDelete?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
+    customRestore?: (vars: { id: string; item?: any }, session: Session) => Promise<void>;
   },
   relatedTablesToInvalidate?: TableNames[],
 ) {
   return {
-    useFindAll: () => useBaseFindAll<TEntity, TTable>(tableName, tenantId, repo),
+    useFindAll: (searchFilters?: any) => useBaseFindAll<TEntity, TTable>(tableName, tenantId, repo, searchFilters),
+    useFindAllDeleted: () => useBaseFindAllDeleted<TEntity, TTable>(tableName, tenantId, repo),
     useFindById: (id?: string) => useBaseFindById<TEntity, TTable>(tableName, tenantId, repo, id),
     useCreate: () => useBaseCreate<TEntity, TTable>(tableName, repo, tenantId, session, options),
     useUpdate: () => useBaseUpdate<TEntity, TTable>(tableName, repo, tenantId, session, options),
     useUpsert: () => useBaseUpsert<TEntity, TTable>(tableName, repo, tenantId, session, options),
-    useDelete: () => useBaseDelete<TEntity, TTable>(tableName, repo, tenantId, session),
-    useSoftDelete: () => useBaseSoftDelete<TEntity, TTable>(tableName, repo, tenantId, session),
-    useRestore: () => useBaseRestore<TEntity, TTable>(tableName, repo, tenantId, session),
+    useDelete: () => useBaseDelete<TEntity, TTable>(tableName, repo, tenantId, session, options),
+    useHardDelete: () => useBaseHardDelete<TEntity, TTable>(tableName, repo, tenantId, session),
+    useSoftDelete: () => useBaseSoftDelete<TEntity, TTable>(tableName, repo, tenantId, session, options),
+    useRestore: () => useBaseRestore<TEntity, TTable>(tableName, repo, tenantId, session, options),
     repo,
   };
 }

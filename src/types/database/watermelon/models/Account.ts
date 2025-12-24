@@ -29,6 +29,8 @@ export default class Account extends Model implements Tables<TableNames.Accounts
   @field("tenantid") tenantid!: string;
   @field("isdeleted") isdeleted!: boolean;
 
+  @field("statementdate") statementdate!: number | null;
+
   @relation(TableNames.AccountCategories, "categoryid") category!: AccountCategory;
 }
 

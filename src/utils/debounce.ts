@@ -3,11 +3,8 @@
  * Delays function execution until after a specified delay has passed since the last call
  */
 
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout | null = null;
+export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   return (...args: Parameters<T>) => {
     if (timeoutId) {
@@ -26,10 +23,10 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  interval: number
+  interval: number,
 ): (...args: Parameters<T>) => void {
   let lastCallTime = 0;
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   return (...args: Parameters<T>) => {
     const now = Date.now();
@@ -42,7 +39,7 @@ export function throttle<T extends (...args: any[]) => any>(
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      
+
       timeoutId = setTimeout(() => {
         lastCallTime = Date.now();
         func(...args);
@@ -57,14 +54,14 @@ export function throttle<T extends (...args: any[]) => any>(
  */
 export function createDebouncedValidator<T>(
   validator: (value: T) => boolean | Promise<boolean>,
-  delay: number = 300
+  delay: number = 300,
 ): (value: T) => Promise<boolean> {
   const debouncedFn = debounce(validator, delay);
-  
+
   return (value: T): Promise<boolean> => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const originalValidator = validator;
-      
+
       // Create a wrapper that resolves the promise
       const wrappedValidator = async (val: T) => {
         try {
@@ -74,7 +71,7 @@ export function createDebouncedValidator<T>(
           resolve(false);
         }
       };
-      
+
       // Use debounced version
       const debouncedValidator = debounce(wrappedValidator, delay);
       debouncedValidator(value);
