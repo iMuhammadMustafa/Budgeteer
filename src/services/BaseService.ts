@@ -84,7 +84,6 @@ export function useBaseUpdate<TModel, TTable extends TableNames>(
 ) {
   return useMutation({
     mutationFn: async ({ form, original }: { form: Updates<TTable>; original?: TModel }) => {
-      console.log(form);
       if (options?.customUpdate) {
         return await options.customUpdate(form, session, original);
       }
@@ -216,6 +215,37 @@ export function useBaseRestore<TModel, TTable extends TableNames>(
   });
 }
 
+export function useBaseUpdateMultiple<TModel, TTable extends TableNames>(
+  tableName: TableNames,
+  repo: IRepository<TModel, TTable>,
+  tenantId: string,
+  session: any,
+  relatedTablesToInvalidate?: TableNames[],
+) {
+  return useMutation({
+    mutationFn: async (data: Updates<TTable>[]) => {
+      const userId = session.user.id;
+      const timestamp = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
+
+      const updates = data.map(item => ({
+        ...item,
+        updatedby: userId,
+        updatedat: timestamp,
+      }));
+
+      return await repo.updateMultiple!(updates, tenantId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      if (relatedTablesToInvalidate) {
+        for (const relatedTable of relatedTablesToInvalidate) {
+          await queryClient.invalidateQueries({ queryKey: [relatedTable] });
+        }
+      }
+    },
+  });
+}
+
 async function createBaseRepoHelper<TTModel, TTable extends TableNames>(
   form: Inserts<TTable>,
   session: Session,
@@ -278,6 +308,8 @@ export default function createServiceHooks<TEntity, TTable extends TableNames>(
     useHardDelete: () => useBaseHardDelete<TEntity, TTable>(tableName, repo, tenantId, session),
     useSoftDelete: () => useBaseSoftDelete<TEntity, TTable>(tableName, repo, tenantId, session, options),
     useRestore: () => useBaseRestore<TEntity, TTable>(tableName, repo, tenantId, session, options),
+    useUpdateMultiple: () =>
+      useBaseUpdateMultiple<TEntity, TTable>(tableName, repo, tenantId, session, relatedTablesToInvalidate),
     repo,
   };
 }

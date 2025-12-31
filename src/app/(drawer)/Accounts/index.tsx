@@ -20,6 +20,7 @@ export default function AccountsIndex() {
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
   const { data: accountCategories } = accountCategoryService.useFindAll();
   const { mutate: createTransaction, isPending: isCreating } = transactionService.useCreate();
+  const { mutateAsync: updateAccountBalance } = accountService.useUpdateAccountBalance();
 
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
@@ -55,6 +56,20 @@ export default function AccountsIndex() {
     setSourceAccountId(null);
   };
 
+  // Handle account balance updates when transactions are moved
+  const handleAccountBalanceUpdate = async (transactions: any[], oldAccountId: string, newAccountId: string) => {
+    // Calculate total amount being moved
+    const totalAmount = transactions.reduce((sum, transaction) => {
+      return sum + (transaction.amount || 0);
+    }, 0);
+
+    // Update old account balance (subtract the amounts)
+    await updateAccountBalance({ accountId: oldAccountId, amount: -totalAmount });
+
+    // Update new account balance (add the amounts)
+    await updateAccountBalance({ accountId: newAccountId, amount: totalAmount });
+  };
+
   return (
     <>
       <MyTab
@@ -66,10 +81,22 @@ export default function AccountsIndex() {
         Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}
         detailsContent={detailsContent}
         customAction={(item: any) => (
-          <Button rightIcon="ArrowLeftRight" variant="ghost" onPress={() => openTransferModal(item)} />
+          <Button
+            rightIcon="ArrowLeftRight"
+            className="py-0 px-0"
+            variant="ghost"
+            onPress={() => openTransferModal(item)}
+          />
         )}
         UpsertModal={(item: any) => <AccountForm account={item} />}
         initialState={initialState}
+        dependencyConfig={{
+          dependencyField: "accountid",
+          dependencyService: transactionService,
+          dependencyType: "Transactions",
+          allowDeleteDependencies: true,
+          onAfterUpdate: handleAccountBalanceUpdate,
+        }}
       />
       {modalState.open && (
         <AccountTransferModal

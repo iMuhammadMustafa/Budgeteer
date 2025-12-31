@@ -4,7 +4,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
 import { TableNames } from "../types/database/TableNames";
+import { Updates } from "../types/database/Tables.Types";
 import Button from "./elements/Button";
+import DeleteConfirmModal from "./elements/DeleteConfirmModal";
 import MyIcon from "./elements/MyIcon";
 import MyModal from "./elements/MyModal";
 import SkeletonList from "./elements/SkeletonList";
@@ -23,6 +25,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   icons = true,
   customRenderItem,
   showDeleted = false,
+  dependencyConfig,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -42,6 +45,14 @@ export default function MyTab<TModel, TTable extends TableNames>({
     onPress: () => void,
   ) => React.ReactNode;
   showDeleted?: boolean;
+  dependencyConfig?: {
+    dependencyField: string;
+    dependencyService: IService<any, any>;
+    dependencyType: string;
+    allowDeleteDependencies?: boolean;
+    onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
+    onAfterUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
+  };
 }) {
   const {
     selectedItems,
@@ -56,6 +67,13 @@ export default function MyTab<TModel, TTable extends TableNames>({
     setIsOpen,
     currentItem,
     setCurrentItem,
+    deleteModalOpen,
+    setDeleteModalOpen,
+    itemToDelete,
+    setItemToDelete,
+    handleDeleteConfirm,
+    replacementItems,
+    dependencyCount,
   } = useMyTab({
     service,
     queryKey,
@@ -63,6 +81,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     detailsUrl: detailsUrl,
     initialState,
     showDeleted,
+    dependencyConfig,
   });
   if (isLoading) return <SkeletonList length={20} />;
   return (
@@ -150,7 +169,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
                     {UpsertModal && (
                       <Button
                         variant="ghost"
-                        className="py-0 px-0"
+                        className="py-0 px-0 me-2"
                         iconSize={20}
                         onPress={() => {
                           setIsOpen(true);
@@ -159,8 +178,18 @@ export default function MyTab<TModel, TTable extends TableNames>({
                         rightIcon="SquarePen"
                       />
                     )}
+                    <Button
+                      variant="ghost"
+                      className="py-0 px-0 me-2"
+                      iconSize={20}
+                      onPress={() => {
+                        setItemToDelete(item);
+                        setDeleteModalOpen(true);
+                      }}
+                      rightIcon="Trash2"
+                    />
                     {customAction && (
-                      <View className="ml-2">
+                      <View className="me-2">
                         {typeof customAction === "function" ? customAction(item) : customAction}
                       </View>
                     )}
@@ -181,6 +210,17 @@ export default function MyTab<TModel, TTable extends TableNames>({
           iconSize={24}
         />
       )}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        setIsOpen={setDeleteModalOpen}
+        itemToDelete={itemToDelete}
+        itemName={title.slice(0, -1)}
+        dependencyCount={dependencyCount}
+        dependencyType={dependencyConfig?.dependencyType}
+        replacementItems={replacementItems}
+        onConfirm={handleDeleteConfirm}
+        allowDeleteDependencies={dependencyConfig?.allowDeleteDependencies}
+      />
     </SafeAreaView>
   );
 }
@@ -192,6 +232,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
   detailsUrl,
   initialState,
   showDeleted,
+  dependencyConfig,
 }: {
   queryKey: string[];
   service: IService<TModel, TTable>;
@@ -199,15 +240,49 @@ const useMyTab = <TModel, TTable extends TableNames>({
   detailsUrl: Href;
   initialState?: any;
   showDeleted?: boolean;
+  dependencyConfig?: {
+    dependencyField: string;
+    dependencyService: IService<any, any>;
+    dependencyType: string;
+    allowDeleteDependencies?: boolean;
+    onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
+    onAfterUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
+  };
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
 
   const { data, isLoading, error } = showDeleted ? service.useFindAllDeleted() : service.useFindAll();
-  const { mutate } = service.useSoftDelete();
+  const { mutate: softDeleteMutate } = service.useSoftDelete();
+  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => {} };
+  const { mutate: deleteMultipleDependencies } = dependencyConfig?.dependencyService?.useSoftDelete?.() || {
+    mutate: () => {},
+  };
+  const { mutate: updateDependenciesMutate } = dependencyConfig?.dependencyService?.useUpdateMultiple?.() || {
+    mutate: () => {},
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState(initialState);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+
+  // Get dependencies if dependency config is provided
+  const { data: dependencyData } = dependencyConfig?.dependencyService?.useFindAll?.() || { data: [] };
+
+  // Filter dependencies and replacement items
+  const dependencies = useMemo(() => {
+    if (!dependencyConfig || !dependencyData || !itemToDelete) return [];
+    return dependencyData.filter((dep: any) => dep[dependencyConfig.dependencyField] === itemToDelete.id);
+  }, [dependencyConfig, dependencyData, itemToDelete]);
+
+  const dependencyCount = dependencies.length;
+
+  const replacementItems = useMemo(() => {
+    if (!data || !itemToDelete) return [];
+    return (data as any[]).filter((item: any) => item.id !== itemToDelete.id);
+  }, [data, itemToDelete]);
 
   let groupedData: Record<string, TModel[]> = useMemo(() => {
     if (!groupBy) return { "": data || [] };
@@ -248,11 +323,54 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const handleDelete = () => {
     if (isSelectionMode && selectedItems.length > 0) {
       for (const item of selectedItems) {
-        mutate({ id: item.id, item });
+        softDeleteMutate({ id: item.id, item });
       }
       setSelectedItems([]);
     }
   };
+
+  const handleDeleteConfirm = async (replacementItemId?: string, alsoDeleteDependencies?: boolean) => {
+    if (!itemToDelete) return;
+
+    // If there are dependencies and we need to move them
+    if (dependencyCount > 0 && !alsoDeleteDependencies && replacementItemId && dependencyConfig) {
+      const updates: Updates<any>[] = dependencies.map((dep: any) => ({
+        id: dep.id,
+        [dependencyConfig.dependencyField]: replacementItemId,
+      }));
+
+      // Call onBeforeUpdate if provided
+      if (dependencyConfig.onBeforeUpdate) {
+        await dependencyConfig.onBeforeUpdate(dependencies, itemToDelete.id, replacementItemId);
+      }
+
+      updateDependenciesMutate(updates as any, {
+        onSuccess: async () => {
+          // Call onAfterUpdate if provided
+          if (dependencyConfig.onAfterUpdate) {
+            await dependencyConfig.onAfterUpdate(dependencies, itemToDelete.id, replacementItemId);
+          }
+
+          softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+          setItemToDelete(null);
+        },
+      });
+    }
+    // If we're deleting dependencies too
+    else if (alsoDeleteDependencies && dependencyCount > 0) {
+      dependencies.forEach((dep: any) => {
+        deleteMultipleDependencies({ id: dep.id, item: dep });
+      });
+      softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+      setItemToDelete(null);
+    }
+    // No dependencies, just delete
+    else {
+      softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+      setItemToDelete(null);
+    }
+  };
+
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKey });
   };
@@ -271,5 +389,12 @@ const useMyTab = <TModel, TTable extends TableNames>({
     setIsOpen,
     currentItem,
     setCurrentItem,
+    deleteModalOpen,
+    setDeleteModalOpen,
+    itemToDelete,
+    setItemToDelete,
+    handleDeleteConfirm,
+    replacementItems,
+    dependencyCount,
   };
 };

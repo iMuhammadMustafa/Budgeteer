@@ -92,4 +92,24 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
       .eq("isdeleted", true);
     if (error) throw error;
   }
+
+  async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
+    // Use Supabase upsert for batch updates in a single network request
+    // This is much more efficient than multiple individual update calls
+    const { error } = await supabase.from(this.tableName).upsert(
+      data.map(item => ({
+        ...item,
+        tenantid: tenantId,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })),
+      {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      },
+    );
+
+    if (error) {
+      throw new Error(`Failed to update multiple records: ${error.message}`);
+    }
+  }
 }

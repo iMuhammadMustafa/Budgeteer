@@ -187,4 +187,35 @@ export abstract class BaseWatermelonRepository<
       }
     });
   }
+
+  async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
+    const db = await this.getDb();
+
+    await db.write(async () => {
+      for (const item of data) {
+        if (!item.id) continue;
+
+        const results = await db
+          .get(this.tableName)
+          .query(Q.where("id", item.id), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+        const record = results[0];
+
+        if (!record) continue;
+
+        const mappedData = this.mapFieldsForWatermelon(item as Record<string, any>);
+
+        await record.update((record: any) => {
+          const excludedFields = ["id", "createdat", "createdby", "tenantId"];
+
+          Object.entries(mappedData).forEach(([key, value]) => {
+            if (value !== undefined && !excludedFields.includes(key.toLowerCase())) {
+              record[key] = value;
+            }
+          });
+
+          record.updatedat = new Date().toISOString();
+        });
+      }
+    });
+  }
 }

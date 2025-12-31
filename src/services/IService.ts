@@ -24,7 +24,7 @@ export interface IWriteService<TModel, TTable extends TableNames> {
 }
 export interface IMultipleWriteService<TModel, TTable extends TableNames> {
   useCreateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Inserts<TTable>[] }>>;
-  useUpdateMultiple?: () => ReturnType<typeof useMutation<TModel[], unknown, { data: Updates<TTable>[] }>>;
+  useUpdateMultiple?: () => ReturnType<typeof useMutation<void, unknown, Updates<TTable>[]>>;
   useDeleteMultiple?: () => ReturnType<typeof useMutation<void, unknown, { id: string[] }>>;
 }
 
