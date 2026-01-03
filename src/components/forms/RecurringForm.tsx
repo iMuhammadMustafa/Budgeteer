@@ -15,7 +15,7 @@ import dayjs from "dayjs";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
-import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/DropdownField";
+import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 import MyIcon from "../elements/MyIcon";
 import SearchableDropdown from "../elements/SearchableDropdown";

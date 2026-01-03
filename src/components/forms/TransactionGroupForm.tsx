@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
@@ -122,9 +122,13 @@ const createBudgetFields = (): FormFieldConfig<TransactionGroupFormData>[] => [
 
 interface TransactionGroupFormProps {
   group: TransactionGroupFormType;
+  /** Optional callback when form is successfully submitted. If provided, will be called instead of navigating. */
+  onSuccess?: (savedGroup: any) => void;
+  /** Optional callback when form is cancelled (for modal usage) */
+  onCancel?: () => void;
 }
 
-function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
+function TransactionGroupFormComponent({ group, onSuccess, onCancel }: TransactionGroupFormProps) {
   // Initialize form data from props
   const initialFormData: TransactionGroupFormData = useMemo(
     () => ({
@@ -152,8 +156,13 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
             original: group as TransactionGroup,
           },
           {
-            onSuccess: () => {
-              router.replace("/Categories/Groups");
+            onSuccess: savedData => {
+              // If onSuccess callback provided (modal mode), use it instead of navigating
+              if (onSuccess) {
+                onSuccess(savedData);
+              } else {
+                router.replace("/Categories/Groups");
+              }
               resolve();
             },
             onError: error => {
@@ -164,7 +173,7 @@ function TransactionGroupFormComponent({ group }: TransactionGroupFormProps) {
         );
       });
     },
-    [mutate, group],
+    [mutate, group, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {

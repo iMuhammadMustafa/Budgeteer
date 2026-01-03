@@ -7,9 +7,7 @@ import { UseFormSubmissionOptions, UseFormSubmissionReturn } from "@/src/types/c
 import {
   createNetworkError,
   createSubmissionError,
-  getRetryDelay,
   getUserFriendlyErrorMessage,
-  isRecoverableError,
   logFormError,
   reportFormError,
 } from "@/src/utils/form-errors";
@@ -106,21 +104,11 @@ export function useFormSubmission<T>(
         onError(submitError);
       }
 
-      // Attempt retry for recoverable errors
-      if (isRecoverableError(formError) && retryCountRef.current < maxRetries) {
-        const retryDelay = getRetryDelay(formError, retryCountRef.current + 1);
-
-        console.log(`Retrying submission in ${retryDelay}ms (attempt ${retryCountRef.current + 1}/${maxRetries})`);
-
-        retryTimeoutRef.current = setTimeout(() => {
-          retryCountRef.current += 1;
-          submitInternal(data);
-        }, retryDelay);
-      } else {
-        setIsSubmitting(false);
-      }
+      // Note: Retry logic removed to fix circular dependency
+      // If retry is needed, it should be handled differently
+      setIsSubmitting(false);
     },
-    [onError, showErrorMessage, maxRetries, submitInternal],
+    [onError, showErrorMessage],
   );
 
   // Internal submission function with error handling

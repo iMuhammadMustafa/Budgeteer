@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Text, View } from "react-native";
 import Button from "./Button";
-import DropdownField from "./DropdownField";
+import DropdownField from "./dropdown/DropdownField";
 import MyModal from "./MyModal";
 
 interface DeleteConfirmModalProps<TModel> {

@@ -216,12 +216,6 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
   const debouncedSearchText = useDebounce(searchText, 300);
   const numColumns = useResponsiveColumns();
 
-  // Initialize component and load recent icons
-  useEffect(() => {
-    setSelectedIcon(initialIcon || DEFAULT_ICON);
-    loadRecentIcons();
-  }, [initialIcon, loadRecentIcons]);
-
   // Load recent icons from storage
   const loadRecentIcons = useCallback(async () => {
     try {
@@ -243,6 +237,12 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
       console.warn("Failed to save recent icons:", error);
     }
   }, []);
+
+  // Initialize component and load recent icons
+  useEffect(() => {
+    setSelectedIcon(initialIcon || DEFAULT_ICON);
+    loadRecentIcons();
+  }, [initialIcon, loadRecentIcons]);
 
   // Load all icons when modal opens
   const loadAllIcons = useCallback(async () => {

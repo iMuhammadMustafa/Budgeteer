@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export type AccountCategoryFormType = Inserts<TableNames.AccountCategories> | Updates<TableNames.AccountCategories>;
 interface AccountCategoryFormProps {
   category: AccountCategoryFormType;
+  onSuccess?: (savedCategory: any) => void;
+  onCancel?: () => void;
 }
 // Define the form data type with only the fields we need for the form
 interface AccountCategoryFormData {
@@ -86,7 +88,7 @@ const createFormFields = (): FormFieldConfig<AccountCategoryFormData>[] => [
   },
 ];
 
-function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
+function AccountCategoryFormComponent({ category, onSuccess, onCancel }: AccountCategoryFormProps) {
   // Initialize form data from props
   const initialFormData: AccountCategoryFormData = useMemo(() => {
     const formData = {
@@ -126,9 +128,13 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
             original: category as AccountCategory,
           },
           {
-            onSuccess: () => {
+            onSuccess: savedData => {
               console.log({ message: "Category Created Successfully", type: "success" });
-              router.replace("/Accounts/Categories");
+              if (onSuccess) {
+                onSuccess(savedData);
+              } else {
+                router.replace("/Accounts/Categories");
+              }
               resolve();
             },
             onError: error => {
@@ -139,7 +145,7 @@ function AccountCategoryFormComponent({ category }: AccountCategoryFormProps) {
         );
       });
     },
-    [mutate, category],
+    [mutate, category, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {

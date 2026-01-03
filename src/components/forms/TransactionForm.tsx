@@ -258,6 +258,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   required: true,
                   options: categoryOptions,
                   group: "group.name",
+                  addNew: {
+                    entityType: "TransactionCategory",
+                    label: "Add New Category",
+                  },
                 }}
                 value={formState.data.categoryid}
                 error={formState.errors.categoryid}
@@ -299,6 +303,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     required: true,
                     options: accountOptions,
                     group: "category.name",
+                    popUp: true,
+                    addNew: {
+                      entityType: "Account",
+                      label: "Add New Account",
+                    },
                   }}
                   value={formState.data.accountid}
                   error={formState.errors.accountid}
@@ -329,6 +338,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         required: true,
                         options: transferAccountOptions,
                         group: "category.name",
+                        addNew: {
+                          entityType: "Account",
+                          label: "Add New Account",
+                        },
                       }}
                       value={formState.data.transferaccountid}
                       error={formState.errors.transferaccountid}
@@ -711,6 +724,8 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         id: item.id,
         label: item.name || "",
         value: item.id,
+        icon: item.icon,
+        color: item.color,
         // Accounts do not have categoryname, fallback to "Other"
         group: item.category?.name ?? "Other",
       }))

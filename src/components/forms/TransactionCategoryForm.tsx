@@ -1,4 +1,4 @@
-import DropdownField, { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import DropdownField, { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
@@ -117,9 +117,11 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
 
 interface TransactionCategoryFormProps {
   category: TransactionCategoryFormType;
+  onSuccess?: (savedCategory: any) => void;
+  onCancel?: () => void;
 }
 
-function TransactionCategoryFormComponent({ category }: TransactionCategoryFormProps) {
+function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: TransactionCategoryFormProps) {
   // Services
   const transactionCategoryService = useTransactionCategoryService();
   const transactionGroupService = useTransactionGroupService();
@@ -155,9 +157,13 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
             original: category as TransactionCategory,
           },
           {
-            onSuccess: () => {
+            onSuccess: savedData => {
               console.log({ message: "Category Created Successfully", type: "success" });
-              router.replace("/Categories");
+              if (onSuccess) {
+                onSuccess(savedData);
+              } else {
+                router.replace("/Categories");
+              }
               resolve();
             },
             onError: error => {
@@ -168,7 +174,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
         );
       });
     },
-    [mutate, category],
+    [mutate, category, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -277,7 +283,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
             />
 
             {/* Group selection with custom dropdown */}
-            <View className="my-2">
+            <View className="my-2 relative z-50">
               <Text className="text-foreground mb-1 font-medium">
                 Transaction Group <Text className="text-red-500 ml-1">*</Text>
               </Text>
@@ -291,25 +297,37 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
                   handleFieldChange("groupid", value?.value);
                   handleFieldBlur("groupid");
                 }}
+                addNew={{
+                  entityType: "TransactionGroup",
+                  label: "Add New Group",
+                }}
               />
               {formState.touched.groupid && formState.errors.groupid && (
                 <Text className="text-red-500 text-sm mt-1">{formState.errors.groupid}</Text>
               )}
-              <Text className="text-gray-600 text-sm mt-1">Select the transaction group this category belongs to</Text>
+              <Text className="text-gray-600 text-sm mt-1 -z-10">
+                Select the transaction group this category belongs to
+              </Text>
             </View>
 
-            {/* Description field */}
-            <FormField
-              config={formFields[4]}
-              value={formState.data.description}
-              error={formState.errors.description}
-              touched={formState.touched.description}
-              onChange={value => handleFieldChange("description", value)}
-              onBlur={() => handleFieldBlur("description")}
-            />
+            {/* Description field - lower z-index so dropdown can appear above */}
+            <View className="relative -z-20">
+              <FormField
+                config={formFields[4]}
+                value={formState.data.description}
+                error={formState.errors.description}
+                touched={formState.touched.description}
+                onChange={value => handleFieldChange("description", value)}
+                onBlur={() => handleFieldBlur("description")}
+              />
+            </View>
           </FormSection>
 
-          <FormSection title="Budget Settings" description="Configure budget amounts and frequency" className="z-40">
+          <FormSection
+            title="Budget Settings"
+            description="Configure budget amounts and frequency"
+            className="relative z-10"
+          >
             {/* Budget Amount and Frequency in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-start justify-between`}>
               <View className={Platform.OS === "web" ? "flex-1" : "w-full mb-2"}>
@@ -342,7 +360,7 @@ function TransactionCategoryFormComponent({ category }: TransactionCategoryFormP
           <FormSection
             title="Appearance"
             description="Customize the visual appearance of this category"
-            className="z-30"
+            className="relative z-0"
           >
             {/* Icon and Color Selection in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>

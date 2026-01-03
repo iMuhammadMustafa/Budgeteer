@@ -12,6 +12,7 @@ import {
   TransactionCategory,
   TransactionGroup,
 } from "../database/Tables.Types";
+import { AddNewConfig } from "./DropdownField.Types";
 
 // ============================================================================
 // Base Form Interfaces
@@ -54,6 +55,10 @@ export interface FormFieldConfig<T> {
   description?: string;
   popUp?: boolean;
   group?: string;
+  /** Configuration for "Add New" functionality in select fields */
+  addNew?: AddNewConfig;
+  /** Whether to show a clear button for select fields */
+  showClear?: boolean;
 }
 
 /**

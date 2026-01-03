@@ -2,7 +2,7 @@ import { FormFieldProps, OptionItem } from "@/src/types/components/forms.types";
 import dayjs from "dayjs";
 import { memo, useCallback, useMemo } from "react";
 import { Switch, Text, TextInput, View } from "react-native";
-import DropdownField from "../elements/DropdownField";
+import DropdownField from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 
 /**
@@ -136,7 +136,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       case "select":
         // Ensure selectedValue matches the type of option values
         return (
-          <View className="z-10">
+          <View className="relative z-50">
             <DropdownField
               label={label}
               selectedValue={options.find(opt => opt.value === value) ? value : null}
@@ -147,6 +147,11 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
               }}
               isModal={config.popUp}
               groupBy={config.group}
+              addNew={config.addNew}
+              showClear={config.showClear}
+              disabled={disabled}
+              error={error}
+              touched={touched}
             />
           </View>
         );
@@ -216,7 +221,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
   };
 
   return (
-    <View className={`my-2 ${className} ${type === "select" ? "z-10" : "-z-10"}`}>
+    <View className={`my-2 ${className} ${type === "select" ? "z-20" : "z-0"}`}>
       {/* Field Label */}
       {label && type !== "switch" && (
         <Text className={`text-foreground mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
@@ -239,9 +244,9 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       {/* Non-switch fields */}
       {type !== "switch" && renderField()}
 
-      {/* Field Description */}
+      {/* Field Description - use lower z-index to not overlap dropdowns */}
       {description && (
-        <Text id={descriptionId} className="text-gray-600 text-sm mt-1" accessibilityRole="text">
+        <Text id={descriptionId} className="text-gray-600 text-sm mt-1 relative z-0" accessibilityRole="text">
           {description}
         </Text>
       )}

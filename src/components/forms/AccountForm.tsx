@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/DropdownField";
+import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
@@ -17,7 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFormState } from "../form-builder/hooks/useFormState";
 import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 
-export default function AccountForm({ account }: { account: AccountFormData }) {
+interface AccountFormProps {
+  account: AccountFormData;
+  onSuccess?: (savedAccount: any) => void;
+  onCancel?: () => void;
+}
+
+export default function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) {
   const accountService = useAccountService();
   const accountCategoryService = useAccountCategoryService();
   const { data: accountCategories } = accountCategoryService.useFindAll();
@@ -74,8 +80,12 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
             props: { addAdjustmentTransaction: data.addAdjustmentTransaction || false },
           },
           {
-            onSuccess: () => {
-              router.replace("/Accounts");
+            onSuccess: savedData => {
+              if (onSuccess) {
+                onSuccess(savedData);
+              } else {
+                router.replace("/Accounts");
+              }
               resolve();
             },
             onError: error => {
@@ -86,7 +96,7 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
         );
       });
     },
-    [updateAccount, updateOpenBalance, openTransaction, account],
+    [updateAccount, updateOpenBalance, openTransaction, account, onSuccess],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -261,6 +271,10 @@ export default function AccountForm({ account }: { account: AccountFormData }) {
                 type: "select",
                 required: true,
                 options: categoryOptions,
+                addNew: {
+                  entityType: "AccountCategory",
+                  label: "Add New Category",
+                },
               }}
               value={formState.data.categoryid}
               error={formState.errors.categoryid}
