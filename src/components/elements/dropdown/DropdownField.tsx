@@ -147,6 +147,7 @@ function DropdownField({
             <Text
               className={`flex-1 ${selectedItem ? "text-dark" : "text-gray-400"} ${disabled ? "text-gray-400" : ""}`}
               numberOfLines={1}
+              selectable={false}
             >
               {selectedItem?.label ?? placeholder ?? label}
             </Text>
@@ -279,7 +280,9 @@ function DropdownList({
       {addNew && (
         <Pressable onPress={onAddNew} className="flex-row items-center gap-2 p-3 border-b border-gray-200 bg-gray-50">
           <MyIcon name={addNew.icon ?? "Plus"} size={18} className="text-primary" />
-          <Text className="text-primary font-medium">{addNew.label ?? `Add New ${addNew.entityType}`}</Text>
+          <Text className="text-primary font-medium" selectable={false}>
+            {addNew.label ?? `Add New ${addNew.entityType}`}
+          </Text>
         </Pressable>
       )}
 
@@ -292,7 +295,9 @@ function DropdownList({
           if (typeof item === "string") {
             return (
               <>
-                <Text className="p-2 bg-gray-100 text-gray-600 text-sm font-medium">{item ?? "Other"}</Text>
+                <Text selectable={false} className="p-2 bg-gray-100 text-gray-600 text-sm font-medium">
+                  {item ?? "Other"}
+                </Text>
                 <View className="flex-row flex-wrap justify-center">
                   {options
                     .filter(opt => opt.group === item)
@@ -318,7 +323,9 @@ function DropdownList({
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View className="p-4 items-center">
-            <Text className="text-gray-400">No options found</Text>
+            <Text selectable={false} className="text-gray-400">
+              No options found
+            </Text>
           </View>
         }
       />
@@ -375,6 +382,7 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         )}
         <View className={isGrouped ? "" : "flex-1"}>
           <Text
+            selectable={false}
             className={`${
               option.disabled ? "text-gray-400" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"
             } ${isSelected ? "font-medium" : ""}`}
@@ -383,7 +391,7 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
             {option.label}
           </Text>
           {option.details && (
-            <Text className="text-gray-500 text-xs" numberOfLines={1}>
+            <Text selectable={false} className="text-gray-500 text-xs" numberOfLines={1}>
               {option.details}
             </Text>
           )}
