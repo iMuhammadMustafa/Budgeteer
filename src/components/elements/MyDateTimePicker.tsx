@@ -101,6 +101,10 @@ export default function MyDateTimePicker({
               }
               // setShowDate(false); // Optionally close on change
             }}
+            components={{
+              IconNext: <MyIcon name="ChevronRight" size={20} className="text-foreground" />,
+              IconPrev: <MyIcon name="ChevronLeft" size={20} className="text-foreground" />,
+            }}
           />
           <View className="mt-2 flex-row space-x-2">
             <Pressable
