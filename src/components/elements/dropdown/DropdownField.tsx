@@ -1,65 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Dimensions,
-  FlatList,
-  KeyboardAvoidingView,
-  LayoutChangeEvent,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Dimensions, FlatList, LayoutChangeEvent, Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import { AddNewConfig, DropDownProps, OptionItem } from "@/src/types/components/DropdownField.Types";
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
 import MyIcon from "../MyIcon";
-import { useDropdownRegistration } from "./DropdownContext";
+import MyModal, { ModalWrapper } from "../MyModal";
 import { QuickAddFormRenderer } from "./QuickAddForms";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
-interface ModalWrapperProps {
-  visible: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  animationType?: "fade" | "slide";
-}
-
-function ModalWrapper({ visible, onClose, title, children, animationType = "fade" }: ModalWrapperProps) {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType={animationType}
-      onRequestClose={Platform.OS !== "web" ? onClose : undefined}
-    >
-      <View className="flex-1 bg-black/50 justify-center items-center">
-        <Pressable className="absolute inset-0" onPress={onClose} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="w-[90%] max-w-[500px]"
-          style={{ maxHeight: "80%" }}
-        >
-          <View className="bg-white rounded-lg overflow-hidden flex-1">
-            <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
-              <Text className="font-semibold text-dark">{title}</Text>
-              <Pressable onPress={onClose} className="p-1">
-                <MyIcon name="X" size={20} className="text-gray-500" />
-              </Pressable>
-            </View>
-            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-              {children}
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-}
 function DropdownField({
   options,
   onSelect,
@@ -84,18 +33,6 @@ function DropdownField({
   const addNewIdRef = useRef<string>(`addnew-${Date.now()}-${Math.random()}`);
 
   const useModalMode = forceModal ?? Platform.OS !== "web";
-
-  useDropdownRegistration(
-    dropdownIdRef.current,
-    isOpen && !isAddNewOpen,
-    useCallback(() => setIsOpen(false), []),
-  );
-
-  useDropdownRegistration(
-    addNewIdRef.current,
-    isAddNewOpen,
-    useCallback(() => setIsAddNewOpen(false), []),
-  );
 
   const selectedItem = useMemo(() => {
     if (!selectedValue || !options) return null;
@@ -269,7 +206,22 @@ function DropdownField({
       )}
 
       {isAddNewOpen && addNew && (
-        <AddNewModal config={addNew} onSuccess={handleAddNewSuccess} onCancel={handleAddNewCancel} />
+        <MyModal
+          isOpen={isAddNewOpen}
+          setIsOpen={setIsAddNewOpen}
+          onClose={handleAddNewCancel}
+          title={`Add New ${addNew.entityType}`}
+        >
+          {addNew.renderForm ? (
+            addNew.renderForm({ onSuccess: handleAddNewSuccess, onCancel: handleAddNewCancel })
+          ) : (
+            <QuickAddFormRenderer
+              entityType={addNew.entityType}
+              onSuccess={handleAddNewSuccess}
+              onCancel={handleAddNewCancel}
+            />
+          )}
+        </MyModal>
       )}
     </View>
   );
@@ -439,24 +391,6 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         {isSelected && <MyIcon name="Check" size={16} className="text-primary" />}
       </View>
     </Pressable>
-  );
-}
-
-interface AddNewModalProps {
-  config: AddNewConfig;
-  onSuccess: (item: any) => void;
-  onCancel: () => void;
-}
-
-function AddNewModal({ config, onSuccess, onCancel }: AddNewModalProps) {
-  return (
-    <ModalWrapper visible onClose={onCancel} title={`Add New ${config.entityType}`}>
-      {config.renderForm ? (
-        config.renderForm({ onSuccess, onCancel })
-      ) : (
-        <QuickAddFormRenderer entityType={config.entityType} onSuccess={onSuccess} onCancel={onCancel} />
-      )}
-    </ModalWrapper>
   );
 }
 

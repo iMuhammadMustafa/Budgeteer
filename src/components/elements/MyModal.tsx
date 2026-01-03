@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { BackHandler, Modal, Platform, Pressable, ScrollView } from "react-native";
+import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import MyIcon from "./MyIcon";
 
 const modalStack: number[] = [];
 let nextModalId = 1;
@@ -9,12 +10,15 @@ export default function MyModal({
   isOpen,
   setIsOpen,
   onClose,
+  title,
   children,
 }: {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   onClose?: () => void;
   children: React.ReactNode;
+  title?: string;
+  animationType?: "fade" | "slide";
 }) {
   const idRef = useRef<number>(nextModalId++);
 
@@ -73,16 +77,70 @@ export default function MyModal({
       animationType="fade"
       className="flex-1 justify-center items-center"
     >
-      <Pressable className="flex-1 bg-black/50 justify-center items-center" onPress={() => setIsOpen(false)}>
+      <View className="flex-1 bg-black/50 justify-center items-center">
         <Pressable
-          className="max-h-[80%] w-[90%] bg-card rounded-md border border-muted"
-          onPress={e => e.stopPropagation()}
+          className="absolute inset-0"
+          onPress={e => {
+            e.stopPropagation();
+            if (onClose) onClose();
+          }}
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="w-[90%] max-w-[500px] max-h-[80%]   bg-card rounded-md border border-muted"
         >
-          <ScrollView className="flex-grow" contentContainerStyle={{ padding: 16 }}>
-            {children}
-          </ScrollView>
-        </Pressable>
-      </Pressable>
+          <View className="bg-white rounded-lg overflow-hidden flex-1">
+            <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+              <Text className="font-semibold text-dark">{title}</Text>
+              <Pressable onPress={onClose} className="p-1">
+                <MyIcon name="X" size={20} className="text-gray-500" />
+              </Pressable>
+            </View>
+            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+              {children}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
+interface ModalWrapperProps {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  animationType?: "fade" | "slide";
+}
+
+export function ModalWrapper({ visible, onClose, title, children, animationType = "fade" }: ModalWrapperProps) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType={animationType}
+      onRequestClose={Platform.OS !== "web" ? onClose : undefined}
+    >
+      <View className="flex-1 bg-black/50 justify-center items-center">
+        <Pressable className="absolute inset-0" onPress={onClose} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="w-[90%] max-w-[500px] max-h-[80%]"
+        >
+          <View className="bg-white rounded-lg overflow-hidden flex-1">
+            <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+              <Text className="font-semibold text-dark">{title}</Text>
+              <Pressable onPress={onClose} className="p-1">
+                <MyIcon name="X" size={20} className="text-gray-500" />
+              </Pressable>
+            </View>
+            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+              {children}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
