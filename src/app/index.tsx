@@ -10,13 +10,15 @@ import { WATERMELONDB_DEFAULTS, WATERMELONDB_DEMO } from "../types/database/wate
 
 export default function Index() {
   const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
-  const { session, setSession, isLoading: isAuthLoading } = useAuth();
+  const { session, setSession, isLoading: isAuthLoading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isLoading = isStorageLoading || isAuthLoading;
 
   const handleLogin = useCallback(
     async (mode: any) => {
-      if (storageMode && session) return router.push("/Dashboard");
+      if (storageMode && session) {
+        await logout();
+      }
 
       if (mode.id === StorageMode.Cloud) {
         return router.push("/Login");
@@ -70,10 +72,15 @@ export default function Index() {
       console.log("Navigating to Dashboard");
       return router.push("/Dashboard");
     },
-    [session, setSession, storageMode, setStorageMode],
+    [session, setSession, storageMode, setStorageMode, logout],
   );
 
   if (isLoading) return <Text>Loading...</Text>;
+
+  if (storageMode && session) {
+    router.push("/Dashboard");
+  }
+
   return (
     <>
       {/* <StickyTable /> */}

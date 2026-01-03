@@ -21,6 +21,8 @@ export default function DashboardIndex() {
     periodControls,
   } = useDashboard();
 
+  console.log("DashboardIndex rendered");
+
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
