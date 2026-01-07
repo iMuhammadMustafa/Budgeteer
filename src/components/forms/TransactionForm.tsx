@@ -21,6 +21,8 @@ import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
+import AccountForm, { initialState as accountInitialState } from "./AccountForm";
+import TransactionCategoryForm, { initialState as transactionCategoryInitialState } from "./TransactionCategoryForm";
 
 export type TransactionFormType = TransactionFormData & {
   mode?: "plus" | "minus";
@@ -261,6 +263,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   addNew: {
                     entityType: "TransactionCategory",
                     label: "Add New Category",
+                    renderForm: ({ onSuccess, onCancel }) => (
+                      <TransactionCategoryForm
+                        category={transactionCategoryInitialState}
+                        onSuccess={onSuccess}
+                        onCancel={onCancel}
+                      />
+                    ),
                   },
                 }}
                 value={formState.data.categoryid}
@@ -307,6 +316,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     addNew: {
                       entityType: "Account",
                       label: "Add New Account",
+                      renderForm: ({ onSuccess, onCancel }) => (
+                        <AccountForm
+                          account={accountInitialState}
+                          onSuccess={onSuccess}
+                          onCancel={onCancel}
+                        />
+                      ),
                     },
                   }}
                   value={formState.data.accountid}
@@ -341,6 +357,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         addNew: {
                           entityType: "Account",
                           label: "Add New Account",
+                          renderForm: ({ onSuccess, onCancel }) => (
+                            <AccountForm
+                              account={accountInitialState}
+                              onSuccess={onSuccess}
+                              onCancel={onCancel}
+                            />
+                          ),
                         },
                       }}
                       value={formState.data.transferaccountid}

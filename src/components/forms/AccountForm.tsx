@@ -16,6 +16,7 @@ import { commonValidationRules, createAccountNameValidation } from "@/src/utils/
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFormState } from "../form-builder/hooks/useFormState";
 import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
+import AccountCategoryForm, { initialState as accountCategoryInitialState } from "./AccountCategoryForm";
 
 interface AccountFormProps {
   account: AccountFormData;
@@ -274,6 +275,13 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
                 addNew: {
                   entityType: "AccountCategory",
                   label: "Add New Category",
+                  renderForm: ({ onSuccess, onCancel }) => (
+                    <AccountCategoryForm
+                      category={accountCategoryInitialState}
+                      onSuccess={onSuccess}
+                      onCancel={onCancel}
+                    />
+                  ),
                 },
               }}
               value={formState.data.categoryid}
@@ -378,7 +386,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
                       disabled: true,
                     }}
                     value={runningBalance}
-                    onChange={() => {}} // Read-only field
+                    onChange={() => { }} // Read-only field
                   />
                 </View>
                 <View className="mt-6">

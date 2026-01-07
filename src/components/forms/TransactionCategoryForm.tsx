@@ -18,6 +18,7 @@ import {
 import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
 import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
+import TransactionGroupForm, { initialState as transactionGroupInitialState } from "./TransactionGroupForm";
 
 export type TransactionCategoryFormType =
   | Inserts<TableNames.TransactionCategories>
@@ -300,6 +301,13 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
                 addNew={{
                   entityType: "TransactionGroup",
                   label: "Add New Group",
+                  renderForm: ({ onSuccess, onCancel }) => (
+                    <TransactionGroupForm
+                      group={transactionGroupInitialState}
+                      onSuccess={onSuccess}
+                      onCancel={onCancel}
+                    />
+                  ),
                 }}
               />
               {formState.touched.groupid && formState.errors.groupid && (

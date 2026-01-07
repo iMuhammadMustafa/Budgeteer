@@ -5,7 +5,6 @@ import { AddNewConfig, DropDownProps, OptionItem } from "@/src/types/components/
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
 import MyIcon from "../MyIcon";
 import MyModal, { ModalWrapper } from "../MyModal";
-import { QuickAddFormRenderer } from "./QuickAddForms";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -134,9 +133,8 @@ function DropdownField({
         dataSet={{ dropdownId: dropdownIdRef.current }}
       >
         <Pressable
-          className={`flex-row items-center justify-between p-3 rounded border ${
-            showError ? "border-red-500" : "border-gray-300"
-          } ${disabled ? "bg-gray-100" : "bg-white"}`}
+          className={`flex-row items-center justify-between p-3 rounded border ${showError ? "border-red-500" : "border-gray-300"
+            } ${disabled ? "bg-gray-100" : "bg-white"}`}
           onPress={handleToggle}
           disabled={disabled}
         >
@@ -211,17 +209,9 @@ function DropdownField({
           isOpen={isAddNewOpen}
           setIsOpen={setIsAddNewOpen}
           onClose={handleAddNewCancel}
-          title={`Add New ${addNew.entityType}`}
+          title={addNew.label ?? `Add New ${addNew.entityType ?? "Item"}`}
         >
-          {addNew.renderForm ? (
-            addNew.renderForm({ onSuccess: handleAddNewSuccess, onCancel: handleAddNewCancel })
-          ) : (
-            <QuickAddFormRenderer
-              entityType={addNew.entityType}
-              onSuccess={handleAddNewSuccess}
-              onCancel={handleAddNewCancel}
-            />
-          )}
+          {addNew.renderForm({ onSuccess: handleAddNewSuccess, onCancel: handleAddNewCancel })}
         </MyModal>
       )}
     </View>
@@ -370,9 +360,8 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
     <Pressable
       onPress={onPress}
       disabled={option.disabled}
-      className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${
-        option.disabled ? "opacity-50" : ""
-      } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-gray-100"}`}
+      className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${option.disabled ? "opacity-50" : ""
+        } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-gray-100"}`}
     >
       <View className={`flex-row items-center ${isGrouped ? "justify-center" : ""} gap-2`}>
         {option.icon && (
@@ -383,9 +372,8 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         <View className={isGrouped ? "" : "flex-1"}>
           <Text
             selectable={false}
-            className={`${
-              option.disabled ? "text-gray-400" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"
-            } ${isSelected ? "font-medium" : ""}`}
+            className={`${option.disabled ? "text-gray-400" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"
+              } ${isSelected ? "font-medium" : ""}`}
             numberOfLines={1}
           >
             {option.label}
@@ -410,8 +398,6 @@ export const MyCategoriesDropdown = ({
   label = "Category",
   showClearButton,
   onClear,
-  enableAddNew = false,
-  onNewCategoryCreated,
 }: {
   selectedValue: string | null | undefined;
   categories: TransactionCategory[] | undefined;
@@ -420,8 +406,6 @@ export const MyCategoriesDropdown = ({
   label?: string;
   showClearButton?: boolean;
   onClear?: () => void;
-  enableAddNew?: boolean;
-  onNewCategoryCreated?: (newCategory: any) => void;
 }) => {
   return (
     <View className="flex-row items-end flex-grow">
@@ -443,16 +427,6 @@ export const MyCategoriesDropdown = ({
         onSelect={onSelect}
         showClear={showClearButton}
         onClear={onClear}
-        addNew={
-          enableAddNew
-            ? {
-                entityType: "TransactionCategory",
-                label: "Add New Category",
-                icon: "Plus",
-                onCreated: onNewCategoryCreated,
-              }
-            : undefined
-        }
       />
     </View>
   );
@@ -529,8 +503,6 @@ export const AccountSelecterDropdown = ({
   accounts,
   isModal,
   groupBy,
-  enableAddNew = false,
-  onNewAccountCreated,
 }: {
   label?: string;
   selectedValue: any;
@@ -538,8 +510,6 @@ export const AccountSelecterDropdown = ({
   accounts: any;
   isModal: boolean;
   groupBy?: string;
-  enableAddNew?: boolean;
-  onNewAccountCreated?: (newAccount: any) => void;
 }) => {
   return (
     <DropdownField
@@ -562,22 +532,12 @@ export const AccountSelecterDropdown = ({
       }
       groupBy={groupBy ? "group" : undefined}
       onSelect={onSelect}
-      addNew={
-        enableAddNew
-          ? {
-              entityType: "Account",
-              label: "Add New Account",
-              icon: "Plus",
-              onCreated: onNewAccountCreated,
-            }
-          : undefined
-      }
     />
   );
 };
 
 /**
- * Account Category Dropdown with Add New support
+ * Account Category Dropdown
  */
 export const AccountCategoryDropdown = ({
   label = "Category",
@@ -585,16 +545,12 @@ export const AccountCategoryDropdown = ({
   onSelect,
   categories,
   isModal,
-  enableAddNew = false,
-  onNewCategoryCreated,
 }: {
   label?: string;
   selectedValue: any;
   onSelect: (item: OptionItem | null) => void;
   categories: any[];
   isModal: boolean;
-  enableAddNew?: boolean;
-  onNewCategoryCreated?: (newCategory: any) => void;
 }) => {
   return (
     <DropdownField
@@ -612,22 +568,12 @@ export const AccountCategoryDropdown = ({
       }
       groupBy="group"
       onSelect={onSelect}
-      addNew={
-        enableAddNew
-          ? {
-              entityType: "AccountCategory",
-              label: "Add New Category",
-              icon: "Plus",
-              onCreated: onNewCategoryCreated,
-            }
-          : undefined
-      }
     />
   );
 };
 
 /**
- * Transaction Group Dropdown with Add New support
+ * Transaction Group Dropdown
  */
 export const TransactionGroupDropdown = ({
   label = "Group",
@@ -635,16 +581,12 @@ export const TransactionGroupDropdown = ({
   onSelect,
   groups,
   isModal,
-  enableAddNew = false,
-  onNewGroupCreated,
 }: {
   label?: string;
   selectedValue: any;
   onSelect: (item: OptionItem | null) => void;
   groups: any[];
   isModal: boolean;
-  enableAddNew?: boolean;
-  onNewGroupCreated?: (newGroup: any) => void;
 }) => {
   return (
     <DropdownField
@@ -662,16 +604,6 @@ export const TransactionGroupDropdown = ({
       }
       groupBy="group"
       onSelect={onSelect}
-      addNew={
-        enableAddNew
-          ? {
-              entityType: "TransactionGroup",
-              label: "Add New Group",
-              icon: "Plus",
-              onCreated: onNewGroupCreated,
-            }
-          : undefined
-      }
     />
   );
 };
