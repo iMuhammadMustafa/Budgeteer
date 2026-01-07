@@ -1,4 +1,5 @@
 import { Database } from "@nozbe/watermelondb";
+import GenerateUuid from "../../../utils/uuid.Helper";
 import { ConfigurationTypes } from "../Config.Types";
 import { TableNames } from "../TableNames";
 import { WATERMELONDB_DEMO_TENANT_ID, WATERMELONDB_DEMO_USER_ID } from "./constants";
@@ -737,13 +738,13 @@ const getAccountsData = (transactions: any[]) => {
   };
 
   const accountIds = [
-    "acc-checking-001",
-    "acc-savings-001",
-    "acc-creditcard-001",
-    "acc-cash-001",
-    "acc-loan-001",
-    "acc-giftcard-001",
-    "acc-giftcard-002",
+    "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b", // 019313ea-448f-7c15-9b2e-7d7d8e9f0a1b
+    "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b", // 019313ea-448f-7c15-9b2e-7d2d3e4f5a6b
+    "019313ea-448f-7c15-9b2e-7d5d6e7f8a90", // 019313ea-448f-7c15-9b2e-7d5d6e7f8a90
+    "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a", // 019313ea-448f-7c15-9b2e-7d1c2d3e4f5a
+    "019313ea-448f-7c15-9b2e-7d8e9f0a1b2c", // 019313ea-448f-7c15-9b2e-7d8e9f0a1b2c
+    "019313ea-448f-7c15-9b2e-7db8c90d1e2f", // 019313ea-448f-7c15-9b2e-7db8c90d1e2f
+    "019313ea-448f-7c15-9b2e-7da1b2c3d4e5", // 019313ea-448f-7c15-9b2e-7da1b2c3d4e5
   ];
 
   // Calculate balances for all accounts
@@ -752,9 +753,9 @@ const getAccountsData = (transactions: any[]) => {
   return [
     // Bank Accounts
     {
-      id: "acc-checking-001",
+      id: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       name: "Primary Checking",
-      balance: balances["acc-checking-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7d7d8e9f0a1b"],
       currency: "USD",
       color: "info-500",
       icon: "Wallet",
@@ -771,9 +772,9 @@ const getAccountsData = (transactions: any[]) => {
       isdeleted: false,
     },
     {
-      id: "acc-savings-001",
+      id: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
       name: "Savings Account",
-      balance: balances["acc-savings-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7d2d3e4f5a6b"],
       currency: "USD",
       color: "green-500",
       icon: "PiggyBank",
@@ -791,9 +792,9 @@ const getAccountsData = (transactions: any[]) => {
     },
     // Credit Card
     {
-      id: "acc-creditcard-001",
+      id: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
       name: "Rewards Credit Card",
-      balance: balances["acc-creditcard-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7d5d6e7f8a90"],
       currency: "USD",
       color: "warning-500",
       icon: "CreditCard",
@@ -811,9 +812,9 @@ const getAccountsData = (transactions: any[]) => {
     },
     // Cash
     {
-      id: "acc-cash-001",
+      id: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
       name: "Cash Wallet",
-      balance: balances["acc-cash-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7d1c2d3e4f5a"],
       currency: "USD",
       color: "amber-500",
       icon: "Banknote",
@@ -831,9 +832,9 @@ const getAccountsData = (transactions: any[]) => {
     },
     // Loan
     {
-      id: "acc-loan-001",
+      id: "019313ea-448f-7c15-9b2e-7d8e9f0a1b2c",
       name: "Auto Loan",
-      balance: balances["acc-loan-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7d8e9f0a1b2c"],
       currency: "USD",
       color: "error-500",
       icon: "Car",
@@ -851,9 +852,9 @@ const getAccountsData = (transactions: any[]) => {
     },
     // Gift Cards
     {
-      id: "acc-giftcard-001",
+      id: "019313ea-448f-7c15-9b2e-7db8c90d1e2f",
       name: "Amazon Gift Card",
-      balance: balances["acc-giftcard-001"],
+      balance: balances["019313ea-448f-7c15-9b2e-7db8c90d1e2f"],
       currency: "USD",
       color: "success-500",
       icon: "Gift",
@@ -870,9 +871,9 @@ const getAccountsData = (transactions: any[]) => {
       isdeleted: false,
     },
     {
-      id: "acc-giftcard-002",
+      id: "019313ea-448f-7c15-9b2e-7da1b2c3d4e5",
       name: "Starbucks Gift Card",
-      balance: balances["acc-giftcard-002"],
+      balance: balances["019313ea-448f-7c15-9b2e-7da1b2c3d4e5"],
       currency: "USD",
       color: "teal-500",
       icon: "Coffee",
@@ -900,8 +901,7 @@ const generateTransactionsData = () => {
   const twoYearsAgo = new Date(today);
   twoYearsAgo.setFullYear(today.getFullYear() - 2);
 
-  let transactionCounter = 1;
-  const generateId = () => `txn-${String(transactionCounter++).padStart(6, "0")}`;
+  const generateId = () => GenerateUuid();
 
   // 1. Opening Balance Transactions (2 years ago)
   const openingBalanceDate = new Date(twoYearsAgo);
@@ -919,7 +919,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-checking-001",
+    accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9", // Account Operations category
     transferaccountid: null,
     transferid: null,
@@ -943,7 +943,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-savings-001",
+    accountid: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -967,7 +967,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-creditcard-001",
+    accountid: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -991,7 +991,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-cash-001",
+    accountid: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -1015,7 +1015,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-loan-001",
+    accountid: "019313ea-448f-7c15-9b2e-7d8e9f0a1b2c",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -1039,7 +1039,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-giftcard-001",
+    accountid: "019313ea-448f-7c15-9b2e-7db8c90d1e2f",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -1063,7 +1063,7 @@ const generateTransactionsData = () => {
     tags: ["opening-balance"],
     type: "Initial",
     isvoid: false,
-    accountid: "acc-giftcard-002",
+    accountid: "019313ea-448f-7c15-9b2e-7da1b2c3d4e5",
     categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
     transferaccountid: null,
     transferid: null,
@@ -1092,7 +1092,7 @@ const generateTransactionsData = () => {
       tags: ["income", "salary"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "8be7e399-75fb-4da0-b043-3b7d7e0082ea", // Salary category
       transferaccountid: null,
       transferid: null,
@@ -1127,9 +1127,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "savings"],
       type: "Expense",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-savings-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
       transferid: transferInId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1151,9 +1151,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "savings"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-savings-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-checking-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       transferid: transferOutId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1187,9 +1187,9 @@ const generateTransactionsData = () => {
       tags: ["payment", "credit-card"],
       type: "Expense",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-creditcard-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
       transferid: paymentInId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1211,9 +1211,9 @@ const generateTransactionsData = () => {
       tags: ["payment", "credit-card"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-creditcard-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-checking-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       transferid: paymentOutId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1247,9 +1247,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "loan"],
       type: "Transfer",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-loan-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d8e9f0a1b2c",
       transferid: loanPaymentInId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1271,9 +1271,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "loan"],
       type: "Transfer",
       isvoid: false,
-      accountid: "acc-loan-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d8e9f0a1b2c",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-checking-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       transferid: loanPaymentOutId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1315,9 +1315,9 @@ const generateTransactionsData = () => {
         tags: ["transfer", "cash"],
         type: "Expense",
         isvoid: false,
-        accountid: "acc-checking-001",
+        accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
         categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-        transferaccountid: "acc-cash-001",
+        transferaccountid: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
         transferid: cashInId,
         tenantid: WATERMELONDB_DEMO_TENANT_ID,
         isdeleted: false,
@@ -1339,9 +1339,9 @@ const generateTransactionsData = () => {
         tags: ["transfer", "cash"],
         type: "Income",
         isvoid: false,
-        accountid: "acc-cash-001",
+        accountid: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
         categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-        transferaccountid: "acc-checking-001",
+        transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
         transferid: cashOutId,
         tenantid: WATERMELONDB_DEMO_TENANT_ID,
         isdeleted: false,
@@ -1390,16 +1390,16 @@ const generateTransactionsData = () => {
         const amount = category.minAmount + Math.floor(Math.random() * (category.maxAmount - category.minAmount));
 
         // Randomly assign to checking, credit card, or cash based on category
-        let accountId = "acc-checking-001";
+        let accountId = "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         if (category.name === "Groceries" || category.name === "Fuel" || category.name === "Clothing") {
           // 70% credit card, 30% checking
-          accountId = Math.random() < 0.7 ? "acc-creditcard-001" : "acc-checking-001";
+          accountId = Math.random() < 0.7 ? "019313ea-448f-7c15-9b2e-7d5d6e7f8a90" : "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         } else if (category.name === "Dining Out" || category.name === "Sweets and Candy") {
           // 50% credit card, 30% checking, 20% cash
           const rand = Math.random();
-          if (rand < 0.5) accountId = "acc-creditcard-001";
-          else if (rand < 0.8) accountId = "acc-checking-001";
-          else accountId = "acc-cash-001";
+          if (rand < 0.5) accountId = "019313ea-448f-7c15-9b2e-7d5d6e7f8a90";
+          else if (rand < 0.8) accountId = "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
+          else accountId = "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a";
         } else if (
           category.name === "Rent" ||
           category.name === "Electricity" ||
@@ -1407,10 +1407,10 @@ const generateTransactionsData = () => {
           category.name === "Phone"
         ) {
           // Bills paid from checking account
-          accountId = "acc-checking-001";
+          accountId = "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         } else if (category.name === "Games") {
           // Entertainment - mostly credit card
-          accountId = Math.random() < 0.8 ? "acc-creditcard-001" : "acc-checking-001";
+          accountId = Math.random() < 0.8 ? "019313ea-448f-7c15-9b2e-7d5d6e7f8a90" : "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         }
 
         transactions.push({
@@ -1513,16 +1513,16 @@ const generateTransactionsData = () => {
         const amount = pattern.minAmount + Math.floor(Math.random() * (pattern.maxAmount - pattern.minAmount));
 
         // Determine account based on transaction type and amount
-        let accountId = "acc-checking-001";
+        let accountId = "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         if (pattern.name.includes("Coffee") && amount < 15) {
-          accountId = Math.random() < 0.6 ? "acc-giftcard-002" : "acc-cash-001";
+          accountId = Math.random() < 0.6 ? "019313ea-448f-7c15-9b2e-7da1b2c3d4e5" : "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a";
         } else if (pattern.name === "Fast Food" || pattern.name.includes("Snack")) {
           accountId =
-            Math.random() < 0.4 ? "acc-cash-001" : Math.random() < 0.7 ? "acc-creditcard-001" : "acc-checking-001";
+            Math.random() < 0.4 ? "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a" : Math.random() < 0.7 ? "019313ea-448f-7c15-9b2e-7d5d6e7f8a90" : "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         } else if (pattern.name === "Grocery Store" || pattern.name === "Gas Station") {
-          accountId = Math.random() < 0.8 ? "acc-creditcard-001" : "acc-checking-001";
+          accountId = Math.random() < 0.8 ? "019313ea-448f-7c15-9b2e-7d5d6e7f8a90" : "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         } else if (pattern.name === "Restaurant") {
-          accountId = Math.random() < 0.6 ? "acc-creditcard-001" : "acc-checking-001";
+          accountId = Math.random() < 0.6 ? "019313ea-448f-7c15-9b2e-7d5d6e7f8a90" : "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b";
         }
 
         transactions.push({
@@ -1558,63 +1558,63 @@ const generateTransactionsData = () => {
       name: "Rent Payment",
       amount: 1200,
       day: 1,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "4f8111aa-b5ef-468b-800d-f9d51a8e7dca",
       name: "Electricity Bill",
       amount: 95,
       day: 5,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "6ffe01d0-e0bf-45da-8384-3c167b6794b0",
       name: "Water Bill",
       amount: 55,
       day: 5,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "aad62461-d513-42ed-a478-ddcc8039a349",
       name: "Phone Bill",
       amount: 75,
       day: 10,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "5b2bd8af-f00c-429d-8351-c42c4c8db97f",
       name: "Car Insurance",
       amount: 180,
       day: 1,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "9031526c-8069-4110-be4b-2b9c14ccb3ea",
       name: "Medical Insurance",
       amount: 320,
       day: 1,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "e4211cd6-2485-4728-b646-d47b790d5c78",
       name: "Netflix Subscription",
       amount: 18,
       day: 15,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "e4211cd6-2485-4728-b646-d47b790d5c78",
       name: "Spotify Subscription",
       amount: 11,
       day: 12,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "e4211cd6-2485-4728-b646-d47b790d5c78",
       name: "Gaming Subscription",
       amount: 15,
       day: 20,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
   ];
 
@@ -1654,63 +1654,63 @@ const generateTransactionsData = () => {
       name: "Clothing Store",
       amount: 85,
       day: 3,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "41dee609-6a44-4fda-8ed4-2ec0bd35a99f",
       name: "Online Shopping",
       amount: 120,
       day: 7,
-      account: "acc-giftcard-001",
+      account: "019313ea-448f-7c15-9b2e-7db8c90d1e2f",
     },
     {
       categoryid: "3e086e05-2998-400a-9574-7ef562c4354e",
       name: "Car Maintenance",
       amount: 125,
       day: 4,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "43697723-bb6f-4edc-abe7-ea7540595df7",
       name: "Pharmacy",
       amount: 35,
       day: 6,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
     {
       categoryid: "775793ad-2dce-4d95-b2f5-afeea47c7bc9",
       name: "Food Delivery",
       amount: 42,
       day: 8,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "4f036417-a86c-4335-813e-b65e7a3cb909",
       name: "Home Depot",
       amount: 95,
       day: 9,
-      account: "acc-creditcard-001",
+      account: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     },
     {
       categoryid: "fa748d7a-072e-4268-82ad-40f7bfdae1ab",
       name: "Farmers Market",
       amount: 22,
       day: 2,
-      account: "acc-cash-001",
+      account: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
     },
     {
       categoryid: "e4211cd6-2485-4728-b646-d47b790d5c78",
       name: "Video Game Purchase",
       amount: 60,
       day: 14,
-      account: "acc-giftcard-001",
+      account: "019313ea-448f-7c15-9b2e-7db8c90d1e2f",
     },
     {
       categoryid: "55485de3-113a-42fa-a9a8-68f151b5d233",
       name: "Miscellaneous",
       amount: 45,
       day: 11,
-      account: "acc-checking-001",
+      account: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
     },
   ];
 
@@ -1760,7 +1760,7 @@ const generateTransactionsData = () => {
       tags: ["income", "salary", "current-month"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "8be7e399-75fb-4da0-b043-3b7d7e0082ea",
       transferaccountid: null,
       transferid: null,
@@ -1786,7 +1786,7 @@ const generateTransactionsData = () => {
       tags: ["income", "salary", "current-month"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "8be7e399-75fb-4da0-b043-3b7d7e0082ea",
       transferaccountid: null,
       transferid: null,
@@ -1816,9 +1816,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "savings", "current-month"],
       type: "Expense",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-savings-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
       transferid: transferInId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1839,9 +1839,9 @@ const generateTransactionsData = () => {
       tags: ["transfer", "savings", "current-month"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-savings-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-checking-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       transferid: transferOutId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1870,9 +1870,9 @@ const generateTransactionsData = () => {
       tags: ["payment", "credit-card", "current-month"],
       type: "Expense",
       isvoid: false,
-      accountid: "acc-checking-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-creditcard-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
       transferid: paymentInId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
@@ -1893,9 +1893,9 @@ const generateTransactionsData = () => {
       tags: ["payment", "credit-card", "current-month"],
       type: "Income",
       isvoid: false,
-      accountid: "acc-creditcard-001",
+      accountid: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
       categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      transferaccountid: "acc-checking-001",
+      transferaccountid: "019313ea-448f-7c15-9b2e-7d7d8e9f0a1b",
       transferid: paymentOutId,
       tenantid: WATERMELONDB_DEMO_TENANT_ID,
       isdeleted: false,
