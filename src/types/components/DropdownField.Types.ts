@@ -17,12 +17,12 @@ export interface AddNewConfig {
   label?: string;
   /** Icon for the "Add New" button */
   icon?: string;
-  /** The entity type to create - determines which quick form to show */
-  entityType: "Account" | "AccountCategory" | "TransactionCategory" | "TransactionGroup";
+  /** The entity type - used for display purposes in modal title */
+  entityType?: string;
   /** Callback when a new item is successfully created */
   onCreated?: (newItem: any) => void;
-  /** Optional: Render a custom form instead of the default quick form */
-  renderForm?: (props: { onSuccess: (item: any) => void; onCancel: () => void }) => React.ReactNode;
+  /** Render function for the form to show when adding a new item. This is required. */
+  renderForm: (props: { onSuccess: (item: any) => void; onCancel: () => void }) => React.ReactNode;
 }
 
 export interface DropDownProps {
@@ -99,7 +99,7 @@ export interface QuickFormProps {
   onCancel: () => void;
 }
 
-export interface QuickAccountFormProps extends QuickFormProps {}
-export interface QuickAccountCategoryFormProps extends QuickFormProps {}
-export interface QuickTransactionCategoryFormProps extends QuickFormProps {}
-export interface QuickTransactionGroupFormProps extends QuickFormProps {}
+export interface QuickAccountFormProps extends QuickFormProps { }
+export interface QuickAccountCategoryFormProps extends QuickFormProps { }
+export interface QuickTransactionCategoryFormProps extends QuickFormProps { }
+export interface QuickTransactionGroupFormProps extends QuickFormProps { }
