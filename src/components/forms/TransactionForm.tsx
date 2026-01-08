@@ -437,7 +437,6 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAll();
   const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAll();
   const { mutate: upsertTransaction } = transactionService.useUpsert();
-
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
   const [isOneMoreSubmitting, setIsOneMoreSubmitting] = useState(false);

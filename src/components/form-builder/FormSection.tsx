@@ -1,6 +1,6 @@
-import React, { memo, useState, useCallback, useMemo } from "react";
-import { View, Text, Pressable } from "react-native";
 import { FormSectionProps } from "@/src/types/components/forms.types";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -43,7 +43,7 @@ function FormSectionComponent({
             >
               <Text
                 className="text-lg font-semibold text-foreground"
-                accessibilityRole="heading"
+                accessibilityRole="header"
                 accessibilityLevel={2}
               >
                 {title}
@@ -55,7 +55,7 @@ function FormSectionComponent({
           ) : (
             <Text
               className="text-lg font-semibold text-foreground mb-2"
-              accessibilityRole="heading"
+              accessibilityRole="header"
               accessibilityLevel={2}
             >
               {title}

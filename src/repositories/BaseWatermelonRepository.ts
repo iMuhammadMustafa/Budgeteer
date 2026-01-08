@@ -52,11 +52,18 @@ export abstract class BaseWatermelonRepository<
     }
 
     conditions.push(Q.where("tenantid", tenantId));
-    conditions.push(Q.where("isdeleted", filters?.deleted ?? false));
+
+    // isDeleted filter: undefined = non-deleted only, true = deleted only, false = all
+    if (filters?.isDeleted === undefined) {
+      conditions.push(Q.where("isdeleted", false));
+    } else if (filters?.isDeleted === true) {
+      conditions.push(Q.where("isdeleted", true));
+    }
+    // isDeleted === false means show all, no filter needed
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && key !== "deleted") {
+        if (value !== undefined && value !== null && key !== "isDeleted" && key !== "raw") {
           conditions.push(Q.where(key, value as any));
         }
       });
@@ -71,7 +78,36 @@ export abstract class BaseWatermelonRepository<
 
     const results = await query;
 
+    // If raw=true, return raw data without relationship mapping
+    if (filters?.raw) {
+      return this.mapToRawData(results as TModel[], collection);
+    }
+
     return (results as TModel[]).map(model => this.mapFromWatermelon(model));
+  }
+
+  /**
+   * Maps WatermelonDB models to raw data objects (for export)
+   * Only includes schema-defined columns, not relationships
+   */
+  protected mapToRawData(models: TModel[], collection: any): TMapped[] {
+    const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
+    validColumns.add("id");
+
+    return models.map((model: any) => {
+      const raw: Record<string, any> = {};
+
+      for (const key of validColumns) {
+        if (model._raw && model._raw[key] !== undefined) {
+          raw[key] = model._raw[key];
+        } else if (model[key] !== undefined && typeof model[key] !== 'function') {
+          raw[key] = model[key];
+        }
+      }
+
+      raw.id = model.id;
+      return raw as unknown as TMapped;
+    });
   }
 
   async create(data: Inserts<TTable>, tenantId: string): Promise<TMapped> {
@@ -80,8 +116,21 @@ export abstract class BaseWatermelonRepository<
     return await db.write(async () => {
       const mappedData = this.mapFieldsForWatermelon(data as Record<string, any>);
 
-      const record = await db.get(this.tableName).create((record: any) => {
+      const collection = db.get(this.tableName);
+      const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
+      validColumns.add("id");
+      validColumns.add("tenantid");
+      validColumns.add("isdeleted");
+      validColumns.add("createdat");
+      validColumns.add("updatedat");
+      validColumns.add("createdby");
+      validColumns.add("updatedby");
+
+      const record = await collection.create((record: any) => {
         Object.entries(mappedData).forEach(([key, value]) => {
+          // Skip fields that aren't in the schema to avoid WatermelonDB errors
+          if (!validColumns.has(key) && key !== "id") return;
+
           switch (key) {
             case "id":
               if (value) {
@@ -121,9 +170,16 @@ export abstract class BaseWatermelonRepository<
       const updatedRecord = await record.update((record: any) => {
         const excludedFields = ["id", "createdat", "createdby", "tenantId"];
 
+        const collection = db.get(this.tableName);
+        const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
+        validColumns.add("updatedat");
+        validColumns.add("isdeleted");
+
         Object.entries(mappedData).forEach(([key, value]) => {
           if (value !== undefined && !excludedFields.includes(key.toLowerCase())) {
-            record[key] = value;
+            if (validColumns.has(key)) {
+              record[key] = value;
+            }
           }
         });
 
@@ -188,6 +244,26 @@ export abstract class BaseWatermelonRepository<
     });
   }
 
+
+
+  /**
+   * Get all record IDs across ALL tenants (no tenant filtering)
+   * Used for duplicate detection during import since WatermelonDB IDs are globally unique
+   */
+  async getAllIds(): Promise<string[]> {
+    const db = await this.getDb();
+
+    const collection = db.get(this.tableName);
+    if (!collection) {
+      return [];
+    }
+
+    // Query ALL records, no tenant filter
+    const results = await collection.query();
+
+    return results.map((model: any) => model.id);
+  }
+
   async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
     const db = await this.getDb();
 
@@ -207,9 +283,16 @@ export abstract class BaseWatermelonRepository<
         await record.update((record: any) => {
           const excludedFields = ["id", "createdat", "createdby", "tenantId"];
 
+          const collection = db.get(this.tableName);
+          const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
+          validColumns.add("updatedat");
+          validColumns.add("isdeleted");
+
           Object.entries(mappedData).forEach(([key, value]) => {
             if (value !== undefined && !excludedFields.includes(key.toLowerCase())) {
-              record[key] = value;
+              if (validColumns.has(key)) {
+                record[key] = value;
+              }
             }
           });
 

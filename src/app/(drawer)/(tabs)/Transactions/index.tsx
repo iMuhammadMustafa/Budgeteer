@@ -1,4 +1,6 @@
 import SkeletonList from "@/src/components/elements/SkeletonList";
+import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
+import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
 import DaysList from "@/src/components/Transactions/Days";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
@@ -11,6 +13,7 @@ export default function Transactions() {
   const {
     error,
     isLoading,
+    isActionLoading,
     selectedTransactions,
     selectedSum,
     dailyTransactions,
@@ -18,8 +21,6 @@ export default function Transactions() {
     clearSelection,
     handleLongPress,
     handlePress,
-    deleteSelection,
-    copyTransactions,
     refreshTransactions,
     showSearch,
     setShowSearch,
@@ -32,6 +33,15 @@ export default function Transactions() {
     loadMore,
     handleSearchSubmit,
     handleSearchReset,
+    // Modal states and handlers
+    confirmAction,
+    openConfirmModal,
+    closeConfirmModal,
+    showBatchUpdate,
+    setShowBatchUpdate,
+    updateSummary,
+    handleBatchUpdateSubmit,
+    executeConfirmedAction,
   } = useTransactions();
 
   if (error)
@@ -46,8 +56,10 @@ export default function Transactions() {
       <TransactionsPageHeader
         selectedTransactions={selectedTransactions}
         selectedSum={selectedSum}
-        deleteSelection={deleteSelection}
-        copyTransactions={copyTransactions}
+        openDeleteConfirm={() => openConfirmModal("delete")}
+        openDuplicateConfirm={() => openConfirmModal("duplicate")}
+        openBatchUpdate={() => setShowBatchUpdate(true)}
+        isActionLoading={isActionLoading}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}
         showSearch={showSearch}
@@ -90,6 +102,27 @@ export default function Transactions() {
           ListFooterComponent={status === "pending" ? <DaySkeleton /> : null}
         />
       )}
+
+      {/* Batch Update Modal */}
+      <BatchUpdateModal
+        isOpen={showBatchUpdate}
+        setIsOpen={setShowBatchUpdate}
+        selectedTransactions={selectedTransactions}
+        accounts={accounts ?? []}
+        categories={categories ?? []}
+        onUpdate={handleBatchUpdateSubmit}
+      />
+
+      {/* Single Confirmation Modal - action type controls display */}
+      <BatchActionConfirmModal
+        isOpen={confirmAction !== null}
+        setIsOpen={open => !open && closeConfirmModal()}
+        actionType={confirmAction ?? "delete"}
+        selectedTransactions={selectedTransactions}
+        isLoading={isActionLoading}
+        onConfirm={executeConfirmedAction}
+        updateSummary={confirmAction === "update" ? updateSummary : undefined}
+      />
     </SafeAreaView>
   );
 }

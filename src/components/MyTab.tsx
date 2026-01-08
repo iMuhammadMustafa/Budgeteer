@@ -254,13 +254,21 @@ const useMyTab = <TModel, TTable extends TableNames>({
 
   const { data, isLoading, error } = showDeleted ? service.useFindAllDeleted() : service.useFindAll();
   const { mutate: softDeleteMutate } = service.useSoftDelete();
-  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => {} };
+  const { mutate: hardDeleteMutate } = service.useHardDelete();
+  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => { } };
   const { mutate: deleteMultipleDependencies } = dependencyConfig?.dependencyService?.useSoftDelete?.() || {
-    mutate: () => {},
+    mutate: () => { },
+  };
+  const { mutate: hardDeleteDependencies } = dependencyConfig?.dependencyService?.useHardDelete?.() || {
+    mutate: () => { },
   };
   const { mutate: updateDependenciesMutate } = dependencyConfig?.dependencyService?.useUpdateMultiple?.() || {
-    mutate: () => {},
+    mutate: () => { },
   };
+
+  // Use hardDelete when showing deleted items (Restore pages)
+  const deleteMutate = showDeleted ? hardDeleteMutate : softDeleteMutate;
+  const deleteDependenciesMutate = showDeleted ? hardDeleteDependencies : deleteMultipleDependencies;
 
   const [isOpen, setIsOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState(initialState);
@@ -323,7 +331,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const handleDelete = () => {
     if (isSelectionMode && selectedItems.length > 0) {
       for (const item of selectedItems) {
-        softDeleteMutate({ id: item.id, item });
+        deleteMutate({ id: item.id, item });
       }
       setSelectedItems([]);
     }
@@ -351,7 +359,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
             await dependencyConfig.onAfterUpdate(dependencies, itemToDelete.id, replacementItemId);
           }
 
-          softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+          deleteMutate({ id: itemToDelete.id, item: itemToDelete });
           setItemToDelete(null);
         },
       });
@@ -359,14 +367,14 @@ const useMyTab = <TModel, TTable extends TableNames>({
     // If we're deleting dependencies too
     else if (alsoDeleteDependencies && dependencyCount > 0) {
       dependencies.forEach((dep: any) => {
-        deleteMultipleDependencies({ id: dep.id, item: dep });
+        deleteDependenciesMutate({ id: dep.id, item: dep });
       });
-      softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+      deleteMutate({ id: itemToDelete.id, item: itemToDelete });
       setItemToDelete(null);
     }
     // No dependencies, just delete
     else {
-      softDeleteMutate({ id: itemToDelete.id, item: itemToDelete });
+      deleteMutate({ id: itemToDelete.id, item: itemToDelete });
       setItemToDelete(null);
     }
   };

@@ -1,13 +1,15 @@
 import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
 import { Link } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 export default function TransactionsPageHeader({
   selectedTransactions,
   selectedSum,
-  deleteSelection,
-  copyTransactions,
+  openDeleteConfirm,
+  openDuplicateConfirm,
+  openBatchUpdate,
+  isActionLoading,
   clearSelection,
   refreshTransactions,
   showSearch,
@@ -28,15 +30,24 @@ export default function TransactionsPageHeader({
       <View className="flex-row justify-between items-center gap-3">
         {selectedTransactions.length > 0 ? (
           <>
-            <Pressable onPress={deleteSelection}>
-              <MyIcon name="Trash" className="text-foreground" size={20} />
-            </Pressable>
-            <Pressable onPress={copyTransactions}>
-              <MyIcon name="Copy" className="text-foreground" size={20} />
-            </Pressable>
-            <Pressable onPress={clearSelection}>
-              <MyIcon name="X" className="text-foreground" size={20} />
-            </Pressable>
+            {isActionLoading ? (
+              <ActivityIndicator size="small" color="#3b82f6" />
+            ) : (
+              <>
+                <Pressable onPress={openDeleteConfirm}>
+                  <MyIcon name="Trash" className="text-foreground" size={20} />
+                </Pressable>
+                <Pressable onPress={openDuplicateConfirm}>
+                  <MyIcon name="Copy" className="text-foreground" size={20} />
+                </Pressable>
+                <Pressable onPress={openBatchUpdate}>
+                  <MyIcon name="Pencil" className="text-foreground" size={20} />
+                </Pressable>
+                <Pressable onPress={clearSelection}>
+                  <MyIcon name="X" className="text-foreground" size={20} />
+                </Pressable>
+              </>
+            )}
           </>
         ) : (
           <>

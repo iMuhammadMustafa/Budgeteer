@@ -9,9 +9,11 @@ import { TransactionsView } from "@/src/types/database/Tables.Types";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 
+import { BatchActionType } from "@/src/components/Transactions/BatchActionConfirmModal";
+import { BatchUpdatePayload } from "@/src/components/Transactions/BatchUpdateModal";
 import { useTransactionCategoryService } from "@/src/services//TransactionCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
-import { useTransactionService } from "@/src/services/Transactions.Service";
+import { BatchUpdateParams, useTransactionService } from "@/src/services/Transactions.Service";
 import { duplicateTransaction, groupTransactions } from "@/src/utils/transactions.helper";
 
 export default function useTransactions() {
@@ -32,7 +34,7 @@ export default function useTransactions() {
   const addMutation = transactionService.useCreate();
   const deleteMutation = transactionService.useDelete();
 
-  const [selectionMode, setSelectionMode] = useState(false); // To track if we're in selection mode
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
   const [selectedSum, setSelectedSum] = useState(0);
 
@@ -41,6 +43,16 @@ export default function useTransactions() {
 
   const [filters, setFilters] = useState<TransactionFilters>(params);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const [confirmAction, setConfirmAction] = useState<BatchActionType | null>(null);
+  const [showBatchUpdate, setShowBatchUpdate] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState<BatchUpdatePayload | null>(null);
+  const [updateSummary, setUpdateSummary] = useState("");
+
+  const updateMultipleMutation = transactionService.useUpdateMultiple();
+
+  const openConfirmModal = (actionType: BatchActionType) => setConfirmAction(actionType);
+  const closeConfirmModal = () => setConfirmAction(null);
 
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
@@ -80,23 +92,71 @@ export default function useTransactions() {
     } finally {
       setIsActionLoading(false);
       clearSelection();
+      closeConfirmModal();
     }
   };
 
   const deleteSelection = async () => {
     setIsActionLoading(true);
-    for (let item of selectedTransactions) {
-      await deleteMutation.mutateAsync(
-        { id: item.id!, item: item as any },
-        {
-          onSuccess: () => {
-            console.log({ message: "Transaction Deleted Successfully", type: "success" });
+    try {
+      for (let item of selectedTransactions) {
+        await deleteMutation.mutateAsync(
+          { id: item.id!, item: item as any },
+          {
+            onSuccess: () => {
+              console.log({ message: "Transaction Deleted Successfully", type: "success" });
+            },
           },
-        },
-      );
+        );
+      }
+    } finally {
+      setIsActionLoading(false);
+      clearSelection();
+      closeConfirmModal();
     }
-    setIsActionLoading(false);
-    clearSelection();
+  };
+
+  const handleBatchUpdateSubmit = (updates: BatchUpdatePayload, summary: string) => {
+    setPendingUpdates(updates);
+    setUpdateSummary(summary);
+    setShowBatchUpdate(false);
+    openConfirmModal("update");
+  };
+
+  const executeBatchUpdate = async () => {
+    if (!pendingUpdates) return;
+
+    setIsActionLoading(true);
+    try {
+      const params: BatchUpdateParams = {
+        transactions: selectedTransactions,
+        updates: pendingUpdates,
+      };
+      await updateMultipleMutation.mutateAsync(params);
+      console.log({ message: "Transactions updated successfully", type: "success" });
+    } catch (error) {
+      console.log({ message: "Error updating transactions", type: "error", error });
+    } finally {
+      setIsActionLoading(false);
+      clearSelection();
+      closeConfirmModal();
+      setPendingUpdates(null);
+      setUpdateSummary("");
+    }
+  };
+
+  const executeConfirmedAction = async () => {
+    switch (confirmAction) {
+      case "delete":
+        await deleteSelection();
+        break;
+      case "duplicate":
+        await copyTransactions();
+        break;
+      case "update":
+        await executeBatchUpdate();
+        break;
+    }
   };
 
   const handlePress = (item: TransactionsView) => {
@@ -109,8 +169,6 @@ export default function useTransactions() {
         : [...selectedTransactions, item];
 
       setSelectedTransactions(updatedSelections);
-
-      // Update selected sum
 
       setSelectedSum(
         updatedSelections.reduce((acc, curr) => {
@@ -166,33 +224,7 @@ export default function useTransactions() {
       });
     }
   };
-  // const { data: accounts } = useGetAccounts() as any;
-  // const { data: categories } = useGetCategories() as any;
-  // useEffect(() => {
-  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-  // }, [filters]);
-  // const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } = useGetTransactionsInfinite(
-  //   params ?? searchFilters,
-  // );
-  // const transactions = data?.pages.flatMap(page => page);
 
-  // useEffect(() => {
-  //   return () => {
-  //     // Reset the query cache when the component unmounts
-  //     queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView, filter] });
-  //   };
-  // }, [queryClient, filter]);
-
-  // useEffect(() => {
-  //   queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-  // }, [params]);
-
-  /*
-  queryClient.setQueryData([ViewNames.TransactionsView], (data) => ({
-  pages: data.pages.slice(1),
-  pageParams: data.pageParams.slice(1),
-}))
-  */
   // Handle search submission
   const handleSearchSubmit = (formValues: any) => {
     setShowSearch(false);
@@ -257,6 +289,15 @@ export default function useTransactions() {
     loadMore,
     handleSearchSubmit,
     handleSearchReset,
+    // Modal states and handlers
+    confirmAction,
+    openConfirmModal,
+    closeConfirmModal,
+    showBatchUpdate,
+    setShowBatchUpdate,
+    updateSummary,
+    handleBatchUpdateSubmit,
+    executeConfirmedAction,
   };
 }
 
@@ -274,7 +315,7 @@ const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => {
       backHandler.remove();
-      if (Platform.OS === "web") window.removeEventListener("keydown", () => {});
+      if (Platform.OS === "web") window.removeEventListener("keydown", () => { });
     };
   }, [selectionMode, backAction]);
 };

@@ -31,15 +31,16 @@ export interface IMultipleWriteService<TModel, TTable extends TableNames> {
 export interface IDeleteService<TModel> {
   useSoftDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
   useDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
+  useHardDelete: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
   useRestore: () => ReturnType<typeof useMutation<void, unknown, { id: string; item?: TModel | undefined }>>;
 }
 
 export interface IService<TModel, TTable extends TableNames>
   extends
-    IReadService<TModel>,
-    IWriteService<TModel, TTable>,
-    IMultipleWriteService<TModel, TTable>,
-    IDeleteService<TModel> {
+  IReadService<TModel>,
+  IWriteService<TModel, TTable>,
+  IMultipleWriteService<TModel, TTable>,
+  IDeleteService<TModel> {
   repo: IRepository<TModel, TTable>;
 }
 export interface IServiceWithView<

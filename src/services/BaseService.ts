@@ -29,7 +29,7 @@ export function useBaseFindAllDeleted<TEntity, TTable extends TableNames>(
   return useQuery<TEntity[]>({
     queryKey: [tableName, "deleted", tenantId],
     queryFn: async () => {
-      return repo.findAll(tenantId, { deleted: true });
+      return repo.findAll(tenantId, { isDeleted: true });
     },
     enabled: !!tenantId,
   });

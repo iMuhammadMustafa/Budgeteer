@@ -7,8 +7,9 @@ module.exports = function (api) {
       // "module:metro-react-native-babel-preset",
     ],
     plugins: [
+      ["@babel/plugin-transform-typescript", { isTSX: true }],
       ["@babel/plugin-proposal-decorators", { legacy: true }],
-      ["@babel/plugin-proposal-class-properties", { loose: true }],
+      ["@babel/plugin-transform-class-properties", { loose: true, legacy: true }],
       ["@babel/plugin-transform-runtime", { helpers: true, regenerator: true }],
     ],
   };

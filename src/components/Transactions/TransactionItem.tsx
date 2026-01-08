@@ -19,9 +19,9 @@ export default function TransactionItem({
 }) {
   const isSelected = selectedTransactions.find(t => t.id === transaction.id);
   const iconProp = getTransactionProp(transaction.type);
-  const isTransfer = transaction.type === "Transfer";
+  const isTransfer = transaction.type === "Transfer" && transaction.amount! < 0;
 
-  if (isTransfer && transaction.amount! > 0) {
+  if (isTransfer) {
     return;
   }
   return (
@@ -59,13 +59,13 @@ export default function TransactionItem({
             <Text className={`text-${iconProp.textColor}`}>
               {isTransfer
                 ? Math.abs(parseFloat(transaction.amount?.toString() ?? "0")).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
                 : transaction.amount!.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               {transaction.currency}
             </Text>
             <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>

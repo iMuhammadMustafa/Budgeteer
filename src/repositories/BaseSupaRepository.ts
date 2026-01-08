@@ -9,15 +9,39 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
   protected abstract tableName: string;
 
   async findAll(tenantId: string, filters: QueryFilters = {}): Promise<TModel[]> {
-    const { data, error } = await supabase
+    let query = supabase
       .from(this.tableName)
       .select()
-      .eq("tenantid", tenantId)
-      .eq("isdeleted", filters?.deleted ?? false)
+      .eq("tenantid", tenantId);
+
+    // isDeleted filter: undefined = non-deleted only, true = deleted only, false = all
+    if (filters.isDeleted === undefined) {
+      query = query.eq("isdeleted", false);
+    } else if (filters.isDeleted === true) {
+      query = query.eq("isdeleted", true);
+    }
+    // isDeleted === false means show all, no filter needed
+
+    const { data, error } = await query
       .order("displayorder", { ascending: false })
       .order("name");
+
     if (error) throw error;
     return data;
+  }
+
+  /**
+   * Get all record IDs across ALL tenants (no tenant filtering)
+   * Used for duplicate detection during import
+   * Note: For Supabase with RLS, this may still be filtered by user access
+   */
+  async getAllIds(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from(this.tableName)
+      .select("id");
+
+    if (error) throw error;
+    return (data ?? []).map((r: any) => r.id);
   }
 
   async findById(id: string, tenantId: string): Promise<TModel | null> {
@@ -93,23 +117,30 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
     if (error) throw error;
   }
 
+  // Batch Update is not supported yet in supabase, will have to do it one by one
   async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
-    // Use Supabase upsert for batch updates in a single network request
-    // This is much more efficient than multiple individual update calls
-    const { error } = await supabase.from(this.tableName).upsert(
-      data.map(item => ({
-        ...item,
-        tenantid: tenantId,
-        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-      })),
-      {
-        onConflict: "id",
-        ignoreDuplicates: false,
-      },
-    );
-
-    if (error) {
-      throw new Error(`Failed to update multiple records: ${error.message}`);
+    for (const item of data) {
+      await this.update(item.id!, item, tenantId);
     }
   }
+
+  // async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
+  //   // Use Supabase upsert for batch updates in a single network request
+  //   // This is much more efficient than multiple individual update calls
+  //   const { error } = await supabase.from(this.tableName).upsert(
+  //     data.map(item => ({
+  //       ...item,
+  //       tenantid: tenantId,
+  //       updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+  //     })),
+  //     {
+  //       onConflict: "id",
+  //       ignoreDuplicates: false,
+  //     },
+  //   );
+
+  //   if (error) {
+  //     throw new Error(`Failed to update multiple records: ${error.message}`);
+  //   }
+  // }
 }

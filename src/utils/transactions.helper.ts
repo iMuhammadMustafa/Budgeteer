@@ -41,7 +41,9 @@ export const groupTransactions = (transactions: TransactionsView[]) => {
           transactions: [],
         };
       }
-      acc[date].amount += curr.amount ?? 0;
+      if (!curr.isvoid) {
+        acc[date].amount += curr.amount ?? 0;
+      }
       acc[date].transactions.push(curr);
       return acc;
     }, {});

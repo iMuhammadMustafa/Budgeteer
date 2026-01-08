@@ -4,8 +4,10 @@ import { Account, TransactionCategory, TransactionsView } from "@/src/types/data
 export type TransactionsPageHeaderProps = {
   selectedTransactions: TransactionsView[];
   selectedSum: number;
-  deleteSelection: () => void;
-  copyTransactions: () => void;
+  openDeleteConfirm: () => void;
+  openDuplicateConfirm: () => void;
+  openBatchUpdate: () => void;
+  isActionLoading: boolean;
   clearSelection: () => void;
   refreshTransactions: () => void;
   showSearch: boolean;
