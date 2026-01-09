@@ -17,6 +17,9 @@ export interface IWriteMultipleRepository<TModel, TTable extends TableNames> {
   createMultiple?(data: Inserts<TTable>[], tenantId: string): Promise<TModel[]>;
   updateMultiple?(data: Updates<TTable>[], tenantId: string): Promise<void>;
   deleteMultiple?(ids: string[], tenantId: string): Promise<void>;
+  hardDeleteMultiple?(ids: string[], tenantId: string): Promise<void>;
+  softDeleteMultiple?(ids: string[], tenantId: string): Promise<void>;
+  restoreMultiple?(ids: string[], tenantId: string): Promise<void>;
 }
 
 export interface ISoftDeleteRepository<TModel> {
@@ -26,7 +29,7 @@ export interface ISoftDeleteRepository<TModel> {
 
 export interface IRepository<TModel, TTable extends TableNames>
   extends
-    IReadRepository<TModel>,
-    IWriteRepository<TModel, TTable>,
-    IWriteMultipleRepository<TModel, TTable>,
-    ISoftDeleteRepository<TModel> {}
+  IReadRepository<TModel>,
+  IWriteRepository<TModel, TTable>,
+  IWriteMultipleRepository<TModel, TTable>,
+  ISoftDeleteRepository<TModel> { }

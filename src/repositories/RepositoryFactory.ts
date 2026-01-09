@@ -1,4 +1,4 @@
-import { StorageMode } from "@/src/types/StorageMode";
+import { DatabaseContext } from "@/src/types/database/drizzle";
 import { IAccountCategoryRepository } from "./interfaces/IAccountCategoryRepository";
 import { IAccountRepository } from "./interfaces/IAccountRepository";
 import { IConfigurationRepository } from "./interfaces/IConfigurationRepository";
@@ -7,22 +7,17 @@ import { IStatsRepository } from "./interfaces/IStatsRepository";
 import { ITransactionCategoryRepository } from "./interfaces/ITransactionCategoryRepository";
 import { ITransactionGroupRepository } from "./interfaces/ITransactionGroupRepository";
 import { ITransactionRepository } from "./interfaces/ITransactionRepository";
-import { AccountCategorySupaRepository } from "./supabase/AccountCategories.supa";
-import { AccountSupaRepository } from "./supabase/Accounts.supa";
-import { ConfigurationSupaRepository } from "./supabase/Configurations.supa";
-import { RecurringSupaRepository } from "./supabase/Recurrings.api.supa";
-import { StatsSupaRepository } from "./supabase/Stats.supa";
-import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
-import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
-import { TransactionSupaRepository } from "./supabase/Transactions.supa";
-import { AccountCategoryWatermelonRepository } from "./watermelon/AccountCategories.watermelon";
-import { AccountWatermelonRepository } from "./watermelon/Accounts.watermelon";
-import { ConfigurationWatermelonRepository } from "./watermelon/Configurations.watermelon";
-import { RecurringWatermelonRepository } from "./watermelon/Recurrings.watermelon";
-import { StatsWatermelonRepository } from "./watermelon/Stats.watermelon";
-import { TransactionCategoryWatermelonRepository } from "./watermelon/TransactionCategories.watermelon";
-import { TransactionGroupWatermelonRepository } from "./watermelon/TransactionGroups.watermelon";
-import { TransactionWatermelonRepository } from "./watermelon/Transactions.watermelon";
+
+import {
+  AccountCategoryDrizzleRepository,
+  AccountDrizzleRepository,
+  ConfigurationDrizzleRepository,
+  RecurringDrizzleRepository,
+  StatsDrizzleRepository,
+  TransactionCategoryDrizzleRepository,
+  TransactionDrizzleRepository,
+  TransactionGroupDrizzleRepository,
+} from "./drizzle";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -35,27 +30,15 @@ export interface IRepositoryFactory {
   TransactionRepository(): ITransactionRepository;
 }
 
-export function createRepositoryFactory(storageMode: StorageMode | null): IRepositoryFactory {
-  if (storageMode === StorageMode.Cloud) {
-    return {
-      AccountCategoryRepository: () => new AccountCategorySupaRepository(),
-      AccountRepository: () => new AccountSupaRepository(),
-      ConfigurationRepository: () => new ConfigurationSupaRepository(),
-      RecurringRepository: () => new RecurringSupaRepository(),
-      StatsRepository: () => new StatsSupaRepository(),
-      TransactionCategoryRepository: () => new TransactionCategorySupaRepository(),
-      TransactionGroupRepository: () => new TransactionGroupSupaRepository(),
-      TransactionRepository: () => new TransactionSupaRepository(),
-    };
-  }
+export function createRepositoryFactory(dbContext: DatabaseContext): IRepositoryFactory {
   return {
-    AccountCategoryRepository: () => new AccountCategoryWatermelonRepository(),
-    AccountRepository: () => new AccountWatermelonRepository(),
-    TransactionGroupRepository: () => new TransactionGroupWatermelonRepository(),
-    TransactionCategoryRepository: () => new TransactionCategoryWatermelonRepository(),
-    ConfigurationRepository: () => new ConfigurationWatermelonRepository(),
-    RecurringRepository: () => new RecurringWatermelonRepository(),
-    StatsRepository: () => new StatsWatermelonRepository(),
-    TransactionRepository: () => new TransactionWatermelonRepository(),
+    AccountCategoryRepository: () => new AccountCategoryDrizzleRepository(dbContext),
+    AccountRepository: () => new AccountDrizzleRepository(dbContext),
+    ConfigurationRepository: () => new ConfigurationDrizzleRepository(dbContext),
+    RecurringRepository: () => new RecurringDrizzleRepository(dbContext),
+    StatsRepository: () => new StatsDrizzleRepository(dbContext),
+    TransactionCategoryRepository: () => new TransactionCategoryDrizzleRepository(dbContext),
+    TransactionGroupRepository: () => new TransactionGroupDrizzleRepository(dbContext),
+    TransactionRepository: () => new TransactionDrizzleRepository(dbContext),
   };
 }

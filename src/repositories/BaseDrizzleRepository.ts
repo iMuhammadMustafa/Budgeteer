@@ -1,26 +1,14 @@
-/**
- * Base Drizzle Repository
- * 
- * Unified base repository that works with both:
- * - SQLite (Local/Demo mode via Expo SQLite + Drizzle)
- * - PostgreSQL (Cloud mode via Supabase)
- * 
- * Implements the IRepository interface for consistent data access.
- */
-
 import { QueryFilters } from "@/src/types/apis/QueryFilters";
-import { DrizzleLocalDb, getLocalDb } from "@/src/types/database/drizzle";
-import { getCloudClient } from "@/src/types/database/drizzle/supabase";
+import { DatabaseContext, DrizzleSqliteDb, SupabaseDb } from "@/src/types/database/drizzle";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, Updates } from "@/src/types/database/Tables.Types";
 import { StorageMode } from "@/src/types/StorageMode";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import dayjs from "dayjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, lte, SQL } from "drizzle-orm";
 import { SQLiteTableWithColumns } from "drizzle-orm/sqlite-core";
 import { IRepository } from "./interfaces/IRepository";
 
-// Simplified table type - any SQLite table with standard columns
 type AnyDrizzleTable = SQLiteTableWithColumns<any>;
 
 export abstract class BaseDrizzleRepository<
@@ -30,26 +18,28 @@ export abstract class BaseDrizzleRepository<
 > implements IRepository<TModel, TTableName> {
     protected abstract table: TTable;
     protected abstract tableName: string;
-    protected storageMode: StorageMode;
+    protected dbContext: DatabaseContext;
 
-    constructor(storageMode: StorageMode) {
-        this.storageMode = storageMode;
-    }
-
-    // =====================================
-    // Internal Helpers
-    // =====================================
-
-    protected getDb(): DrizzleLocalDb {
-        return getLocalDb();
-    }
-
-    protected getSupabase() {
-        return getCloudClient();
+    constructor(dbContext: DatabaseContext) {
+        this.dbContext = dbContext;
     }
 
     protected isCloudMode(): boolean {
-        return this.storageMode === StorageMode.Cloud;
+        return this.dbContext.mode === StorageMode.Cloud;
+    }
+
+    protected getSqliteDb(): DrizzleSqliteDb {
+        if (!this.dbContext.sqlite) {
+            throw new Error("SQLite not available in cloud mode");
+        }
+        return this.dbContext.sqlite;
+    }
+
+    protected getSupabase(): SupabaseDb {
+        if (!this.dbContext.supabase) {
+            throw new Error("Supabase not available in local mode");
+        }
+        return this.dbContext.supabase;
     }
 
     protected getNow(): string {
@@ -59,7 +49,6 @@ export abstract class BaseDrizzleRepository<
     // =====================================
     // Read Operations
     // =====================================
-
     async findById(id: string, tenantId: string): Promise<TModel | null> {
         if (this.isCloudMode()) {
             const { data, error } = await this.getSupabase()
@@ -70,15 +59,11 @@ export abstract class BaseDrizzleRepository<
                 .eq("isdeleted", false)
                 .single();
 
-            if (error) {
-                if (error.code === "PGRST116") return null;
-                throw error;
-            }
+            if (error) throw error;
             return data as TModel;
         }
 
-        const db = this.getDb();
-        const results = await db
+        const results = await this.getSqliteDb()
             .select()
             .from(this.table)
             .where(
@@ -100,33 +85,50 @@ export abstract class BaseDrizzleRepository<
                 .select()
                 .eq("tenantid", tenantId);
 
-            // Handle isDeleted filter
             if (filters.isDeleted === undefined) {
                 query = query.eq("isdeleted", false);
             } else if (filters.isDeleted === true) {
                 query = query.eq("isdeleted", true);
             }
-            // isDeleted === false means show all
+            if (filters.startDate) {
+                query = query.gte("createdat", filters.startDate);
+            }
+
+            if (filters.endDate) {
+                query = query.lte("createdat", filters.endDate);
+            }
+            if (filters.offset && filters.limit) {
+                query = query.range(filters.offset, filters.offset + filters.limit - 1);
+            }
 
             const { data, error } = await query;
             if (error) throw error;
             return data as TModel[];
         }
 
-        const db = this.getDb();
-        const conditions: any[] = [eq((this.table as any).tenantid, tenantId)];
+        const conditions: SQL[] = [eq((this.table as any).tenantid, tenantId)];
 
-        // Handle isDeleted filter
         if (filters.isDeleted === undefined) {
             conditions.push(eq((this.table as any).isdeleted, false));
         } else if (filters.isDeleted === true) {
             conditions.push(eq((this.table as any).isdeleted, true));
         }
-
-        const results = await db
+        if (filters.startDate) {
+            conditions.push(gte((this.table as any).createdat, filters.startDate));
+        }
+        if (filters.endDate) {
+            conditions.push(lte((this.table as any).createdat, filters.endDate));
+        }
+        let query = this.getSqliteDb()
             .select()
             .from(this.table)
             .where(and(...conditions));
+
+        if (filters.offset !== undefined && filters.limit !== undefined) {
+            query = query.limit(filters.limit).offset(filters.offset) as typeof query;
+        }
+
+        const results = await query;
 
         return results as TModel[];
     }
@@ -141,9 +143,11 @@ export abstract class BaseDrizzleRepository<
             return (data ?? []).map((r: any) => r.id);
         }
 
-        const db = this.getDb();
-        const results = await db.select({ id: (this.table as any).id }).from(this.table);
-        return results.map((r) => r.id);
+        const results = await this.getSqliteDb()
+            .select({ id: (this.table as any).id })
+            .from(this.table);
+
+        return results.map((r: any) => r.id);
     }
 
     // =====================================
@@ -152,7 +156,7 @@ export abstract class BaseDrizzleRepository<
 
     async create(data: Inserts<TTableName>, tenantId: string): Promise<TModel> {
         const now = this.getNow();
-        const id = (data as any).id || GenerateUuid();
+        const id = data.id || GenerateUuid();
 
         const insertData = {
             ...data,
@@ -174,10 +178,9 @@ export abstract class BaseDrizzleRepository<
             return result as TModel;
         }
 
-        const db = this.getDb();
-        await db.insert(this.table).values(insertData as any);
+        const db = this.getSqliteDb();
+        await (db as any).insert(this.table).values(insertData);
 
-        // Fetch and return the created record
         const result = await this.findById(id, tenantId);
         if (!result) throw new Error("Failed to create record");
         return result;
@@ -194,7 +197,6 @@ export abstract class BaseDrizzleRepository<
             updatedat: now,
         };
 
-        // Remove fields that shouldn't be updated
         delete (updateData as any).id;
         delete (updateData as any).createdat;
         delete (updateData as any).createdby;
@@ -216,10 +218,10 @@ export abstract class BaseDrizzleRepository<
             return result as TModel;
         }
 
-        const db = this.getDb();
-        await db
+        const db = this.getSqliteDb();
+        await (db as any)
             .update(this.table)
-            .set(updateData as any)
+            .set(updateData)
             .where(
                 and(
                     eq((this.table as any).id, id),
@@ -247,11 +249,14 @@ export abstract class BaseDrizzleRepository<
             return;
         }
 
-        const db = this.getDb();
-        await db
+        const db = this.getSqliteDb();
+        await (db as any)
             .delete(this.table)
             .where(
-                and(eq((this.table as any).id, id), eq((this.table as any).tenantid, tenantId))
+                and(
+                    eq(this.table.id, id),
+                    eq(this.table.tenantid, tenantId)
+                )
             );
     }
 
@@ -269,15 +274,15 @@ export abstract class BaseDrizzleRepository<
             return;
         }
 
-        const db = this.getDb();
-        await db
+        const db = this.getSqliteDb();
+        await (db as any)
             .update(this.table)
-            .set({ isdeleted: true, updatedat: now } as any)
+            .set({ isdeleted: true, updatedat: now })
             .where(
                 and(
-                    eq((this.table as any).id, id),
-                    eq((this.table as any).tenantid, tenantId),
-                    eq((this.table as any).isdeleted, false)
+                    eq(this.table.id, id),
+                    eq(this.table.tenantid, tenantId),
+                    eq(this.table.isdeleted, false)
                 )
             );
     }
@@ -297,15 +302,15 @@ export abstract class BaseDrizzleRepository<
             return;
         }
 
-        const db = this.getDb();
-        await db
+        const db = this.getSqliteDb();
+        await (db as any)
             .update(this.table)
-            .set({ isdeleted: false, updatedat: now } as any)
+            .set({ isdeleted: false, updatedat: now })
             .where(
                 and(
-                    eq((this.table as any).id, id),
-                    eq((this.table as any).tenantid, tenantId),
-                    eq((this.table as any).isdeleted, true)
+                    eq(this.table.id, id),
+                    eq(this.table.tenantid, tenantId),
+                    eq(this.table.isdeleted, true)
                 )
             );
     }
@@ -319,9 +324,24 @@ export abstract class BaseDrizzleRepository<
         tenantId: string
     ): Promise<void> {
         for (const item of data) {
-            if ((item as any).id) {
-                await this.update((item as any).id, item, tenantId);
+            if (item.id) {
+                await this.update(item.id, item, tenantId);
             }
+        }
+    }
+    async deleteMultiple(ids: string[], tenantId: string): Promise<void> {
+        for (const id of ids) {
+            await this.delete(id, tenantId);
+        }
+    }
+    async softDeleteMultiple(ids: string[], tenantId: string): Promise<void> {
+        for (const id of ids) {
+            await this.softDelete(id, tenantId);
+        }
+    }
+    async restoreMultiple(ids: string[], tenantId: string): Promise<void> {
+        for (const id of ids) {
+            await this.restore(id, tenantId);
         }
     }
 }
