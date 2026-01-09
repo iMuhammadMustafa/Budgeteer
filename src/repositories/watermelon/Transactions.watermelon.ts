@@ -20,8 +20,7 @@ import {
 
 export class TransactionWatermelonRepository
   extends BaseWatermelonRepository<Transaction, TableNames.Transactions, TransactionType>
-  implements ITransactionRepository
-{
+  implements ITransactionRepository {
   protected orderByField?: string | undefined;
   protected tableName = TableNames.Transactions;
 
@@ -66,11 +65,11 @@ export class TransactionWatermelonRepository
     if (filters.endDate) {
       conditions.push(Q.where("date", Q.lte(filters.endDate)));
     }
-    if (filters.accountid) {
-      conditions.push(Q.where("accountid", filters.accountid));
+    if (filters.accountId) {
+      conditions.push(Q.where("accountid", filters.accountId));
     }
-    if (filters.categoryid) {
-      conditions.push(Q.where("categoryid", filters.categoryid));
+    if (filters.categoryId) {
+      conditions.push(Q.where("categoryid", filters.categoryId));
     }
     if (filters.type) {
       conditions.push(Q.where("type", filters.type));
@@ -128,10 +127,10 @@ export class TransactionWatermelonRepository
 
     // Filter transactions by groupid if provided
     let filteredTransactions = transactions;
-    if (filters.groupid) {
+    if (filters.groupId) {
       filteredTransactions = transactions.filter(tx => {
         const category = categoryMap.get(tx.categoryid);
-        return category && category.groupid === filters.groupid;
+        return category && category.groupid === filters.groupId;
       });
     }
 

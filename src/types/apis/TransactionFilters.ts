@@ -7,9 +7,9 @@ export interface TransactionFilters extends QueryFilters {
 
   amount?: number;
 
-  accountid?: string;
-  categoryid?: string;
-  groupid?: string;
+  accountId?: string;
+  categoryId?: string;
+  groupId?: string;
 
   type?: TransactionType;
   isVoid?: string;

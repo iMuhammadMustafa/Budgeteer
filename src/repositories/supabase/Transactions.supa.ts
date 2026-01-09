@@ -13,8 +13,7 @@ import { ITransactionRepository } from "../interfaces/ITransactionRepository";
 
 export class TransactionSupaRepository
   extends SupaRepository<Transaction | TransactionsView, TableNames.Transactions>
-  implements ITransactionRepository
-{
+  implements ITransactionRepository {
   protected tableName = TableNames.Transactions;
 
   override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
@@ -183,14 +182,14 @@ export class TransactionSupaRepository
     if (searchFilters.amount) {
       query = query.eq("amount", searchFilters.amount);
     }
-    if (searchFilters.categoryid) {
-      query = query.eq("categoryid", searchFilters.categoryid);
+    if (searchFilters.categoryId) {
+      query = query.eq("categoryid", searchFilters.categoryId);
     }
-    if (searchFilters.groupid) {
-      query = query.eq("groupid", searchFilters.groupid);
+    if (searchFilters.groupId) {
+      query = query.eq("groupid", searchFilters.groupId);
     }
-    if (searchFilters.accountid) {
-      query = query.eq("accountid", searchFilters.accountid);
+    if (searchFilters.accountId) {
+      query = query.eq("accountid", searchFilters.accountId);
     }
     if (searchFilters.isVoid) {
       query = query.eq("isVoid", searchFilters.isVoid);

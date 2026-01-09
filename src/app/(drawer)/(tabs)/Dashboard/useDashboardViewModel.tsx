@@ -99,10 +99,10 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
 
     if (params.type === DashboardViewSelectionType.PIE && params.itemId && params.pieType) {
       if (params.pieType === "category") {
-        baseFilters.categoryid = params.itemId;
+        baseFilters.categoryId = params.itemId;
       }
       if (params.pieType === "group") {
-        baseFilters.groupid = params.itemId;
+        baseFilters.groupId = params.itemId;
       }
     }
 

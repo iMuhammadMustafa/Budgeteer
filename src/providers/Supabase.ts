@@ -15,4 +15,7 @@ const supabase = createClient(supaUrl, supaKey, {
   },
 });
 
+export const getCloudClient = () => supabase;
+export type SupabaseClient = typeof supabase;
+
 export default supabase;

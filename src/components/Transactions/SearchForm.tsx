@@ -45,14 +45,14 @@ export default function TransactionSearchForm({
           onChange={text => handleTextChange("amount", text)}
         />
         <MyCategoriesDropdown
-          selectedValue={searchParams?.categoryid}
+          selectedValue={searchParams?.categoryId}
           categories={categories}
           onSelect={value => handleTextChange("categoryid", value!.id)}
           isModal
         />
         <AccountSelecterDropdown
           label="Account"
-          selectedValue={searchParams?.accountid}
+          selectedValue={searchParams?.accountId}
           onSelect={(value: any) => {
             handleTextChange("accountid", value.id);
           }}
