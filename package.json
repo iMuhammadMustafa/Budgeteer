@@ -9,7 +9,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "supa-gen": "supabase gen types typescript --project-id zqvlhiemckavdamziohj > src\\types\\database\\supabase\\supabase.types.ts"
+    "supa-gen": "supabase gen types typescript --project-id zqvlhiemckavdamziohj > src\\types\\database\\supabase\\supabase.types.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

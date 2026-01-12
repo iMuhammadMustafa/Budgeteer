@@ -1,3 +1,4 @@
+-- TODO: Add isvoid = false filter to Stats views in a future migration to match SQLite behavior
 CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   AS
   SELECT 

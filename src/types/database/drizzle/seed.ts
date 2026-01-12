@@ -242,7 +242,8 @@ export const seedDemoDb = async () => {
 };
 
 /**
- * Seeds the Drizzle database with minimal data for Local mode
+ * Seeds the Drizzle database with data for Local mode
+ * Uses the same data as watermelon seed for consistency
  */
 export const seedLocalDb = async () => {
     if (!isSqliteInitialized()) {
@@ -252,31 +253,62 @@ export const seedLocalDb = async () => {
     const db = getSqliteDb();
     const now = getNow();
 
-    console.log("Seeding local database with minimal data...");
+    console.log("Seeding local database...");
 
     try {
-        // Seed minimal Transaction Groups
-        await db.insert(transactionGroups).values([
-            { id: "other-group", name: "Other", icon: "Ellipsis", color: "error-100", type: "Expense", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false, budgetamount: 0, budgetfrequency: "Monthly", displayorder: 0 },
-            { id: "account-group", name: "Accounts", icon: "Wallet", color: "error-100", type: "Adjustment", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false, budgetamount: 0, budgetfrequency: "Monthly", displayorder: 0 },
-        ]);
+        // Seed Transaction Groups (same data as demo, different tenant)
+        const groupsToInsert = transactionGroupsData.map((g) => ({
+            ...g,
+            type: g.type as "Expense" | "Income" | "Transfer",
+            tenantid: LOCAL_TENANT_ID,
+            createdby: LOCAL_USER_ID,
+            createdat: now,
+            isdeleted: false,
+            budgetamount: 0,
+            budgetfrequency: "Monthly" as const,
+            displayorder: 0,
+            description: null,
+            color: "error-100",
+        }));
+        await db.insert(transactionGroups).values(groupsToInsert);
 
-        // Seed minimal Transaction Categories
-        await db.insert(transactionCategories).values([
-            { id: "other-cat", name: "Other", icon: "Ellipsis", type: "Expense", groupid: "other-group", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false, budgetamount: 0, budgetfrequency: "Monthly", displayorder: 0, color: "error-100" },
-            { id: "account-ops-cat", name: "Account Operations", icon: "Wallet", type: "Adjustment", groupid: "account-group", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false, budgetamount: 0, budgetfrequency: "Monthly", displayorder: 0, color: "error-100" },
-        ]);
+        // Seed Transaction Categories
+        const catsToInsert = transactionCategoriesData.map((c) => ({
+            ...c,
+            type: c.type as "Expense" | "Income" | "Transfer",
+            tenantid: LOCAL_TENANT_ID,
+            createdby: LOCAL_USER_ID,
+            createdat: now,
+            isdeleted: false,
+            budgetamount: 0,
+            budgetfrequency: "Monthly" as const,
+            displayorder: 0,
+            description: null,
+            color: "error-100",
+        }));
+        await db.insert(transactionCategories).values(catsToInsert);
 
-        // Seed minimal Account Categories
-        await db.insert(accountCategories).values([
-            { id: "bank-cat", name: "Bank", type: "Asset", icon: "PiggyBank", displayorder: 1000, tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false, color: "error-100" },
-        ]);
+        // Seed Account Categories
+        const accCatsToInsert = accountCategoriesData.map((c) => ({
+            ...c,
+            type: c.type as "Asset" | "Liability",
+            tenantid: LOCAL_TENANT_ID,
+            createdby: LOCAL_USER_ID,
+            createdat: now,
+            isdeleted: false,
+            color: "error-100",
+        }));
+        await db.insert(accountCategories).values(accCatsToInsert);
 
         // Seed Configurations
-        await db.insert(configurations).values([
-            { id: "config-ops", tablename: TableNames.TransactionCategories, type: ConfigurationTypes.AccountOpertationsCategory, key: "id", value: "account-ops-cat", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false },
-            { id: "config-other", tablename: TableNames.TransactionCategories, type: "Other", key: "id", value: "other-cat", tenantid: LOCAL_TENANT_ID, createdby: LOCAL_USER_ID, createdat: now, isdeleted: false },
-        ]);
+        const configsToInsert = configurationsData.map((c) => ({
+            ...c,
+            tenantid: LOCAL_TENANT_ID,
+            createdby: LOCAL_USER_ID,
+            createdat: now,
+            isdeleted: false,
+        }));
+        await db.insert(configurations).values(configsToInsert);
 
         console.log("Local database seeded successfully!");
     } catch (error) {

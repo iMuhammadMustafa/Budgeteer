@@ -3,6 +3,7 @@ import { StorageMode } from "@/src/types/StorageMode";
 import { drizzle as drizzleSqlite } from "drizzle-orm/expo-sqlite";
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import * as sqliteSchema from "./schema";
+import { CREATE_ALL_VIEWS_SQL, DROP_ALL_VIEWS_SQL } from "./views";
 
 // =====================================
 // Types
@@ -216,6 +217,9 @@ export const initializeSqliteDb = async (): Promise<DrizzleSqliteDb> => {
       sqliteDb = drizzleSqlite(sqliteRawDb as any, { schema: sqliteSchema });
       await sqliteRawDb.execAsync(CREATE_TABLES_SQL);
       await sqliteRawDb.execAsync(CREATE_INDEXES_SQL);
+      // Recreate views (drop first to ensure latest definitions)
+      await sqliteRawDb.execAsync(DROP_ALL_VIEWS_SQL);
+      await sqliteRawDb.execAsync(CREATE_ALL_VIEWS_SQL);
       sqliteInitialized = true;
     } catch (error) {
       console.error("Failed to initialize SQLite:", error);
@@ -251,21 +255,36 @@ export const getRawSqliteDb = (): SQLiteDatabase => {
 
 export const isSqliteInitialized = (): boolean => sqliteInitialized;
 
-export const clearSqliteDb = async (): Promise<void> => {
+export const clearSqliteDb = async (tenantId?: string): Promise<void> => {
   if (!sqliteRawDb) return;
 
-  const clearSQL = `
-    DELETE FROM transactions;
-    DELETE FROM recurrings;
-    DELETE FROM configurations;
-    DELETE FROM transactioncategories;
-    DELETE FROM transactiongroups;
-    DELETE FROM accounts;
-    DELETE FROM accountcategories;
-    DELETE FROM profiles;
-  `;
-
-  await sqliteRawDb.execAsync(clearSQL);
+  if (tenantId) {
+    // Clear only the specified tenant's data
+    const clearSQL = `
+      DELETE FROM transactions WHERE tenantid = '${tenantId}';
+      DELETE FROM recurrings WHERE tenantid = '${tenantId}';
+      DELETE FROM configurations WHERE tenantid = '${tenantId}';
+      DELETE FROM transactioncategories WHERE tenantid = '${tenantId}';
+      DELETE FROM transactiongroups WHERE tenantid = '${tenantId}';
+      DELETE FROM accounts WHERE tenantid = '${tenantId}';
+      DELETE FROM accountcategories WHERE tenantid = '${tenantId}';
+      DELETE FROM profiles WHERE tenantid = '${tenantId}';
+    `;
+    await sqliteRawDb.execAsync(clearSQL);
+  } else {
+    // Clear all data (backward compatibility)
+    const clearSQL = `
+      DELETE FROM transactions;
+      DELETE FROM recurrings;
+      DELETE FROM configurations;
+      DELETE FROM transactioncategories;
+      DELETE FROM transactiongroups;
+      DELETE FROM accounts;
+      DELETE FROM accountcategories;
+      DELETE FROM profiles;
+    `;
+    await sqliteRawDb.execAsync(clearSQL);
+  }
 };
 
 export const resetSqliteDb = async (): Promise<void> => {

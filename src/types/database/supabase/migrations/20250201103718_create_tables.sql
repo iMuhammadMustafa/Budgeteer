@@ -55,6 +55,7 @@ create table Accounts
     Description TEXT,
     Notes TEXT,
     Currency TEXT NOT NULL DEFAULT 'USD',
+    StatementDate INT,
     
     Icon TEXT NOT NULL DEFAULT 'Ellipsis'::text,
     Color TEXT NOT NULL DEFAULT 'warning-100',

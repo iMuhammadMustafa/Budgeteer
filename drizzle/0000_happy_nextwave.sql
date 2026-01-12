@@ -1,0 +1,160 @@
+CREATE TABLE `accountcategories` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`type` text DEFAULT 'Asset' NOT NULL,
+	`displayorder` integer DEFAULT 0 NOT NULL,
+	`icon` text DEFAULT 'Ellipsis' NOT NULL,
+	`color` text DEFAULT 'warning-100' NOT NULL,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text
+);
+--> statement-breakpoint
+CREATE TABLE `accounts` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`balance` real DEFAULT 0 NOT NULL,
+	`currency` text DEFAULT 'USD' NOT NULL,
+	`owner` text,
+	`description` text,
+	`notes` text,
+	`icon` text DEFAULT 'Ellipsis' NOT NULL,
+	`color` text DEFAULT 'warning-100' NOT NULL,
+	`displayorder` integer DEFAULT 0 NOT NULL,
+	`statementdate` integer,
+	`categoryid` text NOT NULL,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text,
+	FOREIGN KEY (`categoryid`) REFERENCES `accountcategories`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `configurations` (
+	`id` text PRIMARY KEY NOT NULL,
+	`tablename` text NOT NULL,
+	`type` text NOT NULL,
+	`key` text NOT NULL,
+	`value` text NOT NULL,
+	`tenantid` text,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text
+);
+--> statement-breakpoint
+CREATE TABLE `profiles` (
+	`id` text PRIMARY KEY NOT NULL,
+	`email` text,
+	`full_name` text,
+	`avatar_url` text,
+	`timezone` text,
+	`tenantid` text,
+	`updated_at` text
+);
+--> statement-breakpoint
+CREATE TABLE `recurrings` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`description` text,
+	`type` text DEFAULT 'Expense' NOT NULL,
+	`recurringtype` text,
+	`amount` real,
+	`currencycode` text DEFAULT 'USD' NOT NULL,
+	`recurrencerule` text NOT NULL,
+	`nextoccurrencedate` text,
+	`enddate` text,
+	`intervalmonths` integer,
+	`isactive` integer DEFAULT true NOT NULL,
+	`isamountflexible` integer DEFAULT false NOT NULL,
+	`isdateflexible` integer DEFAULT false NOT NULL,
+	`autoapplyenabled` integer,
+	`lastexecutedat` text,
+	`lastautoappliedat` text,
+	`failedattempts` integer,
+	`maxfailedattempts` integer,
+	`payeename` text,
+	`notes` text,
+	`sourceaccountid` text NOT NULL,
+	`categoryid` text NOT NULL,
+	`transferaccountid` text,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')),
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text,
+	FOREIGN KEY (`sourceaccountid`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`categoryid`) REFERENCES `transactioncategories`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`transferaccountid`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `transactioncategories` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text,
+	`description` text,
+	`type` text DEFAULT 'Expense' NOT NULL,
+	`budgetamount` real DEFAULT 0 NOT NULL,
+	`budgetfrequency` text DEFAULT 'Monthly' NOT NULL,
+	`icon` text DEFAULT 'Ellipsis' NOT NULL,
+	`color` text DEFAULT 'warning-100' NOT NULL,
+	`displayorder` integer DEFAULT 0 NOT NULL,
+	`groupid` text NOT NULL,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text,
+	FOREIGN KEY (`groupid`) REFERENCES `transactiongroups`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `transactiongroups` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`description` text,
+	`type` text DEFAULT 'Expense' NOT NULL,
+	`budgetamount` real DEFAULT 0 NOT NULL,
+	`budgetfrequency` text DEFAULT 'Monthly' NOT NULL,
+	`icon` text DEFAULT 'Ellipsis' NOT NULL,
+	`color` text DEFAULT 'warning-100' NOT NULL,
+	`displayorder` integer DEFAULT 0 NOT NULL,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text
+);
+--> statement-breakpoint
+CREATE TABLE `transactions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text,
+	`date` text NOT NULL,
+	`amount` real DEFAULT 0 NOT NULL,
+	`type` text DEFAULT 'Expense' NOT NULL,
+	`payee` text,
+	`description` text,
+	`notes` text,
+	`tags` text,
+	`isvoid` integer DEFAULT false NOT NULL,
+	`categoryid` text NOT NULL,
+	`accountid` text NOT NULL,
+	`transferid` text,
+	`transferaccountid` text,
+	`tenantid` text NOT NULL,
+	`isdeleted` integer DEFAULT false NOT NULL,
+	`createdat` text DEFAULT (datetime('now')) NOT NULL,
+	`createdby` text,
+	`updatedat` text,
+	`updatedby` text,
+	FOREIGN KEY (`categoryid`) REFERENCES `transactioncategories`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`accountid`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`transferaccountid`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action
+);
