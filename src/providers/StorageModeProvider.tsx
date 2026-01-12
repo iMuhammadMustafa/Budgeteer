@@ -5,6 +5,7 @@ import {
   getSupabaseClient,
   initializeSqliteDb,
 } from "@/src/types/database/drizzle";
+import { DEMO_TENANT_ID } from "@/src/types/database/drizzle/constants";
 import { seedDemoDb, seedLocalDb } from "@/src/types/database/drizzle/seed";
 import { StorageMode } from "@/src/types/StorageMode";
 import { storage } from "@/src/utils/storageUtils";
@@ -60,7 +61,7 @@ export default function StorageModeProvider({ children }: { children: React.Reac
   }, []);
 
   const clearDemoData = useCallback(async () => {
-    await clearSqliteDb();
+    await clearSqliteDb(DEMO_TENANT_ID);
     await AsyncStorage.removeItem(STORAGE_KEYS.DEMO_SEEDED);
   }, []);
 
@@ -93,7 +94,7 @@ export default function StorageModeProvider({ children }: { children: React.Reac
 
     const isSeeded = await AsyncStorage.getItem(STORAGE_KEYS.DEMO_SEEDED);
     if (!isSeeded) {
-      await clearSqliteDb();
+      await clearSqliteDb(DEMO_TENANT_ID);
       await seedDemoDb();
       await AsyncStorage.setItem(STORAGE_KEYS.DEMO_SEEDED, "true");
     }
