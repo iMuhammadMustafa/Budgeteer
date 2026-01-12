@@ -90,7 +90,7 @@ LEFT JOIN (
     tv.runningbalance,
     ROW_NUMBER() OVER (
       PARTITION BY tv.accountid 
-      ORDER BY tv.date DESC, tv.createdat DESC, tv.id DESC
+      ORDER BY tv.date DESC, tv.createdat DESC, tv.updatedat DESC, tv.type DESC, tv.id DESC
     ) as rn
   FROM transactionsview tv
 ) latest_rb ON acc.id = latest_rb.accountid AND latest_rb.rn = 1;

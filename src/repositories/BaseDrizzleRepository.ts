@@ -1,5 +1,5 @@
 import { QueryFilters } from "@/src/types/apis/QueryFilters";
-import { DatabaseContext, DrizzleSqliteDb, SupabaseDb } from "@/src/types/database/drizzle";
+import { DatabaseContext, DrizzleSqliteDb, getRawSqliteDb as getRawDb, SupabaseDb } from "@/src/types/database/drizzle";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, Updates } from "@/src/types/database/Tables.Types";
 import { StorageMode } from "@/src/types/StorageMode";
@@ -40,6 +40,11 @@ export abstract class BaseDrizzleRepository<
             throw new Error("Supabase not available in local mode");
         }
         return this.dbContext.supabase;
+    }
+
+    protected getRawSqliteDb(): any {
+        // Use the exported function from database factory
+        return getRawDb();
     }
 
     protected getNow(): string {

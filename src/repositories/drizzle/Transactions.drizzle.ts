@@ -13,7 +13,7 @@ import {
     transactions,
 } from "@/src/types/database/drizzle/schema";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { and, desc, eq, like, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, lte, sql } from "drizzle-orm";
 import { BaseDrizzleRepository } from "../BaseDrizzleRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
 
@@ -31,6 +31,7 @@ export class TransactionDrizzleRepository
         super(dbContext);
     }
 
+    // Using different signature than base class - returns TransactionsView with joined data
     async findAll(
         tenantId: string,
         filters?: TransactionFilters
@@ -57,68 +58,55 @@ export class TransactionDrizzleRepository
                 query = query.eq("type", filters.type);
             }
 
+            // Apply pagination
+            if (filters?.limit !== undefined && filters?.offset !== undefined) {
+                query = query.range(filters.offset, filters.offset + filters.limit - 1);
+            } else if (filters?.limit !== undefined) {
+                query = query.limit(filters.limit);
+            }
+
             const { data, error } = await query.order("date", { ascending: false });
             if (error) throw error;
             return data as TransactionsView[];
         }
 
-        // SQLite: Build joined query
+        // SQLite: Query the view directly using raw SQL
         const db = this.getSqliteDb();
-        const baseQuery = (db as any)
-            .select({
-                id: transactions.id,
-                name: transactions.name,
-                date: transactions.date,
-                amount: transactions.amount,
-                type: transactions.type,
-                payee: transactions.payee,
-                isvoid: transactions.isvoid,
-                transferid: transactions.transferid,
-                transferaccountid: transactions.transferaccountid,
-                createdat: transactions.createdat,
-                updatedat: transactions.updatedat,
-                tenantid: transactions.tenantid,
-                categoryid: transactionCategories.id,
-                categoryname: transactionCategories.name,
-                icon: transactionCategories.icon,
-                groupid: transactionGroups.id,
-                groupname: transactionGroups.name,
-                groupicon: transactionGroups.icon,
-                accountid: accounts.id,
-                accountname: accounts.name,
-                currency: accounts.currency,
-                balance: accounts.balance,
-            })
-            .from(transactions)
-            .innerJoin(transactionCategories, eq(transactions.categoryid, transactionCategories.id))
-            .innerJoin(transactionGroups, eq(transactionCategories.groupid, transactionGroups.id))
-            .innerJoin(accounts, eq(transactions.accountid, accounts.id));
-
-        const conditions: any[] = [
-            eq(transactions.tenantid, tenantId),
-            eq(transactions.isdeleted, false),
-        ];
+        let whereClause = `WHERE tenantid = '${tenantId}'`;
 
         if (filters?.accountId) {
-            conditions.push(eq(transactions.accountid, filters.accountId));
+            whereClause += ` AND accountid = '${filters.accountId}'`;
         }
         if (filters?.categoryId) {
-            conditions.push(eq(transactions.categoryid, filters.categoryId));
+            whereClause += ` AND categoryid = '${filters.categoryId}'`;
         }
         if (filters?.startDate) {
-            conditions.push(sql`${transactions.date} >= ${filters.startDate}`);
+            whereClause += ` AND date >= '${filters.startDate}'`;
         }
         if (filters?.endDate) {
-            conditions.push(sql`${transactions.date} <= ${filters.endDate}`);
+            whereClause += ` AND date <= '${filters.endDate}'`;
         }
         if (filters?.type) {
-            conditions.push(eq(transactions.type, filters.type));
+            whereClause += ` AND type = '${filters.type}'`;
         }
 
-        const results = await baseQuery
-            .where(and(...conditions))
-            .orderBy(desc(transactions.date), desc(transactions.createdat));
+        let paginationClause = '';
+        if (filters?.limit !== undefined) {
+            paginationClause += ` LIMIT ${filters.limit}`;
+        }
+        if (filters?.offset !== undefined) {
+            paginationClause += ` OFFSET ${filters.offset}`;
+        }
 
+        const query = `
+            SELECT * FROM transactionsview 
+            ${whereClause}
+            ORDER BY date DESC, createdat DESC, updatedat DESC, type DESC, id DESC
+            ${paginationClause}
+        `;
+
+        const rawDb = this.getRawSqliteDb();
+        const results = await rawDb.getAllAsync(query);
         return results as TransactionsView[];
     }
 
@@ -236,30 +224,18 @@ export class TransactionDrizzleRepository
         }
 
         const db = this.getSqliteDb();
-        const results = await (db as any)
-            .selectDistinct({
-                name: transactions.name,
-                payee: transactions.payee,
-                categoryid: transactions.categoryid,
-                categoryname: transactionCategories.name,
-                icon: transactionCategories.icon,
-                groupid: transactionGroups.id,
-                groupname: transactionGroups.name,
-            })
-            .from(transactions)
-            .innerJoin(transactionCategories, eq(transactions.categoryid, transactionCategories.id))
-            .innerJoin(transactionGroups, eq(transactionCategories.groupid, transactionGroups.id))
-            .where(
-                and(
-                    eq(transactions.tenantid, tenantId),
-                    eq(transactions.isdeleted, false),
-                    or(
-                        like(transactions.name, `%${text}%`),
-                        like(transactions.payee, `%${text}%`)
-                    )
-                )
-            )
-            .limit(20);
+
+        // Use the same view as Supabase for consistency
+        const query = `
+            SELECT * FROM search_distincttransactions
+            WHERE tenantid = '${tenantId}' 
+            AND (name LIKE '%${text}%' OR payee LIKE '%${text}%')
+            ORDER BY date DESC
+            LIMIT 20
+        `;
+
+        const rawDb = this.getRawSqliteDb();
+        const results = await rawDb.getAllAsync(query);
 
         return results.map((item: any) => ({
             label: item.name || item.payee || "",

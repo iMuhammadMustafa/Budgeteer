@@ -1,4 +1,3 @@
--- TODO: Add isvoid = false filter to Stats views in a future migration to match SQLite behavior
 CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   AS
   SELECT 
@@ -7,7 +6,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   coalesce(sum(amount), 0) as sum,
   tenantid
   FROM transactions
-  WHERE isdeleted = false
+  WHERE isdeleted = false AND isvoid = false
   GROUP BY
   type,
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
@@ -24,7 +23,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyAccountsTransactions WITH (security_invoker)
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
   coalesce(sum(amount), 0) as sum
   FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
-  WHERE t.isdeleted = false
+  WHERE t.isdeleted = false AND t.isvoid = false
   GROUP BY
   t.accountid, 
   a.name,
@@ -59,7 +58,7 @@ CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoke
   FROM transactiongroups tg 
   LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
   LEFT JOIN transactions t ON tc.id = t.categoryid
-  WHERE t.isdeleted = false
+  WHERE t.isdeleted = false AND t.isvoid = false
 
   GROUP BY
   tg.id,
@@ -91,7 +90,7 @@ CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
   sum(t.amount) AS sum,
   t.tenantid
   FROM transactions t
-  WHERE t.isdeleted = false
+  WHERE t.isdeleted = false AND t.isvoid = false
   GROUP BY 
   t.type, 
   t.tenantid,

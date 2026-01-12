@@ -1,4 +1,4 @@
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { FunctionNames, TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { Account } from "@/src/types/database/Tables.Types";
 import { DatabaseContext } from "@/src/types/database/drizzle";
 import { accounts, transactions } from "@/src/types/database/drizzle/schema";
@@ -26,42 +26,30 @@ export class AccountDrizzleRepository
         tenantId: string
     ): Promise<number> {
         if (this.isCloudMode()) {
-            const { data: current, error: fetchError } = await this.getSupabase()
-                .from(this.tableName)
-                .select("balance")
-                .eq("id", accountid)
-                .eq("tenantid", tenantId)
-                .single();
-
-            if (fetchError) throw fetchError;
-
-            const newBalance = (current?.balance || 0) + amount;
-            const { error } = await this.getSupabase()
-                .from(this.tableName)
-                .update({ balance: newBalance, updatedat: this.getNow() })
-                .eq("id", accountid)
-                .eq("tenantid", tenantId);
-
+            // Use Supabase RPC function for atomic update
+            const { data, error } = await this.getSupabase().rpc(FunctionNames.UpdateAccountBalance, {
+                accountid,
+                amount,
+            });
             if (error) throw error;
-            return newBalance;
+            return data;
         }
 
-        const db = this.getSqliteDb();
-        const result = await (db as any)
+        await this.getSqliteDb()
+            .update(this.table)
+            .set({
+                balance: sql`${this.table.balance} + ${amount}`,
+                updatedat: this.getNow(),
+            })
+            .where(and(eq(this.table.id, accountid), eq(this.table.tenantid, tenantId)));
+
+        const result = await this.getSqliteDb()
             .select({ balance: this.table.balance })
             .from(this.table)
             .where(and(eq(this.table.id, accountid), eq(this.table.tenantid, tenantId)))
             .limit(1);
 
-        const currentBalance = result[0]?.balance || 0;
-        const newBalance = currentBalance + amount;
-
-        await (db as any)
-            .update(this.table)
-            .set({ balance: newBalance, updatedat: this.getNow() })
-            .where(and(eq(this.table.id, accountid), eq(this.table.tenantid, tenantId)));
-
-        return newBalance;
+        return result[0]?.balance || 0;
     }
 
     async getAccountOpenedTransaction(

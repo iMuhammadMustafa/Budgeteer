@@ -15,7 +15,8 @@ import {
     TransactionType,
 } from "@/src/types/database/Tables.Types";
 import { StorageMode } from "@/src/types/StorageMode";
-import { and, eq, gte, lte, ne, sql } from "drizzle-orm";
+import dayjs from "dayjs";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { IStatsRepository } from "../interfaces/IStatsRepository";
 
 export class StatsDrizzleRepository implements IStatsRepository {
@@ -55,7 +56,6 @@ export class StatsDrizzleRepository implements IStatsRepository {
             eq(transactions.tenantid, tenantId),
             eq(transactions.isdeleted, false),
             eq(transactions.isvoid, false),
-            ne(transactions.type, "Transfer"),
         ];
 
         if (startDate) conditions.push(gte(transactions.date, startDate));
@@ -64,19 +64,19 @@ export class StatsDrizzleRepository implements IStatsRepository {
 
         const results = await (db as any)
             .select({
+                type: transactions.type,
                 date: sql<string>`date(${transactions.date})`,
-                totalamount: sql<number>`sum(${transactions.amount})`,
-                transactioncount: sql<number>`count(*)`,
+                sum: sql<number>`sum(${transactions.amount})`,
             })
             .from(transactions)
             .where(and(...conditions))
-            .groupBy(sql`date(${transactions.date})`)
+            .groupBy(transactions.type, sql`date(${transactions.date})`)
             .orderBy(sql`date(${transactions.date})`);
 
         return results.map((r: any) => ({
+            type: r.type,
             date: r.date,
-            totalamount: r.totalamount || 0,
-            transactioncount: Number(r.transactioncount) || 0,
+            sum: r.sum || 0,
             tenantid: tenantId,
         }));
     }
@@ -92,8 +92,8 @@ export class StatsDrizzleRepository implements IStatsRepository {
                 .select("*")
                 .eq("tenantid", tenantId);
 
-            if (startDate) query = query.gte("month", startDate.substring(0, 7));
-            if (endDate) query = query.lte("month", endDate.substring(0, 7));
+            if (startDate) query = query.gte("date", dayjs(startDate).startOf("month").format("YYYY-MM-DD"));
+            if (endDate) query = query.lte("date", dayjs(endDate).endOf("month").format("YYYY-MM-DD"));
 
             const { data, error } = await query;
             if (error) throw error;
@@ -105,7 +105,6 @@ export class StatsDrizzleRepository implements IStatsRepository {
             eq(transactions.tenantid, tenantId),
             eq(transactions.isdeleted, false),
             eq(transactions.isvoid, false),
-            ne(transactions.type, "Transfer"),
         ];
 
         if (startDate) conditions.push(gte(transactions.date, startDate));
@@ -113,21 +112,19 @@ export class StatsDrizzleRepository implements IStatsRepository {
 
         const results = await (db as any)
             .select({
-                month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
+                date: sql<string>`date(${transactions.date}, 'start of month')`,
                 type: transactions.type,
-                totalamount: sql<number>`sum(${transactions.amount})`,
-                transactioncount: sql<number>`count(*)`,
+                sum: sql<number>`sum(${transactions.amount})`,
             })
             .from(transactions)
             .where(and(...conditions))
-            .groupBy(sql`strftime('%Y-%m', ${transactions.date})`, transactions.type)
-            .orderBy(sql`strftime('%Y-%m', ${transactions.date})`);
+            .groupBy(sql`date(${transactions.date}, 'start of month')`, transactions.type)
+            .orderBy(sql`date(${transactions.date}, 'start of month')`);
 
         return results.map((r: any) => ({
-            month: r.month,
+            date: r.date,
             type: r.type,
-            totalamount: r.totalamount || 0,
-            transactioncount: Number(r.transactioncount) || 0,
+            sum: r.sum || 0,
             tenantid: tenantId,
         }));
     }
@@ -141,10 +138,11 @@ export class StatsDrizzleRepository implements IStatsRepository {
             let query = this.dbContext.supabase!
                 .from(ViewNames.StatsMonthlyCategoriesTransactions)
                 .select("*")
-                .eq("tenantid", tenantId);
+                .eq("tenantid", tenantId)
+                .in("type", ["Expense", "Adjustment"]);
 
-            if (startDate) query = query.gte("month", startDate.substring(0, 7));
-            if (endDate) query = query.lte("month", endDate.substring(0, 7));
+            if (startDate) query = query.gte("date", dayjs(startDate).startOf("month").format("YYYY-MM-DD"));
+            if (endDate) query = query.lte("date", dayjs(endDate).endOf("month").format("YYYY-MM-DD"));
 
             const { data, error } = await query;
             if (error) throw error;
@@ -156,7 +154,7 @@ export class StatsDrizzleRepository implements IStatsRepository {
             eq(transactions.tenantid, tenantId),
             eq(transactions.isdeleted, false),
             eq(transactions.isvoid, false),
-            ne(transactions.type, "Transfer"),
+            inArray(transactions.type, ["Expense", "Adjustment"]),
         ];
 
         if (startDate) conditions.push(gte(transactions.date, startDate));
@@ -164,38 +162,66 @@ export class StatsDrizzleRepository implements IStatsRepository {
 
         const results = await (db as any)
             .select({
-                month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
+                date: sql<string>`date(${transactions.date}, 'start of month')`,
                 categoryid: transactionCategories.id,
                 categoryname: transactionCategories.name,
+                categorybudgetamount: transactionCategories.budgetamount,
+                categorybudgetfrequency: transactionCategories.budgetfrequency,
+                categoryicon: transactionCategories.icon,
+                categorycolor: transactionCategories.color,
+                categorydisplayorder: transactionCategories.displayorder,
                 groupid: transactionGroups.id,
                 groupname: transactionGroups.name,
-                icon: transactionCategories.icon,
-                totalamount: sql<number>`sum(${transactions.amount})`,
-                transactioncount: sql<number>`count(*)`,
+                groupbudgetamount: transactionGroups.budgetamount,
+                groupbudgetfrequency: transactionGroups.budgetfrequency,
+                groupicon: transactionGroups.icon,
+                groupcolor: transactionGroups.color,
+                groupdisplayorder: transactionGroups.displayorder,
+                type: transactions.type,
+                sum: sql<number>`sum(${transactions.amount})`,
             })
             .from(transactions)
             .innerJoin(transactionCategories, eq(transactions.categoryid, transactionCategories.id))
             .innerJoin(transactionGroups, eq(transactionCategories.groupid, transactionGroups.id))
             .where(and(...conditions))
             .groupBy(
-                sql`strftime('%Y-%m', ${transactions.date})`,
+                sql`date(${transactions.date}, 'start of month')`,
                 transactionCategories.id,
                 transactionCategories.name,
+                transactionCategories.budgetamount,
+                transactionCategories.budgetfrequency,
+                transactionCategories.icon,
+                transactionCategories.color,
+                transactionCategories.displayorder,
                 transactionGroups.id,
                 transactionGroups.name,
-                transactionCategories.icon
+                transactionGroups.budgetamount,
+                transactionGroups.budgetfrequency,
+                transactionGroups.icon,
+                transactionGroups.color,
+                transactionGroups.displayorder,
+                transactions.type
             )
-            .orderBy(sql`strftime('%Y-%m', ${transactions.date})`);
+            .orderBy(sql`date(${transactions.date}, 'start of month')`);
 
         return results.map((r: any) => ({
-            month: r.month,
+            date: r.date,
             categoryid: r.categoryid,
             categoryname: r.categoryname,
+            categorybudgetamount: r.categorybudgetamount,
+            categorybudgetfrequency: r.categorybudgetfrequency,
+            categoryicon: r.categoryicon,
+            categorycolor: r.categorycolor,
+            categorydisplayorder: r.categorydisplayorder,
             groupid: r.groupid,
             groupname: r.groupname,
-            icon: r.icon,
-            totalamount: r.totalamount || 0,
-            transactioncount: Number(r.transactioncount) || 0,
+            groupbudgetamount: r.groupbudgetamount,
+            groupbudgetfrequency: r.groupbudgetfrequency,
+            groupicon: r.groupicon,
+            groupcolor: r.groupcolor,
+            groupdisplayorder: r.groupdisplayorder,
+            type: r.type,
+            sum: r.sum || 0,
             tenantid: tenantId,
         }));
     }
@@ -211,8 +237,8 @@ export class StatsDrizzleRepository implements IStatsRepository {
                 .select("*")
                 .eq("tenantid", tenantId);
 
-            if (startDate) query = query.gte("month", startDate.substring(0, 7));
-            if (endDate) query = query.lte("month", endDate.substring(0, 7));
+            if (startDate) query = query.gte("date", dayjs(startDate).startOf("month").format("YYYY-MM-DD"));
+            if (endDate) query = query.lte("date", dayjs(endDate).endOf("month").format("YYYY-MM-DD"));
 
             const { data, error } = await query;
             if (error) throw error;
@@ -231,31 +257,26 @@ export class StatsDrizzleRepository implements IStatsRepository {
 
         const results = await (db as any)
             .select({
-                month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
+                date: sql<string>`date(${transactions.date}, 'start of month')`,
                 accountid: accounts.id,
-                accountname: accounts.name,
-                currency: accounts.currency,
-                totalamount: sql<number>`sum(${transactions.amount})`,
-                transactioncount: sql<number>`count(*)`,
+                account: accounts.name,
+                sum: sql<number>`sum(${transactions.amount})`,
             })
             .from(transactions)
             .innerJoin(accounts, eq(transactions.accountid, accounts.id))
             .where(and(...conditions))
             .groupBy(
-                sql`strftime('%Y-%m', ${transactions.date})`,
+                sql`date(${transactions.date}, 'start of month')`,
                 accounts.id,
-                accounts.name,
-                accounts.currency
+                accounts.name
             )
-            .orderBy(sql`strftime('%Y-%m', ${transactions.date})`);
+            .orderBy(sql`date(${transactions.date}, 'start of month')`);
 
         return results.map((r: any) => ({
-            month: r.month,
+            date: r.date,
             accountid: r.accountid,
-            accountname: r.accountname,
-            currency: r.currency,
-            totalamount: r.totalamount || 0,
-            transactioncount: Number(r.transactioncount) || 0,
+            account: r.account,
+            sum: r.sum || 0,
             tenantid: tenantId,
         }));
     }
@@ -271,8 +292,8 @@ export class StatsDrizzleRepository implements IStatsRepository {
                 .select("*")
                 .eq("tenantid", tenantId);
 
-            if (startDate) query = query.gte("month", startDate.substring(0, 7));
-            if (endDate) query = query.lte("month", endDate.substring(0, 7));
+            if (startDate) query = query.gte("month", dayjs(startDate).startOf("month").format("YYYY-MM-DD"));
+            if (endDate) query = query.lte("month", dayjs(endDate).endOf("month").format("YYYY-MM-DD"));
 
             const { data, error } = await query;
             if (error) throw error;
@@ -304,7 +325,7 @@ export class StatsDrizzleRepository implements IStatsRepository {
             runningTotal += r.totalamount || 0;
             return {
                 month: r.month,
-                networth: runningTotal,
+                total_net_worth: runningTotal,
                 tenantid: tenantId,
             };
         });
