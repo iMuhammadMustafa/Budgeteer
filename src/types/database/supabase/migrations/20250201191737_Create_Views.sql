@@ -7,80 +7,72 @@ CREATE OR REPLACE VIEW Stats_MonthlyTransactionsTypes WITH (security_invoker)
   tenantid
   FROM transactions
   WHERE isdeleted = false
+  AND isvoid = false
   GROUP BY
   type,
   date_trunc('month', COALESCE(date::timestamp, NOW()))::date,
   tenantid
   ORDER BY
-  date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
+  date_trunc('month', COALESCE(date::timestamp, NOW()))::date, type;
 
 CREATE OR REPLACE VIEW Stats_MonthlyAccountsTransactions WITH (security_invoker)
   AS
   SELECT 
-  t.accountid accountid, 
-  a.name account,
-  t.tenantid tenantid,
-  date_trunc('month', COALESCE(date::timestamp, NOW()))::date as date,
-  coalesce(sum(amount), 0) as sum
-  FROM transactions t LEFT OUTER JOIN Accounts a ON t.accountid = a.id
-  WHERE t.isdeleted = false
+  a.id AS accountid, 
+  a.name AS account,
+  a.tenantid,
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date as date,
+  coalesce(sum(t.amount), 0) as sum
+  FROM Accounts a 
+  LEFT OUTER JOIN transactions t ON t.accountid = a.id 
+    AND t.isdeleted = false 
+    AND t.isvoid = false
+  WHERE a.isdeleted = false
   GROUP BY
-  t.accountid, 
+  a.id, 
   a.name,
-  t.tenantid,
-  date_trunc('month', COALESCE(date::timestamp, NOW()))::date
+  a.tenantid,
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date
   ORDER BY
-  date_trunc('month', COALESCE(date::timestamp, NOW()))::date;
+  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::date,
+  a.name;
 
 CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoker)
   AS
   SELECT 
   tg.id as groupid,
   tc.id as categoryid,
-  tg.name GroupName,
-  t.Type,
-  tc.budgetamount GroupBudgetAmount, 
-  tc.budgetfrequency GroupBudgetFrequency,
-  tg.icon GroupIcon, 
-  tg.color GroupColor,
-  tg.displayorder GroupDisplayOrder,
-  tc.name CategoryName, 
-  tc.budgetamount CategoryBudgetAmount, 
-  tc.budgetfrequency CategoryBudgetFrequency,
-  tc.icon CategoryIcon, 
-  tc.color CategoryColor,
-  tc.displayorder CategoryDisplayOrder,
-
-  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz as date,
-  coalesce(sum(t.amount), 0) as sum,
+  tg.name AS groupname,
+  t.type,
+  tg.budgetamount AS groupbudgetamount, 
+  tg.budgetfrequency AS groupbudgetfrequency,
+  tg.icon AS groupicon, 
+  tg.color AS groupcolor,
+  tg.displayorder AS groupdisplayorder,
+  tc.name AS categoryname, 
+  tc.budgetamount AS categorybudgetamount, 
+  tc.budgetfrequency AS categorybudgetfrequency,
+  tc.icon AS categoryicon, 
+  tc.color AS categorycolor,
+  tc.displayorder AS categorydisplayorder,
+  date_trunc('month', t.date::timestamp)::date as date,
+  COALESCE(sum(t.amount), 0) as sum,
   t.tenantid
-
-  FROM transactiongroups tg 
-  LEFT JOIN transactioncategories tc ON tg.id = tc.groupid
-  LEFT JOIN transactions t ON tc.id = t.categoryid
+  FROM transactions t
+  INNER JOIN transactioncategories tc ON tc.id = t.categoryid AND tc.isdeleted = false
+  INNER JOIN transactiongroups tg ON tg.id = tc.groupid AND tg.isdeleted = false
   WHERE t.isdeleted = false
-
+  AND t.isvoid = false
   GROUP BY
-  tg.id,
-  tc.id,
-  tg.name,
-  t.Type,
-  tc.budgetamount,
-  tc.budgetfrequency,
-  tg.icon,
-  tg.color,
-  tg.displayorder,
-  tc.name,
-  tc.budgetamount,
-  tc.budgetfrequency,
-  tc.icon,
-  tc.color,
-  tc.displayorder,
+  tg.id, tc.id, tg.name, t.type,
+  tg.budgetamount, tg.budgetfrequency, tg.icon, tg.color, tg.displayorder,
+  tc.name, tc.budgetamount, tc.budgetfrequency, tc.icon, tc.color, tc.displayorder,
   t.tenantid,
-
-  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz
+  date_trunc('month', t.date::timestamp)::date
   ORDER BY
-  date_trunc('month', COALESCE(t.date::timestamp, NOW()))::timestamptz;
+  date_trunc('month', t.date::timestamp)::date,
+  tg.displayorder,
+  tc.displayorder;
 
 CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
   AS
@@ -91,10 +83,12 @@ CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
   t.tenantid
   FROM transactions t
   WHERE t.isdeleted = false
+  AND t.isvoid = false
   GROUP BY 
   t.type, 
   t.tenantid,
-  date_trunc('day', t.date)::date;
+  date_trunc('day', t.date)::date
+  ORDER BY date_trunc('day', t.date)::date, t.type;
 
 CREATE OR REPLACE VIEW Search_DistinctTransactions WITH (security_invoker)
 AS 
