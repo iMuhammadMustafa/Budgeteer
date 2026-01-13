@@ -213,6 +213,27 @@ export const initializeSqliteDb = async (): Promise<DrizzleSqliteDb> => {
 
   sqliteInitPromise = (async () => {
     try {
+      // TEMPORARY: Force delete database on web to clear corrupted data
+      // Remove this after the database is cleared successfully
+      if (typeof window !== "undefined" && typeof indexedDB !== "undefined") {
+        console.log("[DB] Deleting corrupt database...");
+        await new Promise<void>((resolve, reject) => {
+          const req = indexedDB.deleteDatabase(DATABASE_NAME);
+          req.onsuccess = () => {
+            console.log("[DB] Database deleted");
+            resolve();
+          };
+          req.onerror = () => {
+            console.log("[DB] Delete failed, continuing...");
+            resolve();
+          };
+          req.onblocked = () => {
+            console.log("[DB] Delete blocked, continuing...");
+            resolve();
+          };
+        });
+      }
+
       sqliteRawDb = await openDatabaseAsync(DATABASE_NAME);
       sqliteDb = drizzleSqlite(sqliteRawDb as any, { schema: sqliteSchema });
       await sqliteRawDb.execAsync(CREATE_TABLES_SQL);
@@ -251,7 +272,6 @@ export const getRawSqliteDb = (): SQLiteDatabase => {
   }
   return sqliteRawDb;
 };
-
 
 export const isSqliteInitialized = (): boolean => sqliteInitialized;
 
@@ -348,4 +368,3 @@ export const resetDatabase = async (storageMode: StorageMode): Promise<void> => 
 // =====================================
 
 export { sqliteSchema as schema };
-
