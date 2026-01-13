@@ -12,19 +12,18 @@ import { SupaRepository } from "../BaseSupaRepository";
 import { ITransactionRepository } from "../interfaces/ITransactionRepository";
 
 export class TransactionSupaRepository
-  extends SupaRepository<Transaction | TransactionsView, TableNames.Transactions>
-  implements ITransactionRepository
-{
+  extends SupaRepository<Transaction, TableNames.Transactions>
+  implements ITransactionRepository {
   protected tableName = TableNames.Transactions;
 
-  override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
+  async findAllFromView(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
     let query = this.buildQuery(filters, tenantId);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return data;
   }
 
-  override async findById(id: string, tenantId?: string): Promise<TransactionsView | null> {
+  async findByIdFromView(id: string, tenantId?: string): Promise<TransactionsView | null> {
     if (!tenantId) throw new Error("Tenant ID is required");
 
     const { data, error } = await supabase

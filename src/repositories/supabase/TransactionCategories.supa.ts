@@ -1,4 +1,5 @@
 import supabase from "@/src/providers/Supabase";
+import { QueryFilters } from "@/src/types/apis/QueryFilters";
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionCategory } from "@/src/types/database/Tables.Types";
 import { SupaRepository } from "../BaseSupaRepository";
@@ -9,7 +10,7 @@ export class TransactionCategorySupaRepository
   implements ITransactionCategoryRepository {
   protected tableName = TableNames.TransactionCategories;
 
-  override async findAll(tenantId: string, filters?: { isDeleted?: boolean | null }): Promise<TransactionCategory[]> {
+  async findAllWithGroup(tenantId: string, filters?: QueryFilters): Promise<TransactionCategory[]> {
     let query = supabase
       .from(TableNames.TransactionCategories)
       .select(`*, group:${TableNames.TransactionGroups}!transactioncategories_groupid_fkey(*)`)

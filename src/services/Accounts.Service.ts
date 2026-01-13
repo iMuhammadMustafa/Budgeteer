@@ -14,6 +14,7 @@ import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
 
 export interface IAccountService extends IService<Account, TableNames.Accounts> {
+  useFindAllWithCategory: (isDeleted?: boolean) => ReturnType<typeof useQuery<Account[]>>;
   useGetTotalAccountsBalance: () => ReturnType<typeof useQuery<{ totalbalance: number } | null>>;
   useGetAccountOpenedTransaction: (id?: string) => ReturnType<typeof useQuery<any>>;
   useUpdateAccountBalance: () => ReturnType<typeof useMutation<number, Error, { accountId: string; amount: number }>>;
@@ -32,6 +33,16 @@ export function useAccountService(): IAccountService {
   const accountRepo = dbContext.AccountRepository();
   const transactionRepo = dbContext.TransactionRepository();
   const configRepo = dbContext.ConfigurationRepository();
+
+  const useFindAllWithCategory = (isDeleted?: boolean) => {
+    return useQuery<Account[]>({
+      queryKey: [TableNames.Accounts, "WithCategory", tenantId, isDeleted],
+      queryFn: async () => {
+        return accountRepo.findAllWithCategory(tenantId, { isDeleted: isDeleted ?? false });
+      },
+      enabled: !!tenantId,
+    });
+  };
 
   const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
@@ -196,6 +207,7 @@ export function useAccountService(): IAccountService {
     useCreate,
     useUpdate,
     useUpsert,
+    useFindAllWithCategory,
     useGetTotalAccountsBalance,
     useGetAccountOpenedTransaction,
     useUpdateAccountBalance,

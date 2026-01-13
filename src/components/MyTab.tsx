@@ -26,6 +26,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   customRenderItem,
   showDeleted = false,
   dependencyConfig,
+  customFindAll,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -53,6 +54,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
     onAfterUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
   };
+  customFindAll?: () => ReturnType<typeof service.useFindAll>;
 }) {
   const {
     selectedItems,
@@ -82,6 +84,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     initialState,
     showDeleted,
     dependencyConfig,
+    customFindAll,
   });
   if (isLoading) return <SkeletonList length={20} />;
   return (
@@ -233,6 +236,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
   initialState,
   showDeleted,
   dependencyConfig,
+  customFindAll,
 }: {
   queryKey: string[];
   service: IService<TModel, TTable>;
@@ -248,11 +252,14 @@ const useMyTab = <TModel, TTable extends TableNames>({
     onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
     onAfterUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
   };
+  customFindAll?: () => ReturnType<typeof service.useFindAll>;
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
 
-  const { data, isLoading, error } = showDeleted ? service.useFindAllDeleted() : service.useFindAll();
+  const findAllQuery = customFindAll ? customFindAll() : service.useFindAll();
+  const findAllDeletedQuery = service.useFindAllDeleted();
+  const { data, isLoading, error } = showDeleted ? findAllDeletedQuery : findAllQuery;
   const { mutate: softDeleteMutate } = service.useSoftDelete();
   const { mutate: hardDeleteMutate } = service.useHardDelete();
   const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => { } };

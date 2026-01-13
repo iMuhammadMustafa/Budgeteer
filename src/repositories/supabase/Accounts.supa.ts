@@ -1,4 +1,5 @@
 import supabase from "@/src/providers/Supabase";
+import { QueryFilters } from "@/src/types/apis/QueryFilters";
 import { FunctionNames, TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { Account } from "@/src/types/database/Tables.Types";
 import { SupaRepository } from "../BaseSupaRepository";
@@ -7,7 +8,7 @@ import { IAccountRepository } from "../interfaces/IAccountRepository";
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
   protected tableName = TableNames.Accounts;
 
-  override async findAll(tenantId: string, filters: { isDeleted?: boolean | null } = {}): Promise<Account[]> {
+  async findAllWithCategory(tenantId: string, filters: QueryFilters = {}): Promise<Account[]> {
     let query = supabase
       .from(TableNames.Accounts)
       .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)
@@ -31,7 +32,7 @@ export class AccountSupaRepository extends SupaRepository<Account, TableNames.Ac
     return data as unknown as Account[];
   }
 
-  override async findById(id: string, tenantId: string): Promise<Account | null> {
+  async findByIdWithBalance(id: string, tenantId: string): Promise<(Account & { runningbalance: number }) | null> {
     const { data, error } = await supabase
       .from(ViewNames.ViewAccountsWithRunningBalance)
       .select(`*, category:${TableNames.AccountCategories}!accounts_categoryid_fkey(*)`)

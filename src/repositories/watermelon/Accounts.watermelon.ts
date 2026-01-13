@@ -1,3 +1,4 @@
+import { QueryFilters } from "@/src/types/apis/QueryFilters";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account as AccountType } from "@/src/types/database/Tables.Types";
 import { getWatermelonDB } from "@/src/types/database/watermelon";
@@ -17,7 +18,7 @@ export class AccountWatermelonRepository
     return mapAccountFromWatermelon(model);
   }
 
-  override async findAll(tenantId: string, filters?: { isDeleted?: boolean | null }): Promise<AccountType[]> {
+  async findAllWithCategory(tenantId: string, filters?: QueryFilters): Promise<AccountType[]> {
     const db = await this.getDb();
     const conditions = [];
 
@@ -57,8 +58,7 @@ export class AccountWatermelonRepository
     return accountsWithCategories;
   }
 
-  // Override findById to include category relationship and running balance (matching Supabase view logic)
-  override async findById(id: string, tenantId: string): Promise<(AccountType & { runningbalance: number }) | null> {
+  async findByIdWithBalance(id: string, tenantId: string): Promise<(AccountType & { runningbalance: number }) | null> {
     const db = await this.getDb();
 
     const query = db

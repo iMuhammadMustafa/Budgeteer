@@ -1,3 +1,4 @@
+import { QueryFilters } from "@/src/types/apis/QueryFilters";
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionCategory as TransactionCategoryType } from "@/src/types/database/Tables.Types";
 import { TransactionCategory } from "@/src/types/database/watermelon/models";
@@ -34,7 +35,7 @@ export class TransactionCategoryWatermelonRepository
     return mapped;
   }
 
-  override async findAll(tenantId: string, filters?: { isDeleted?: boolean | null }): Promise<TransactionCategoryType[]> {
+  async findAllWithGroup(tenantId: string, filters?: QueryFilters): Promise<TransactionCategoryType[]> {
     const db = await this.getDb();
     const conditions = [];
 

@@ -68,7 +68,7 @@ export abstract class BaseWatermelonRepository<
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && key !== "isDeleted" && key !== "raw") {
+        if (value !== undefined && value !== null && key !== "isDeleted") {
           conditions.push(Q.where(key, value as any));
         }
       });
@@ -83,36 +83,7 @@ export abstract class BaseWatermelonRepository<
 
     const results = await query;
 
-    // If raw=true, return raw data without relationship mapping
-    if (filters?.raw) {
-      return this.mapToRawData(results as TModel[], collection);
-    }
-
     return (results as TModel[]).map(model => this.mapFromWatermelon(model));
-  }
-
-  /**
-   * Maps WatermelonDB models to raw data objects (for export)
-   * Only includes schema-defined columns, not relationships
-   */
-  protected mapToRawData(models: TModel[], collection: any): TMapped[] {
-    const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
-    validColumns.add("id");
-
-    return models.map((model: any) => {
-      const raw: Record<string, any> = {};
-
-      for (const key of validColumns) {
-        if (model._raw && model._raw[key] !== undefined) {
-          raw[key] = model._raw[key];
-        } else if (model[key] !== undefined && typeof model[key] !== 'function') {
-          raw[key] = model[key];
-        }
-      }
-
-      raw.id = model.id;
-      return raw as unknown as TMapped;
-    });
   }
 
   async create(data: Inserts<TTable>, tenantId: string): Promise<TMapped> {

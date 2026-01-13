@@ -9,7 +9,8 @@ import {
 } from "@/src/types/database/Tables.Types";
 import { IRepository } from "./IRepository";
 
-export interface ITransactionRepository extends IRepository<Transaction | TransactionsView, TableNames.Transactions> {
+export interface ITransactionRepository extends IRepository<Transaction, TableNames.Transactions> {
+  findAllFromView(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]>;
   findByTransferId(id: string, tenantId: string): Promise<TransactionsView>;
   findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>;
@@ -19,5 +20,6 @@ export interface ITransactionRepository extends IRepository<Transaction | Transa
   createMultiple(
     data: Inserts<TableNames.Transactions>[],
     tenantId: string,
-  ): Promise<Transaction[] | TransactionsView[]>;
+  ): Promise<Transaction[]>;
 }
+

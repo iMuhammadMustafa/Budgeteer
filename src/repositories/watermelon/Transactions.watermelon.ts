@@ -20,8 +20,7 @@ import {
 
 export class TransactionWatermelonRepository
   extends BaseWatermelonRepository<Transaction, TableNames.Transactions, TransactionType>
-  implements ITransactionRepository
-{
+  implements ITransactionRepository {
   protected orderByField?: string | undefined;
   protected tableName = TableNames.Transactions;
 
@@ -53,9 +52,7 @@ export class TransactionWatermelonRepository
     return mapped;
   }
 
-  // Implementation of interface method with specific signature (overrides base class method)
-  // @ts-ignore - Override base class method with different signature for interface compliance
-  override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
+  async findAllFromView(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
     const db = await this.getDb();
     const conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 
