@@ -29,6 +29,7 @@ export class StatsWatermelonRepository implements IStatsRepository {
     const conditions = [
       Q.where("tenantid", tenantId),
       Q.where("isdeleted", false),
+      Q.where("isvoid", false),
       Q.where("date", Q.gte(startDate ?? dayjs().startOf("week").format("YYYY-MM-DD"))),
       Q.where("date", Q.lte(endDate ?? dayjs().endOf("week").format("YYYY-MM-DD"))),
     ];
@@ -63,6 +64,7 @@ export class StatsWatermelonRepository implements IStatsRepository {
     const conditions = [
       Q.where("tenantid", tenantId),
       Q.where("isdeleted", false),
+      Q.where("isvoid", false),
       Q.where("date", Q.gte(startDate ?? dayjs().startOf("week").format("YYYY-MM-DD"))),
       Q.where("date", Q.lte(endDate ?? dayjs().endOf("week").format("YYYY-MM-DD"))),
     ];
@@ -129,6 +131,7 @@ export class StatsWatermelonRepository implements IStatsRepository {
     const conditions = [
       Q.where("tenantid", tenantId),
       Q.where("isdeleted", false),
+      Q.where("isvoid", false),
       Q.where("type", Q.oneOf(["Expense", "Adjustment"])),
       Q.where("date", Q.gte(formattedStartDate)),
       Q.where("date", Q.lte(formattedEndDate)),
@@ -193,6 +196,7 @@ export class StatsWatermelonRepository implements IStatsRepository {
     const conditions = [
       Q.where("tenantid", tenantId),
       Q.where("isdeleted", false),
+      Q.where("isvoid", false),
       Q.where("date", Q.gte(formattedStartDate)),
       Q.where("date", Q.lte(formattedEndDate)),
     ];

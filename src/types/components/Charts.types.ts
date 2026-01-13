@@ -60,6 +60,7 @@ export type MyCalendarProps = {
   label: string;
   onDayPress?: (day: any) => void;
   selectedDate?: string | null;
+  currentDate?: string; 
 };
 
 export type MyCalendarData = {
