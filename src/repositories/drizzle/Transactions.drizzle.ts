@@ -31,8 +31,8 @@ export class TransactionDrizzleRepository
         super(dbContext);
     }
 
-    // Using different signature than base class - returns TransactionsView with joined data
-    async findAll(
+    // Returns TransactionsView with joined account/category/group data
+    async findAllFromView(
         tenantId: string,
         filters?: TransactionFilters
     ): Promise<TransactionsView[]> {

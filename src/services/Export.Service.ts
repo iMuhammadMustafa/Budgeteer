@@ -155,7 +155,7 @@ export class ExportService {
 
             switch (view) {
                 case ViewNames.TransactionsView:
-                    return await dbContext.TransactionRepository().findAll(tenantId, {});
+                    return await dbContext.TransactionRepository().findAllFromView(tenantId, {});
                 case ViewNames.StatsDailyTransactions:
                     return await statsRepo.getStatsDailyTransactions(tenantId);
                 case ViewNames.StatsMonthlyTransactionsTypes:

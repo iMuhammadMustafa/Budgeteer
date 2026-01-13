@@ -55,7 +55,7 @@ export function useTransactionService(): ITransactionService {
     return useQuery<TransactionsView[]>({
       queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
       queryFn: async () => {
-        const res = transactionRepo.findAll(tenantId, searchFilters);
+        const res = transactionRepo.findAllFromView(tenantId, searchFilters ?? {});
         return res as Promise<TransactionsView[]>;
       },
       enabled: !!tenantId,
@@ -113,7 +113,7 @@ export function useTransactionService(): ITransactionService {
         const offset = (pageParam as number) * pageSize;
         const limit = pageSize;
 
-        const res = (await transactionRepo.findAll(tenantId, {
+        const res = (await transactionRepo.findAllFromView(tenantId, {
           ...normalizedFilters,
           offset,
           limit,

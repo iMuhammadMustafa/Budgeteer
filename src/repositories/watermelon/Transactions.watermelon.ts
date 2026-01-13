@@ -52,9 +52,8 @@ export class TransactionWatermelonRepository
     return mapped;
   }
 
-  // Implementation of interface method with specific signature (overrides base class method)
-  // @ts-ignore - Override base class method with different signature for interface compliance
-  override async findAll(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
+  // Returns TransactionsView with joined account/category/group data
+  async findAllFromView(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
     const db = await this.getDb();
     const conditions = [Q.where("tenantid", tenantId), Q.where("isdeleted", false)];
 

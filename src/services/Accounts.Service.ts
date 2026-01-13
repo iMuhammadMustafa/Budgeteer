@@ -29,9 +29,12 @@ export function useAccountService(): IAccountService {
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();
-  const accountRepo = dbContext.AccountRepository();
-  const transactionRepo = dbContext.TransactionRepository();
-  const configRepo = dbContext.ConfigurationRepository();
+  const accountRepo = dbContext?.AccountRepository();
+  const transactionRepo = dbContext?.TransactionRepository();
+  const configRepo = dbContext?.ConfigurationRepository();
+
+
+  if (!accountRepo || !transactionRepo || !configRepo) throw new Error("Database context not found");
 
   const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
