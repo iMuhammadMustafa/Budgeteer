@@ -9,8 +9,6 @@ INSERT INTO public.TransactionGroups (id,description,icon,color,"name","type",cr
 	 ('046e648c-123f-462c-908b-d1e0831e6a11'::uuid,NULL,'ShoppingCart','error-100','Groceries','Expense','d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2025-01-27 17:25:55.155234-06',NULL,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid, 0);
 
 
-
-
 INSERT INTO public.TransactionCategories (id,"name",description,createdby,createdat,updatedby,updatedat,isdeleted,tenantid,icon,"type",color,groupid) VALUES
 	 ('55485de3-113a-42fa-a9a8-68f151b5d233'::uuid,'Other',NULL,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2024-09-06 17:15:08.12299-05',NULL,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'Ellipsis','Expense','Ellipsis','60e285ab-a8fd-4b73-9b6b-e2e6964757e8'::uuid),
 	 ('41dee609-6a44-4fda-8ed4-2ec0bd35a99f'::uuid,'Clothing',NULL,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2024-09-06 17:32:00.434296-05',NULL,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'Shirt','Expense','House','15cbf097-47fa-4df1-ab7e-92ce5a3e32da'::uuid),
@@ -49,8 +47,6 @@ INSERT INTO public.AccountCategories (id,"name","type",createdby,createdat,updat
 	 ('5d192f78-41e8-413c-9457-c9d68f9decf1'::uuid,'Cash','Asset','d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2024-09-01 20:32:12.976757-05',NULL,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'Banknote',4000,'error-100'),
 	 ('d9833b85-1523-4a01-8c82-10fbe3c1ad18'::uuid,'Gift Card','Asset','d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2025-01-02 07:43:37.280129-06','d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'WalletCards',5000,'error-100'),
 	 ('bbefb010-bcf9-4552-b41f-c4c3053b4357'::uuid,'Loan','Liability','d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'2024-09-01 20:32:12.976757-05',NULL,NULL,false,'d8d5efae-da25-4b50-870f-8774b83d73e9'::uuid,'Landmark',6000,'error-100');
-
-
 
 
 INSERT INTO public.Configruations (id, "table", "type", "key", value, createdby, createdat, updatedby, updatedat, isdeleted, tenantid) VALUES

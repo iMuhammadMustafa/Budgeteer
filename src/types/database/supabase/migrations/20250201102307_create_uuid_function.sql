@@ -34,3 +34,20 @@ BEGIN
     RETURN encode(uuid_bytes, 'hex')::UUID;
 END;
 $$ LANGUAGE plpgsql;
+
+-- CREATE OR REPLACE FUNCTION SetDefaultValues()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--     -- IF NEW."CreatedBy" IS NULL THEN
+--     --     NEW."CreatedBy" = auth.uid();
+--     -- END IF;
+--     -- IF NEW."CreatedAt" IS NULL THEN
+--     --     NEW."CreatedAt" = CURRENT_TIMESTAMP;
+--     -- END IF;
+--     IF NEW."TenantId" IS NULL THEN
+--         NEW."TenantId" = auth.tenantid();
+--     END IF;
+--     RETURN NEW;
+-- END;
+
+
