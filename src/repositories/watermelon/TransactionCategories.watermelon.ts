@@ -8,8 +8,7 @@ import { mapTransactionCategoryFromWatermelon } from "./TypeMappers";
 
 export class TransactionCategoryWatermelonRepository
   extends BaseWatermelonRepository<TransactionCategory, TableNames.TransactionCategories, TransactionCategoryType>
-  implements ITransactionCategoryRepository
-{
+  implements ITransactionCategoryRepository {
   protected tableName = TableNames.TransactionCategories;
   protected orderByField?: "displayorder";
 
@@ -35,16 +34,24 @@ export class TransactionCategoryWatermelonRepository
     return mapped;
   }
 
-  override async findAll(tenantId: string, filters?: any): Promise<TransactionCategoryType[]> {
+  override async findAll(tenantId: string, filters?: { isDeleted?: boolean | null }): Promise<TransactionCategoryType[]> {
     const db = await this.getDb();
     const conditions = [];
 
     conditions.push(Q.where("tenantid", tenantId));
-    conditions.push(Q.where("isdeleted", filters?.deleted ?? false));
+
+    // isDeleted filter: null=all, true=deleted only, undefined/false=not deleted
+    if (filters?.isDeleted === null) {
+      // No filter - show all records
+    } else if (filters?.isDeleted === true) {
+      conditions.push(Q.where("isdeleted", true));
+    } else {
+      conditions.push(Q.where("isdeleted", false));
+    }
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && key !== "deleted") {
+        if (value !== undefined && value !== null && key !== "isDeleted") {
           conditions.push(Q.where(key, value as any));
         }
       });

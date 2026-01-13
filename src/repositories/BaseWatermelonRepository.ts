@@ -53,13 +53,18 @@ export abstract class BaseWatermelonRepository<
 
     conditions.push(Q.where("tenantid", tenantId));
 
-    // isDeleted filter: undefined = non-deleted only, true = deleted only, false = all
-    if (filters?.isDeleted === undefined) {
-      conditions.push(Q.where("isdeleted", false));
+    // isDeleted filter:
+    // - null: Show all records (no isdeleted filter)
+    // - true: Show only deleted records
+    // - undefined/false (default): Show non-deleted records only
+    if (filters?.isDeleted === null) {
+      // No filter - show all records
     } else if (filters?.isDeleted === true) {
       conditions.push(Q.where("isdeleted", true));
+    } else {
+      // Default: show non-deleted only (undefined or false)
+      conditions.push(Q.where("isdeleted", false));
     }
-    // isDeleted === false means show all, no filter needed
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -301,4 +306,92 @@ export abstract class BaseWatermelonRepository<
       }
     });
   }
+
+  async createMultiple(data: Inserts<TTable>[], tenantId: string): Promise<TMapped[]> {
+    const db = await this.getDb();
+
+    return await db.write(async () => {
+      const collection = db.get(this.tableName);
+      const validColumns = new Set(Object.values(collection.schema.columns).map((c: any) => c.name));
+      validColumns.add("id");
+      validColumns.add("tenantid");
+      validColumns.add("isdeleted");
+      validColumns.add("createdat");
+      validColumns.add("updatedat");
+      validColumns.add("createdby");
+      validColumns.add("updatedby");
+
+      const models = data.map(item => {
+        const mappedData = this.mapFieldsForWatermelon(item as Record<string, any>);
+
+        return collection.prepareCreate((record: any) => {
+          Object.entries(mappedData).forEach(([key, value]) => {
+            if (!validColumns.has(key) && key !== "id") return;
+
+            switch (key) {
+              case "id":
+                if (value) {
+                  record._raw.id = value;
+                }
+                break;
+              default:
+                if (value !== undefined) {
+                  record[key] = value;
+                }
+            }
+          });
+
+          record.tenantId = tenantId;
+          record.isdeleted = false;
+          record.createdat = record.createdat || new Date().toISOString();
+          record.updatedat = record.updatedat || new Date().toISOString();
+        });
+      });
+
+      await db.batch(...models);
+
+      return models.map(model => this.mapFromWatermelon(model as TModel));
+    });
+  }
+
+  async deleteMultiple(ids: string[], tenantId: string): Promise<void> {
+    const db = await this.getDb();
+
+    await db.write(async () => {
+      for (const id of ids) {
+        const results = await db
+          .get(this.tableName)
+          .query(Q.where("id", id), Q.where("tenantid", tenantId), Q.where("isdeleted", false));
+        const record = results[0];
+
+        if (record) {
+          await record.update((record: any) => {
+            record.isdeleted = true;
+            record.updatedat = new Date().toISOString();
+          });
+        }
+      }
+    });
+  }
+
+  async restoreMultiple(ids: string[], tenantId: string): Promise<void> {
+    const db = await this.getDb();
+
+    await db.write(async () => {
+      for (const id of ids) {
+        const results = await db
+          .get(this.tableName)
+          .query(Q.where("id", id), Q.where("tenantid", tenantId), Q.where("isdeleted", true));
+        const record = results[0];
+
+        if (record) {
+          await record.update((record: any) => {
+            record.isdeleted = false;
+            record.updatedat = new Date().toISOString();
+          });
+        }
+      }
+    });
+  }
 }
+

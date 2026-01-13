@@ -9,8 +9,7 @@ import { mapAccountFromWatermelon } from "./TypeMappers";
 
 export class AccountWatermelonRepository
   extends BaseWatermelonRepository<Account, TableNames.Accounts, AccountType>
-  implements IAccountRepository
-{
+  implements IAccountRepository {
   protected orderByField?: string | undefined;
   protected tableName = TableNames.Accounts;
 
@@ -18,15 +17,24 @@ export class AccountWatermelonRepository
     return mapAccountFromWatermelon(model);
   }
 
-  override async findAll(tenantId: string, filters?: any): Promise<AccountType[]> {
+  override async findAll(tenantId: string, filters?: { isDeleted?: boolean | null }): Promise<AccountType[]> {
     const db = await this.getDb();
     const conditions = [];
 
     conditions.push(Q.where("tenantid", tenantId));
-    conditions.push(Q.where("isdeleted", filters?.deleted ?? false));
+
+    // isDeleted filter: null=all, true=deleted only, undefined/false=not deleted
+    if (filters?.isDeleted === null) {
+      // No filter - show all records
+    } else if (filters?.isDeleted === true) {
+      conditions.push(Q.where("isdeleted", true));
+    } else {
+      conditions.push(Q.where("isdeleted", false));
+    }
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && !["deleted"].includes(key)) {
+        if (value !== undefined && value !== null && !["isDeleted"].includes(key)) {
           conditions.push(Q.where(key, value as any));
         }
       });

@@ -7,14 +7,10 @@ export interface QueryFilters {
 
   /**
    * Filter by deleted status:
-   * - undefined (default): Show non-deleted records only
-   * - true: Show only deleted records
-   * - false: Show all records (including deleted)
+   * - undefined/false (default): Show non-deleted records only (isdeleted = false)
+   * - true: Show only deleted records (isdeleted = true)
+   * - null: Show all records (no isdeleted filter applied)
    */
-  isDeleted?: boolean;
-
-  /**
-   * When true, skip relationship mapping (for export)
-   */
+  isDeleted?: boolean | null;
   raw?: boolean;
 }

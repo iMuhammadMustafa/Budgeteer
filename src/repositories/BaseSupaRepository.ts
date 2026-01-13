@@ -14,13 +14,18 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
       .select()
       .eq("tenantid", tenantId);
 
-    // isDeleted filter: undefined = non-deleted only, true = deleted only, false = all
-    if (filters.isDeleted === undefined) {
-      query = query.eq("isdeleted", false);
+    // isDeleted filter:
+    // - null: Show all records (no isdeleted filter)
+    // - true: Show only deleted records
+    // - undefined/false (default): Show non-deleted records only
+    if (filters.isDeleted === null) {
+      // No filter - show all records
     } else if (filters.isDeleted === true) {
       query = query.eq("isdeleted", true);
+    } else {
+      // Default: show non-deleted only (undefined or false)
+      query = query.eq("isdeleted", false);
     }
-    // isDeleted === false means show all, no filter needed
 
     const { data, error } = await query
       .order("displayorder", { ascending: false })
@@ -124,6 +129,28 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
     }
   }
 
+  async createMultiple(data: Inserts<TTable>[], tenantId: string): Promise<TModel[]> {
+    const { data: result, error } = await supabase
+      .from(this.tableName)
+      .insert(data as any[])
+      .select();
+
+    if (error) throw error;
+    return result as TModel[];
+  }
+
+  async deleteMultiple(ids: string[], tenantId: string): Promise<void> {
+    for (const id of ids) {
+      await this.softDelete(id, tenantId);
+    }
+  }
+
+  async restoreMultiple(ids: string[], tenantId: string): Promise<void> {
+    for (const id of ids) {
+      await this.restore(id, tenantId);
+    }
+  }
+
   // async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
   //   // Use Supabase upsert for batch updates in a single network request
   //   // This is much more efficient than multiple individual update calls
@@ -144,3 +171,4 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
   //   }
   // }
 }
+

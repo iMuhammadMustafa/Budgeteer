@@ -71,25 +71,25 @@ export class ExportService {
             let rawData: any[];
             switch (table) {
                 case TableNames.AccountCategories:
-                    rawData = await dbContext.AccountCategoryRepository().findAll(tenantId, {});
+                    rawData = await dbContext.AccountCategoryRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.Accounts:
-                    rawData = await dbContext.AccountRepository().findAll(tenantId, {});
+                    rawData = await dbContext.AccountRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.TransactionGroups:
-                    rawData = await dbContext.TransactionGroupRepository().findAll(tenantId, {});
+                    rawData = await dbContext.TransactionGroupRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.TransactionCategories:
-                    rawData = await dbContext.TransactionCategoryRepository().findAll(tenantId, {});
+                    rawData = await dbContext.TransactionCategoryRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.Configurations:
-                    rawData = await dbContext.ConfigurationRepository().findAll(tenantId, {});
+                    rawData = await dbContext.ConfigurationRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.Recurrings:
-                    rawData = await dbContext.RecurringRepository().findAll(tenantId, {});
+                    rawData = await dbContext.RecurringRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 case TableNames.Transactions:
-                    rawData = await dbContext.TransactionRepository().findAll(tenantId, {});
+                    rawData = await dbContext.TransactionRepository().findAll(tenantId, { isDeleted: null });
                     break;
                 default:
                     console.warn(`Unknown table for export: ${table}`);
@@ -155,7 +155,7 @@ export class ExportService {
 
             switch (view) {
                 case ViewNames.TransactionsView:
-                    return await dbContext.TransactionRepository().findAll(tenantId, {});
+                    return await dbContext.TransactionRepository().findAll(tenantId, { isDeleted: null });
                 case ViewNames.StatsDailyTransactions:
                     return await statsRepo.getStatsDailyTransactions(tenantId);
                 case ViewNames.StatsMonthlyTransactionsTypes:
