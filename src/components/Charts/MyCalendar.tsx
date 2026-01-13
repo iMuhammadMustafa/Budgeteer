@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 
-export default function MyCalendar({ data, label, onDayPress, selectedDate }: MyCalendarProps) {
+export default function MyCalendar({ data, label, onDayPress, selectedDate, currentDate }: MyCalendarProps) {
   const themeContext = useTheme();
 
   const textColor = themeContext.isDarkMode ? "white" : "black";
@@ -38,8 +38,10 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate }: My
     <View className="mx-6">
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
       <Calendar
+        key={currentDate} // Force re-render when month changes
         hideArrows
         disableMonthChange
+        current={currentDate}
         markedDates={markedDates}
         markingType={"multi-dot"}
         hideExtraDays={true}

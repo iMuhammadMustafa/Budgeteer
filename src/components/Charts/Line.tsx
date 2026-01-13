@@ -27,18 +27,21 @@ export default function Line({ data, label, color, hideY }: LineProps) {
   const showLegend = width > 600 * 1.5;
   const availableWidth = showLegend ? width * 0.25 : chartWidth;
 
-  // Ensure data is not empty and has at least two points for a line
-  if (!data || data.length < 2) {
+  // Ensure data is not empty
+  if (!data || data.length === 0) {
     return (
       <View
         className="p-2 m-auto bg-card my-2 rounded-md border border-muted items-center justify-center"
         style={{ width: chartWidth, height: chartHeight }}
       >
         <Text className="text-foreground">{label}</Text>
-        <Text className="text-muted-foreground">Not enough data to display chart.</Text>
+        <Text className="text-muted-foreground">No data available.</Text>
       </View>
     );
   }
+
+  // Show message for single data point (can't draw a line)
+  const hasSinglePoint = data.length === 1;
   const colors = [
     "#FF6384",
     "#36A2EB",
@@ -96,23 +99,25 @@ export default function Line({ data, label, color, hideY }: LineProps) {
                   tickLabels: { fontSize: 10, padding: 5 },
                 }}
                 // Format Y-axis labels if needed (e.g., for currency)
-                tickFormat={t => (typeof t === "number" ? `${t / 1000}k` : t)}
+                tickFormat={t => (typeof t === "number" ? `${Math.round(t / 1000)}k` : t)}
               />
             )}
             <VictoryGroup data={data} color={lineChartColor}>
-              <VictoryLine
-                style={{
-                  data: { strokeWidth: 2, stroke: lineChartColor },
-                }}
-                animate={{
-                  duration: 500,
-                  onLoad: { duration: 500 },
-                }}
-              />
+              {!hasSinglePoint && (
+                <VictoryLine
+                  style={{
+                    data: { strokeWidth: 2, stroke: lineChartColor },
+                  }}
+                  animate={{
+                    duration: 500,
+                    onLoad: { duration: 500 },
+                  }}
+                />
+              )}
               <VictoryScatter
-                size={({ active }: { active?: boolean }) => (active ? 8 : 3)}
+                size={({ active }: { active?: boolean }) => (hasSinglePoint ? 8 : active ? 8 : 3)}
                 style={{
-                  data: { fill: lineChartColor }, // Keep fill for scatter points if different from line
+                  data: { fill: lineChartColor },
                 }}
               />
             </VictoryGroup>
@@ -139,13 +144,13 @@ export default function Line({ data, label, color, hideY }: LineProps) {
                 <Text className="text-foreground text-center">
                   {showLegend
                     ? `${item.x}: $${item.y.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}`
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
                     : `${item.x}\n$${item.y.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}`}
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`}
                 </Text>
               </View>
             )}

@@ -35,6 +35,7 @@ export default function DashboardCharts({
               data={dailyTransactionTypesData!}
               onDayPress={day => handleDayPress(day, DashboardViewSelectionType.CALENDAR)}
               selectedDate={params.date}
+              currentDate={periodControls.calendar.currentDate}
             />
           </ChartsContainer>
         );
@@ -99,7 +100,7 @@ export default function DashboardCharts({
         onNext={periodControls.year.next}
         label={periodControls.year.label}
       >
-        <DoubleBar data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
+        <DoubleBar key={periodControls.year.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
       </ChartsContainer>
       <ChartsContainer
         isPeriodControl
@@ -107,7 +108,7 @@ export default function DashboardCharts({
         onNext={periodControls.year.next}
         label={periodControls.year.label}
       >
-        <Line data={netWorthGrowth} label="Net Worth Growth" color="rgba(76, 175, 80, 0.6)" />
+        <Line key={periodControls.year.label} data={netWorthGrowth} label="Net Worth Growth" color="rgba(76, 175, 80, 0.6)" />
       </ChartsContainer>
       <ChartsContainer
         isPeriodControl
@@ -136,6 +137,7 @@ export default function DashboardCharts({
           label="Calendar"
           data={dailyTransactionTypesData!}
           onDayPress={day => handleDayPress(day, DashboardViewSelectionType.CALENDAR)}
+          currentDate={periodControls.calendar.currentDate}
         />
       </ChartsContainer>
     </View>

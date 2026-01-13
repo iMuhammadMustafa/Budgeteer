@@ -259,7 +259,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
 
   const monthLabel = useMemo(() => dayjs(piesMonthCursor.start).format("MMM YYYY"), [piesMonthCursor]);
   const calendarLabel = useMemo(() => dayjs(dailyMonthCursor.start).format("MMM YYYY"), [dailyMonthCursor]);
-  const yearLabel = useMemo(() => dayjs(yearCursor.start).format("YYYY"), [yearCursor]);
+  const yearLabel = useMemo(() => yearCursor.start.substring(0, 4), [yearCursor]);
 
   // Period navigation handlers
   const onPrevWeek = useCallback(() => {
@@ -342,7 +342,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const periodControls = {
     week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek },
     month: { label: monthLabel, prev: onPrevMonth, next: onNextMonth },
-    calendar: { label: calendarLabel, prev: onPrevCalendarMonth, next: onNextCalendarMonth },
+    calendar: { label: calendarLabel, prev: onPrevCalendarMonth, next: onNextCalendarMonth, currentDate: dailyMonthCursor.start },
     year: { label: yearLabel, prev: onPrevYear, next: onNextYear },
   };
 
