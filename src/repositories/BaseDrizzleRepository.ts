@@ -134,7 +134,6 @@ export abstract class BaseDrizzleRepository<
         }
 
         const results = await query;
-
         return results as TModel[];
     }
 

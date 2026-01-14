@@ -1,6 +1,7 @@
 import supabase from "@/src/providers/Supabase";
 import { StorageMode } from "@/src/types/StorageMode";
-import { drizzle as drizzleSqlite } from "drizzle-orm/expo-sqlite";
+// import { drizzle as drizzleSqlite } from "drizzle-orm/expo-sqlite";
+import { drizzle as drizzleSqlite } from "drizzle-orm/sqlite-proxy";
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import * as sqliteSchema from "./schema";
 import { CREATE_ALL_VIEWS_SQL, DROP_ALL_VIEWS_SQL } from "./views";
@@ -235,7 +236,42 @@ export const initializeSqliteDb = async (): Promise<DrizzleSqliteDb> => {
       }
 
       sqliteRawDb = await openDatabaseAsync(DATABASE_NAME);
-      sqliteDb = drizzleSqlite(sqliteRawDb as any, { schema: sqliteSchema });
+
+      // Use sqlite-proxy to bridge Drizzle to Async SQLite API
+      // This allows us to use Drizzle Query Builder while ensuring all queries run asynchronously via getAllAsync/runAsync
+      // This bypasses the synchronous web worker serialization issues in the standard adapter
+      const proxyDriver = async (sql: string, params: any[], method: 'run' | 'all' | 'values' | 'get', artifacts: any) => {
+        // console.log(`[Drizzle Proxy] ${method.toUpperCase()}: ${sql}`, params);
+
+        try {
+          switch (method) {
+            case 'run': {
+              const result = await sqliteRawDb.runAsync(sql, params ?? []);
+              return { rows: [], insertId: result.lastInsertRowId, changes: result.changes };
+            }
+            case 'all': {
+              const rows = await sqliteRawDb.getAllAsync(sql, params ?? []);
+              return { rows: rows.map(row => Object.values(row as any)) };
+            }
+            case 'values': {
+              const rows = await sqliteRawDb.getAllAsync(sql, params ?? []);
+              return { rows: rows.map(row => Object.values(row as any)) };
+            }
+            case 'get': {
+              const row = await sqliteRawDb.getFirstAsync(sql, params ?? []);
+              return { rows: row ? [Object.values(row as any)] : [] };
+            }
+          }
+        } catch (e: any) {
+          console.error("[Drizzle Proxy Error]", e);
+          throw e;
+        }
+      };
+
+      // Import proxy dynamically or assume it's available (need to update imports)
+      // Note: We need to change the import at top of file, so we'll do this in two steps or update imports now
+      // For this block, we assume 'drizzleProxy' is available as 'drizzle' replacement
+      sqliteDb = drizzleSqlite(proxyDriver, { schema: sqliteSchema });
       await sqliteRawDb.execAsync(CREATE_TABLES_SQL);
       await sqliteRawDb.execAsync(CREATE_INDEXES_SQL);
       // Recreate views (drop first to ensure latest definitions)
@@ -368,3 +404,4 @@ export const resetDatabase = async (storageMode: StorageMode): Promise<void> => 
 // =====================================
 
 export { sqliteSchema as schema };
+

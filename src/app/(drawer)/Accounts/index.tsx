@@ -33,7 +33,7 @@ export default function AccountsIndex() {
   };
 
   const detailsContent = (item: any) =>
-    `Balance: ${item.balance.toLocaleString("en-US", {
+    `Balance: ${item?.balance?.toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
     })}`;
