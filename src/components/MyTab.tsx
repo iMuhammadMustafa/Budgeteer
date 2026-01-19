@@ -48,7 +48,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
   showDeleted?: boolean;
   dependencyConfig?: {
     dependencyField: string;
-    dependencyService: IService<any, any>;
+    dependencyService: Pick<IService<any, any>, 'useFindAll' | 'useSoftDelete' | 'useHardDelete'> & {
+      useUpdateMultiple?: () => { mutate: (data: any, options?: any) => void };
+    };
     dependencyType: string;
     allowDeleteDependencies?: boolean;
     onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
@@ -246,7 +248,9 @@ const useMyTab = <TModel, TTable extends TableNames>({
   showDeleted?: boolean;
   dependencyConfig?: {
     dependencyField: string;
-    dependencyService: IService<any, any>;
+    dependencyService: Pick<IService<any, any>, 'useFindAll' | 'useSoftDelete' | 'useHardDelete'> & {
+      useUpdateMultiple?: () => { mutate: (data: any, options?: any) => void };
+    };
     dependencyType: string;
     allowDeleteDependencies?: boolean;
     onBeforeUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;

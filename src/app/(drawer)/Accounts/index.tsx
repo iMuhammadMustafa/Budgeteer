@@ -80,6 +80,7 @@ export default function AccountsIndex() {
         groupBy={"category.name"}
         Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}
         detailsContent={detailsContent}
+        customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
           <Button
             rightIcon="ArrowLeftRight"
