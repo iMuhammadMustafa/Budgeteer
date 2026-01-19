@@ -1,6 +1,6 @@
 import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
 import { router } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Text, View } from "react-native";
 import Button from "../components/elements/Button";
 import { useAuth } from "../providers/AuthProvider";
@@ -13,6 +13,12 @@ export default function Index() {
   const { session, setSession, isLoading: isAuthLoading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isLoading = isStorageLoading || isAuthLoading;
+
+  useEffect(() => {
+    if (!isLoading && storageMode && session) {
+      router.push("/Dashboard");
+    }
+  }, [isLoading, storageMode, session]);
 
   const handleLogin = useCallback(
     async (mode: any) => {
@@ -76,10 +82,6 @@ export default function Index() {
   );
 
   if (isLoading) return <Text>Loading...</Text>;
-
-  if (storageMode && session) {
-    router.push("/Dashboard");
-  }
 
   return (
     <>
