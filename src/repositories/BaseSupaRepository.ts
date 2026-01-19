@@ -7,6 +7,7 @@ import { IRepository } from "./interfaces/IRepository";
 
 export abstract class SupaRepository<TModel, TTable extends TableNames> implements IRepository<TModel, TTable> {
   protected abstract tableName: string;
+  protected abstract orderByFieldsDesc?: string[];
 
   async findAll(tenantId: string, filters: QueryFilters = {}): Promise<TModel[]> {
     let query = supabase
@@ -27,9 +28,13 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
       query = query.eq("isdeleted", false);
     }
 
-    const { data, error } = await query
-      .order("displayorder", { ascending: false })
-      .order("name");
+    if (this.orderByFieldsDesc) {
+      for (const field of this.orderByFieldsDesc) {
+        query = query.order(field, { ascending: false });
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data;

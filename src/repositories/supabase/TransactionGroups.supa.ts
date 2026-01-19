@@ -5,7 +5,8 @@ import { ITransactionGroupRepository } from "../interfaces/ITransactionGroupRepo
 
 export class TransactionGroupSupaRepository
   extends SupaRepository<TransactionGroup, TableNames.TransactionGroups>
-  implements ITransactionGroupRepository
-{
+  implements ITransactionGroupRepository {
   protected tableName = TableNames.TransactionGroups;
+  protected orderByFieldsDesc = ["displayorder", "name"];
+
 }

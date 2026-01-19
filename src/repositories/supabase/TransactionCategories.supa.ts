@@ -9,6 +9,8 @@ export class TransactionCategorySupaRepository
   extends SupaRepository<TransactionCategory, TableNames.TransactionCategories>
   implements ITransactionCategoryRepository {
   protected tableName = TableNames.TransactionCategories;
+  protected orderByFieldsDesc = ["displayorder", "name"];
+
 
   async findAllWithGroup(tenantId: string, filters?: QueryFilters): Promise<TransactionCategory[]> {
     let query = supabase

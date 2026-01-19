@@ -7,9 +7,10 @@ import { IConfigurationRepository } from "../interfaces/IConfigurationRepository
 
 export class ConfigurationSupaRepository
   extends SupaRepository<Configuration, TableNames.Configurations>
-  implements IConfigurationRepository
-{
+  implements IConfigurationRepository {
   protected tableName = TableNames.Configurations;
+  protected orderByFieldsDesc = ["table", "type", "key"];
+
   async getConfiguration(table: string, type: string, key: string, tenantId: string): Promise<Configuration> {
     const { data, error } = await supabase
       .from(TableNames.Configurations)

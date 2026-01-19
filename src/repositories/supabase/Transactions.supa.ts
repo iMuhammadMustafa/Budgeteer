@@ -15,6 +15,8 @@ export class TransactionSupaRepository
   extends SupaRepository<Transaction, TableNames.Transactions>
   implements ITransactionRepository {
   protected tableName = TableNames.Transactions;
+  protected orderByFieldsDesc = ["date"];
+
 
   async findAllFromView(tenantId: string, filters: TransactionFilters): Promise<TransactionsView[]> {
     let query = this.buildQuery(filters, tenantId);

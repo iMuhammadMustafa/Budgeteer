@@ -8,9 +8,10 @@ import { IRecurringRepository } from "../interfaces/IRecurringRepository";
 
 export class RecurringSupaRepository
   extends SupaRepository<Recurring, TableNames.Recurrings>
-  implements IRecurringRepository
-{
+  implements IRecurringRepository {
   protected tableName = TableNames.Recurrings;
+  protected orderByFieldsDesc = ["nextoccurrencedate", "name"];
+
   override async findAll(tenantId: string): Promise<Recurring[]> {
     let query = supabase
       .from(TableNames.Recurrings)

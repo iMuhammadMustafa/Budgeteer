@@ -7,6 +7,7 @@ import { IAccountRepository } from "../interfaces/IAccountRepository";
 
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
   protected tableName = TableNames.Accounts;
+  protected orderByFieldsDesc = ["displayorder", "name"];
 
   async findAllWithCategory(tenantId: string, filters: QueryFilters = {}): Promise<Account[]> {
     let query = supabase
