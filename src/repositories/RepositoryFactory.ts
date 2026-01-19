@@ -7,6 +7,8 @@ import { IStatsRepository } from "./interfaces/IStatsRepository";
 import { ITransactionCategoryRepository } from "./interfaces/ITransactionCategoryRepository";
 import { ITransactionGroupRepository } from "./interfaces/ITransactionGroupRepository";
 import { ITransactionRepository } from "./interfaces/ITransactionRepository";
+
+// Supabase repositories
 import { AccountCategorySupaRepository } from "./supabase/AccountCategories.supa";
 import { AccountSupaRepository } from "./supabase/Accounts.supa";
 import { ConfigurationSupaRepository } from "./supabase/Configurations.supa";
@@ -15,14 +17,16 @@ import { StatsSupaRepository } from "./supabase/Stats.supa";
 import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
-import { AccountCategoryWatermelonRepository } from "./watermelon/AccountCategories.watermelon";
-import { AccountWatermelonRepository } from "./watermelon/Accounts.watermelon";
-import { ConfigurationWatermelonRepository } from "./watermelon/Configurations.watermelon";
-import { RecurringWatermelonRepository } from "./watermelon/Recurrings.watermelon";
-import { StatsWatermelonRepository } from "./watermelon/Stats.watermelon";
-import { TransactionCategoryWatermelonRepository } from "./watermelon/TransactionCategories.watermelon";
-import { TransactionGroupWatermelonRepository } from "./watermelon/TransactionGroups.watermelon";
-import { TransactionWatermelonRepository } from "./watermelon/Transactions.watermelon";
+
+// SQLite repositories
+import { AccountCategorySqliteRepository } from "./sqlite/AccountCategories.sqlite";
+import { AccountSqliteRepository } from "./sqlite/Accounts.sqlite";
+import { ConfigurationSqliteRepository } from "./sqlite/Configurations.sqlite";
+import { RecurringSqliteRepository } from "./sqlite/Recurrings.sqlite";
+import { StatsSqliteRepository } from "./sqlite/Stats.sqlite";
+import { TransactionCategorySqliteRepository } from "./sqlite/TransactionCategories.sqlite";
+import { TransactionGroupSqliteRepository } from "./sqlite/TransactionGroups.sqlite";
+import { TransactionSqliteRepository } from "./sqlite/Transactions.sqlite";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -49,13 +53,13 @@ export function createRepositoryFactory(storageMode: StorageMode | null): IRepos
     };
   }
   return {
-    AccountCategoryRepository: () => new AccountCategoryWatermelonRepository(),
-    AccountRepository: () => new AccountWatermelonRepository(),
-    TransactionGroupRepository: () => new TransactionGroupWatermelonRepository(),
-    TransactionCategoryRepository: () => new TransactionCategoryWatermelonRepository(),
-    ConfigurationRepository: () => new ConfigurationWatermelonRepository(),
-    RecurringRepository: () => new RecurringWatermelonRepository(),
-    StatsRepository: () => new StatsWatermelonRepository(),
-    TransactionRepository: () => new TransactionWatermelonRepository(),
+    AccountCategoryRepository: () => new AccountCategorySqliteRepository(),
+    AccountRepository: () => new AccountSqliteRepository(),
+    ConfigurationRepository: () => new ConfigurationSqliteRepository(),
+    RecurringRepository: () => new RecurringSqliteRepository(),
+    StatsRepository: () => new StatsSqliteRepository(),
+    TransactionCategoryRepository: () => new TransactionCategorySqliteRepository(),
+    TransactionGroupRepository: () => new TransactionGroupSqliteRepository(),
+    TransactionRepository: () => new TransactionSqliteRepository(),
   };
 }

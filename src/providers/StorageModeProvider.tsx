@@ -1,11 +1,12 @@
 import { createRepositoryFactory, IRepositoryFactory } from "@/src/repositories/RepositoryFactory";
-import { initializeWatermelonDB } from "@/src/types/database/watermelon";
-import { clearSeedData, seedWatermelonDB } from "@/src/types/database/watermelon/seed";
+import { clearSqliteDataByTenant, initializeSqliteDBAsync } from "@/src/types/database/sqlite";
+import { SQLITE_DEMO_TENANT_ID } from "@/src/types/database/sqlite/constants";
+import { seedSqliteDB } from "@/src/types/database/sqlite/seed";
+import { seedSqliteDemoDB, setDemoSeededFlag } from "@/src/types/database/sqlite/seedDemo";
 import { StorageMode } from "@/src/types/StorageMode";
 import { storage } from "@/src/utils/storageUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { seedWatermelonDemoDB } from "../types/database/watermelon/seedDemo";
 
 type StorageModeContextType = {
   isLoading: boolean;
@@ -22,7 +23,7 @@ export const STORAGE_KEYS = {
 const storageModeContext = createContext<StorageModeContextType | undefined>({
   isLoading: false,
   storageMode: null,
-  setStorageMode: async (mode: StorageMode | null) => {},
+  setStorageMode: async (mode: StorageMode | null) => { },
   dbContext: null as any,
 });
 
@@ -46,8 +47,8 @@ export default function StorageModeProvider({ children }: { children: React.Reac
         setStorageMode(null);
 
         if (storageMode === StorageMode.Demo) {
-          await clearSeedData();
-          await clearSeedData();
+          await clearSqliteDataByTenant(SQLITE_DEMO_TENANT_ID);
+          setDemoSeededFlag(false);
           await AsyncStorage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
         }
 
@@ -59,12 +60,12 @@ export default function StorageModeProvider({ children }: { children: React.Reac
       await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
 
       if (mode === StorageMode.Local) {
-        await initializeWatermelonDB();
-        await seedWatermelonDB();
+        await initializeSqliteDBAsync();
+        await seedSqliteDB();
       }
       if (mode === StorageMode.Demo) {
-        await initializeWatermelonDB();
-        await seedWatermelonDemoDB();
+        await initializeSqliteDBAsync();
+        await seedSqliteDemoDB();
       }
 
       setStorageMode(mode);
