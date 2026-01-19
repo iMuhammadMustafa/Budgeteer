@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native";
 import MyIcon from "./MyIcon";
 
 const modalStack: number[] = [];
@@ -87,18 +87,26 @@ export default function MyModal({
         />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="w-[90%] max-w-[500px] max-h-[80%]   bg-card rounded-md border border-muted"
+          style={Platform.OS !== "web" ? {
+            width: '90%',
+            maxWidth: 500,
+            maxHeight: '80%',
+            minHeight: Dimensions.get('window').height * 0.5,
+          } : undefined}
+          className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%] bg-card rounded-md border border-muted" : "bg-card rounded-md border border-muted"}
         >
           <View className="bg-white rounded-lg overflow-hidden flex-1">
-            <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
-              <Text className="font-semibold text-dark">{title}</Text>
-              <Pressable onPress={onClose} className="p-1">
-                <MyIcon name="X" size={20} className="text-gray-500" />
-              </Pressable>
-            </View>
-            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+            {title && (
+              <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+                <Text className="font-semibold text-dark">{title}</Text>
+                <Pressable onPress={onClose} className="p-1">
+                  <MyIcon name="X" size={20} className="text-gray-500" />
+                </Pressable>
+              </View>
+            )}
+            <View className="flex-1">
               {children}
-            </ScrollView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -126,7 +134,13 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
         <Pressable className="absolute inset-0" onPress={onClose} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="w-[90%] max-w-[500px] max-h-[80%]"
+          style={Platform.OS !== "web" ? {
+            width: '90%',
+            maxWidth: 500,
+            maxHeight: '80%',
+            minHeight: Dimensions.get('window').height * 0.5,
+          } : undefined}
+          className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%]" : ""}
         >
           <View className="bg-white rounded-lg overflow-hidden flex-1">
             <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
@@ -135,9 +149,9 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
                 <MyIcon name="X" size={20} className="text-gray-500" />
               </Pressable>
             </View>
-            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+            <View className="flex-1">
               {children}
-            </ScrollView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </View>
