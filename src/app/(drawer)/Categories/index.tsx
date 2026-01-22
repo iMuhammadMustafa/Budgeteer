@@ -15,6 +15,7 @@ export default function TransactionGroupsTab() {
       queryKey={[TableNames.TransactionCategories]}
       service={categories}
       groupBy="group.name"
+      customFindAll={categories.useFindAllWithGroup}
       UpsertModal={item => <TransactionCategoryForm category={item} />}
       initialState={initialState}
       dependencyConfig={{

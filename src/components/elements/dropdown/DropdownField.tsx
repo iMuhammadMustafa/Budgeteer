@@ -279,18 +279,24 @@ function DropdownList({
       <FlatList<OptionItem | string | undefined>
         data={groupBy ? groupedData : options}
         keyExtractor={(item, index) =>
-          typeof item === "string" ? `group-${item}-${index}` : (item?.id ?? `option-${index}`)
+          groupBy
+            ? `group-${item ?? "undefined"}-${index}`
+            : (item as OptionItem)?.id ?? `option-${index}`
         }
         renderItem={({ item }) => {
-          if (typeof item === "string") {
+          if (groupBy) {
+            const groupName = item as string | undefined;
             return (
               <>
-                <Text selectable={false} className="p-2 bg-gray-100 text-gray-600 text-sm font-medium">
-                  {item ?? "Other"}
+                <Text
+                  selectable={false}
+                  className="p-2 bg-gray-100 text-gray-600 text-sm font-medium"
+                >
+                  {groupName ?? "Other"}
                 </Text>
                 <View className="flex-row flex-wrap justify-center">
                   {options
-                    .filter(opt => opt.group === item)
+                    .filter(opt => opt.group === groupName)
                     .map(opt => (
                       <DropdownOption
                         key={opt.id}
@@ -305,7 +311,13 @@ function DropdownList({
             );
           }
           if (!item) return null;
-          return <DropdownOption option={item} isSelected={item.id === selectedValue} onPress={() => onSelect(item)} />;
+          return (
+            <DropdownOption
+              option={item as OptionItem}
+              isSelected={(item as OptionItem).id === selectedValue}
+              onPress={() => onSelect(item as OptionItem)}
+            />
+          );
         }}
         className={isModal ? "max-h-[300px]" : "max-h-48"}
         showsVerticalScrollIndicator

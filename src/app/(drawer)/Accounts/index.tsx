@@ -16,7 +16,7 @@ export default function AccountsIndex() {
   const transactionService = useTransactionService();
   const accountCategoryService = useAccountCategoryService();
 
-  const { data: accounts, isLoading, error } = accountService.useFindAll();
+  const { data: accounts, isLoading, error } = accountService.useFindAllWithCategory();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
   const { data: accountCategories } = accountCategoryService.useFindAll();
   const { mutate: createTransaction, isPending: isCreating } = transactionService.useCreate();
@@ -168,24 +168,29 @@ const AccountTransferModal = ({
       isOpen={modalState.open}
       setIsOpen={(open: boolean) => setModalState({ open, account: open ? modalState.account : null })}
     >
-      <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
+      <View className="p-4">
+        <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
 
-      <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
-      <AccountSelecterDropdown
-        label="Source"
-        selectedValue={sourceAccountId}
-        onSelect={item => setSourceAccountId(item?.id ?? null)}
-        accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
-        isModal={true}
-        groupBy="group"
-      />
-      <View className="flex-row gap-4">
-        <Button
-          label={isCreating ? "Transferring..." : "Submit Transfer"}
-          onPress={handleTransfer}
-          isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
-          className="flex-1"
+        <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
+
+        <Text>Source</Text>
+        <AccountSelecterDropdown
+          label="Source"
+          selectedValue={sourceAccountId}
+          onSelect={item => setSourceAccountId(item?.id ?? null)}
+          accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
+          isModal={true}
+          groupBy="group"
         />
+
+        <View className="flex-row gap-4">
+          <Button
+            label={isCreating ? "Transferring..." : "Submit Transfer"}
+            onPress={handleTransfer}
+            isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
+            className="flex-1"
+          />
+        </View>
       </View>
     </MyModal>
   );
