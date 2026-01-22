@@ -1,10 +1,9 @@
+import ConfirmRestoreModal from "@/src/components/ConfirmRestoreModal";
 import Button from "@/src/components/elements/Button";
-import MyModal from "@/src/components/elements/MyModal";
 import MyTab from "@/src/components/MyTab";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 import { useState } from "react";
-import { Text, View } from "react-native";
 
 export default function RestoreTransactionCategories() {
   const service = useTransactionCategoryService();
@@ -29,18 +28,13 @@ export default function RestoreTransactionCategories() {
         customAction={(item: any) => <Button rightIcon="RotateCcw" variant="ghost" onPress={() => openConfirm(item)} />}
         icons
       />
-      {confirm.open && (
-        <MyModal
-          isOpen={confirm.open}
-          setIsOpen={(open: boolean) => setConfirm({ open, item: open ? confirm.item : null })}
-        >
-          <View className="gap-3">
-            <Text className="text-lg font-bold">Restore Transaction Category</Text>
-            <Text>Are you sure you want to restore {confirm.item?.name}?</Text>
-            <Button label={isPending ? "Restoring..." : "Restore"} onPress={doRestore} />
-          </View>
-        </MyModal>
-      )}
+      <ConfirmRestoreModal
+        name="Transaction Category"
+        isOpen={confirm.open}
+        setIsOpen={(open: boolean) => setConfirm({ open, item: open ? confirm.item : null })}
+        isPending={isPending}
+        doRestore={doRestore}
+      />
     </>
   );
 }

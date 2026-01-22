@@ -49,7 +49,7 @@ export default function useTransactions() {
   const [pendingUpdates, setPendingUpdates] = useState<BatchUpdatePayload | null>(null);
   const [updateSummary, setUpdateSummary] = useState("");
 
-  const updateMultipleMutation = transactionService.useUpdateMultiple();
+  const updateMultipleMutation = transactionService.useUpdateMultipleTransactions();
 
   const openConfirmModal = (actionType: BatchActionType) => setConfirmAction(actionType);
   const closeConfirmModal = () => setConfirmAction(null);

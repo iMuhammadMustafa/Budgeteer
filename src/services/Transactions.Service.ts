@@ -28,8 +28,7 @@ export interface BatchUpdateParams {
     isvoid?: boolean;
   };
 }
-
-export interface ITransactionService extends Omit<IService<Transaction, TableNames.Transactions>, 'useUpdateMultiple'> {
+export interface ITransactionService extends IService<Transaction, TableNames.Transactions> {
   useFindAllView: (searchFilters?: TransactionFilters) => ReturnType<typeof useQuery<TransactionsView[]>>;
   useFindAllInfinite: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<TransactionsView[]>>;
   useFindDeleted: (searchFilters: TransactionFilters) => ReturnType<typeof useInfiniteQuery<Transaction[]>>;
@@ -37,7 +36,7 @@ export interface ITransactionService extends Omit<IService<Transaction, TableNam
   useGetByTransferId: (id?: string) => ReturnType<typeof useQuery<TransactionsView>>;
   useCreateMultipleTransactions: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   useUpdateTransferTransaction: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
-  useUpdateMultiple: () => ReturnType<typeof useMutation<void, Error, BatchUpdateParams>>;
+  useUpdateMultipleTransactions: () => ReturnType<typeof useMutation<void, Error, BatchUpdateParams>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -227,7 +226,7 @@ export function useTransactionService(): ITransactionService {
   };
 
   // Override useUpdateMultiple with transaction-specific balance handling
-  const useUpdateMultiple = () => {
+  const useUpdateMultipleTransactions = () => {
     return useMutation<void, Error, BatchUpdateParams>({
       mutationFn: async ({ transactions, updates }: BatchUpdateParams) => {
         // 1. Build update objects for each transaction
@@ -315,7 +314,7 @@ export function useTransactionService(): ITransactionService {
     useCreateMultipleTransactions,
     useUpdateTransferTransaction,
     useRestore,
-    useUpdateMultiple, // Override the base implementation
+    useUpdateMultipleTransactions,
   };
 }
 

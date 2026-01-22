@@ -434,8 +434,8 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const accountService = useAccountService();
   const transactionService = useTransactionService();
 
-  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAll();
-  const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAll();
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAllWithGroup();
+  const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAllWithCategory();
   const { mutate: upsertTransaction } = transactionService.useUpsert();
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
@@ -732,7 +732,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         value: item.id,
         icon: item.icon,
         color: item.color,
-        group: item.group!.name || "Uncategorized",
+        group: item.group?.name || "Uncategorized",
       }))
       .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically
   }, [categories]);
