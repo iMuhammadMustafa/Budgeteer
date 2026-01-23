@@ -97,6 +97,7 @@ export default function Index() {
             {Object.values(StorageModeConfig).map(mode => (
               <Button
                 key={mode.id}
+                testID={`mode-${mode.id}`}
                 className="p-6 border border-primary rounded-lg bg-card shadow-sm text-foreground"
                 onPress={async () => await handleLogin(mode)}
                 disabled={isLoading}

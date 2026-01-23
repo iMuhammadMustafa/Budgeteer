@@ -5,6 +5,7 @@ import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
 import { TableNames } from "../types/database/TableNames";
 import { Updates } from "../types/database/Tables.Types";
+import ConfirmRestoreModal from "./ConfirmRestoreModal";
 import Button from "./elements/Button";
 import DeleteConfirmModal from "./elements/DeleteConfirmModal";
 import MyIcon from "./elements/MyIcon";
@@ -27,6 +28,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   showDeleted = false,
   dependencyConfig,
   customFindAll,
+  showRestore
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -39,6 +41,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   initialState?: any;
   detailsUrl: Href;
   icons?: boolean;
+  showRestore?: boolean;
   customRenderItem?: (
     item: TModel,
     isSelected: boolean,
@@ -78,6 +81,11 @@ export default function MyTab<TModel, TTable extends TableNames>({
     handleDeleteConfirm,
     replacementItems,
     dependencyCount,
+    restoreModalOpen,
+    setRestoreModalOpen,
+    setItemToRestore,
+    handleRestoreConfirm,
+    isRestorePending,
   } = useMyTab({
     service,
     queryKey,
@@ -197,11 +205,14 @@ export default function MyTab<TModel, TTable extends TableNames>({
                       }}
                       rightIcon="Trash2"
                     />
-                    {/* {
+                    {
                       showRestore && (
-                         <Button testID="restore-btn" rightIcon="RotateCcw" variant="ghost" onPress={() => openConfirm(item)} />
+                        <Button testID="restore-btn" rightIcon="RotateCcw" variant="ghost" onPress={() => {
+                          setItemToRestore(item);
+                          setRestoreModalOpen(true);
+                        }} />
                       )
-                    } */}
+                    }
                     {customAction && (
                       <View className="me-2">
                         {typeof customAction === "function" ? customAction(item) : customAction}
@@ -234,6 +245,13 @@ export default function MyTab<TModel, TTable extends TableNames>({
         replacementItems={replacementItems}
         onConfirm={handleDeleteConfirm}
         allowDeleteDependencies={dependencyConfig?.allowDeleteDependencies}
+      />
+      <ConfirmRestoreModal
+        name={title}
+        isOpen={restoreModalOpen}
+        setIsOpen={setRestoreModalOpen}
+        isPending={isRestorePending}
+        doRestore={handleRestoreConfirm}
       />
     </SafeAreaView>
   );
@@ -294,7 +312,20 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const [currentItem, setCurrentItem] = useState(initialState);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+
+  const { mutate: restoreMutate, isPending: isRestorePending } = service.useRestore();
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [itemToRestore, setItemToRestore] = useState<any>(null);
+
+  const handleRestoreConfirm = () => {
+    if (itemToRestore) {
+      restoreMutate({ id: itemToRestore.id, item: itemToRestore });
+      setItemToRestore(null);
+      setRestoreModalOpen(false);
+    }
+  }
 
   // Get dependencies if dependency config is provided
   const { data: dependencyData } = dependencyConfig?.dependencyService?.useFindAll?.() || { data: [] };
@@ -424,5 +455,10 @@ const useMyTab = <TModel, TTable extends TableNames>({
     handleDeleteConfirm,
     replacementItems,
     dependencyCount,
+    restoreModalOpen,
+    setRestoreModalOpen,
+    setItemToRestore,
+    handleRestoreConfirm,
+    isRestorePending,
   };
 };
