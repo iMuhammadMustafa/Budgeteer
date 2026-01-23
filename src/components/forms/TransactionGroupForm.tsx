@@ -261,7 +261,7 @@ function TransactionGroupFormComponent({ group, onSuccess, onCancel }: Transacti
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection title="Group Details" className="z-50">
+          <FormSection title="Transaction Group Details" className="z-50">
             {/* Render standard form fields */}
             {formFields.map(fieldConfig => (
               <FormField

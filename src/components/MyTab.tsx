@@ -94,9 +94,10 @@ export default function MyTab<TModel, TTable extends TableNames>({
       <View className="flex-row justify-between items-center px-4 bg-background">
         <Text className="font-bold text-lg text-foreground">{title}</Text>
         <View className="flex-row items-center">
-          <Button variant="ghost" className="py-0 px-2" iconSize={20} onPress={handleRefresh} rightIcon="RefreshCw" />
+          <Button testID="refresh-btn" variant="ghost" className="py-0 px-2" iconSize={20} onPress={handleRefresh} rightIcon="RefreshCw" />
           {UpsertModal && (
             <Button
+              testID="add-btn"
               variant="ghost"
               className="py-0 px-0"
               iconSize={24}
@@ -128,6 +129,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
                 return (
                   <View
                     key={item.id}
+                    testID={`list-item-${item.id}`}
                     className={`flex-row items-center ${groupName ? "py-1" : "py-2"} border-b border-gray-200 px-5 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
                   >
                     {/* TODO fix Link usage*/}
@@ -173,6 +175,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
                     {/* </Link> */}
                     {UpsertModal && (
                       <Button
+                        testID={`edit-btn-${item.id}`}
                         variant="ghost"
                         className="py-0 px-0 me-2"
                         iconSize={20}
@@ -184,6 +187,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
                       />
                     )}
                     <Button
+                      testID={`delete-btn-${item.id}`}
                       variant="ghost"
                       className="py-0 px-0 me-2"
                       iconSize={20}
@@ -193,6 +197,11 @@ export default function MyTab<TModel, TTable extends TableNames>({
                       }}
                       rightIcon="Trash2"
                     />
+                    {/* {
+                      showRestore && (
+                         <Button testID="restore-btn" rightIcon="RotateCcw" variant="ghost" onPress={() => openConfirm(item)} />
+                      )
+                    } */}
                     {customAction && (
                       <View className="me-2">
                         {typeof customAction === "function" ? customAction(item) : customAction}

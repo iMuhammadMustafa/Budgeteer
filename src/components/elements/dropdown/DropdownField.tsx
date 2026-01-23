@@ -137,6 +137,7 @@ function DropdownField({
             } ${disabled ? "bg-gray-100" : "bg-white"}`}
           onPress={handleToggle}
           disabled={disabled}
+          testID="dropdown-button"
         >
           <View className="flex-row items-center flex-1 gap-2">
             {selectedItem?.icon && (
@@ -146,6 +147,7 @@ function DropdownField({
               className={`flex-1 ${selectedItem ? "text-dark" : "text-gray-400"} ${disabled ? "text-gray-400" : ""}`}
               numberOfLines={1}
               selectable={false}
+              testID="dropdown-selected-text"
             >
               {selectedItem?.label ?? placeholder ?? label}
             </Text>

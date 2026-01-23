@@ -214,7 +214,7 @@ function AccountCategoryFormComponent({ category, onSuccess, onCancel }: Account
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection title="Category Details">
+          <FormSection title="Account Category Details">
             {/* Render standard form fields */}
             {formFields.map(fieldConfig => (
               <FormField<AccountCategoryFormData>

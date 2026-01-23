@@ -42,19 +42,22 @@ export interface ButtonProps {
   accessibilityHint?: string;
   accessibilityState?: any;
   accessibilityRole?:
-    | "button"
-    | "link"
-    | "text"
-    | "image"
-    | "none"
-    | "search"
-    | "adjustable"
-    | "header"
-    | "summary"
-    | "imagebutton";
+  | "button"
+  | "link"
+  | "text"
+  | "image"
+  | "none"
+  | "search"
+  | "adjustable"
+  | "header"
+  | "summary"
+  | "imagebutton";
 
   // Legacy support
   isValid?: boolean;
+
+  // Testing
+  testID?: string;
 }
 
 // Variant styles mapping
@@ -135,6 +138,8 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
       // Legacy support
       isValid = true,
       textClasses = "",
+      // Testing
+      testID,
     },
     ref,
   ) => {
@@ -278,6 +283,7 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
     return (
       <Pressable
         ref={ref}
+        testID={testID}
         className={containerClasses}
         disabled={isDisabled}
         onPress={handlePress}
