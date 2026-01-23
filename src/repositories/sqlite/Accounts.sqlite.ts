@@ -10,7 +10,8 @@ export class AccountSqliteRepository
     extends BaseSqliteRepository<Account, TableNames.Accounts>
     implements IAccountRepository {
     protected tableName = TableNames.Accounts;
-    protected orderByField = "displayorder";
+    protected orderByFieldsAsc = ["displayorder"];
+    protected orderByFieldsDesc = ["displayorder"];
     protected orderDirection: "ASC" | "DESC" = "DESC";
 
     async findAllWithCategory(tenantId: string, filters?: QueryFilters): Promise<Account[]> {

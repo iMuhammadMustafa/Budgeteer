@@ -7,6 +7,7 @@ export class AccountCategorySqliteRepository
     extends BaseSqliteRepository<AccountCategory, TableNames.AccountCategories>
     implements IAccountCategoryRepository {
     protected tableName = TableNames.AccountCategories;
-    protected orderByField = "displayorder";
+    protected orderByFieldsAsc = ["displayorder"];
+    protected orderByFieldsDesc = ["displayorder"];
     protected orderDirection: "ASC" | "DESC" = "DESC";
 }
