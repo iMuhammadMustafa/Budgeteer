@@ -31,8 +31,8 @@ export async function loginWithMode(page: Page, mode: StorageMode): Promise<void
 }
 
 export async function logout(page: Page): Promise<void> {
-    await page.goto("/Settings");
-    await page.getByRole("button", { name: selectors.auth.logoutButton }).click();
+    await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("button", { name: /logout/i }).click();
     await page.waitForURL("/");
 }
 

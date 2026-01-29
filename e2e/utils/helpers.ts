@@ -35,7 +35,7 @@ export async function navigateToRestoreTransactionGroups(page: Page) {
 
 export async function navigateToAccounts(page: Page) {
     await page.getByRole("button", { name: /menu/i }).first().click();
-    await page.getByRole("link", { name: /accounts/i }).click();
+    await page.getByRole("button", { name: /accounts/i }).click();
     await page.waitForURL("**/Accounts");
 }
 
@@ -60,10 +60,13 @@ export async function openMyTabAddModal(page: Page, heading?: string) {
 
 export async function openMyTabEditModal(page: Page, itemName: string, heading?: string) {
     await page.getByText(itemName).click();
-    await page.waitForSelector(selectors.ui.modal);
+    let modal = page.locator(selectors.ui.modal);
+    await modal.waitFor({ state: "visible" });
+    await expect(modal).toBeVisible();
     if (heading) {
-        await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+        await expect(modal.getByRole("heading", { name: heading })).toBeVisible();
     }
+    return modal;
 }
 
 export async function openMyTabRestoreModal(page: Page, itemText: string) {
