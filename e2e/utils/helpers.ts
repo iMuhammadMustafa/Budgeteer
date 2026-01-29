@@ -15,6 +15,8 @@ export async function navigateToAccountCategories(page: Page) {
 export async function navigateToRestoreAccountCategories(page: Page) {
     await page.getByRole("button", { name: /menu/i }).first().click();
     await page.getByRole("button", { name: /restore/i }).click();
+    await page.waitForURL("**/Restore/**");
+    await page.waitForLoadState("domcontentloaded");
     await page.getByLabel("Account Categories").click();
     await page.waitForURL("**/Restore/AccountCategories");
 }
@@ -29,6 +31,8 @@ export async function navigateToTransactionGroups(page: Page) {
 export async function navigateToRestoreTransactionGroups(page: Page) {
     await page.getByRole("button", { name: /menu/i }).first().click();
     await page.getByRole("button", { name: /restore/i }).click();
+    await page.waitForURL("**/Restore/**");
+    await page.waitForLoadState("domcontentloaded");
     await page.getByLabel("Transaction Groups").click();
     await page.waitForURL("**/Restore/TransactionGroups");
 }
@@ -42,8 +46,50 @@ export async function navigateToAccounts(page: Page) {
 export async function navigateToRestoreAccounts(page: Page) {
     await page.getByRole("button", { name: /menu/i }).first().click();
     await page.getByRole("button", { name: /restore/i }).click();
+    await page.waitForURL("**/Restore/**");
+    await page.waitForLoadState("domcontentloaded");
     await page.getByLabel("Accounts").click();
     await page.waitForURL("**/Restore/Accounts");
+}
+
+export async function navigateToTransactionCategories(page: Page) {
+    await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("button", { name: /categories/i }).click();
+    await page.waitForURL("**/Categories");
+}
+
+export async function navigateToRestoreTransactionCategories(page: Page) {
+    await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("button", { name: /restore/i }).click();
+    await page.waitForURL("**/Restore/**");
+    await page.waitForLoadState("domcontentloaded");
+    await page.getByLabel("Transaction Categories").click();
+    await page.waitForURL("**/Restore/TransactionCategories");
+}
+
+export async function navigateToTransactions(page: Page) {
+    await page.getByText("Transactions", { exact: true }).click();
+    await page.waitForURL("**/Transactions");
+}
+
+export async function navigateToRestoreTransactions(page: Page) {
+    await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("button", { name: /restore/i }).click();
+    await page.waitForURL("**/Restore/**");
+    await page.waitForLoadState("domcontentloaded");
+    await page.getByLabel("Transactions").click();
+    await page.waitForURL("**/Restore/Transactions");
+}
+
+export async function navigateToDashboard(page: Page) {
+    await page.getByText("Dashboard", { exact: true }).click();
+    await page.waitForURL("**/Dashboard");
+}
+
+export async function navigateToSettings(page: Page) {
+    await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    await page.waitForURL("**/Settings");
 }
 
 // ============================================
