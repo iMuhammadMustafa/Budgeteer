@@ -1,6 +1,7 @@
 import DashboardCharts from "@/src/components/Charts/DashboardCharts";
+import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import { RefreshCcw } from "lucide-react-native";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -24,12 +25,7 @@ export default function DashboardIndex() {
   console.log("DashboardIndex rendered");
 
   if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text className="mt-4 text-foreground">Loading dashboard data...</Text>
-      </View>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

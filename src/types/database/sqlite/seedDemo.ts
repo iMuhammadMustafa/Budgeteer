@@ -249,8 +249,15 @@ const generateDemoTransactions = () => {
     return transactions;
 };
 
+/** Escape a string value for safe SQL string embedding */
+const escSql = (val: string | null): string => {
+    if (val === null) return "NULL";
+    return `'${val.replace(/'/g, "''")}'`;
+};
+
 /**
- * Seed the SQLite database with demo data
+ * Seed the SQLite database with demo data.
+ * All INSERTs are batched into a single execAsync call for maximum speed.
  */
 export const seedSqliteDemoDB = async (): Promise<void> => {
     // Check localStorage flag first
@@ -266,9 +273,11 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
     const userId = SQLITE_DEMO_USER_ID;
 
     try {
-        // Temporarily disable foreign keys to avoid circular reference issues with transfer transactions
-        await db.execAsync("PRAGMA foreign_keys = OFF;");
-        // Seed Transaction Groups
+        // Build all SQL statements as a single string for batched execution
+        const statements: string[] = [];
+        statements.push("PRAGMA foreign_keys = OFF;");
+
+        // --- Transaction Groups ---
         const transactionGroupsData = [
             { id: DEMO_IDS.GROUP_ENTERTAINMENT, name: "Entertainment", type: "Expense", color: "error-100", icon: "Drama" },
             { id: DEMO_IDS.GROUP_BILLS, name: "Bills", type: "Expense", color: "error-100", icon: "Plug" },
@@ -280,17 +289,13 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             { id: DEMO_IDS.GROUP_GROCERIES, name: "Groceries", type: "Expense", color: "error-100", icon: "ShoppingCart" },
         ];
 
-        console.log("Seeding Transaction Groups...");
         for (const group of transactionGroupsData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.TransactionGroups} 
-         (id, name, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, 0, 0, 'monthly', ?, 0, ?, ?, ?)`,
-                [group.id, group.name, group.type, group.color, group.icon, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.TransactionGroups} (id, name, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(group.id)}, ${escSql(group.name)}, ${escSql(group.type)}, ${escSql(group.color)}, ${escSql(group.icon)}, 0, 0, 'monthly', ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Account Categories
+        // --- Account Categories ---
         const accountCategoriesData = [
             { id: DEMO_IDS.CAT_BANK, name: "Bank", type: "Asset", color: "error-100", icon: "PiggyBank", displayorder: 1000 },
             { id: DEMO_IDS.CAT_DEBIT, name: "Debit Card", type: "Asset", color: "error-100", icon: "Banknote", displayorder: 2000 },
@@ -300,17 +305,13 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             { id: DEMO_IDS.CAT_LOAN, name: "Loan", type: "Liability", color: "error-100", icon: "Landmark", displayorder: 6000 },
         ];
 
-        console.log("Seeding Account Categories...");
         for (const cat of accountCategoriesData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.AccountCategories} 
-         (id, name, type, color, icon, displayorder, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-                [cat.id, cat.name, cat.type, cat.color, cat.icon, cat.displayorder, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.AccountCategories} (id, name, type, color, icon, displayorder, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(cat.id)}, ${escSql(cat.name)}, ${escSql(cat.type)}, ${escSql(cat.color)}, ${escSql(cat.icon)}, ${cat.displayorder}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Transaction Categories (subset for demo)
+        // --- Transaction Categories ---
         const transactionCategoriesData = [
             { id: DEMO_IDS.TXCAT_ACCOUNT_OPS, name: "Account Operations", groupid: DEMO_IDS.GROUP_ACCOUNTS, type: "Adjustment", color: "UserPen", icon: "Wallet" },
             { id: DEMO_IDS.TXCAT_SALARY, name: "Salary", groupid: DEMO_IDS.GROUP_EMPLOYER, type: "Income", color: "BriefcaseBusiness", icon: "BriefcaseBusiness" },
@@ -321,33 +322,25 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             { id: DEMO_IDS.TXCAT_DINING, name: "Dining Out", groupid: DEMO_IDS.GROUP_ENTERTAINMENT, type: "Expense", color: "Drama", icon: "Pizza" },
         ];
 
-        console.log("Seeding Transaction Categories...");
         for (const cat of transactionCategoriesData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.TransactionCategories} 
-         (id, name, groupid, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'monthly', ?, 0, ?, ?, ?)`,
-                [cat.id, cat.name, cat.groupid, cat.type, cat.color, cat.icon, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.TransactionCategories} (id, name, groupid, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(cat.id)}, ${escSql(cat.name)}, ${escSql(cat.groupid)}, ${escSql(cat.type)}, ${escSql(cat.color)}, ${escSql(cat.icon)}, 0, 0, 'monthly', ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Configurations
-        console.log("Seeding Configurations...");
-        await db.runAsync(
-            `INSERT OR IGNORE INTO ${TableNames.Configurations} 
-       (id, key, value, type, "table", tenantid, isdeleted, createdat, createdby, updatedat) 
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-            [GenerateUuid(), "id", DEMO_IDS.TXCAT_ACCOUNT_OPS, ConfigurationTypes.AccountOpertationsCategory, TableNames.TransactionCategories, tenantId, now, userId, now]
+        // --- Configuration ---
+        const configId = GenerateUuid();
+        statements.push(
+            `INSERT OR IGNORE INTO ${TableNames.Configurations} (id, key, value, type, "table", tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(configId)}, 'id', ${escSql(DEMO_IDS.TXCAT_ACCOUNT_OPS)}, ${escSql(ConfigurationTypes.AccountOpertationsCategory)}, ${escSql(TableNames.TransactionCategories)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
         );
 
-        // Generate transactions first to calculate balances
+        // --- Generate transactions and calculate balances ---
         const transactions = generateDemoTransactions();
 
-        // Calculate account balances
         const calculateBalance = (accountId: string) =>
             transactions.filter((t) => t.accountid === accountId).reduce((sum, t) => sum + t.amount, 0);
 
-        // Seed Accounts
+        // --- Accounts ---
         const accountsData = [
             { id: DEMO_IDS.ACC_CHECKING, name: "Primary Checking", balance: calculateBalance(DEMO_IDS.ACC_CHECKING), categoryid: DEMO_IDS.CAT_BANK, color: "info-500", icon: "Wallet" },
             { id: DEMO_IDS.ACC_SAVINGS, name: "Savings Account", balance: calculateBalance(DEMO_IDS.ACC_SAVINGS), categoryid: DEMO_IDS.CAT_BANK, color: "green-500", icon: "PiggyBank" },
@@ -355,29 +348,24 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             { id: DEMO_IDS.ACC_CASH, name: "Cash Wallet", balance: calculateBalance(DEMO_IDS.ACC_CASH), categoryid: DEMO_IDS.CAT_CASH, color: "amber-500", icon: "Banknote" },
         ];
 
-        console.log("Seeding Accounts...");
         for (const acc of accountsData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.Accounts} 
-         (id, name, balance, currency, color, icon, displayorder, categoryid, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, 'USD', ?, ?, 0, ?, ?, 0, ?, ?, ?)`,
-                [acc.id, acc.name, acc.balance, acc.color, acc.icon, acc.categoryid, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.Accounts} (id, name, balance, currency, color, icon, displayorder, categoryid, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(acc.id)}, ${escSql(acc.name)}, ${acc.balance}, 'USD', ${escSql(acc.color)}, ${escSql(acc.icon)}, 0, ${escSql(acc.categoryid)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Transactions
-        console.log(`Seeding ${transactions.length} Transactions...`);
+        // --- Transactions ---
         for (const txn of transactions) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.Transactions} 
-         (id, name, amount, date, description, payee, notes, tags, type, isvoid, accountid, categoryid, transferaccountid, transferid, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-                [txn.id, txn.name, txn.amount, txn.date, txn.description, txn.payee, txn.notes, txn.tags, txn.type, txn.isvoid, txn.accountid, txn.categoryid, txn.transferaccountid, txn.transferid, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.Transactions} (id, name, amount, date, description, payee, notes, tags, type, isvoid, accountid, categoryid, transferaccountid, transferid, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(txn.id)}, ${escSql(txn.name)}, ${txn.amount}, ${escSql(txn.date)}, ${escSql(txn.description)}, ${escSql(txn.payee)}, ${escSql(txn.notes)}, ${escSql(txn.tags)}, ${escSql(txn.type)}, ${txn.isvoid}, ${escSql(txn.accountid)}, ${escSql(txn.categoryid)}, ${escSql(txn.transferaccountid)}, ${escSql(txn.transferid)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Re-enable foreign keys
-        await db.execAsync("PRAGMA foreign_keys = ON;");
+        statements.push("PRAGMA foreign_keys = ON;");
+
+        // Execute all statements in a single batched call
+        console.log(`Executing ${statements.length} statements in a single batch...`);
+        await db.execAsync(statements.join("\n"));
 
         // Set the seeded flag
         setDemoSeededFlag(true);
