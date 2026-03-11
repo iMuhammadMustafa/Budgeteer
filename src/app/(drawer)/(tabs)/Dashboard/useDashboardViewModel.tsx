@@ -10,6 +10,7 @@ export enum DashboardViewSelectionType {
   CALENDAR = "calendar",
   PIE = "pie",
   BAR = "bar",
+  DOUBLE_BAR = "double_bar",
 }
 
 export interface IDetailsViewProps {
@@ -22,6 +23,7 @@ export interface IDetailsViewProps {
   itemId?: string;
   itemLabel?: string;
   month?: string;
+  transactionType?: string;
 }
 
 export default function useDashboard(options?: { fetchTransactions?: boolean }) {
@@ -92,6 +94,12 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     } else if (params.type === DashboardViewSelectionType.CALENDAR) {
       baseFilters.startDate = dayjs(dailyMonthCursor.start).utc().startOf("day").toISOString();
       baseFilters.endDate = dayjs(dailyMonthCursor.end).utc().endOf("day").toISOString();
+    } else if (params.type === DashboardViewSelectionType.DOUBLE_BAR) {
+      baseFilters.startDate = params.startDate;
+      baseFilters.endDate = params.endDate;
+      if (params.transactionType) {
+         baseFilters.type = params.transactionType as any;
+      }
     } else {
       if (params.startDate) baseFilters.startDate = params.startDate;
       if (params.endDate) baseFilters.endDate = params.endDate;
@@ -194,21 +202,25 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   );
 
   const handleBarPress = useCallback(
-    (item: DoubleBarPoint) => {
-      // Anchor monthly drilldowns to the currently selected year
+    (item: DoubleBarPoint, barKey?: "barOne" | "barTwo") => {
       const baseYear = dayjs(yearCursor.start);
-      const monthStart = baseYear.month(dayjs(item.x, "MMM").month()).utc().startOf("month");
+      const monthIndex = dayjs(`1 ${item.x} ${baseYear.year()}`).month();
+
+      const monthStart = baseYear.month(monthIndex).utc().startOf("month");
       const startOfMonth = monthStart.toISOString();
       const endOfMonth = monthStart.endOf("month").toISOString();
+      
+      const transactionTypeStr = barKey === "barOne" ? item.barOne.label : barKey === "barTwo" ? item.barTwo.label : undefined;
 
       router.push({
         pathname: "/Dashboard/Details",
         params: {
-          type: "bar",
+          type: DashboardViewSelectionType.DOUBLE_BAR,
           month: item.x,
-          label: `Month: ${item.x}`,
+          label: transactionTypeStr ? `${item.x} ${transactionTypeStr}` : `Month: ${item.x}`,
           startDate: startOfMonth,
           endDate: endOfMonth,
+          transactionType: transactionTypeStr,
         },
       });
     },
@@ -230,15 +242,18 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
 
   const handleViewAllNavigation = useCallback(() => {
     const navigationParams: any = {};
-    if (params.type === "calendar") {
+    if (params.type === DashboardViewSelectionType.CALENDAR) {
       navigationParams.startDate = params.startDate;
       navigationParams.endDate = params.endDate;
-    } else if (params.type === "pie") {
+    } else if (params.type === DashboardViewSelectionType.PIE) {
       const key = params.pieType === "category" ? "categoryid" : "groupid";
       navigationParams[key] = params.itemId;
-    } else if (params.type === "bar") {
+    } else if (params.type === DashboardViewSelectionType.BAR || params.type === DashboardViewSelectionType.DOUBLE_BAR) {
       navigationParams.startDate = params.startDate;
       navigationParams.endDate = params.endDate;
+      if (params.transactionType) {
+        navigationParams.type = params.transactionType;
+      }
     }
 
     router.push({

@@ -10,6 +10,7 @@ import {
   VictoryScatter,
   VictoryTheme,
 } from "victory-native";
+import { LineEmptyState } from "./ChartEmptyState";
 import ChartLegend from "./ChartLegend";
 
 // Define props for the Line chart component
@@ -30,15 +31,7 @@ export default function Line({ data, label, color, hideY }: LineProps) {
 
   // Ensure data is not empty
   if (!data || data.length === 0) {
-    return (
-      <View
-        className="p-2 m-auto bg-card my-2 rounded-md border border-muted items-center justify-center"
-        style={{ width: chartWidth, height: chartHeight }}
-      >
-        <Text className="text-foreground">{label}</Text>
-        <Text className="text-muted-foreground">No data available.</Text>
-      </View>
-    );
+    return <LineEmptyState label={label} />;
   }
 
   // Show message for single data point (can't draw a line)

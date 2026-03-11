@@ -56,6 +56,17 @@ export default function DashboardCharts({
             />
           </ChartsContainer>
         );
+      case DashboardViewSelectionType.DOUBLE_BAR:
+        return (
+          <ChartsContainer
+            isPeriodControl
+            onPrev={periodControls.year.prev}
+            onNext={periodControls.year.next}
+            label={periodControls.year.label}
+          >
+            <DoubleBar key={periodControls.year.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
+          </ChartsContainer>
+        );
       case DashboardViewSelectionType.PIE: {
         const isPieCategory = params.pieType === "category";
         return (

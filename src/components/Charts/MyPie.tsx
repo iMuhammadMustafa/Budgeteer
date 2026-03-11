@@ -3,6 +3,7 @@ import { PieData, PieProps } from "@/src/types/components/Charts.types";
 import { useState } from "react";
 import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { VictoryContainer, VictoryLabel, VictoryPie, VictoryTheme } from "victory-native";
+import { PieEmptyState } from "./ChartEmptyState";
 import ChartLegend from "./ChartLegend";
 
 export default function MyPie({
@@ -25,9 +26,10 @@ export default function MyPie({
 
   const showLegend = width > 600 * 1.5;
   const availableWidth = showLegend ? width * 0.25 : chartWidth;
-  // if (!data || data.length === 0) {
-  //   return <Text>No data</Text>;
-  // }
+  const isEmpty = !data || data.length === 0 || data.every(d => d.y === 0);
+  if (isEmpty) {
+    return <PieEmptyState label={label} />;
+  }
 
   const totalValue = data.reduce((acc, item) => acc + item.y, 0);
 

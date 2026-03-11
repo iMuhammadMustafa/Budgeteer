@@ -2,6 +2,7 @@ import { DoubleBarPoint } from "@/src/types/components/Charts.types";
 import { useMemo, useState } from "react";
 import { Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLabel, VictoryLegend, VictoryTheme } from "victory-native";
+import { DoubleBarEmptyState } from "./ChartEmptyState";
 
 export default function DoubleBar({
   data,
@@ -11,13 +12,18 @@ export default function DoubleBar({
 }: {
   data: DoubleBarPoint[];
   label: string;
-  onBarPress?: (item: DoubleBarPoint) => void;
+  onBarPress?: (item: DoubleBarPoint, barKey: "barOne" | "barTwo") => void;
   highlightedBar?: string;
 }) {
   const { width } = useWindowDimensions();
 
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
+
+  const isEmpty = !data || data.length === 0 || data.every(d => d.barOne.value === 0 && d.barTwo.value === 0);
+  if (isEmpty) {
+    return <DoubleBarEmptyState label={label} />;
+  }
 
   const dataLength = data.length || 1;
   const padding = { top: 40, bottom: 50, left: 50, right: 20 };
@@ -109,7 +115,7 @@ export default function DoubleBar({
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);
                       if (selectedBar) {
-                        onBarPress(selectedBar);
+                        onBarPress(selectedBar, "barOne");
                       }
                     }
                     setSelectedSlice(newSelectedSlice);
@@ -160,7 +166,7 @@ export default function DoubleBar({
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);
                       if (selectedBar) {
-                        onBarPress(selectedBar);
+                        onBarPress(selectedBar, "barTwo");
                       }
                     }
                     setSelectedSlice(newSelectedSlice);

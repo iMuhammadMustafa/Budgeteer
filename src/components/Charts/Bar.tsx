@@ -2,6 +2,7 @@ import { BarProps } from "@/src/types/components/Charts.types";
 import { useState } from "react";
 import { Platform, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
+import { BarEmptyState } from "./ChartEmptyState";
 
 export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
   const { width } = useWindowDimensions();
@@ -9,6 +10,10 @@ export default function Bar({ data, label, color, hideY, selectedDate, onDayPres
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
 
+  const isEmpty = !data || data.length === 0 || data.every(d => d.y === 0);
+  if (isEmpty) {
+    return <BarEmptyState label={label} />;
+  }
 
   const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   return (
