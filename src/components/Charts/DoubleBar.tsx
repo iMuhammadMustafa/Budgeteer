@@ -16,14 +16,10 @@ export default function DoubleBar({
   highlightedBar?: string;
 }) {
   const { width } = useWindowDimensions();
+  const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
 
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
-
-  const isEmpty = !data || data.length === 0 || data.every(d => d.barOne.value === 0 && d.barTwo.value === 0);
-  if (isEmpty) {
-    return <DoubleBarEmptyState label={label} />;
-  }
 
   const dataLength = data.length || 1;
   const padding = { top: 40, bottom: 50, left: 50, right: 20 };
@@ -51,7 +47,10 @@ export default function DoubleBar({
     };
   }, [dataLength, usableWidth]);
 
-  const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
+  const isEmpty = !data || data.length === 0 || data.every(d => d.barOne.value === 0 && d.barTwo.value === 0);
+  if (isEmpty) {
+    return <DoubleBarEmptyState label={label} />;
+  }
 
   return (
     <>
@@ -103,12 +102,6 @@ export default function DoubleBar({
               {
                 target: "data",
                 eventHandlers: {
-                  onMouseEnter: (_, props) => {
-                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
-                  },
-                  onMouseLeave: (_, props) => {
-                    setSelectedSlice(null);
-                  },
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
 
@@ -154,12 +147,6 @@ export default function DoubleBar({
               {
                 target: "data",
                 eventHandlers: {
-                  onMouseEnter: (_, props) => {
-                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
-                  },
-                  onMouseLeave: (_, props) => {
-                    setSelectedSlice(null);
-                  },
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
 

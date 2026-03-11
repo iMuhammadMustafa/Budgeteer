@@ -1,4 +1,5 @@
 import Pulse from "@/src/components/elements/Pulse";
+import { ChartPieIcon } from "lucide-react-native";
 import { Platform, Text, useWindowDimensions, View } from "react-native";
 
 /* ─── Shared ghost bar used in bar-chart empty states ─── */
@@ -304,7 +305,7 @@ export function DoubleBarEmptyState({ label }: { label: string }) {
           ))}
         </View>
 
-        <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
+        <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85} style={{ position: "relative", flex: 1 }}>
           <View style={{ position: "relative", flex: 1 }}>
             {/* Ghost bars */}
             <View
@@ -509,6 +510,11 @@ export function PieEmptyState({ label }: { label: string }) {
                   </View>
                 </View>
               ))}
+              <EmptyOverlay
+                icon={<ChartPieIcon />}
+                title="No categories found"
+                subtitle="Add categories to see your pie chart"
+              />
             </View>
           </Pulse>
         </View>

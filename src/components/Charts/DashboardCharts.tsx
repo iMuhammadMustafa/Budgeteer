@@ -60,21 +60,22 @@ export default function DashboardCharts({
         return (
           <ChartsContainer
             isPeriodControl
-            onPrev={periodControls.year.prev}
-            onNext={periodControls.year.next}
-            label={periodControls.year.label}
+            onPrev={periodControls.earningsYear.prev}
+            onNext={periodControls.earningsYear.next}
+            label={periodControls.earningsYear.label}
           >
-            <DoubleBar key={periodControls.year.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
+            <DoubleBar key={periodControls.earningsYear.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
           </ChartsContainer>
         );
       case DashboardViewSelectionType.PIE: {
         const isPieCategory = params.pieType === "category";
+        const pieControls = isPieCategory ? periodControls.categoriesMonth : periodControls.groupsMonth;
         return (
           <ChartsContainer
             isPeriodControl
-            onPrev={periodControls.month.prev}
-            onNext={periodControls.month.next}
-            label={periodControls.month.label}
+            onPrev={pieControls.prev}
+            onNext={pieControls.next}
+            label={pieControls.label}
           >
             <MyPie
               data={isPieCategory ? monthlyCategories : monthlyGroups}
@@ -107,34 +108,34 @@ export default function DashboardCharts({
       </ChartsContainer>
       <ChartsContainer
         isPeriodControl
-        onPrev={periodControls.year.prev}
-        onNext={periodControls.year.next}
-        label={periodControls.year.label}
+        onPrev={periodControls.earningsYear.prev}
+        onNext={periodControls.earningsYear.next}
+        label={periodControls.earningsYear.label}
       >
-        <DoubleBar key={periodControls.year.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
+        <DoubleBar key={periodControls.earningsYear.label} data={yearlyTransactionsTypes} label="Net Earnings" onBarPress={handleBarPress} />
       </ChartsContainer>
       <ChartsContainer
         isPeriodControl
-        onPrev={periodControls.year.prev}
-        onNext={periodControls.year.next}
-        label={periodControls.year.label}
+        onPrev={periodControls.netWorthYear.prev}
+        onNext={periodControls.netWorthYear.next}
+        label={periodControls.netWorthYear.label}
       >
-        <Line key={periodControls.year.label} data={netWorthGrowth} label="Net Worth Growth" color="rgba(76, 175, 80, 0.6)" />
+        <Line key={periodControls.netWorthYear.label} data={netWorthGrowth} label="Net Worth Growth" color="rgba(76, 175, 80, 0.6)" />
       </ChartsContainer>
       <ChartsContainer
         isPeriodControl
-        onPrev={periodControls.month.prev}
-        onNext={periodControls.month.next}
-        label={periodControls.month.label}
+        onPrev={periodControls.categoriesMonth.prev}
+        onNext={periodControls.categoriesMonth.next}
+        label={periodControls.categoriesMonth.label}
       >
         <MyPie data={monthlyCategories} label="Categories" onPiePress={item => handlePiePress(item, "category")} />
       </ChartsContainer>
 
       <ChartsContainer
         isPeriodControl
-        onPrev={periodControls.month.prev}
-        onNext={periodControls.month.next}
-        label={periodControls.month.label}
+        onPrev={periodControls.groupsMonth.prev}
+        onNext={periodControls.groupsMonth.next}
+        label={periodControls.groupsMonth.label}
       >
         <MyPie data={monthlyGroups} label="Groups" onPiePress={item => handlePiePress(item, "group")} />
       </ChartsContainer>

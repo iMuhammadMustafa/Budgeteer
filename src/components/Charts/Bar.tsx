@@ -5,6 +5,7 @@ import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } fro
 import { BarEmptyState } from "./ChartEmptyState";
 
 export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
+  const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   const { width } = useWindowDimensions();
 
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
@@ -15,7 +16,6 @@ export default function Bar({ data, label, color, hideY, selectedDate, onDayPres
     return <BarEmptyState label={label} />;
   }
 
-  const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   return (
     <>
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
