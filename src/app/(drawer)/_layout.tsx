@@ -1,3 +1,4 @@
+import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
@@ -24,7 +25,7 @@ export default function DrawerLayout() {
     }
   }, [session, isLoading]);
 
-  if (isLoading || !session) return <ActivityIndicator className="flex-1" />;
+  if (isLoading || !session) return <DashboardSkeleton />;
 
   return (
     <Drawer

@@ -1,6 +1,6 @@
 import { LineChartPoint } from "@/src/types/components/Charts.types";
 import { convertThemeToReactNativeColors } from "@/src/utils/theme.config";
-import { FlatList, Platform, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Text, View, useWindowDimensions } from "react-native";
 import {
   VictoryAxis,
   VictoryChart,
@@ -10,6 +10,7 @@ import {
   VictoryScatter,
   VictoryTheme,
 } from "victory-native";
+import ChartLegend from "./ChartLegend";
 
 // Define props for the Line chart component
 export type LineProps = {
@@ -67,9 +68,9 @@ export default function Line({ data, label, color, hideY }: LineProps) {
       <Text className={`text-center text-xl font-bold text-foreground`}>{label}</Text>
 
       <View
-        className={`w-full justify-center overflow-visible ${Platform.OS === "web" ? "items-center" : ""} ${showLegend ? "flex flex-row " : "flex flex-col-reverse"}`}
+        className={`w-full justify-center items-center ${showLegend ? "flex flex-row " : "flex flex-col-reverse"}`}
       >
-        <View style={{ width: chartWidth }} className="overflow-visible">
+        <View style={{ width: chartWidth, height: chartHeight }}>
           <VictoryChart
             theme={VictoryTheme.material}
             width={chartWidth}
@@ -108,10 +109,11 @@ export default function Line({ data, label, color, hideY }: LineProps) {
                   style={{
                     data: { strokeWidth: 2, stroke: lineChartColor },
                   }}
-                  animate={{
-                    duration: 500,
-                    onLoad: { duration: 500 },
-                  }}
+                  animate={
+                    Platform.OS === "web"
+                      ? { duration: 500, onLoad: { duration: 500 } }
+                      : undefined
+                  }
                 />
               )}
               <VictoryScatter
@@ -123,40 +125,9 @@ export default function Line({ data, label, color, hideY }: LineProps) {
             </VictoryGroup>
           </VictoryChart>
         </View>
-        <View className="items-center justify-center">
-          <Text className="font-bold text-md mb-2 px-2 text-foreground">Legend</Text>
-          <FlatList
-            data={data}
-            keyExtractor={(item, index) => `${item.x}-${index}`}
-            horizontal={showLegend ? false : true}
-            style={{
-              width: availableWidth * 0.9,
-              height: showLegend ? chartHeight * 0.5 : "auto",
-            }}
-            className="custom-scrollbar"
-            initialNumToRender={5}
-            contentContainerClassName={`justify-center ${!showLegend ? "flex flex-wrap px-5" : ""}`}
-            renderItem={({ item, index }) => (
-              <View className="flex-row gap-3 justify-center items-center me-2 my-1">
-                <View
-                  style={{ width: 10, height: 10, backgroundColor: index < colors.length ? colors[index] : "red" }}
-                />
-                <Text className="text-foreground text-center">
-                  {showLegend
-                    ? `${item.x}: $${item.y.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                    : `${item.x}\n$${item.y.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`}
-                </Text>
-              </View>
-            )}
-          />
-        </View>
+        <ChartLegend showLegend={showLegend} availableWidth={availableWidth} chartWidth={chartWidth} chartHeight={chartHeight} data={data} colors={colors} />
       </View>
     </>
   );
 }
+

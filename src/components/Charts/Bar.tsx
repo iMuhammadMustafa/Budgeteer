@@ -6,15 +6,16 @@ import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } fro
 export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
   const { width } = useWindowDimensions();
 
-  const chartWidth = Math.min(width * 0.95, 700); // Use 95% of width or max 600
-  const chartHeight = chartWidth * 0.6; // Adjust height relative to width
+  const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
+  const chartHeight = chartWidth * 0.75;
+
 
   const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
   return (
     <>
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
 
-      <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth}>
+      <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth * (width > 700 ? 1.75 : 1)} height={chartHeight}>
         {Platform.OS === "web" ? (
           <VictoryAxis style={{ grid: { stroke: "transparent" } }} />
         ) : (

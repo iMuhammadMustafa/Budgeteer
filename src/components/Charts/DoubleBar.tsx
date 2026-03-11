@@ -1,9 +1,9 @@
 import { DoubleBarPoint } from "@/src/types/components/Charts.types";
 import { useMemo, useState } from "react";
 import { Text, useWindowDimensions } from "react-native";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLegend, VictoryTheme } from "victory-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryGroup, VictoryLabel, VictoryLegend, VictoryTheme } from "victory-native";
 
-export default function NetEarningsChart({
+export default function DoubleBar({
   data,
   label,
   onBarPress,
@@ -19,29 +19,43 @@ export default function NetEarningsChart({
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
 
-  const barWidth = 20; // A reasonable bar width
-  const spaceBetweenBars = chartWidth / (data.length * 1.5); // Adjust the space based on the number of bars
-  const offset = spaceBetweenBars - barWidth / 2;
+  const dataLength = data.length || 1;
+  const padding = { top: 40, bottom: 50, left: 50, right: 20 };
+  const usableWidth = chartWidth - padding.left - padding.right;
+
+  // Calculate dynamic dimensions for responsive and robust rendering
+  const { barWidth, offset, domainPadding } = useMemo(() => {
+    // Average horizontal space roughly allocated to each data group
+    const spacePerGroup = usableWidth / dataLength;
+
+    // The two bars shouldn't take up the entire group space.
+    // Cap max width to 30px so bars aren't massive when data is sparse.
+    const calculatedBarWidth = Math.max(4, Math.min(spacePerGroup * 0.35, 30));
+
+    // Optional: If there's sparse data, add large domain padding to center them.
+    let calculatedDomainPadding = calculatedBarWidth * 2;
+    if (dataLength === 1) calculatedDomainPadding = usableWidth / 3;
+    else if (dataLength === 2) calculatedDomainPadding = usableWidth / 4;
+    else if (dataLength <= 4) calculatedDomainPadding = usableWidth / 6;
+
+    return {
+      barWidth: calculatedBarWidth,
+      offset: calculatedBarWidth, // Spacing between the paired bars in VictoryGroup
+      domainPadding: calculatedDomainPadding,
+    };
+  }, [dataLength, usableWidth]);
 
   const [selectedSlice, setSelectedSlice] = useState<string | null>(highlightedBar || null);
-
-  const calculateDomainPadding = useMemo(() => {
-    const dataLength = data.length;
-    if (dataLength <= 2) return 200;
-    if (dataLength <= 5) return 100;
-    if (dataLength <= 10) return 50;
-    return Math.max(20, 500 / dataLength); // For larger datasets, use inverse relationship
-  }, [data.length]);
 
   return (
     <>
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
       <VictoryChart
-        width={chartWidth * (width > 700 ? 1.7 : 1)}
+        width={chartWidth * (width > 700 ? 1.75 : 1)}
         height={chartHeight}
-        domainPadding={{ x: calculateDomainPadding, y: 10 }}
+        domainPadding={{ x: domainPadding, y: 10 }}
         theme={VictoryTheme.material}
-        padding={{ top: 40, bottom: 50, left: 50, right: 20 }}
+        padding={padding}
       >
         <VictoryAxis
           tickFormat={t => t}
@@ -52,17 +66,22 @@ export default function NetEarningsChart({
         <VictoryAxis
           dependentAxis
           tickFormat={t => t}
-          // tickFormat={t => `${t / 1000}k`}
           style={{
             tickLabels: { fontSize: 10, padding: 5 },
           }}
         />
-        <VictoryGroup offset={offset}>
+        <VictoryGroup offset={offset + 5}>
           <VictoryBar
+            barWidth={barWidth}
             data={data}
             x="x"
-            y={data => data.barOne.value}
+            y={datum => datum.barOne.value}
             labels={({ datum }) => datum.barOne.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            labelComponent={
+              <VictoryLabel
+                angle={(width < 500 && dataLength > 6) ? 45 : 0}
+              />
+            }
             style={{
               data: {
                 fill: ({ datum }) => datum.barOne.color || "black",
@@ -86,28 +105,33 @@ export default function NetEarningsChart({
                   },
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
-                    setSelectedSlice(newSelectedSlice);
 
-                    // Call the onBarPress callback if provided
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);
                       if (selectedBar) {
                         onBarPress(selectedBar);
                       }
                     }
+                    setSelectedSlice(newSelectedSlice);
                   },
                 },
               },
             ]}
           />
           <VictoryBar
+            barWidth={barWidth}
             data={data}
             x="x"
-            y={data => data.barTwo.value}
+            y={datum => datum.barTwo.value}
             labels={({ datum }) =>
               datum.barTwo.value.toLocaleString(undefined, {
                 maximumFractionDigits: 0,
               })
+            }
+            labelComponent={
+              <VictoryLabel
+                angle={(width < 500 && dataLength > 6) ? 45 : 0}
+              />
             }
             style={{
               data: {
@@ -132,15 +156,14 @@ export default function NetEarningsChart({
                   },
                   onPress: (_, props) => {
                     const newSelectedSlice = selectedSlice === props.datum.x ? null : props.datum.x;
-                    setSelectedSlice(newSelectedSlice);
 
-                    // Call the onBarPress callback if provided
                     if (onBarPress && newSelectedSlice) {
                       const selectedBar = data.find(item => item.x === newSelectedSlice);
                       if (selectedBar) {
                         onBarPress(selectedBar);
                       }
                     }
+                    setSelectedSlice(newSelectedSlice);
                   },
                 },
               },
@@ -156,9 +179,9 @@ export default function NetEarningsChart({
           data={
             data.length > 0
               ? [
-                  { name: data[0].barOne.label, symbol: { fill: data[0].barOne.color } },
-                  { name: data[0].barTwo.label, symbol: { fill: data[0].barTwo.color } },
-                ]
+                { name: data[0].barOne.label, symbol: { fill: data[0].barOne.color } },
+                { name: data[0].barTwo.label, symbol: { fill: data[0].barTwo.color } },
+              ]
               : []
           }
         />

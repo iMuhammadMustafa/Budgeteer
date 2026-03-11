@@ -328,12 +328,6 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             );
         }
 
-        // --- Configuration ---
-        const configId = GenerateUuid();
-        statements.push(
-            `INSERT OR IGNORE INTO ${TableNames.Configurations} (id, key, value, type, "table", tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(configId)}, 'id', ${escSql(DEMO_IDS.TXCAT_ACCOUNT_OPS)}, ${escSql(ConfigurationTypes.AccountOpertationsCategory)}, ${escSql(TableNames.TransactionCategories)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
-        );
-
         // --- Generate transactions and calculate balances ---
         const transactions = generateDemoTransactions();
 
@@ -366,6 +360,13 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
         // Execute all statements in a single batched call
         console.log(`Executing ${statements.length} statements in a single batch...`);
         await db.execAsync(statements.join("\n"));
+
+        // Configuration insert uses parameterized query separately because
+        // the "table" column is a reserved word that native execAsync can't handle
+        await db.runAsync(
+            `INSERT OR IGNORE INTO ${TableNames.Configurations} (id, key, value, type, \`table\`, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+            [GenerateUuid(), "id", DEMO_IDS.TXCAT_ACCOUNT_OPS, ConfigurationTypes.AccountOpertationsCategory, TableNames.TransactionCategories, tenantId, now, userId, now]
+        );
 
         // Set the seeded flag
         setDemoSeededFlag(true);

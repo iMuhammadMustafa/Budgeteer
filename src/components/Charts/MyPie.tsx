@@ -1,8 +1,9 @@
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { PieData, PieProps } from "@/src/types/components/Charts.types";
 import { useState } from "react";
-import { FlatList, Platform, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { VictoryContainer, VictoryLabel, VictoryPie, VictoryTheme } from "victory-native";
+import ChartLegend from "./ChartLegend";
 
 export default function MyPie({
   data = [],
@@ -87,9 +88,9 @@ export default function MyPie({
               colorScale={colors}
               theme={VictoryTheme.material}
               innerRadius={Platform.OS === "web" ? chartWidth * 0.18 : undefined}
-              labelRadius={d => (Platform.OS === "web" ? chartWidth * 0.28 : Number(d.innerRadius) + 100)}
+              labelRadius={d => (Platform.OS === "web" ? chartWidth * 0.28 : Number(d.innerRadius) + 120)}
               padAngle={1}
-              origin={{ x: chartWidth * 0.6, y: chartHeight * 0.5 }}
+              origin={{ x: chartWidth * 0.5, y: chartHeight * 0.45 }}
               style={{
                 parent: { overflow: "visible", backgroundColor: "red" },
 
@@ -132,17 +133,17 @@ export default function MyPie({
                 backgroundStyle={
                   Platform.OS !== "web"
                     ? {
-                        fill: "white",
-                        fillOpacity: 0.7,
-                        stroke: "black",
-                        strokeWidth: 2,
-                      }
+                      fill: "white",
+                      fillOpacity: 0.7,
+                      stroke: "black",
+                      strokeWidth: 2,
+                    }
                     : undefined
                 }
                 textAnchor="middle"
                 verticalAnchor="middle"
-                x={chartWidth * 0.6}
-                y={chartHeight * 0.5}
+                x={chartWidth * 0.5}
+                y={chartHeight * 0.45}
                 style={{
                   fontSize: 14,
                   fontWeight: "bold",
@@ -151,7 +152,10 @@ export default function MyPie({
                 text={
                   selectedSlice !== null
                     ? `${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
-                  \n$${selectedSlice?.y}`
+                  \n${selectedSlice?.y.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    })}`
                     : ""
                 }
                 events={
@@ -165,34 +169,7 @@ export default function MyPie({
             )}
           </VictoryContainer>
         </View>
-
-        <View className="items-center justify-center">
-          <Text className="font-bold text-md mb-2 px-2 text-foreground">Legend</Text>
-          <FlatList
-            data={sortedData}
-            keyExtractor={(item, index) => `${item.x}-${index}`}
-            horizontal={showLegend ? false : true}
-            style={{
-              width: availableWidth * 0.9,
-              height: showLegend ? chartHeight * 0.5 : "auto",
-            }}
-            className="custom-scrollbar"
-            initialNumToRender={5}
-            contentContainerClassName={`justify-center ${!showLegend ? "flex flex-wrap px-5" : ""}`}
-            renderItem={({ item, index }) => (
-              <View className="flex-row gap-3 items-center me-2 my-1">
-                <View
-                  style={{ width: 10, height: 10, backgroundColor: index < colors.length ? colors[index] : "red" }}
-                />
-                <Text className="text-foreground text-center">
-                  {showLegend
-                    ? `${item.x}: $${item.y.toFixed(0)} (${((item.y / totalValue) * 100).toFixed(0)}%)`
-                    : `${item.x}\n$${item.y.toFixed(0)}\n(${((item.y / totalValue) * 100).toFixed(0)}%)`}
-                </Text>
-              </View>
-            )}
-          />
-        </View>
+        <ChartLegend showLegend={showLegend} availableWidth={availableWidth} chartWidth={chartWidth} chartHeight={chartHeight} data={processedData} colors={colors} totalValue={totalValue} />
       </View>
     </>
   );

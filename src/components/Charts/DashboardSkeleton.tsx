@@ -1,13 +1,17 @@
 import Pulse from "@/src/components/elements/Pulse";
-import { ScrollView, View } from "react-native";
+import { ScrollView, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SKELETON_COLOR = "#e6e6e6";
 
 /** Reusable skeleton card matching ChartsContainer styling */
 function SkeletonCard({ children }: { children: React.ReactNode }) {
+    const { width } = useWindowDimensions();
+
+    const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
+    const chartHeight = chartWidth * 0.75;
     return (
-        <View className="gap-2 py-4 my-2 bg-card m-auto rounded-md border border-muted items-center">
+        <View className="gap-2 py-4 my-2 bg-card m-auto rounded-md border border-muted items-center" style={{ width: chartWidth * (chartWidth > 700 ? 1.75 : 1) }}>
             {children}
         </View>
     );
