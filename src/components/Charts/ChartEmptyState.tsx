@@ -404,7 +404,7 @@ export function PieEmptyState({ label }: { label: string }) {
   const chartWidth = Math.min(width, 600);
   const chartHeight = Math.min(width, 600);
   const showLegend = width > 600 * 1.5;
-  const donutSize = Math.min(chartWidth * 0.4, 200);
+  const donutSize = Math.min(chartWidth, 300);
 
   return (
     <>
@@ -419,7 +419,6 @@ export function PieEmptyState({ label }: { label: string }) {
           <Pulse duration={2600} minOpacity={0.3} maxOpacity={0.85}>
             <View
               style={{
-                width: chartWidth * 1.25,
                 height: chartHeight,
                 alignItems: "center",
                 justifyContent: "center",
@@ -443,23 +442,34 @@ export function PieEmptyState({ label }: { label: string }) {
                 />
 
                 {/* Center label */}
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 2,
-                  }}
-                >
-                  <ClockIcon />
-                  <Text style={{ fontSize: 9.5, color: "#ccc7c0", letterSpacing: 1.2, fontWeight: "600" }}>
-                    EMPTY
-                  </Text>
-                </View>
+                {
+                  showLegend ? (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <ClockIcon />
+                      <Text style={{ fontSize: 9.5, color: "#ccc7c0", letterSpacing: 1.2, fontWeight: "600" }}>
+                        EMPTY
+                      </Text>
+                    </View>
+                  ) :
+                    (
+                      <EmptyOverlay
+                        icon={<ChartPieIcon />}
+                        title="No categories found"
+                        subtitle="Add categories to see your pie chart"
+                      />
+                    )
+                }
               </View>
             </View>
           </Pulse>
@@ -510,11 +520,11 @@ export function PieEmptyState({ label }: { label: string }) {
                   </View>
                 </View>
               ))}
-              <EmptyOverlay
+              {showLegend && <EmptyOverlay
                 icon={<ChartPieIcon />}
                 title="No categories found"
                 subtitle="Add categories to see your pie chart"
-              />
+              />}
             </View>
           </Pulse>
         </View>

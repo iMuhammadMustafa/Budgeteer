@@ -12,6 +12,14 @@ export default function SettingsLayout() {
           headerBackTitle: "Settings",
         }}
       />
+      <Stack.Screen
+        name="Appearance"
+        options={{
+          headerShown: true,
+          title: "Appearance",
+          headerBackTitle: "Settings",
+        }}
+      />
     </Stack>
   );
 }

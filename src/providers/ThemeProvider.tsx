@@ -12,38 +12,60 @@ export type ThemeContextType = {
   theme: ThemeMode;
   isDarkMode: boolean;
   toggleTheme: () => void;
+  showGrid: boolean;
+  setShowGrid: (show: boolean) => void;
 };
 
 export const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
   isDarkMode: false,
   toggleTheme: () => {},
+  showGrid: false,
+  setShowGrid: () => {},
 });
+
+const STATUS_BAR_COLORS = {
+  dark: "#18181c",
+  light: "#faf9f6",
+};
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
   const { colorScheme, setColorScheme } = useColorScheme();
   const [theme, setTheme] = useState<ThemeMode>(colorScheme || "light");
+  const [showGrid, setShowGridState] = useState(false);
 
   useEffect(() => {
-    const loadTheme = async () => {
-      const savedTheme = await AsyncStorage.getItem("theme");
-      setTheme(savedTheme === "dark" ? "dark" : "light");
-      setColorScheme(savedTheme === "dark" ? "dark" : "light");
-      applyRootVariables(savedTheme === "dark" ? "dark" : "light");
+    const loadPreferences = async () => {
+      const [savedTheme, savedGrid] = await Promise.all([
+        AsyncStorage.getItem("theme"),
+        AsyncStorage.getItem("showGrid"),
+      ]);
+      const themeValue: ThemeMode = savedTheme === "dark" ? "dark" : "light";
+      setTheme(themeValue);
+      setColorScheme(themeValue);
+      applyRootVariables(themeValue);
+      setShowGridState(savedGrid === "true");
     };
     if (Platform.OS === "web") {
       document.documentElement.classList.add("bg-background");
     }
 
-    loadTheme();
+    loadPreferences();
   }, [setColorScheme]);
 
   const reactNavigationTheme = useMemo(() => convertThemeToReactNativeColors(theme), [theme]);
+
+  const setShowGrid = (show: boolean) => {
+    setShowGridState(show);
+    AsyncStorage.setItem("showGrid", show ? "true" : "false");
+  };
 
   const contextValue = useMemo(
     () => ({
       theme,
       isDarkMode: theme === "dark",
+      showGrid,
+      setShowGrid,
       toggleTheme: () => {
         setTheme(prev => {
           const newTheme = prev === "light" ? "dark" : "light";
@@ -54,7 +76,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
         });
       },
     }),
-    [theme, setColorScheme],
+    [theme, showGrid, setColorScheme],
   );
 
   const nativeWindStyle = useMemo(() => (Platform.OS !== "web" ? nativewindConfig[theme] : {}), [theme]);
@@ -64,7 +86,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       <ReactThemeProvider value={reactNavigationTheme}>
         <StatusBar
           barStyle={theme === "dark" ? "light-content" : "dark-content"}
-          backgroundColor={theme === "dark" ? "black" : "white"}
+          backgroundColor={STATUS_BAR_COLORS[theme]}
         />
         <View className="flex-1" style={nativeWindStyle}>
           {children}

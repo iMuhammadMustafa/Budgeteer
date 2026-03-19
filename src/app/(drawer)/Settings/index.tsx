@@ -33,17 +33,20 @@ export default function SettingsIndex() {
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
           </Pressable>
 
-          {/* Placeholder for future settings */}
-          <View className="flex-row items-center p-4 opacity-50">
-            <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">
-              <MyIcon name="Palette" size={20} className="text-muted-foreground" />
+          {/* Appearance */}
+          <Pressable
+            onPress={() => router.push("/Settings/Appearance")}
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+          >
+            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+              <MyIcon name="Palette" size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
               <Text className="font-medium text-foreground">Appearance</Text>
-              <Text className="text-sm text-muted-foreground">Coming soon</Text>
+              <Text className="text-sm text-muted-foreground">Theme, grid background & more</Text>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </View>
+          </Pressable>
 
           <View className="flex-row items-center p-4 opacity-50">
             <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">

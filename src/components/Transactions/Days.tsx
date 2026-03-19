@@ -2,7 +2,6 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FlatList, Text, View } from "react-native";
 
-import Divider from "@/src/components/elements/Divider";
 import MyIcon from "@/src/components/elements/MyIcon";
 import TransactionItem from "@/src/components/Transactions/TransactionItem";
 import { GroupedData } from "@/src/types/components/Transactions.types";
@@ -24,7 +23,7 @@ export default function DaysList({
   handlePress: (item: TransactionsView) => void;
 }) {
   return (
-    <View className="flex justify-center p-3">
+    <View className="flex justify-center px-3 py-1">
       <DaysListHeader day={day} data={data} />
 
       <FlatList
@@ -40,8 +39,6 @@ export default function DaysList({
         )}
         keyExtractor={transaction => transaction.id!}
       />
-
-      <Divider className="my-0.5 h-[2px]" />
     </View>
   );
 }

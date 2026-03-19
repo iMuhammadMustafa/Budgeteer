@@ -9,7 +9,7 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate, curr
 
   const { width } = useWindowDimensions();
 
-  const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
+  const chartWidth = Math.min(width, 600); // Use 95% of width or max 600
   const chartHeight = chartWidth * 0.75;
 
 
@@ -41,7 +41,7 @@ export default function MyCalendar({ data, label, onDayPress, selectedDate, curr
   }, [textColor]);
 
   return (
-    <View className="mx-6" style={{ width: chartWidth * (width > 700 ? 1.65 : 1) }}>
+    <View className="mx-6" style={{ width: chartWidth }}>
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
       <Calendar
         key={currentDate} // Force re-render when month changes

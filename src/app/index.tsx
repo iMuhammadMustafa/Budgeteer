@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import Animated, {
   FadeInDown,
@@ -11,7 +11,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Rect } from "react-native-svg";
+import Svg, { Line, Rect } from "react-native-svg";
 
 import { useAuth } from "../providers/AuthProvider";
 import { useStorageMode } from "../providers/StorageModeProvider";
@@ -19,96 +19,37 @@ import { useTheme } from "../providers/ThemeProvider";
 import { StorageMode, StorageModeConfig } from "../types/StorageMode";
 import { WATERMELONDB_DEFAULTS, WATERMELONDB_DEMO } from "../types/database/watermelon/constants";
 
-// ─── Theme palettes ──────────────────────────────────────────────
-
-const DARK = {
-  pageBg: "#111113",
-  panelBg: "#0e0e12", // Left panel on desktop
-  orb1: ["#3b8a6e44", "transparent"] as const,
-  orb2: ["#5b7fff22", "transparent"] as const,
-  grid: "rgba(255,255,255,0.025)",
-  heroCard: "rgba(23,23,25,0.85)", // Solid dark base instead of pure transparent for native
-  heroCardBorder: "rgba(255,255,255,0.1)",
-  floatCard: "rgba(28,28,32,0.9)", // Solid dark base for pills
-  floatCardBorder: "rgba(255,255,255,0.1)",
-  floatText: "rgba(255,255,255,0.85)",
-  heroLabel: "rgba(255,255,255,0.4)",
-  heroAmount: "#f0ede8",
-  barPrimary: "#3b8a6e",
-  barAccent: "#5ddc9a",
-  badgeBg: "rgba(93,220,154,0.15)",
-  badgeBorder: "rgba(93,220,154,0.3)",
-  badgeText: "#5ddc9a",
-  heading: "#f0ede8",
-  headingGrad: ["#5ddc9a", "#3bbfa0"] as const,
-  subtext: "rgba(255,255,255,0.45)",
-  modeCardBg: "rgba(30,30,35,0.95)", // Solid dark base for cards
-  modeCardBorder: "rgba(255,255,255,0.08)",
-  modeTitle: "#f0ede8",
-  modeDesc: "rgba(255,255,255,0.45)",
-  hint: "rgba(255,255,255,0.3)",
-  toggleTrack: "#2a6e53",
-  toggleKnob: "#5ddc9a",
-  toggleLabel: "rgba(255,255,255,0.45)",
-  toggleBg: "rgba(255,255,255,0.07)",
-  toggleBorder: "rgba(255,255,255,0.12)",
-  trustIcon: "rgba(255,255,255,0.08)",
-  trustText: "rgba(255,255,255,0.45)",
-  statCardBg: "rgba(30,30,35,0.95)",
-  statBorder: "rgba(255,255,255,0.08)",
-  statLabel: "rgba(255,255,255,0.45)",
-  statValue: "#f0ede8",
-};
-
-const LIGHT = {
-  pageBg: "#faf9f6",
-  panelBg: "#f2f0ea", // Left panel on desktop
-  orb1: ["#3b8a6e22", "transparent"] as const,
-  orb2: ["#5b7fff14", "transparent"] as const,
-  grid: "rgba(0,0,0,0.04)",
-  heroCard: "rgba(255,255,255,0.95)", // More opaque for native
-  heroCardBorder: "rgba(0,0,0,0.06)",
-  floatCard: "rgba(255,255,255,0.95)", // More opaque for pills
-  floatCardBorder: "rgba(0,0,0,0.08)",
-  floatText: "rgba(0,0,0,0.7)",
-  heroLabel: "rgba(0,0,0,0.4)",
-  heroAmount: "#18181b",
-  barPrimary: "#3b8a6e",
-  barAccent: "#2cb87a",
-  badgeBg: "rgba(44,184,122,0.12)",
-  badgeBorder: "rgba(44,184,122,0.35)",
-  badgeText: "#1a9e62",
-  heading: "#18181b",
-  headingGrad: ["#1a9e62", "#2880b0"] as const,
-  subtext: "rgba(0,0,0,0.5)",
-  modeCardBg: "rgba(255,255,255,1)", // Solid white for cards
-  modeCardBorder: "rgba(0,0,0,0.06)",
-  modeTitle: "#18181b",
-  modeDesc: "rgba(0,0,0,0.5)",
-  hint: "rgba(0,0,0,0.35)",
-  toggleTrack: "#d1ead9",
-  toggleKnob: "#ffffff",
-  toggleLabel: "rgba(0,0,0,0.5)",
-  toggleBg: "rgba(0,0,0,0.04)",
-  toggleBorder: "rgba(0,0,0,0.08)",
-  trustIcon: "rgba(0,0,0,0.04)",
-  trustText: "rgba(0,0,0,0.5)",
-  statCardBg: "rgba(255,255,255,1)",
-  statBorder: "rgba(0,0,0,0.06)",
-  statLabel: "rgba(0,0,0,0.45)",
-  statValue: "#18181b",
-};
-
-type ThemePalette = typeof DARK;
-
 const WEB_DESKTOP_BREAKPOINT = 860;
 
-// Update descriptions for the new design
-const UPDATED_MODE_DESCS = {
-  [StorageMode.Cloud]: "Sync seamlessly across all your devices with end-to-end encryption",
-  [StorageMode.Demo]: "Explore every feature with realistic pre-filled sample data",
-  [StorageMode.Local]: "Everything stays private on this device — no account needed",
+
+// Orb gradient colors (can't be expressed via CSS vars since LinearGradient needs string[])
+const ORB_COLORS = {
+  dark: {
+    orb1: ["#3b8a6e44", "transparent"] as const,
+    orb2: ["#5b7fff22", "transparent"] as const,
+  },
+  light: {
+    orb1: ["#3b8a6e22", "transparent"] as const,
+    orb2: ["#5b7fff14", "transparent"] as const,
+  },
 };
+
+// ─── Cross-platform shadow helper ────────────────────────────────
+
+function makeShadow(opacity: number, radius: number, offsetY = 4, color = "#000") {
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: offsetY },
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    elevation: Math.round(radius / 3),
+    ...Platform.select({
+      web: {
+        boxShadow: `0 ${offsetY}px ${radius * 2}px rgba(0,0,0,${opacity})`,
+      },
+    }),
+  } as any;
+}
 
 // ─── Animated floating component ─────────────────────────────────
 
@@ -117,11 +58,13 @@ function FloatingView({
   amplitude = 11,
   duration = 3000,
   style,
+  className,
 }: {
   children: React.ReactNode;
   amplitude?: number;
   duration?: number;
   style?: any;
+  className?: string;
 }) {
   const translateY = useSharedValue(0);
 
@@ -140,20 +83,18 @@ function FloatingView({
     transform: [{ translateY: translateY.value }],
   }));
 
-  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+  return (
+    <Animated.View className={className} style={[style, animatedStyle]}>
+      {children}
+    </Animated.View>
+  );
 }
 
 // ─── SVG Mini Bar Chart ──────────────────────────────────────────
 
 const BARS_DATA: [number, number][] = [
-  [3, 34],
-  [21, 50],
-  [39, 43],
-  [57, 59],
-  [75, 47],
-  [93, 55],
-  [111, 67],
-  [129, 56],
+  [3, 34], [21, 50], [39, 43], [57, 59],
+  [75, 47], [93, 55], [111, 67], [129, 56],
 ];
 
 function MiniBarChart({ primary, accent }: { primary: string; accent: string }) {
@@ -177,24 +118,18 @@ function MiniBarChart({ primary, accent }: { primary: string; accent: string }) 
 
 // ─── Shared Components ───────────────────────────────────────────
 
-function HeroIllustration({ t, scale = 1 }: { t: ThemePalette; scale?: number }) {
+function HeroIllustration({ scale = 1, barPrimary, barAccent, isDark }: { scale?: number; barPrimary: string; barAccent: string; isDark?: boolean }) {
   return (
-    <View style={{ width: 250 * scale, height: 250 * scale, position: "relative" }}>
-      <View style={{ transform: [{ scale }], transformOrigin: "top left" }}>
+    <View style={{ width: 250 * scale, height: 250 * scale, position: "relative", overflow: "visible" }}>
+      <View style={{ width: 250, height: 250, transform: [{ scale }], transformOrigin: "top left" }}>
         {/* Badge – top left */}
         <FloatingView amplitude={6} duration={4000} style={{ position: "absolute", top: 0, left: 0, zIndex: 3 }}>
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             <View
-              style={{
-                backgroundColor: t.badgeBg,
-                borderWidth: 1,
-                borderColor: t.badgeBorder,
-                borderRadius: 10,
-                paddingVertical: 5,
-                paddingHorizontal: 9,
-              }}
+              className="bg-badge-bg/15 border border-badge-border/30 rounded-[10px] py-[5px] px-[9px]"
+              style={{ alignSelf: "flex-start" }}
             >
-              <Text style={{ fontSize: 10.5, color: t.badgeText, fontWeight: "600" }}>✓ On track</Text>
+              <Text className="text-[10.5px] text-badge-text font-semibold">✓ On track</Text>
             </View>
           </Animated.View>
         </FloatingView>
@@ -203,38 +138,32 @@ function HeroIllustration({ t, scale = 1 }: { t: ThemePalette; scale?: number })
         <FloatingView amplitude={11} duration={3000} style={{ position: "absolute", top: 32, left: 20, zIndex: 1 }}>
           <Animated.View entering={FadeInDown.delay(0).duration(500)}>
             <View
+              className="rounded-[22px] p-[18px] pb-[15px]"
               style={{
-                backgroundColor: t.heroCard,
+                alignSelf: "flex-start",
+                backgroundColor: Platform.OS === "web" ? undefined : (isDark ? "rgba(32, 32, 38, 0.95)" : "rgba(255, 255, 255, 0.95)"),
                 borderWidth: 1,
-                borderColor: t.heroCardBorder,
-                borderRadius: 22,
-                padding: 18,
-                paddingBottom: 15,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.15,
-                shadowRadius: 32,
-                elevation: 10,
+                borderColor: isDark ? "rgba(255,255,255,0.11)" : "rgba(0,0,0,0.07)",
+                ...makeShadow(isDark ? 0.3 : 0.1, 16, 12),
                 ...Platform.select({
-                  web: { boxShadow: `0 20px 60px rgba(0,0,0,${t === DARK ? 0.4 : 0.08})`, backdropFilter: "blur(16px)" },
+                  web: {
+                    backdropFilter: "blur(18px)",
+                    backgroundColor: "rgb(var(--color-hero-card) / 0.9)",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    borderColor: isDark ? "rgba(255,255,255,0.11)" : "rgba(0,0,0,0.07)",
+                    boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.5)" : "0 16px 48px rgba(0,0,0,0.1)",
+                  },
                 }),
               }}
             >
-              <Text style={{ fontSize: 10.5, color: t.heroLabel, marginBottom: 5, fontWeight: "500" }}>
+              <Text className="text-[10.5px] text-hero-label/40 mb-[5px] font-medium">
                 Monthly Savings
               </Text>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: "700",
-                  color: t.heroAmount,
-                  letterSpacing: -0.8,
-                  marginBottom: 10,
-                }}
-              >
+              <Text className="text-2xl font-bold text-hero-amount tracking-tight mb-[10px]">
                 $3,240
               </Text>
-              <MiniBarChart primary={t.barPrimary} accent={t.barAccent} />
+              <MiniBarChart primary={barPrimary} accent={barAccent} />
             </View>
           </Animated.View>
         </FloatingView>
@@ -242,25 +171,17 @@ function HeroIllustration({ t, scale = 1 }: { t: ThemePalette; scale?: number })
         {/* Pill – top right */}
         <FloatingView amplitude={9} duration={3500} style={{ position: "absolute", top: 6, left: 160, zIndex: 2 }}>
           <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-             <View
+            <View
+              className="bg-float-card/90 border border-float-card-border/10 rounded-[13px] py-[7px] px-[11px]"
               style={{
-                backgroundColor: t.floatCard,
-                borderWidth: 1,
-                borderColor: t.floatCardBorder,
-                borderRadius: 13,
-                paddingVertical: 7,
-                paddingHorizontal: 11,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 4,
+                alignSelf: "flex-start",
+                ...makeShadow(0.1, 6, 4),
                 ...Platform.select({
                   web: { backdropFilter: "blur(12px)" },
                 }),
               }}
             >
-              <Text style={{ fontSize: 11, color: t.floatText, fontWeight: "500" }}>↑ 12% vs last month</Text>
+              <Text className="text-[11px] text-float-text/85 font-medium">↑ 12% vs last month</Text>
             </View>
           </Animated.View>
         </FloatingView>
@@ -269,24 +190,16 @@ function HeroIllustration({ t, scale = 1 }: { t: ThemePalette; scale?: number })
         <FloatingView amplitude={6} duration={2500} style={{ position: "absolute", top: 180, left: 0, zIndex: 2 }}>
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
             <View
+              className="bg-float-card/90 border border-float-card-border/10 rounded-[13px] py-[7px] px-[11px]"
               style={{
-                backgroundColor: t.floatCard,
-                borderWidth: 1,
-                borderColor: t.floatCardBorder,
-                borderRadius: 13,
-                paddingVertical: 7,
-                paddingHorizontal: 11,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 4,
+                alignSelf: "flex-start",
+                ...makeShadow(0.1, 6, 4),
                 ...Platform.select({
                   web: { backdropFilter: "blur(12px)" },
                 }),
               }}
             >
-              <Text style={{ fontSize: 11, color: t.floatText, fontWeight: "500" }}>🏠 Rent · $1,500</Text>
+              <Text className="text-[11px] text-float-text/85 font-medium">🏠 Rent · $1,500</Text>
             </View>
           </Animated.View>
         </FloatingView>
@@ -295,35 +208,16 @@ function HeroIllustration({ t, scale = 1 }: { t: ThemePalette; scale?: number })
   );
 }
 
-function ThemeToggle({ dark, onToggle, t }: { dark: boolean; onToggle: () => void; t: ThemePalette }) {
+function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   return (
     <Pressable
       onPress={onToggle}
       accessibilityLabel="Toggle theme"
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 7,
-        backgroundColor: t.toggleBg,
-        borderWidth: 1,
-        borderColor: t.toggleBorder,
-        borderRadius: 20,
-        paddingVertical: 5,
-        paddingLeft: 8,
-        paddingRight: 10,
-      }}
+      className="flex-row items-center gap-[7px] bg-toggle-bg/[0.07] border border-toggle-border/[0.12] rounded-[20px] py-[5px] pl-2 pr-[10px]"
     >
-      <Text style={{ fontSize: 13, lineHeight: 18 }}>{dark ? "🌙" : "☀️"}</Text>
-      <View
-        style={{
-          width: 36,
-          height: 20,
-          borderRadius: 10,
-          backgroundColor: t.toggleTrack,
-          position: "relative",
-        }}
-      >
-        <Animated.View
+      <Text className="text-[13px] leading-[18px]">{dark ? "🌙" : "☀️"}</Text>
+      <View style={{ width: 36, height: 20, borderRadius: 10, position: "relative" }} className="bg-toggle-track">
+        <View
           style={{
             position: "absolute",
             top: 3,
@@ -331,19 +225,12 @@ function ThemeToggle({ dark, onToggle, t }: { dark: boolean; onToggle: () => voi
             width: 14,
             height: 14,
             borderRadius: 7,
-            backgroundColor: t.toggleKnob,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.25,
-            shadowRadius: 5,
-            elevation: 3,
-            ...Platform.select({
-              web: { boxShadow: "0 1px 5px rgba(0,0,0,0.25)" },
-            }),
+            backgroundColor: dark ? "#5ddc9a" : "#ffffff",
+            ...makeShadow(0.25, 5, 1),
           }}
         />
       </View>
-      <Text style={{ fontSize: 11, fontWeight: "500", color: t.toggleLabel }}>{dark ? "Dark" : "Light"}</Text>
+      <Text className="text-[11px] font-medium text-toggle-label/50">{dark ? "Dark" : "Light"}</Text>
     </Pressable>
   );
 }
@@ -354,7 +241,7 @@ function ModeCard({
   desc,
   accent,
   onPress,
-  t,
+  isDark,
   testID,
   enterDelay,
 }: {
@@ -363,7 +250,7 @@ function ModeCard({
   desc: string;
   accent: string;
   onPress: () => void;
-  t: ThemePalette;
+  isDark: boolean;
   testID?: string;
   enterDelay: number;
 }) {
@@ -372,26 +259,11 @@ function ModeCard({
       <Pressable
         testID={testID}
         onPress={onPress}
+        className="bg-mode-card-bg/95 border border-mode-card-border/[0.08] rounded-[18px] py-[18px] px-5 flex-row items-center gap-4"
         style={({ pressed }) => ({
-          backgroundColor: t.modeCardBg, // Explicit background block
-          borderWidth: 1,
-          borderColor: t.modeCardBorder,
-          borderRadius: 18,
-          paddingVertical: 18,
-          paddingHorizontal: 20,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 16,
           opacity: pressed ? 0.85 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }],
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: t === DARK ? 0.15 : 0.04,
-          shadowRadius: 16,
-          elevation: 3,
-          ...Platform.select({
-            web: { boxShadow: `0 4px 24px rgba(0,0,0,${t === DARK ? 0.2 : 0.05})` },
-          }),
+          ...makeShadow(isDark ? 0.15 : 0.04, 8, 4),
         })}
       >
         <View
@@ -406,13 +278,13 @@ function ModeCard({
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontSize: 22 }}>{icon}</Text>
+          <Text className="text-[22px]">{icon}</Text>
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontWeight: "600", fontSize: 15, color: t.modeTitle, letterSpacing: -0.3, marginBottom: 4 }}>
+        <View className="flex-1 min-w-0">
+          <Text className="font-semibold text-[15px] text-mode-title tracking-tight mb-1">
             {label}
           </Text>
-          <Text style={{ fontSize: 13, color: t.modeDesc, lineHeight: 18 }}>{desc}</Text>
+          <Text className="text-[13px] text-mode-desc/50 leading-[18px]">{desc}</Text>
         </View>
         <View
           style={{
@@ -431,43 +303,83 @@ function ModeCard({
   );
 }
 
-function TrustFeature({ icon, text, t, delay }: { icon: string; text: string; t: ThemePalette; delay: number }) {
+function TrustFeature({ icon, text, delay, isDark }: { icon: string; text: string; delay: number; isDark?: boolean }) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400)} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
-      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: t.trustIcon, alignItems: "center", justifyContent: "center" }}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(400)}
+      style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+    >
+      <View
+        className="w-[28px] h-[28px] rounded-[8px] flex-shrink-0 items-center justify-center"
+        style={{
+          backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+          borderWidth: 1,
+          borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+        }}
+      >
         <Text style={{ fontSize: 14 }}>{icon}</Text>
       </View>
-      <Text style={{ fontSize: 13, color: t.trustText, fontWeight: "500" }}>{text}</Text>
+      <Text
+        className="text-feature-text"
+        style={{ fontSize: 12.5, lineHeight: 18 }}
+      >
+        {text}
+      </Text>
     </Animated.View>
   );
 }
 
-function StatCard({ label, value, sub, delay, t, isUp }: { label: string; value: string; sub: string; delay: number; t: ThemePalette; isUp?: boolean }) {
+function StatCard({ label, value, sub, delay, isUp }: { label: string; value: string; sub: string; delay: number; isUp?: boolean }) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(500)} style={{ flex: 1, minWidth: 100 }}>
-      <View style={{ backgroundColor: t.statCardBg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: t.statBorder, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 12, elevation: 1 }}>
-        <Text style={{ fontSize: 11, color: t.statLabel, marginBottom: 6, fontWeight: "500" }}>{label}</Text>
-        <Text style={{ fontSize: 22, color: t.statValue, fontWeight: "700", letterSpacing: -0.5, marginBottom: 6 }}>{value}</Text>
-        <Text style={{ fontSize: 11, color: isUp ? t.barAccent : "#5b9fff", fontWeight: "600" }}>{sub}</Text>
+    <Animated.View entering={FadeInDown.delay(delay).duration(500)} className="flex-1 min-w-[100px]">
+      <View
+        className="bg-stat-card-bg rounded-2xl p-4 border border-stat-border/[0.08]"
+        style={makeShadow(0.03, 6, 0)}
+      >
+        <Text className="text-[11px] text-stat-label/50 mb-[6px] font-medium">{label}</Text>
+        <Text className="text-[22px] text-stat-value font-bold tracking-tight mb-[6px]">{value}</Text>
+        <Text
+          className={`text-[11px] font-semibold ${isUp ? "text-bar-accent" : ""}`}
+          style={!isUp ? { color: "#5b9fff" } : undefined}
+        >
+          {sub}
+        </Text>
       </View>
     </Animated.View>
   );
 }
 
-function GridPattern({ color }: { color: string }) {
+export function GridPattern({ width: gridWidth, height: gridHeight, isDark }: { width?: number; height?: number; isDark?: boolean } = {}) {
   if (Platform.OS === "web") {
     return (
       <View
+        className="absolute inset-0"
         style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          // @ts-expect-error web-only
-          backgroundImage: `linear-gradient(${color} 1px, transparent 1px), linear-gradient(90deg, ${color} 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgb(var(--color-grid) / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--color-grid) / 0.025) 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
         }}
       />
     );
   }
-  return null;
+  // Native: SVG-based grid
+  const w = gridWidth || 400;
+  const h = gridHeight || 900;
+  const spacing = 40;
+  const lines: React.ReactElement[] = [];
+  const gridColor = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+  for (let x = 0; x <= w; x += spacing) {
+    lines.push(<Line key={`v${x}`} x1={x} y1={0} x2={x} y2={h} stroke={gridColor} strokeWidth={1} />);
+  }
+  for (let y = 0; y <= h; y += spacing) {
+    lines.push(<Line key={`h${y}`} x1={0} y1={y} x2={w} y2={y} stroke={gridColor} strokeWidth={1} />);
+  }
+  return (
+    <View className="absolute inset-0">
+      <Svg width={w} height={h}>
+        {lines}
+      </Svg>
+    </View>
+  );
 }
 
 // ─── Main Component ──────────────────────────────────────────────
@@ -475,13 +387,17 @@ function GridPattern({ color }: { color: string }) {
 export default function Index() {
   const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
   const { session, setSession, isLoading: isAuthLoading, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, showGrid } = useTheme();
   const { width } = useWindowDimensions();
 
   const isDesktop = width >= WEB_DESKTOP_BREAKPOINT;
   const isLoading = isStorageLoading || isAuthLoading;
   const isDark = theme === "dark";
-  const t = isDark ? DARK : LIGHT;
+  const orbs = isDark ? ORB_COLORS.dark : ORB_COLORS.light;
+
+  // Resolve bar colors from CSS vars for SVG (SVG fill needs actual color strings)
+  const barPrimary = isDark ? "#3b8a6e" : "#3b8a6e";
+  const barAccent = isDark ? "#5ddc9a" : "#2cb87a";
 
   useEffect(() => {
     if (!isLoading && storageMode && session) {
@@ -532,8 +448,8 @@ export default function Index() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: t.pageBg }}>
-        <Text style={{ color: t.subtext, fontSize: 16 }}>Loading...</Text>
+      <View className="flex-1 items-center justify-center bg-page-bg">
+        <Text className="text-subtext/50 text-base">Loading...</Text>
       </View>
     );
   }
@@ -543,91 +459,118 @@ export default function Index() {
   // ─────────────────────────────────────────────────────────────
   if (isDesktop && Platform.OS === "web") {
     return (
-      <View style={{ flex: 1, flexDirection: "row", backgroundColor: t.pageBg }}>
+      <View className="flex-1 flex-row bg-page-bg">
         {/* Fixed Navbar Desktop */}
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 72, flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 40, zIndex: 50 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#10b981", alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>B</Text>
+        <View
+          className="absolute top-0 left-0 right-0 h-[60px] flex-row justify-between items-center px-10 z-50"
+          style={Platform.select({
+            web: {
+              borderBottomWidth: 1,
+              borderBottomStyle: "solid" as any,
+              borderBottomColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)",
+              backdropFilter: "blur(20px)",
+              backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.6)",
+            },
+          })}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="w-8 h-8 rounded-lg bg-[#10b981] items-center justify-center">
+              <Text className="text-white font-bold text-base">B</Text>
             </View>
-            <Text style={{ fontWeight: "700", fontSize: 20, color: t.heading, letterSpacing: -0.5 }}>Budgeteer</Text>
+            <Text className="font-bold text-xl text-heading tracking-tight">Budgeteer</Text>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-            <Text style={{ color: t.subtext, fontSize: 13, fontWeight: "500" }}>v2.0</Text>
-            <ThemeToggle dark={isDark} onToggle={toggleTheme} t={t} />
+          <View className="flex-row items-center gap-4">
+            <Text className="text-subtext/50 text-[13px] font-medium">v2.0</Text>
+            <ThemeToggle dark={isDark} onToggle={toggleTheme} />
           </View>
         </View>
 
         {/* LEFT PANEL: BRAND STORY */}
-        <View style={{ flex: 52, backgroundColor: t.panelBg, position: "relative", overflow: "hidden", justifyContent: "center", paddingLeft: 60, paddingRight: 40 }}>
-          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.6 }}>
-             <GridPattern color={t.grid} />
-             <FloatingView amplitude={15} duration={5000} style={{ position: "absolute", top: "10%", left: "-10%" }}>
-                <LinearGradient colors={[...t.orb1]} style={{ width: 600, height: 600, borderRadius: 300 }} />
-             </FloatingView>
-             <FloatingView amplitude={12} duration={6000} style={{ position: "absolute", bottom: "-10%", right: "-10%" }}>
-                <LinearGradient colors={[...t.orb2]} style={{ width: 500, height: 500, borderRadius: 250 }} />
-             </FloatingView>
+        <View className="bg-panel-bg relative overflow-hidden justify-center items-center" style={{ flex: 52 }}>
+          <View className="absolute inset-0 opacity-60">
+            <GridPattern />
+            <FloatingView amplitude={15} duration={5000} className="absolute" style={{ top: "10%", left: "-10%" }}>
+              <LinearGradient colors={[...orbs.orb1]} style={{ width: 600, height: 600, borderRadius: 300 }} />
+            </FloatingView>
+            <FloatingView amplitude={12} duration={6000} className="absolute" style={{ bottom: "-10%", right: "-10%" }}>
+              <LinearGradient colors={[...orbs.orb2]} style={{ width: 500, height: 500, borderRadius: 250 }} />
+            </FloatingView>
           </View>
 
-          <View style={{ maxWidth: 540, zIndex: 10, marginTop: 40 }}>
-            <Animated.Text entering={FadeInDown.delay(100)} style={{ color: t.barPrimary, fontWeight: "700", fontSize: 12, letterSpacing: 1.5, marginBottom: 16 }}>
+          <View className="max-w-[540px] z-10 mt-10 px-10">
+            <Animated.Text entering={FadeInDown.delay(100)} className="text-accent-green font-bold text-xs tracking-widest mb-4">
               PERSONAL FINANCE, SIMPLIFIED
             </Animated.Text>
             <Animated.View entering={FadeInDown.delay(200)}>
-              <Text style={{ fontWeight: "800", fontSize: 52, color: t.heading, letterSpacing: -1.5, lineHeight: 56 }}>
+              <Text className="font-extrabold text-heading tracking-tighter leading-[56px]" style={{ fontSize: 52 }}>
                 Take control of{"\n"}
-                <Text style={{ color: t.headingGrad[1] }}>your money</Text>
+                <Text
+                  className="text-heading-grad-start"
+                  style={Platform.select({
+                    web: {
+                      backgroundImage: `linear-gradient(100deg, rgb(var(--color-heading-grad-start)), rgb(var(--color-heading-grad-end)))`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    } as any,
+                  })}
+                >your money</Text>
               </Text>
-              <Text style={{ fontSize: 18, color: t.subtext, lineHeight: 28, marginTop: 20, maxWidth: 440 }}>
+              <Text className="text-lg text-subtext/50 leading-7 mt-5 max-w-[440px]">
                 Track spending, grow savings, and reach your goals — all in one beautiful app.
               </Text>
             </Animated.View>
 
-            <View style={{ flexDirection: "row", gap: 16, marginTop: 40, marginBottom: 50 }}>
-              <StatCard label="Avg. Saved" value="$3.2k" sub="↑ per month" delay={300} isUp t={t} />
-              <StatCard label="Categories" value="12+" sub="tracked auto" delay={400} t={t} />
-              <StatCard label="Users" value="50k" sub="and growing" delay={500} t={t} />
+            <View className="flex-row gap-4 mt-10 mb-[50px]">
+              <StatCard label="Avg. Saved" value="$3.2k" sub="↑ per month" delay={300} isUp />
+              <StatCard label="Categories" value="12+" sub="tracked auto" delay={400} />
+              <StatCard label="Platforms" value="3+" sub="iOS · Android · Web" delay={500} />
             </View>
 
-            <View style={{ paddingLeft: 20 }}>
-              <HeroIllustration t={t} scale={1.25} />
+            <View className="pl-5">
+              <HeroIllustration scale={1.25} barPrimary={barPrimary} barAccent={barAccent} isDark={isDark} />
             </View>
           </View>
         </View>
 
         {/* RIGHT PANEL: ACTIONS */}
-        <View style={{ flex: 48, justifyContent: "center", alignItems: "center", paddingVertical: 40, paddingHorizontal: 40 }}>
-          <View style={{ width: "100%", maxWidth: 460 }}>
-            <Animated.View entering={FadeInDown.delay(200)} style={{ marginBottom: 32 }}>
-              <Text style={{ fontWeight: "700", fontSize: 32, color: t.heading, letterSpacing: -0.5, marginBottom: 8 }}>Welcome back 👋</Text>
-              <Text style={{ fontSize: 15, color: t.subtext }}>Choose how you'd like to use Budgeteer</Text>
+        <View className="justify-center items-center py-10 px-10" style={{ flex: 48 }}>
+          <View className="w-full max-w-[420px]">
+            <Animated.View entering={FadeInDown.delay(200)} className="mb-8">
+              <Text className="font-bold text-[28px] text-heading tracking-tight mb-[10px]">Welcome back 👋</Text>
+              <Text className="text-[15px] text-subtext/50">Choose how you'd like to use Budgeteer</Text>
             </Animated.View>
 
-            <View style={{ width: "100%", gap: 12, marginBottom: 32 }}>
+            {/* Divider */}
+            <View style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", marginBottom: 28 }} />
+
+            <View className="w-full gap-3">
               {Object.values(StorageModeConfig).map((mode, i) => (
                 <ModeCard
                   key={mode.id}
                   testID={`mode-${mode.id}`}
                   icon={mode.icon}
                   label={mode.title}
-                  desc={UPDATED_MODE_DESCS[mode.id as StorageMode] || mode.description}
+                  desc={mode.description}
                   accent={mode.accent!}
                   onPress={() => handleLogin(mode)}
-                  t={t}
+                  isDark={isDark}
                   enterDelay={300 + i * 100}
                 />
               ))}
             </View>
 
-            <Animated.Text entering={FadeInDown.delay(700)} style={{ fontSize: 13, color: t.hint, textAlign: "center", marginBottom: 40 }}>
+            <Animated.Text entering={FadeInDown.delay(700)} className="text-[13px] text-feature-text mt-[22px]">
               You can switch modes any time in Settings
             </Animated.Text>
 
-            <View style={{ paddingHorizontal: 10 }}>
-               <TrustFeature icon="🔒" text="Bank-grade encryption keeps your data safe" t={t} delay={800} />
-               <TrustFeature icon="📊" text="Smart insights and weekly spending reports" t={t} delay={900} />
-               <TrustFeature icon="🎯" text="Set goals and get nudged when you're off track" t={t} delay={1000} />
+            {/* Divider */}
+            <View style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", marginTop: 28, marginBottom: 28 }} />
+
+            <View style={{ gap: 13 }}>
+              <TrustFeature icon="🔒" text="Bank-grade encryption keeps your data safe" delay={800} isDark={isDark} />
+              <TrustFeature icon="📊" text="Smart insights and weekly spending reports" delay={900} isDark={isDark} />
+              <TrustFeature icon="🎯" text="Set goals and get nudged when you're off track" delay={1000} isDark={isDark} />
             </View>
           </View>
         </View>
@@ -639,73 +582,73 @@ export default function Index() {
   // MOBILE / NATIVE LAYOUT (Single Column)
   // ─────────────────────────────────────────────────────────────
   return (
-    <View style={{ flex: 1, backgroundColor: t.pageBg }}>
+    <View className="flex-1 bg-page-bg">
       {/* Background layer */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}>
-        <FloatingView amplitude={14} duration={4500} style={{ position: "absolute", top: -80, left: -60, width: 320, height: 320, borderRadius: 160 }}>
-          <LinearGradient colors={[...t.orb1]} style={{ width: "100%", height: "100%", borderRadius: 160 }} start={{ x: 0.5, y: 0.5 }} end={{ x: 1, y: 1 }} />
+      <View className="absolute inset-0 overflow-hidden">
+        <FloatingView amplitude={14} duration={4500} className="absolute" style={{ top: -80, left: -60, width: 320, height: 320, borderRadius: 160 }}>
+          <LinearGradient colors={[...orbs.orb1]} style={{ width: "100%", height: "100%", borderRadius: 160 }} start={{ x: 0.5, y: 0.5 }} end={{ x: 1, y: 1 }} />
         </FloatingView>
-        <FloatingView amplitude={12} duration={5500} style={{ position: "absolute", bottom: 60, right: -80, width: 280, height: 280, borderRadius: 140 }}>
-          <LinearGradient colors={[...t.orb2]} style={{ width: "100%", height: "100%", borderRadius: 140 }} start={{ x: 0.5, y: 0.5 }} end={{ x: 1, y: 1 }} />
+        <FloatingView amplitude={12} duration={5500} className="absolute" style={{ bottom: 60, right: -80, width: 280, height: 280, borderRadius: 140 }}>
+          <LinearGradient colors={[...orbs.orb2]} style={{ width: "100%", height: "100%", borderRadius: 140 }} start={{ x: 0.5, y: 0.5 }} end={{ x: 1, y: 1 }} />
         </FloatingView>
-        <GridPattern color={t.grid} />
+        <GridPattern isDark={isDark} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 24, paddingVertical: 60 }}>
-        <View style={{ width: "100%", maxWidth: 400, alignItems: "center" }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 24, paddingVertical: 60 }}>
+        <View className="w-full max-w-[400px] items-center">
           {/* Status bar row */}
-          <View style={{ width: "100%", flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 32 }}>
-            <ThemeToggle dark={isDark} onToggle={toggleTheme} t={t} />
+          <View className="w-full flex-row justify-end items-center mb-8">
+            <ThemeToggle dark={isDark} onToggle={toggleTheme} />
           </View>
 
           {/* Hero section */}
-          <View style={{ width: "100%", height: 250, alignItems: "center", marginBottom: 16 }}>
-             <HeroIllustration t={t} scale={1} />
+          <View className="w-full h-[250px] items-center mb-4">
+            <HeroIllustration scale={1} barPrimary={barPrimary} barAccent={barAccent} isDark={isDark} />
           </View>
 
           {/* Welcome heading */}
-          <Animated.View entering={FadeInDown.delay(350).duration(480)} style={{ alignItems: "center", marginBottom: 32 }}>
-            <Text style={{ fontWeight: "700", fontSize: 27, color: t.heading, letterSpacing: -1, lineHeight: 31, textAlign: "center", marginBottom: 8 }}>
+          <Animated.View entering={FadeInDown.delay(350).duration(480)} className="items-center mb-8">
+            <Text className="font-bold text-[27px] text-heading tracking-tight leading-[31px] text-center mb-2">
               Welcome to
             </Text>
             <Text
-              style={{
-                fontWeight: "700", fontSize: 28, letterSpacing: -1, lineHeight: 34, textAlign: "center", color: t.headingGrad[0],
-                ...Platform.select({
-                  web: {
-                    // @ts-expect-error
-                    backgroundImage: `linear-gradient(90deg, ${t.headingGrad[0]}, ${t.headingGrad[1]})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                  },
-                }),
-              }}
+              className="font-bold text-[28px] tracking-tight leading-[34px] text-center text-heading-grad-start"
+              style={Platform.select({
+                web: {
+                  backgroundImage: `linear-gradient(90deg, rgb(var(--color-heading-grad-start)), rgb(var(--color-heading-grad-end)))`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              })}
             >
               Budgeteer
             </Text>
-            <Text style={{ fontSize: 14, color: t.subtext, lineHeight: 21, maxWidth: 260, textAlign: "center", marginTop: 12 }}>
+            <Text className="text-sm text-subtext/50 leading-[21px] max-w-[260px] text-center mt-3">
               Choose how you'd like to get started
             </Text>
           </Animated.View>
 
           {/* Mode cards */}
-          <View style={{ width: "100%", gap: 12 }}>
+          <View className="w-full gap-3">
             {Object.values(StorageModeConfig).map((mode, i) => (
               <ModeCard
                 key={mode.id}
                 testID={`mode-${mode.id}`}
                 icon={mode.icon}
                 label={mode.title}
-                desc={UPDATED_MODE_DESCS[mode.id as StorageMode] || mode.description}
+                desc={mode.description}
                 accent={mode.accent!}
                 onPress={() => handleLogin(mode)}
-                t={t}
+                isDark={isDark}
                 enterDelay={450 + i * 120}
               />
             ))}
           </View>
 
           {/* Hint */}
-          <Animated.View entering={FadeInDown.delay(850).duration(480)} style={{ marginTop: 24 }}>
-            <Text style={{ textAlign: "center", fontSize: 13, color: t.hint }}>
+          <Animated.View entering={FadeInDown.delay(850).duration(480)} className="mt-6">
+            <Text className="text-center text-[13px] text-feature-text">
               You can switch modes any time in Settings
             </Text>
           </Animated.View>
