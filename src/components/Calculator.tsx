@@ -229,10 +229,10 @@ export default function CalculatorComponent({
   return (
     <>
       <Pressable
-        className="bg-white border border-muted rounded-md mx-2 p-1.5 mt-5 justify-center items-center"
+        className="bg-surface border border-muted rounded-md mx-2 p-1.5 mt-5 justify-center items-center"
         onPress={() => setModalVisible(true)}
       >
-        <MyIcon name="Calculator" size={30} className="text-black" />
+        <MyIcon name="Calculator" size={30} className="text-foreground" />
       </Pressable>
 
       {modalVisible && (
@@ -321,7 +321,7 @@ const Button = ({
     <Pressable
       key={button.name}
       id={button.name}
-      className={`w-14 h-14 justify-center items-center bg-gray-200 rounded-lg`}
+      className={`w-14 h-14 justify-center items-center bg-muted rounded-lg`}
       onPress={() => handleButtonPress(button.name)}
     >
       <Text selectable={false} className={`text-xl`}>

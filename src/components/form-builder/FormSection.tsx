@@ -34,7 +34,7 @@ function FormSectionComponent({
           {collapsible ? (
             <Pressable
               onPress={toggleExpanded}
-              className="flex-row items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-200"
+              className="flex-row items-center justify-between p-2 rounded-md bg-surface-elevated border border-border-default"
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel={`${title} section, ${isExpanded ? "expanded" : "collapsed"}`}
@@ -48,7 +48,7 @@ function FormSectionComponent({
               >
                 {title}
               </Text>
-              <Text className="text-gray-600 text-lg" accessibilityHidden={true}>
+              <Text className="text-text-secondary text-lg" accessibilityHidden={true}>
                 {isExpanded ? "−" : "+"}
               </Text>
             </Pressable>
@@ -66,7 +66,7 @@ function FormSectionComponent({
 
       {/* Section Description */}
       {description && (
-        <Text id={descriptionId} className="text-gray-600 text-sm mb-3" accessibilityRole="text">
+        <Text id={descriptionId} className="text-text-secondary text-sm mb-3" accessibilityRole="text">
           {description}
         </Text>
       )}

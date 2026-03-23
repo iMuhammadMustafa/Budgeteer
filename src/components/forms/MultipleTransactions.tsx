@@ -442,7 +442,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
             {/* Display submission error if any */}
             {error && (
               <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <Text className="text-red-700 text-sm">Error: {error.message}</Text>
+                <Text className="text-status-danger text-sm">Error: {error.message}</Text>
               </View>
             )}
           </FormContainer>
@@ -717,7 +717,7 @@ const TransactionsSummary = ({
   const remainingAmount = targetAmount - currentAmount;
 
   return (
-    <View className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <View className="bg-surface-elevated p-4 rounded-lg border border-border-default">
       <View className="space-y-2">
         <View className="flex-row justify-between">
           <Text className="text-foreground font-medium">Target Total:</Text>
@@ -729,9 +729,9 @@ const TransactionsSummary = ({
           <Text className="text-foreground font-bold">{currentAmount.toFixed(2)}</Text>
         </View>
 
-        <View className="flex-row justify-between border-t border-gray-300 pt-2">
+        <View className="flex-row justify-between border-t border-border-default pt-2">
           <Text className="text-foreground font-medium">Remaining:</Text>
-          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-green-600" : "text-orange-600"}`}>
+          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-status-success" : "text-status-warning"}`}>
             {remainingAmount.toFixed(2)}
           </Text>
         </View>
@@ -743,7 +743,7 @@ const TransactionsSummary = ({
             backgroundColor: isBalanced ? "#10b981" : "#f59e0b",
           }}
         >
-          <Text className={`text-center font-medium ${isBalanced ? "text-green-700" : "text-orange-700"}`}>
+          <Text className={`text-center font-medium ${isBalanced ? "text-status-success" : "text-status-warning"}`}>
             {isBalanced ? "✓ Transactions are balanced" : "⚠ Transactions need to be balanced"}
           </Text>
         </View>

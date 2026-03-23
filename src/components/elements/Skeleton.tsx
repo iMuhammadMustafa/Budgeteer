@@ -4,7 +4,7 @@ import { View } from "react-native";
 export default function Skeleton() {
   return (
     <Pulse>
-      <View className="px-4 py-3 border-b border-gray-200">
+      <View className="px-4 py-3 border-b border-border-default">
         {/* 3 placeholder transactions */}
         {Array.from({ length: 3 }).map((_, i) => (
           <View key={i} className="flex-row items-center py-3">

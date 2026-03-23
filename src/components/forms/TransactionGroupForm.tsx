@@ -311,7 +311,7 @@ function TransactionGroupFormComponent({ group, onSuccess, onCancel }: Transacti
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">
+              <Text className="text-status-danger text-sm">
                 {error.message || "An error occurred while saving the transaction group"}
               </Text>
             </View>

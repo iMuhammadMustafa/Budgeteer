@@ -167,7 +167,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         </View>
       )}
 
-      <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
+      <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
         <Switch
           value={!!formData.isDateFlexible}
@@ -207,7 +207,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
           />
         </>
       )}
-      <View className="flex-row justify-between items-center my-3 p-3 border border-gray-300 rounded-md">
+      <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
         <Switch
           value={!!formData.isAmountFlexible}
@@ -284,8 +284,8 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
             formData.transferaccountid &&
             formData.sourceaccountid === formData.transferaccountid && (
               <View className="bg-red-50 p-4 rounded-md border border-red-200">
-                <Text className="text-red-800 font-medium">Invalid Configuration</Text>
-                <Text className="text-red-600 text-sm">Source and destination accounts must be different.</Text>
+                <Text className="text-status-danger font-medium">Invalid Configuration</Text>
+                <Text className="text-status-danger text-sm">Source and destination accounts must be different.</Text>
               </View>
             )}
         </>
@@ -326,8 +326,8 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       />
       {formData.isDateFlexible && formData.isAmountFlexible && (
         <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
-          <Text className="text-blue-800 font-medium mb-2">Fully Flexible Transaction</Text>
-          <Text className="text-blue-600 text-sm">
+          <Text className="text-status-info font-medium mb-2">Fully Flexible Transaction</Text>
+          <Text className="text-status-info text-sm">
             This recurring transaction is fully flexible - you can execute it at any time with any amount. Perfect for
             irregular expenses or income that vary in timing and amount.
           </Text>

@@ -123,12 +123,12 @@ export default function ExportModal({ visible, onClose }: {
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View className="flex-1 bg-black/50 justify-center items-center">
                 <Pressable className="absolute inset-0" onPress={onClose} />
-                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-white rounded-lg overflow-hidden">
+                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-surface rounded-lg overflow-hidden">
                     {/* Header */}
-                    <View className="flex-row items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                    <View className="flex-row items-center justify-between p-4 border-b border-border-default bg-surface-elevated">
                         <Text className="font-semibold text-lg text-dark">Export Data</Text>
                         <Pressable onPress={onClose} className="p-1">
-                            <MyIcon name="X" size={20} className="text-gray-500" />
+                            <MyIcon name="X" size={20} className="text-text-secondary" />
                         </Pressable>
                     </View>
 
@@ -136,35 +136,35 @@ export default function ExportModal({ visible, onClose }: {
                         {/* Export Format Selection (for tables) */}
                         {!selectedView && (
                             <View className="mb-4">
-                                <Text className="text-sm font-medium text-gray-700 mb-2">Export Format</Text>
+                                <Text className="text-sm font-medium text-foreground mb-2">Export Format</Text>
                                 <View className="flex-row gap-2">
                                     <Pressable
                                         onPress={() => setExportFormat("json")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-gray-200"
+                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-border-default"
                                             }`}
                                     >
                                         <View className="flex-row items-center">
-                                            <MyIcon name="FileJson2" size={20} className={exportFormat === "json" ? "text-primary" : "text-gray-500"} />
+                                            <MyIcon name="FileJson2" size={20} className={exportFormat === "json" ? "text-primary" : "text-text-secondary"} />
                                             <View className="ml-2">
-                                                <Text className={`font-medium ${exportFormat === "json" ? "text-primary" : "text-gray-700"}`}>
+                                                <Text className={`font-medium ${exportFormat === "json" ? "text-primary" : "text-foreground"}`}>
                                                     JSON
                                                 </Text>
-                                                <Text className="text-xs text-gray-500">Full backup</Text>
+                                                <Text className="text-xs text-text-tertiary">Full backup</Text>
                                             </View>
                                         </View>
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setExportFormat("csv")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-gray-200"
+                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-border-default"
                                             }`}
                                     >
                                         <View className="flex-row items-center">
-                                            <MyIcon name="FileSpreadsheet" size={20} className={exportFormat === "csv" ? "text-primary" : "text-gray-500"} />
+                                            <MyIcon name="FileSpreadsheet" size={20} className={exportFormat === "csv" ? "text-primary" : "text-text-secondary"} />
                                             <View className="ml-2">
-                                                <Text className={`font-medium ${exportFormat === "csv" ? "text-primary" : "text-gray-700"}`}>
+                                                <Text className={`font-medium ${exportFormat === "csv" ? "text-primary" : "text-foreground"}`}>
                                                     CSV
                                                 </Text>
-                                                <Text className="text-xs text-gray-500">Single table</Text>
+                                                <Text className="text-xs text-text-tertiary">Single table</Text>
                                             </View>
                                         </View>
                                     </Pressable>
@@ -175,19 +175,19 @@ export default function ExportModal({ visible, onClose }: {
                         {/* Tables Selection */}
                         <View className="mb-4">
                             <View className="flex-row items-center justify-between mb-2">
-                                <Text className="text-sm font-medium text-gray-700">Tables</Text>
+                                <Text className="text-sm font-medium text-foreground">Tables</Text>
                                 <View className="flex-row gap-2">
                                     <Pressable onPress={selectAllTables}>
                                         <Text className="text-xs text-primary">Select All</Text>
                                     </Pressable>
-                                    <Text className="text-gray-300">|</Text>
+                                    <Text className="text-border-default">|</Text>
                                     <Pressable onPress={deselectAllTables}>
-                                        <Text className="text-xs text-gray-500">Clear</Text>
+                                        <Text className="text-xs text-text-secondary">Clear</Text>
                                     </Pressable>
                                 </View>
                             </View>
 
-                            <View className="bg-gray-50 rounded-lg p-2">
+                            <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_TABLES.map(table => (
                                     <Pressable
                                         key={table}
@@ -201,9 +201,9 @@ export default function ExportModal({ visible, onClose }: {
                                             <MyIcon
                                                 name={getTableIcon(table as TableNames)}
                                                 size={16}
-                                                className="text-gray-500 mr-2"
+                                                className="text-text-secondary mr-2"
                                             />
-                                            <Text className="text-sm text-gray-700">{formatTableName(table)}</Text>
+                                            <Text className="text-sm text-foreground">{formatTableName(table)}</Text>
                                         </View>
                                         <Switch
                                             value={selectedTables.has(table as TableNames) && !selectedView}
@@ -221,8 +221,8 @@ export default function ExportModal({ visible, onClose }: {
 
                         {/* Views Selection (CSV only) */}
                         <View className="mb-4">
-                            <Text className="text-sm font-medium text-gray-700 mb-2">Views (CSV only)</Text>
-                            <View className="bg-gray-50 rounded-lg p-2">
+                            <Text className="text-sm font-medium text-foreground mb-2">Views (CSV only)</Text>
+                            <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_VIEWS.map(view => (
                                     <Pressable
                                         key={view}
@@ -231,15 +231,15 @@ export default function ExportModal({ visible, onClose }: {
                                             }`}
                                     >
                                         <View
-                                            className={`w-4 h-4 rounded-full border mr-2 items-center justify-center ${selectedView === view ? "border-primary bg-primary" : "border-gray-300"
+                                            className={`w-4 h-4 rounded-full border mr-2 items-center justify-center ${selectedView === view ? "border-primary bg-primary" : "border-border-default"
                                                 }`}
                                         >
                                             {selectedView === view && (
                                                 <MyIcon name="Check" size={10} className="text-white" />
                                             )}
                                         </View>
-                                        <MyIcon name="Eye" size={16} className="text-gray-500 mr-2" />
-                                        <Text className="text-sm text-gray-700">{formatViewName(view)}</Text>
+                                        <MyIcon name="Eye" size={16} className="text-text-secondary mr-2" />
+                                        <Text className="text-sm text-foreground">{formatViewName(view)}</Text>
                                     </Pressable>
                                 ))}
                             </View>
@@ -255,10 +255,10 @@ export default function ExportModal({ visible, onClose }: {
                                     <MyIcon
                                         name={exportResult.success ? "CheckCircle" : "XCircle"}
                                         size={20}
-                                        className={exportResult.success ? "text-green-600" : "text-red-600"}
+                                        className={exportResult.success ? "text-status-success" : "text-status-danger"}
                                     />
                                     <Text
-                                        className={`ml-2 text-sm ${exportResult.success ? "text-green-700" : "text-red-700"
+                                        className={`ml-2 text-sm ${exportResult.success ? "text-status-success" : "text-status-danger"
                                             }`}
                                     >
                                         {exportResult.message}
@@ -269,7 +269,7 @@ export default function ExportModal({ visible, onClose }: {
                     </ScrollView>
 
                     {/* Footer */}
-                    <View className="p-4 border-t border-gray-200 bg-gray-50">
+                    <View className="p-4 border-t border-border-default bg-surface-elevated">
                         <View className="flex-row gap-2">
                             <Button
                                 label="Cancel"

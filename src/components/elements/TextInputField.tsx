@@ -37,14 +37,14 @@ function TextInputFieldMemo({
     <View className={`my-1 ${className ?? ""}`}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
-        className={`text-black border rounded-md p-3 border-gray-300 ${isReadOnly ? "bg-gray-200" : "bg-white"} ${multiline ? "h-20" : ""}`}
+        className={`text-foreground border rounded-md p-3 border-input-border ${isReadOnly ? "bg-input-bg-disabled" : "bg-input-bg"} ${multiline ? "h-20" : ""}`}
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}
         aria-disabled={isReadOnly}
         editable={!isReadOnly}
         placeholder={placeholder}
-        placeholderClassName="text-gray-400"
+        placeholderClassName="text-text-tertiary"
         multiline={multiline}
         maxLength={maxLength}
       />

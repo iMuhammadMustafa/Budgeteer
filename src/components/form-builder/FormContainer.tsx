@@ -64,7 +64,7 @@ function FormContainerComponent({
       <View className="flex-row justify-end space-x-3 mt-4 -z-10">
         {showReset && onReset && (
           <Pressable
-            className="p-3 flex justify-center items-center border border-gray-300 rounded-md bg-white"
+            className="p-3 flex justify-center items-center border border-border-default rounded-md bg-surface"
             onPress={handleReset}
             disabled={isLoading}
             accessible={true}
@@ -72,7 +72,7 @@ function FormContainerComponent({
             accessibilityLabel="Reset form"
             accessibilityHint="Clears all form fields and resets to initial values"
           >
-            <Text className={`text-center font-medium ${isLoading ? "text-gray-400" : "text-gray-700"}`}>Reset</Text>
+            <Text className={`text-center font-medium ${isLoading ? "text-text-disabled" : "text-text-secondary"}`}>Reset</Text>
           </Pressable>
         )}
 
@@ -102,8 +102,8 @@ function FormContainerComponent({
           accessibilityLabel="Form is loading"
           accessibilityLiveRegion="polite"
         >
-          <View className="bg-white p-4 rounded-lg shadow-lg">
-            <Text className="text-gray-700 font-medium">Processing...</Text>
+          <View className="bg-surface p-4 rounded-lg shadow-lg">
+            <Text className="text-text-secondary font-medium">Processing...</Text>
           </View>
         </View>
       )}

@@ -133,18 +133,18 @@ function DropdownField({
         dataSet={{ dropdownId: dropdownIdRef.current }}
       >
         <Pressable
-          className={`flex-row items-center justify-between p-3 rounded border ${showError ? "border-red-500" : "border-gray-300"
-            } ${disabled ? "bg-gray-100" : "bg-white"}`}
+          className={`flex-row items-center justify-between p-3 rounded border ${showError ? "border-status-danger" : "border-input-border"
+            } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
           onPress={handleToggle}
           disabled={disabled}
           testID="dropdown-button"
         >
           <View className="flex-row items-center flex-1 gap-2">
             {selectedItem?.icon && (
-              <MyIcon name={selectedItem.icon} className={selectedItem.iconColorClass ?? "text-gray-600"} size={18} />
+              <MyIcon name={selectedItem.icon} className={selectedItem.iconColorClass ?? "text-text-secondary"} size={18} />
             )}
             <Text
-              className={`flex-1 ${selectedItem ? "text-dark" : "text-gray-400"} ${disabled ? "text-gray-400" : ""}`}
+              className={`flex-1 ${selectedItem ? "text-foreground" : "text-text-tertiary"} ${disabled ? "text-text-disabled" : ""}`}
               numberOfLines={1}
               selectable={false}
               testID="dropdown-selected-text"
@@ -163,7 +163,7 @@ function DropdownField({
                 className="p-1"
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <MyIcon name="X" size={16} className="text-gray-400" />
+                <MyIcon name="X" size={16} className="text-text-tertiary" />
               </Pressable>
             )}
             {addNew && (
@@ -178,13 +178,13 @@ function DropdownField({
                 <MyIcon name="Plus" size={16} className="text-primary" />
               </Pressable>
             )}
-            <MyIcon name={isOpen ? "ChevronUp" : "ChevronDown"} size={18} className="text-gray-400" />
+            <MyIcon name={isOpen ? "ChevronUp" : "ChevronDown"} size={18} className="text-text-tertiary" />
           </View>
         </Pressable>
       </View>
 
       {/* Error Message */}
-      {showError && <Text className="text-red-500 text-xs mt-1">{error}</Text>}
+      {showError && <Text className="text-status-danger text-xs mt-1">{error}</Text>}
 
       {/* Dropdown List */}
       {isOpen && (
@@ -256,9 +256,9 @@ function DropdownList({
   const listContent = (
     <>
       {showSearch && (
-        <Pressable onPress={e => e.stopPropagation?.()} className="p-2 border-b border-gray-200">
+        <Pressable onPress={e => e.stopPropagation?.()} className="p-2 border-b border-border-default">
           <TextInput
-            className="p-2 bg-gray-50 rounded border border-gray-200 text-black"
+            className="p-2 bg-surface-elevated rounded border border-border-default text-foreground"
             placeholder="Search..."
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -270,7 +270,7 @@ function DropdownList({
       )}
 
       {addNew && (
-        <Pressable onPress={onAddNew} className="flex-row items-center gap-2 p-3 border-b border-gray-200 bg-gray-50">
+        <Pressable onPress={onAddNew} className="flex-row items-center gap-2 p-3 border-b border-border-default bg-surface-elevated">
           <MyIcon name={addNew.icon ?? "Plus"} size={18} className="text-primary" />
           <Text className="text-primary font-medium" selectable={false}>
             {addNew.label ?? `Add New ${addNew.entityType}`}
@@ -292,7 +292,7 @@ function DropdownList({
               <>
                 <Text
                   selectable={false}
-                  className="p-2 bg-gray-100 text-gray-600 text-sm font-medium"
+                  className="p-2 bg-surface-elevated text-text-secondary text-sm font-medium"
                 >
                   {groupName ?? "Other"}
                 </Text>
@@ -327,7 +327,7 @@ function DropdownList({
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View className="p-4 items-center">
-            <Text selectable={false} className="text-gray-400">
+            <Text selectable={false} className="text-text-tertiary">
               No options found
             </Text>
           </View>
@@ -348,7 +348,7 @@ function DropdownList({
 
   return (
     <View
-      className="absolute bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
+      className="absolute bg-surface rounded-lg shadow-lg border border-border-default overflow-hidden"
       style={{
         top: buttonLayout.height + 4,
         left: 0,
@@ -375,25 +375,25 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
       onPress={onPress}
       disabled={option.disabled}
       className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${option.disabled ? "opacity-50" : ""
-        } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-gray-100"}`}
+        } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle"}`}
     >
       <View className={`flex-row items-center ${isGrouped ? "justify-center" : ""} gap-2`}>
         {option.icon && (
           <View className="w-6 items-center">
-            <MyIcon name={option.icon} size={18} className={option.iconColorClass ?? "text-gray-600"} />
+            <MyIcon name={option.icon} size={18} className={option.iconColorClass ?? "text-text-secondary"} />
           </View>
         )}
         <View className={isGrouped ? "" : "flex-1"}>
           <Text
             selectable={false}
-            className={`${option.disabled ? "text-gray-400" : option.textColorClass ? `text-${option.textColorClass}` : "text-dark"
+            className={`${option.disabled ? "text-text-disabled" : option.textColorClass ? `text-${option.textColorClass}` : "text-foreground"
               } ${isSelected ? "font-medium" : ""}`}
             numberOfLines={1}
           >
             {option.label}
           </Text>
           {option.details && (
-            <Text selectable={false} className="text-gray-500 text-xs" numberOfLines={1}>
+            <Text selectable={false} className="text-text-secondary text-xs" numberOfLines={1}>
               {option.details}
             </Text>
           )}

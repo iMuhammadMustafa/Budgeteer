@@ -489,7 +489,7 @@ export default function SummaryIndex() {
                                       <View className="w-full flex items-center">
                                         <View
                                           style={{ width: columnWidth / 2 }}
-                                          className="h-2 bg-gray-200 rounded-full overflow-hidden relative"
+                                          className="h-2 bg-muted rounded-full overflow-hidden relative"
                                         >
                                           <LinearGradient
                                             colors={getGradientColors(budgetUsage)}
@@ -542,7 +542,7 @@ export default function SummaryIndex() {
             </View>
           </View>
         ) : (
-          <View className="flex-1 justify-center items-center p-10 bg-white">
+          <View className="flex-1 justify-center items-center p-10 bg-surface">
             <Text className="text-base text-slate-500 text-center">No transaction data available for comparison</Text>
           </View>
         )}

@@ -129,7 +129,7 @@ export default function BatchUpdateModal({
         <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleClose} title="Batch Update">
             <View className="p-4">
                 {/* Header info */}
-                <View className="bg-gray-100 rounded-md p-3 mb-4">
+                <View className="bg-surface-elevated rounded-md p-3 mb-4">
                     <Text className="text-foreground font-medium">
                         {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
                     </Text>
@@ -224,15 +224,15 @@ interface UpdateOptionRowProps {
 
 function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRowProps) {
     return (
-        <View className="mb-4 border border-gray-200 rounded-md overflow-hidden">
+        <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
             <Pressable
                 onPress={() => onToggle(!enabled)}
-                className="flex-row items-center justify-between p-3 bg-gray-50"
+                className="flex-row items-center justify-between p-3 bg-surface-elevated"
             >
                 <View className="flex-row items-center">
                     <View
-                        className={`w-5 h-5 rounded border mr-3 items-center justify-center ${enabled ? "bg-primary border-primary" : "border-gray-300"
+                        className={`w-5 h-5 rounded border mr-3 items-center justify-center ${enabled ? "bg-primary border-primary" : "border-border-default"
                             }`}
                     >
                         {enabled && <MyIcon name="Check" size={14} className="text-white" />}
@@ -243,7 +243,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
 
             {/* Content - only shown when enabled */}
             {enabled && (
-                <View className="p-3 bg-white">
+                <View className="p-3 bg-surface">
                     {children}
                 </View>
             )}

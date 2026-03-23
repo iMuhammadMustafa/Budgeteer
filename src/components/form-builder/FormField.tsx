@@ -61,12 +61,12 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         return (
           <TextInput
             {...baseAccessibilityProps}
-            className={`text-black border rounded-md p-3 ${
+            className={`text-foreground border rounded-md p-3 ${
               hasError
                 ? "border-red-500 bg-red-50"
                 : disabled
-                  ? "border-gray-200 bg-gray-100"
-                  : "border-gray-300 bg-white"
+                  ? "border-border-default bg-input-bg-disabled"
+                  : "border-input-border bg-input-bg"
             }`}
             value={value === null || value === undefined ? "" : value.toString()}
             onChangeText={handleChange}
@@ -82,12 +82,12 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         return (
           <TextInput
             {...baseAccessibilityProps}
-            className={`text-black border rounded-md p-3 ${
+            className={`text-foreground border rounded-md p-3 ${
               hasError
                 ? "border-red-500 bg-red-50"
                 : disabled
-                  ? "border-gray-200 bg-gray-100"
-                  : "border-gray-300 bg-white"
+                  ? "border-border-default bg-input-bg-disabled"
+                  : "border-input-border bg-input-bg"
             }`}
             value={value === null || value === undefined ? "" : value.toString()}
             onChangeText={text => handleChange(text)}
@@ -114,12 +114,12 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         return (
           <TextInput
             {...baseAccessibilityProps}
-            className={`text-black border rounded-md p-3 h-20 ${
+            className={`text-foreground border rounded-md p-3 h-20 ${
               hasError
                 ? "border-red-500 bg-red-50"
                 : disabled
-                  ? "border-gray-200 bg-gray-100"
-                  : "border-gray-300 bg-white"
+                  ? "border-border-default bg-input-bg-disabled"
+                  : "border-input-border bg-input-bg"
             }`}
             value={value?.toString() || ""}
             onChangeText={handleChange}
@@ -194,12 +194,12 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         return (
           <TextInput
             {...baseAccessibilityProps}
-            className={`text-black border rounded-md p-3 ${
+            className={`text-foreground border rounded-md p-3 ${
               hasError
                 ? "border-red-500 bg-red-50"
                 : disabled
-                  ? "border-gray-200 bg-gray-100"
-                  : "border-gray-300 bg-white"
+                  ? "border-border-default bg-input-bg-disabled"
+                  : "border-input-border bg-input-bg"
             }`}
             value={Array.isArray(value) ? value.join(", ") : value?.toString() || ""}
             onChangeText={text => handleChange(text.split(", ").filter(Boolean))}
@@ -213,7 +213,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
 
       default:
         return (
-          <Text className="text-red-500 p-3 border border-red-300 rounded-md bg-red-50">
+          <Text className="text-status-danger p-3 border border-status-danger/30 rounded-md bg-status-danger-subtle">
             Unsupported field type: {type}
           </Text>
         );
@@ -226,7 +226,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       {label && type !== "switch" && (
         <Text className={`text-foreground mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
           {label}
-          {required && <Text className="text-red-500 ml-1">*</Text>}
+          {required && <Text className="text-status-danger ml-1">*</Text>}
         </Text>
       )}
 
@@ -235,7 +235,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         <View className="flex-row items-center justify-between">
           <Text className={`text-foreground ${required ? "font-medium" : ""}`} accessibilityRole="text">
             {label}
-            {required && <Text className="text-red-500 ml-1">*</Text>}
+            {required && <Text className="text-status-danger ml-1">*</Text>}
           </Text>
           {renderField()}
         </View>
@@ -246,7 +246,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
 
       {/* Field Description - use lower z-index to not overlap dropdowns */}
       {description && (
-        <Text id={descriptionId} className="text-gray-600 text-sm mt-1 relative z-0" accessibilityRole="text">
+        <Text id={descriptionId} className="text-text-secondary text-sm mt-1 relative z-0" accessibilityRole="text">
           {description}
         </Text>
       )}
@@ -255,7 +255,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       {hasError && (
         <Text
           id={errorId}
-          className="text-red-500 text-sm mt-1"
+          className="text-status-danger text-sm mt-1"
           accessibilityRole="text"
           accessibilityLiveRegion="polite"
         >

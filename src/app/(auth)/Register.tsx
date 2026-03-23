@@ -44,22 +44,22 @@ export default function Register() {
     <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
       <Text className="text-foreground text-2xl font-bold mb-10 text-center">Register</Text>
       <TextInput
-        className="border rounded-lg bg-white my-2 p-4 text-lg"
+        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
         placeholder="Email"
         onChangeText={text => setUser({ ...user, email: text })}
       />
       <TextInput
-        className="border rounded-lg bg-white my-2 p-4 text-lg"
+        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
         placeholder="Password"
         onChangeText={text => setUser({ ...user, password: text })}
       />
       <TextInput
-        className="border rounded-lg bg-white my-2 p-4 text-lg"
+        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
         placeholder="Confirm Password"
         onChangeText={text => setUser({ ...user, confirmPassword: text })}
       />
       <TextInput
-        className="border rounded-lg bg-white my-2 p-4 text-lg"
+        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
         placeholder="Tenant Id"
         onChangeText={text => setUser({ ...user, tenantId: text })}
       />

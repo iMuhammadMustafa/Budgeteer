@@ -128,7 +128,7 @@ const FooterContent = ({
   }
   if (totalBalanceData) {
     return (
-      <View className="bg-white border-t border-border items-center rounded-b-lg shadow-md">
+      <View className="bg-surface border-t border-border items-center rounded-b-lg shadow-md">
         <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
         <Text className="font-md font-pbold text-primary-focus text-foreground">
           {totalBalanceData.totalbalance.toLocaleString("en-US", {

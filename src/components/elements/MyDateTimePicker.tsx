@@ -47,7 +47,7 @@ export default function MyDateTimePicker({
             else setPickerDate(dayjs(date));
             setShowDate(prev => !prev);
           }}
-          className="border border-card rounded-md p-3 items-center mb-1 bg-white flex-1" // Changed padding
+          className="border border-input-border rounded-md p-3 items-center mb-1 bg-input-bg flex-1"
           onLayout={onLayout}
         >
           <Text selectable={false}>{date ? dayjs(date).format("MMM DD, YYYY") : "Select Date"}</Text>
@@ -58,9 +58,9 @@ export default function MyDateTimePicker({
               onClear();
               setShowDate(false); // Close picker if open
             }}
-            className="p-2 mb-1 ml-1 bg-gray-200 rounded"
+            className="p-2 mb-1 ml-1 bg-muted rounded"
           >
-            <MyIcon name="X" size={18} className="text-gray-600" />
+            <MyIcon name="X" size={18} className="text-text-secondary" />
           </Pressable>
         )}
       </View>
@@ -82,7 +82,7 @@ export default function MyDateTimePicker({
               selected: "bg-primary rounded-full",
               disabled: "opacity-50",
               outside: "opacity-50",
-              outside_label: "text-gray-500",
+              outside_label: "text-text-tertiary",
               day_label: "text-foreground",
               month_label: "text-foreground font-medium",
               year_label: "text-foreground font-medium",
@@ -113,7 +113,7 @@ export default function MyDateTimePicker({
                 setPickerDate(today);
                 onChange(today.toISOString());
               }}
-              className="flex-1 p-2 bg-green-100 rounded-md"
+              className="flex-1 p-2 bg-status-success-subtle rounded-md"
             >
               <Text className="text-center text-foreground">Today</Text>
             </Pressable>

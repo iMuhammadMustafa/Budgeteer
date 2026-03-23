@@ -119,7 +119,7 @@ export default function SearchableDropdown({
         <View className={`my-1 ${className ?? ""} `}>
           <Text className="text-foreground">{label}</Text>
           <TextInput
-            className="p-3 mb-4  border border-gray-400 rounded-md bg-white text-black"
+            className="p-3 mb-4 border border-input-border rounded-md bg-input-bg text-foreground"
             value={inputText ?? ""}
             placeholder={placeholder ?? "Type to search.."}
             onChangeText={handleChange}
@@ -130,21 +130,21 @@ export default function SearchableDropdown({
 
       {isLoading ? (
         <ActivityIndicator
-          className=" absolute z-10 bg-white"
+          className=" absolute z-10 bg-surface"
           style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
         />
       ) : (
         suggestions &&
         suggestions.length > 0 && (
           <View
-            className={`absolute z-10 bg-white p-2 m-2 `}
+            className={`absolute z-10 bg-surface p-2 m-2`}
             style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
           >
             <FlatList
               data={suggestions}
               keyExtractor={item => item.id ?? item.label}
               renderItem={({ item }) => (
-                <TouchableOpacity className="border-b border-gray-100 p-2" onPress={() => handleSelectSuggestion(item)}>
+                <TouchableOpacity className="border-b border-border-subtle p-2" onPress={() => handleSelectSuggestion(item)}>
                   <Text>{item.label}</Text>
                 </TouchableOpacity>
               )}

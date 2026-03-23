@@ -216,6 +216,37 @@ export const lightVars = {
   "--color-stat-label": "0 0 0",
   "--color-stat-value": "24 24 27",
   "--color-grid": "0 0 0",
+
+  /* ── Surfaces ── */
+  "--surface": "255 255 255",
+  "--surface-elevated": "238 238 235",
+  "--surface-overlay": "255 255 255",
+
+  /* ── Text Hierarchy ── */
+  "--text-primary": "24 24 28",
+  "--text-secondary": "82 82 91",
+  "--text-tertiary": "130 130 139",
+  "--text-disabled": "180 180 188",
+
+  /* ── Borders ── */
+  "--border-default": "200 204 211",
+  "--border-subtle": "240 240 243",
+  "--border-strong": "180 180 188",
+
+  /* ── Inputs ── */
+  "--input-bg": "255 255 255",
+  "--input-border": "212 212 216",
+  "--input-bg-disabled": "245 245 248",
+
+  /* ── Semantic Status ── */
+  "--status-success": "22 163 74",
+  "--status-success-subtle": "240 253 244",
+  "--status-warning": "161 98 7",
+  "--status-warning-subtle": "254 252 232",
+  "--status-danger": "220 38 38",
+  "--status-danger-subtle": "254 242 242",
+  "--status-info": "37 99 235",
+  "--status-info-subtle": "239 246 255",
 };
 export const darkVars = {
   "--background": "24 24 28" /* #18181c */,
@@ -431,6 +462,37 @@ export const darkVars = {
   "--color-stat-label": "255 255 255",
   "--color-stat-value": "240 237 232",
   "--color-grid": "255 255 255",
+
+  /* ── Surfaces ── */
+  "--surface": "30 30 36",
+  "--surface-elevated": "38 38 44",
+  "--surface-overlay": "36 36 42",
+
+  /* ── Text Hierarchy ── */
+  "--text-primary": "240 240 244",
+  "--text-secondary": "165 165 176",
+  "--text-tertiary": "115 115 125",
+  "--text-disabled": "70 70 78",
+
+  /* ── Borders ── */
+  "--border-default": "65 65 74",
+  "--border-subtle": "36 36 42",
+  "--border-strong": "90 90 100",
+
+  /* ── Inputs ── */
+  "--input-bg": "24 24 30",
+  "--input-border": "55 55 62",
+  "--input-bg-disabled": "30 30 36",
+
+  /* ── Semantic Status ── */
+  "--status-success": "74 222 128",
+  "--status-success-subtle": "28 43 33",
+  "--status-warning": "250 204 21",
+  "--status-warning-subtle": "65 47 35",
+  "--status-danger": "248 113 113",
+  "--status-danger-subtle": "66 43 43",
+  "--status-info": "96 165 250",
+  "--status-info-subtle": "26 40 46",
 };
 
 export const nativewindConfig = {

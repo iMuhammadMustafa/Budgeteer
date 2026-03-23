@@ -249,6 +249,39 @@ module.exports = {
         "stat-label": "rgb(var(--color-stat-label) / <alpha-value>)",
         "stat-value": "rgb(var(--color-stat-value) / <alpha-value>)",
         "grid-line": "rgb(var(--color-grid) / <alpha-value>)",
+
+        /* ── Surfaces ── */
+        surface: {
+          DEFAULT: "rgb(var(--surface))",
+          elevated: "rgb(var(--surface-elevated))",
+          overlay: "rgb(var(--surface-overlay))",
+        },
+
+        /* ── Text Hierarchy ── */
+        "text-primary": "rgb(var(--text-primary))",
+        "text-secondary": "rgb(var(--text-secondary))",
+        "text-tertiary": "rgb(var(--text-tertiary))",
+        "text-disabled": "rgb(var(--text-disabled))",
+
+        /* ── Borders ── */
+        "border-default": "rgb(var(--border-default))",
+        "border-subtle": "rgb(var(--border-subtle))",
+        "border-strong": "rgb(var(--border-strong))",
+
+        /* ── Inputs ── */
+        "input-bg": "rgb(var(--input-bg))",
+        "input-border": "rgb(var(--input-border))",
+        "input-bg-disabled": "rgb(var(--input-bg-disabled))",
+
+        /* ── Semantic Status ── */
+        "status-success": "rgb(var(--status-success))",
+        "status-success-subtle": "rgb(var(--status-success-subtle))",
+        "status-warning": "rgb(var(--status-warning))",
+        "status-warning-subtle": "rgb(var(--status-warning-subtle))",
+        "status-danger": "rgb(var(--status-danger))",
+        "status-danger-subtle": "rgb(var(--status-danger-subtle))",
+        "status-info": "rgb(var(--status-info))",
+        "status-info-subtle": "rgb(var(--status-info-subtle))",
       },
       fontFamily: {
         heading: undefined,
@@ -260,7 +293,21 @@ module.exports = {
         extrablack: "950",
       },
       fontSize: {
-        "2xs": "10px",
+        "2xs": ["10px", { lineHeight: "14px" }],
+        xs:    ["12px", { lineHeight: "16px" }],
+        sm:    ["14px", { lineHeight: "20px" }],
+        base:  ["16px", { lineHeight: "24px" }],
+        lg:    ["18px", { lineHeight: "28px" }],
+        xl:    ["20px", { lineHeight: "28px" }],
+        "2xl": ["24px", { lineHeight: "32px" }],
+        "3xl": ["30px", { lineHeight: "36px" }],
+      },
+      borderRadius: {
+        sm: "0.375rem",
+        DEFAULT: "0.5rem",
+        lg: "0.75rem",
+        xl: "1rem",
+        full: "9999px",
       },
       boxShadow: {
         "hard-1": "-2px 2px 8px 0px rgba(38, 38, 38, 0.20)",

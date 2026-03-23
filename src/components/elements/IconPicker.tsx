@@ -171,8 +171,8 @@ const IconItemComponent = memo(
         onPress={handlePress}
         className={`
         flex-1 p-2 m-1 rounded-lg border-2 min-h-[80px]
-        ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:bg-gray-50"}
-        ${item.isRecent ? "ring-2 ring-green-200" : ""}
+        ${isSelected ? "border-primary bg-primary/10" : "border-border-default bg-surface hover:bg-surface-elevated"}
+        ${item.isRecent ? "ring-2 ring-status-success/30" : ""}
       `}
         accessibilityLabel={`Select ${item.name} icon`}
         accessibilityHint={item.isRecent ? "Recently used icon" : undefined}
@@ -182,14 +182,14 @@ const IconItemComponent = memo(
           <Text
             className={`
             text-xs mt-1 text-center font-medium
-            ${isSelected ? "text-blue-600" : "text-gray-600"}
+            ${isSelected ? "text-primary" : "text-text-secondary"}
           `}
             numberOfLines={2}
             ellipsizeMode="tail"
           >
             {item.name}
           </Text>
-          {item.isRecent && <View className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full" />}
+          {item.isRecent && <View className="absolute -top-1 -right-1 w-3 h-3 bg-status-success rounded-full" />}
         </View>
       </Pressable>
     );
@@ -386,7 +386,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
   // Render loading skeleton
   const renderLoadingSkeleton = useCallback(() => {
     const skeletonItems = Array.from({ length: numColumns * 3 }, (_, index) => (
-      <View key={`skeleton-${index}`} className="flex-1 p-2 m-1 rounded-lg bg-gray-200 min-h-[80px] animate-pulse" />
+      <View key={`skeleton-${index}`} className="flex-1 p-2 m-1 rounded-lg bg-muted min-h-[80px] animate-pulse" />
     ));
 
     return <View className="flex-row flex-wrap">{skeletonItems}</View>;
@@ -400,17 +400,17 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
       {/* Icon selector button */}
       <Pressable
         className="
-          p-3 rounded-md border border-gray-300 bg-white
+          p-3 rounded-md border border-input-border bg-input-bg
           flex-row items-center justify-center
-          hover:border-gray-400 hover:bg-gray-50
-          focus:border-blue-500 focus:ring-2 focus:ring-blue-200
+          hover:border-border-strong hover:bg-surface-elevated
+          focus:border-primary focus:ring-2 focus:ring-primary/20
         "
         onPress={handleModalOpen}
         accessibilityLabel={`Selected icon: ${selectedIcon}. Tap to change icon`}
         accessibilityHint="Opens icon picker modal"
       >
         <MyIcon name={selectedIcon} size={24} className="text-foreground" />
-        <Text className="ml-2 text-gray-700 font-medium">{selectedIcon}</Text>
+        <Text className="ml-2 text-text-secondary font-medium">{selectedIcon}</Text>
       </Pressable>
 
       {/* Modal */}
@@ -427,16 +427,16 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
           accessibilityLabel="Close icon picker"
         >
           <Pressable
-            className="w-full max-w-4xl bg-white rounded-xl shadow-2xl max-h-[80%]"
+            className="w-full max-w-4xl bg-surface rounded-xl shadow-2xl max-h-[80%]"
             onPress={e => e.stopPropagation()}
           >
             {/* Modal header */}
-            <View className="p-4 border-b border-gray-200">
+            <View className="p-4 border-b border-border-default">
               <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-xl font-bold text-gray-800">Choose an Icon</Text>
+                <Text className="text-xl font-bold text-foreground">Choose an Icon</Text>
                 <Pressable
                   onPress={handleModalClose}
-                  className="p-2 rounded-full hover:bg-gray-100"
+                  className="p-2 rounded-full hover:bg-surface-elevated"
                   accessibilityLabel="Close"
                 >
                   <MyIcon name="X" size={20} color="#6b7280" />
@@ -467,15 +467,15 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                             px-3 py-1.5 mr-2 mb-2 rounded-full border
                             ${
                               selectedCategory === category
-                                ? "bg-blue-500 border-blue-500"
-                                : "bg-white border-gray-300 hover:border-gray-400"
+                                ? "bg-primary border-primary"
+                                : "bg-surface border-border-default hover:border-border-strong"
                             }
                           `}
                         >
                           <Text
                             className={`
                               text-sm font-medium
-                              ${selectedCategory === category ? "text-white" : "text-gray-700"}
+                              ${selectedCategory === category ? "text-white" : "text-text-secondary"}
                             `}
                           >
                             {category}
@@ -487,7 +487,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
               )}
 
               {/* Stats */}
-              <Text className="text-sm text-gray-500">
+              <Text className="text-sm text-text-secondary">
                 {isLoading
                   ? "Loading..."
                   : searchText
@@ -495,7 +495,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                     : `${filteredIcons.length} icons in ${selectedCategory}`}
                 {recentIcons.length > 0 && ` • ${recentIcons.length} recent`}
                 {selectedCategory === "All" && !searchText && !isLoading && (
-                  <Text className="text-xs text-blue-600 block mt-1">
+                  <Text className="text-xs text-primary block mt-1">
                     📋 Showing all {availableIcons.length} available icons
                   </Text>
                 )}
@@ -509,8 +509,8 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
               ) : filteredIcons.length === 0 ? (
                 <View className="flex-1 justify-center items-center py-8">
                   <MyIcon name="Search" size={48} color="#9ca3af" />
-                  <Text className="text-gray-500 text-lg font-medium mt-4">No icons found</Text>
-                  <Text className="text-gray-400 text-sm mt-1">Try a different search term</Text>
+                  <Text className="text-text-secondary text-lg font-medium mt-4">No icons found</Text>
+                  <Text className="text-text-tertiary text-sm mt-1">Try a different search term</Text>
                 </View>
               ) : (
                 <FlatList
@@ -543,7 +543,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                   ListFooterComponent={
                     isLoading ? (
                       <View className="py-4">
-                        <Text className="text-center text-gray-500">Loading more icons...</Text>
+                        <Text className="text-center text-text-secondary">Loading more icons...</Text>
                       </View>
                     ) : null
                   }
@@ -553,8 +553,8 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
 
             {/* Footer with recent icons info */}
             {recentIcons.length > 0 && !searchText && (
-              <View className="p-4 border-t border-gray-200 bg-gray-50">
-                <Text className="text-sm text-gray-600">
+              <View className="p-4 border-t border-border-default bg-surface-elevated">
+                <Text className="text-sm text-text-secondary">
                   💡 Recent icons are marked with a green dot and appear first
                 </Text>
               </View>

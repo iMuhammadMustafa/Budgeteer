@@ -118,7 +118,7 @@ export default function RecurringsScreen() {
             )}
             <View className="w-full flex-row items-center mb-3">
               <TextInput
-                className="flex-1 border border-gray-300 bg-white rounded-md p-2 text-base mr-2"
+                className="flex-1 border border-input-border bg-input-bg rounded-md p-2 text-base mr-2"
                 keyboardType="numeric"
                 value={amountInput}
                 onChangeText={setAmountInput}

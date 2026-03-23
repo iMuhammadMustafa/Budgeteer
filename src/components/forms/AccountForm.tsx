@@ -391,7 +391,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
                 </View>
                 <View className="mt-6">
                   <Text
-                    className="text-blue-600 underline p-2"
+                    className="text-primary underline p-2"
                     onPress={handleSyncRunningBalance}
                     accessibilityRole="button"
                     accessibilityLabel="Sync running balance with current balance"
@@ -437,11 +437,11 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
 
             {/* Open Balance (for existing accounts with opening transaction) */}
             {openTransaction && (
-              <View className="border border-gray-200 rounded-md p-3 bg-gray-50">
+              <View className="border border-border-default rounded-md p-3 bg-surface-elevated">
                 <View className="flex flex-row items-center justify-between mb-2">
-                  <Text className="text-sm font-medium text-gray-700">Open Balance (Separate Form)</Text>
+                  <Text className="text-sm font-medium text-text-secondary">Open Balance (Separate Form)</Text>
                   <Text
-                    className="text-blue-600 underline text-sm"
+                    className="text-primary underline text-sm"
                     onPress={handleResetOpenBalance}
                     accessibilityRole="button"
                     accessibilityLabel="Reset open balance to original value"
@@ -483,7 +483,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">Error: {error.message}</Text>
+              <Text className="text-status-danger text-sm">Error: {error.message}</Text>
             </View>
           )}
         </FormContainer>

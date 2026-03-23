@@ -95,12 +95,12 @@ export default function MyModal({
           } : undefined}
           className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%] bg-card rounded-md border border-muted" : "bg-card rounded-md border border-muted"}
         >
-          <View className="bg-white rounded-lg overflow-hidden flex-1">
+          <View className="bg-surface rounded-lg overflow-hidden flex-1">
             {title && (
-              <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
-                <Text className="font-semibold text-dark">{title}</Text>
+              <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
+                <Text className="font-semibold text-foreground">{title}</Text>
                 <Pressable onPress={onClose} className="p-1">
-                  <MyIcon name="X" size={20} className="text-gray-500" />
+                  <MyIcon name="X" size={20} className="text-text-secondary" />
                 </Pressable>
               </View>
             )}
@@ -142,11 +142,11 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
           } : undefined}
           className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%]" : ""}
         >
-          <View className="bg-white rounded-lg overflow-hidden flex-1">
-            <View className="flex-row items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
-              <Text className="font-semibold text-dark">{title}</Text>
+          <View className="bg-surface rounded-lg overflow-hidden flex-1">
+            <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
+              <Text className="font-semibold text-foreground">{title}</Text>
               <Pressable onPress={onClose} className="p-1">
-                <MyIcon name="X" size={20} className="text-gray-500" />
+                <MyIcon name="X" size={20} className="text-text-secondary" />
               </Pressable>
             </View>
             <View className="flex-1">

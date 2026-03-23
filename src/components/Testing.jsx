@@ -41,9 +41,9 @@ const STICKY_COL_CLASS = "w-36"; // 144px
 const DATA_COL_CLASS = "w-28 text-right"; // 112px
 
 // Reusable cell classes
-const HEADER_CELL_CLASS = "p-3 font-bold bg-gray-100 border-b border-gray-300";
-const SECTION_CELL_CLASS = "p-3 font-bold bg-blue-50 border-b border-gray-200";
-const ITEM_CELL_CLASS = "p-3 border-b border-gray-200 bg-white";
+const HEADER_CELL_CLASS = "p-3 font-bold bg-surface-elevated border-b border-border-default";
+const SECTION_CELL_CLASS = "p-3 font-bold bg-primary/10 border-b border-border-default";
+const ITEM_CELL_CLASS = "p-3 border-b border-border-default bg-surface";
 
 export default function StickyTable() {
   return (
@@ -55,7 +55,7 @@ export default function StickyTable() {
 
         {/* --- COLUMN 1: STICKY LABELS (Header + Body) --- */}
         {/* This View has a fixed width and contains all category/item labels */}
-        <View className={`${STICKY_COL_CLASS} border-r border-gray-300`}>
+        <View className={`${STICKY_COL_CLASS} border-r border-border-default`}>
           {/* Sticky Header Cell */}
           <Text className={HEADER_CELL_CLASS}>Category</Text>
 

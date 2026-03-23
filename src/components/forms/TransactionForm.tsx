@@ -420,7 +420,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">Error: {error.message}</Text>
+              <Text className="text-status-danger text-sm">Error: {error.message}</Text>
             </View>
           )}
         </FormContainer>

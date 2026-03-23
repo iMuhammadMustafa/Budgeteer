@@ -251,7 +251,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
     return (
       <SafeAreaView className="flex-1">
         <View className="flex-1 justify-center items-center">
-          <Text className="text-gray-600">Loading transaction groups...</Text>
+          <Text className="text-text-secondary">Loading transaction groups...</Text>
         </View>
       </SafeAreaView>
     );
@@ -286,7 +286,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
             {/* Group selection with custom dropdown */}
             <View className="my-2 relative z-50">
               <Text className="text-foreground mb-1 font-medium">
-                Transaction Group <Text className="text-red-500 ml-1">*</Text>
+                Transaction Group <Text className="text-status-danger ml-1">*</Text>
               </Text>
               <DropdownField
                 isModal={Platform.OS !== "web"}
@@ -311,9 +311,9 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
                 }}
               />
               {formState.touched.groupid && formState.errors.groupid && (
-                <Text className="text-red-500 text-sm mt-1">{formState.errors.groupid}</Text>
+                <Text className="text-status-danger text-sm mt-1">{formState.errors.groupid}</Text>
               )}
-              <Text className="text-gray-600 text-sm mt-1 -z-10">
+              <Text className="text-text-secondary text-sm mt-1 -z-10">
                 Select the transaction group this category belongs to
               </Text>
             </View>
@@ -375,13 +375,13 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
               <View className="flex-1">
                 <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
                 {formState.touched.icon && formState.errors.icon && (
-                  <Text className="text-red-500 text-sm mt-1">{formState.errors.icon}</Text>
+                  <Text className="text-status-danger text-sm mt-1">{formState.errors.icon}</Text>
                 )}
               </View>
               <View className="flex-1">
                 <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
                 {formState.touched.color && formState.errors.color && (
-                  <Text className="text-red-500 text-sm mt-1">{formState.errors.color}</Text>
+                  <Text className="text-status-danger text-sm mt-1">{formState.errors.color}</Text>
                 )}
               </View>
             </View>
@@ -403,7 +403,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-red-700 text-sm">
+              <Text className="text-status-danger text-sm">
                 {error.message || "An error occurred while saving the category"}
               </Text>
             </View>

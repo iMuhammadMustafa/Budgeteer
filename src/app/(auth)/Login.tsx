@@ -60,7 +60,7 @@ export default function Login() {
 
       <TextInput
         placeholder="Email"
-        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-white"
+        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-input-bg"
         onChangeText={text => onTextChange("email", text)}
         value={user.email}
         keyboardType="email-address"
@@ -69,7 +69,7 @@ export default function Login() {
       <TextInput
         placeholder="Password"
         secureTextEntry
-        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-white"
+        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-input-bg"
         onChangeText={text => onTextChange("password", text)}
         value={user.password}
       />

@@ -121,15 +121,15 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                 <MyIcon name="Upload" size={40} className="text-primary" />
             </View>
             <Text className="text-lg font-semibold text-center mb-2">Import Data</Text>
-            <Text className="text-sm text-gray-500 text-center mb-6">
+            <Text className="text-sm text-text-secondary text-center mb-6">
                 Select a Budgeteer export file (.json) to import your data, settings, and configurations.
             </Text>
 
             {error && (
                 <View className="bg-red-50 p-3 rounded-lg mb-4 w-full">
                     <View className="flex-row items-center">
-                        <MyIcon name="AlertCircle" size={18} className="text-red-600" />
-                        <Text className="ml-2 text-sm text-red-700 flex-1">{error}</Text>
+                        <MyIcon name="AlertCircle" size={18} className="text-status-danger" />
+                        <Text className="ml-2 text-sm text-status-danger flex-1">{error}</Text>
                     </View>
                 </View>
             )}
@@ -144,10 +144,10 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
 
             <View className="mt-6 p-3 bg-amber-50 rounded-lg w-full">
                 <View className="flex-row items-start">
-                    <MyIcon name="Info" size={18} className="text-amber-600 mt-0.5" />
+                    <MyIcon name="Info" size={18} className="text-status-warning mt-0.5" />
                     <View className="ml-2 flex-1">
-                        <Text className="text-sm font-medium text-amber-700">Important</Text>
-                        <Text className="text-xs text-amber-600 mt-1">
+                        <Text className="text-sm font-medium text-status-warning">Important</Text>
+                        <Text className="text-xs text-status-warning mt-1">
                             • Only JSON export files are supported{"\n"}
                             • Duplicate records will be skipped{"\n"}
                             • The system will validate all data before importing
@@ -161,7 +161,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
     const renderValidatingStep = () => (
         <View className="p-6 items-center">
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text className="mt-4 text-gray-600">Validating import data...</Text>
+            <Text className="mt-4 text-text-secondary">Validating import data...</Text>
         </View>
     );
 
@@ -175,15 +175,15 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
             <View className="flex-1">
                 <ScrollView className="flex-1 p-4">
                     {/* Summary */}
-                    <View className="bg-gray-50 p-4 rounded-lg mb-4">
-                        <Text className="font-medium text-gray-700 mb-2">Import Summary</Text>
+                    <View className="bg-surface-elevated p-4 rounded-lg mb-4">
+                        <Text className="font-medium text-foreground mb-2">Import Summary</Text>
                         <View className="flex-row flex-wrap gap-2">
-                            <View className="bg-white p-2 rounded border border-gray-200 flex-1 min-w-[100px]">
-                                <Text className="text-xs text-gray-500">Source</Text>
+                            <View className="bg-surface p-2 rounded border border-border-default flex-1 min-w-[100px]">
+                                <Text className="text-xs text-text-tertiary">Source</Text>
                                 <Text className="text-sm font-medium">{importData.sourceStorageMode}</Text>
                             </View>
-                            <View className="bg-white p-2 rounded border border-gray-200 flex-1 min-w-[100px]">
-                                <Text className="text-xs text-gray-500">Exported</Text>
+                            <View className="bg-surface p-2 rounded border border-border-default flex-1 min-w-[100px]">
+                                <Text className="text-xs text-text-tertiary">Exported</Text>
                                 <Text className="text-sm font-medium">
                                     {new Date(importData.exportDate).toLocaleDateString()}
                                 </Text>
@@ -197,8 +197,8 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
 
                     {/* Tables to Import */}
                     <View className="mb-4">
-                        <Text className="font-medium text-gray-700 mb-2">Tables to Import</Text>
-                        <View className="bg-gray-50 rounded-lg overflow-hidden">
+                        <Text className="font-medium text-foreground mb-2">Tables to Import</Text>
+                        <View className="bg-surface-elevated rounded-lg overflow-hidden">
                             {validationResult.summary.tablesFound.map(table => {
                                 const total = validationResult.summary.recordCounts[table] || 0;
                                 const toImport = validationResult.summary.recordsToImport[table] || 0;
@@ -207,20 +207,20 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                                 return (
                                     <View
                                         key={table}
-                                        className="flex-row items-center justify-between p-3 border-b border-gray-100"
+                                        className="flex-row items-center justify-between p-3 border-b border-border-subtle"
                                     >
                                         <View className="flex-row items-center">
-                                            <MyIcon name="Database" size={16} className="text-gray-500 mr-2" />
-                                            <Text className="text-sm text-gray-700">{formatTableName(table)}</Text>
+                                            <MyIcon name="Database" size={16} className="text-text-secondary mr-2" />
+                                            <Text className="text-sm text-foreground">{formatTableName(table)}</Text>
                                         </View>
                                         <View className="flex-row items-center gap-2">
                                             {skipped > 0 && (
                                                 <View className="bg-amber-100 px-2 py-0.5 rounded">
-                                                    <Text className="text-xs text-amber-700">{skipped} skipped</Text>
+                                                    <Text className="text-xs text-status-warning">{skipped} skipped</Text>
                                                 </View>
                                             )}
                                             <View className="bg-green-100 px-2 py-0.5 rounded">
-                                                <Text className="text-xs text-green-700">{toImport} new</Text>
+                                                <Text className="text-xs text-status-success">{toImport} new</Text>
                                             </View>
                                         </View>
                                     </View>
@@ -234,18 +234,18 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                         <View className="mb-4">
                             <View className="flex-row items-center mb-2">
                                 <MyIcon name="XCircle" size={18} className="text-red-600" />
-                                <Text className="font-medium text-red-700 ml-1">
+                                <Text className="font-medium text-status-danger ml-1">
                                     Errors ({validationResult.errors.length})
                                 </Text>
                             </View>
                             <View className="bg-red-50 rounded-lg p-3">
                                 {validationResult.errors.slice(0, 5).map((error, index) => (
-                                    <Text key={index} className="text-sm text-red-700 mb-1">
+                                    <Text key={index} className="text-sm text-status-danger mb-1">
                                         • {error.message}
                                     </Text>
                                 ))}
                                 {validationResult.errors.length > 5 && (
-                                    <Text className="text-sm text-red-600 mt-1">
+                                    <Text className="text-sm text-status-danger mt-1">
                                         ... and {validationResult.errors.length - 5} more errors
                                     </Text>
                                 )}
@@ -258,18 +258,18 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                         <View className="mb-4">
                             <View className="flex-row items-center mb-2">
                                 <MyIcon name="AlertTriangle" size={18} className="text-amber-600" />
-                                <Text className="font-medium text-amber-700 ml-1">
+                                <Text className="font-medium text-status-warning ml-1">
                                     Warnings ({validationResult.warnings.length})
                                 </Text>
                             </View>
                             <View className="bg-amber-50 rounded-lg p-3">
                                 {validationResult.warnings.slice(0, 3).map((warning, index) => (
-                                    <Text key={index} className="text-sm text-amber-700 mb-1">
+                                    <Text key={index} className="text-sm text-status-warning mb-1">
                                         • {warning.message}
                                     </Text>
                                 ))}
                                 {validationResult.warnings.length > 3 && (
-                                    <Text className="text-sm text-amber-600 mt-1">
+                                    <Text className="text-sm text-status-warning mt-1">
                                         ... and {validationResult.warnings.length - 3} more warnings
                                     </Text>
                                 )}
@@ -281,8 +281,8 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                     {!hasErrors && (
                         <View className="bg-green-50 p-3 rounded-lg">
                             <View className="flex-row items-center">
-                                <MyIcon name="CheckCircle" size={20} className="text-green-600" />
-                                <Text className="ml-2 text-sm text-green-700 font-medium">
+                                <MyIcon name="CheckCircle" size={20} className="text-status-success" />
+                                <Text className="ml-2 text-sm text-status-success font-medium">
                                     Data validation passed. Ready to import.
                                 </Text>
                             </View>
@@ -291,7 +291,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                 </ScrollView>
 
                 {/* Actions */}
-                <View className="p-4 border-t border-gray-200 bg-gray-50">
+                <View className="p-4 border-t border-border-default bg-surface-elevated">
                     <View className="flex-row gap-2">
                         <Button
                             label="Cancel"
@@ -316,8 +316,8 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
     const renderImportingStep = () => (
         <View className="p-6 items-center">
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text className="mt-4 text-gray-600">Importing data...</Text>
-            <Text className="mt-2 text-xs text-gray-400">This may take a moment</Text>
+            <Text className="mt-4 text-text-secondary">Importing data...</Text>
+            <Text className="mt-2 text-xs text-text-tertiary">This may take a moment</Text>
         </View>
     );
 
@@ -342,7 +342,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                     <MyIcon
                         name={importResult.success ? "CheckCircle" : "XCircle"}
                         size={40}
-                        className={importResult.success ? "text-green-600" : "text-red-600"}
+                        className={importResult.success ? "text-status-success" : "text-status-danger"}
                     />
                 </View>
 
@@ -352,24 +352,24 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
 
                 <View className="flex-row gap-4 mb-4">
                     <View className="items-center">
-                        <Text className="text-2xl font-bold text-green-600">{totalImported}</Text>
-                        <Text className="text-xs text-gray-500">Imported</Text>
+                        <Text className="text-2xl font-bold text-status-success">{totalImported}</Text>
+                        <Text className="text-xs text-text-tertiary">Imported</Text>
                     </View>
                     <View className="items-center">
-                        <Text className="text-2xl font-bold text-amber-600">{totalSkipped}</Text>
-                        <Text className="text-xs text-gray-500">Skipped</Text>
+                        <Text className="text-2xl font-bold text-status-warning">{totalSkipped}</Text>
+                        <Text className="text-xs text-text-tertiary">Skipped</Text>
                     </View>
                 </View>
 
                 {importResult.errors.length > 0 && (
                     <View className="bg-red-50 p-3 rounded-lg w-full mb-4">
-                        <Text className="text-sm text-red-700">
+                        <Text className="text-sm text-status-danger">
                             {importResult.errors.length} error(s) occurred during import
                         </Text>
                     </View>
                 )}
 
-                <Text className="text-xs text-gray-400 mb-4">
+                <Text className="text-xs text-text-tertiary mb-4">
                     Completed in {(importResult.durationMs / 1000).toFixed(2)}s
                 </Text>
 
@@ -387,9 +387,9 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
         <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
             <View className="flex-1 bg-black/50 justify-center items-center">
                 <Pressable className="absolute inset-0" onPress={handleClose} />
-                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-white rounded-lg overflow-hidden">
+                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-surface rounded-lg overflow-hidden">
                     {/* Header */}
-                    <View className="flex-row items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                    <View className="flex-row items-center justify-between p-4 border-b border-border-default bg-surface-elevated">
                         <Text className="font-semibold text-lg text-dark">
                             {step === "select" && "Import Data"}
                             {step === "validating" && "Validating..."}
@@ -398,7 +398,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                             {step === "complete" && "Import Complete"}
                         </Text>
                         <Pressable onPress={handleClose} className="p-1">
-                            <MyIcon name="X" size={20} className="text-gray-500" />
+                            <MyIcon name="X" size={20} className="text-text-secondary" />
                         </Pressable>
                     </View>
 
