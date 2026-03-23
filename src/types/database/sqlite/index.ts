@@ -1,9 +1,12 @@
 import * as SQLite from "expo-sqlite";
+import { Platform } from "react-native";
 import { TableNames } from "../TableNames";
 import { ALL_CREATE_TABLES, CREATE_INDICES } from "./schema";
 import { ALL_CREATE_VIEWS, ALL_DROP_VIEWS } from "./views";
 
 const DATABASE_NAME = "budgeteer.db";
+const MAX_OPEN_RETRIES = 3;
+const RETRY_DELAY_MS = 500;
 
 let database: SQLite.SQLiteDatabase | null = null;
 let isInitialized = false;
@@ -19,8 +22,10 @@ export const initializeSqliteDBAsync = async (): Promise<SQLite.SQLiteDatabase> 
 
     console.log("Initializing SQLite database...");
 
-    // Open database asynchronously
-    database = await SQLite.openDatabaseAsync(DATABASE_NAME);
+    // Open database asynchronously — on web the OPFS file-handle pool
+    // can be temporarily exhausted, yielding "cannot create file" /
+    // error-code-14.  Retry a few times with a short delay.
+    database = await openWithRetry(DATABASE_NAME);
 
     // Enable foreign keys
     await database.execAsync("PRAGMA foreign_keys = ON;");
@@ -143,6 +148,41 @@ export const closeSqliteDB = async (): Promise<void> => {
         database = null;
         isInitialized = false;
     }
+};
+
+/**
+ * Open the database with retry logic for the web platform.
+ * On web, expo-sqlite uses wa-sqlite with OPFS which has a limited
+ * file-handle pool (AccessHandlePoolVFS, default capacity 6).
+ * When the pool is temporarily exhausted we get "cannot create file" /
+ * SQLITE_CANTOPEN (error code 14).  A short retry loop lets the pool
+ * reclaim handles and usually succeeds on the second attempt.
+ */
+const openWithRetry = async (
+    name: string,
+    retries = MAX_OPEN_RETRIES,
+): Promise<SQLite.SQLiteDatabase> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            return await SQLite.openDatabaseAsync(name);
+        } catch (error) {
+            const isWeb = Platform.OS === "web";
+            const isLastAttempt = attempt === retries;
+
+            if (!isWeb || isLastAttempt) {
+                throw error;
+            }
+
+            console.warn(
+                `[SQLite] openDatabaseAsync failed (attempt ${attempt}/${retries}), ` +
+                `retrying in ${RETRY_DELAY_MS * attempt}ms…`,
+                error,
+            );
+            await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        }
+    }
+    // Unreachable, but satisfies TS
+    throw new Error("Failed to open database after retries");
 };
 
 /**

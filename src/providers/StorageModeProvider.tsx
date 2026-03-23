@@ -59,13 +59,22 @@ export default function StorageModeProvider({ children }: { children: React.Reac
       setIsLoading(true);
       await AsyncStorage.setItem(STORAGE_KEYS.STORAGE_MODE, mode);
 
-      if (mode === StorageMode.Local) {
-        await initializeSqliteDBAsync();
-        await seedSqliteDB();
-      }
-      if (mode === StorageMode.Demo) {
-        await initializeSqliteDBAsync();
-        await seedSqliteDemoDB();
+      try {
+        if (mode === StorageMode.Local) {
+          await initializeSqliteDBAsync();
+          await seedSqliteDB();
+        }
+        if (mode === StorageMode.Demo) {
+          await initializeSqliteDBAsync();
+          await seedSqliteDemoDB();
+        }
+      } catch (error) {
+        console.error(`Failed to initialize ${mode} storage:`, error);
+        // Roll back so the user lands back on the mode-selection screen
+        await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+        setStorageMode(null);
+        setIsLoading(false);
+        return;
       }
 
       setStorageMode(mode);
