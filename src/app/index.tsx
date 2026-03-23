@@ -11,7 +11,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Line, Rect } from "react-native-svg";
+import Svg, { Rect } from "react-native-svg";
+
+import GridPattern from "../components/GridPattern";
 
 import { useAuth } from "../providers/AuthProvider";
 import { useStorageMode } from "../providers/StorageModeProvider";
@@ -349,45 +351,12 @@ function StatCard({ label, value, sub, delay, isUp }: { label: string; value: st
   );
 }
 
-export function GridPattern({ width: gridWidth, height: gridHeight, isDark }: { width?: number; height?: number; isDark?: boolean } = {}) {
-  if (Platform.OS === "web") {
-    return (
-      <View
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `linear-gradient(rgb(var(--color-grid) / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--color-grid) / 0.025) 1px, transparent 1px)`,
-          backgroundSize: "40px 40px",
-        }}
-      />
-    );
-  }
-  // Native: SVG-based grid
-  const w = gridWidth || 400;
-  const h = gridHeight || 900;
-  const spacing = 40;
-  const lines: React.ReactElement[] = [];
-  const gridColor = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-  for (let x = 0; x <= w; x += spacing) {
-    lines.push(<Line key={`v${x}`} x1={x} y1={0} x2={x} y2={h} stroke={gridColor} strokeWidth={1} />);
-  }
-  for (let y = 0; y <= h; y += spacing) {
-    lines.push(<Line key={`h${y}`} x1={0} y1={y} x2={w} y2={y} stroke={gridColor} strokeWidth={1} />);
-  }
-  return (
-    <View className="absolute inset-0">
-      <Svg width={w} height={h}>
-        {lines}
-      </Svg>
-    </View>
-  );
-}
-
 // ─── Main Component ──────────────────────────────────────────────
 
 export default function Index() {
   const { storageMode, setStorageMode, isLoading: isStorageLoading } = useStorageMode();
   const { session, setSession, isLoading: isAuthLoading, logout } = useAuth();
-  const { theme, toggleTheme, showGrid } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
   const isDesktop = width >= WEB_DESKTOP_BREAKPOINT;
@@ -591,7 +560,7 @@ export default function Index() {
         <FloatingView amplitude={12} duration={5500} className="absolute" style={{ bottom: 60, right: -80, width: 280, height: 280, borderRadius: 140 }}>
           <LinearGradient colors={[...orbs.orb2]} style={{ width: "100%", height: "100%", borderRadius: 140 }} start={{ x: 0.5, y: 0.5 }} end={{ x: 1, y: 1 }} />
         </FloatingView>
-        <GridPattern isDark={isDark} />
+
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 24, paddingVertical: 60 }}>

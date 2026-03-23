@@ -23,3 +23,17 @@
 .custom-scrollbar::-webkit-scrollbar-track {
   background: #e0e0e0; /* Track color */
 }
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #444;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #666;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a1a1d;
+}
+.dark .custom-scrollbar {
+  scrollbar-color: #444 #1a1a1d;
+}
