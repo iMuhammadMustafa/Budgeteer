@@ -235,11 +235,11 @@ export default function SummaryIndex() {
       <SafeAreaView className="flex-1 bg-background">
         <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
         <View className="flex-1 justify-center items-center px-5">
-          <Text className="text-lg font-bold text-red-500 mb-2">Failed to load expense data</Text>
+          <Text className="text-lg font-bold text-status-danger mb-2">Failed to load expense data</Text>
           <Text className="text-sm text-muted-foreground text-center mb-4">
             {error instanceof Error ? error.message : "Unknown error occurred"}
           </Text>
-          <Pressable onPress={onRefresh} className="bg-success-500 py-3 px-6 rounded-lg">
+          <Pressable onPress={onRefresh} className="bg-primary py-3 px-6 rounded-lg">
             <Text className="text-primary-foreground font-semibold">Try Again</Text>
           </Pressable>
         </View>
@@ -248,11 +248,11 @@ export default function SummaryIndex() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-background">
       <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
 
       {/* Header */}
-      <View className="flex-row justify-between items-center p-4 bg-card border-b border-border">
+      <View className="flex-row justify-between items-center p-4 bg-surface border-b border-border-default">
         <Text className="text-2xl font-bold text-foreground">Expense Summary</Text>
         <Pressable onPress={onRefresh} className="p-2">
           <RefreshCcw size={24} color="#10b981" />
@@ -260,8 +260,8 @@ export default function SummaryIndex() {
       </View>
 
       {/* Time Period Selector */}
-      <View className="bg-card p-4 border-b border-border">
-        <View className="flex-row bg-popover rounded-lg p-1">
+      <View className="bg-surface p-4 border-b border-border-default">
+        <View className="flex-row bg-surface-elevated rounded-lg p-1">
           {(["monthly", "quarterly", "yearly"] as TimePeriod[]).map(period => (
             <Pressable
               key={period}
@@ -290,9 +290,9 @@ export default function SummaryIndex() {
             {/* Main Table Container - Two Column Layout */}
             <View className="flex-row">
               {/* --- COLUMN 1: STICKY CATEGORIES (Header + Body) --- */}
-              <View style={{ width: CATEGORY_COLUMN_WIDTH }} className=" border-slate-300">
+              <View style={{ width: CATEGORY_COLUMN_WIDTH }} className="border-border-default">
                 {/* Sticky Category Header */}
-                <View className="bg-popover border-b-2 border-border py-4 px-4">
+                <View className="bg-surface-elevated border-b-2 border-border-default py-4 px-4">
                   <Text className="font-bold text-sm text-foreground">Category</Text>
                 </View>
 
@@ -300,7 +300,7 @@ export default function SummaryIndex() {
                 {Object.entries(groupedData).map(([groupName, categories]) => (
                   <View key={groupName}>
                     {/* Group Header - Category Column */}
-                    <View className="bg-popover py-3 border-b border-border px-4" style={{ height: 58 }}>
+                    <View className="bg-surface-elevated py-3 border-b border-border-default px-4" style={{ height: 58 }}>
                       <View className="flex-row items-center h-full">
                         <View className="w-7 h-7 items-center justify-center mr-2">
                           {Object.values(categories)[0]?.[0]?.groupIcon && (
@@ -332,8 +332,8 @@ export default function SummaryIndex() {
                         <View
                           key={`${groupName}-${categoryName}`}
                           className={`${
-                            categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
-                          } py-2 border-b border-border px-4`}
+                            categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
+                          } py-2 border-b border-border-default px-4`}
                           style={{ height: rowHeight }}
                         >
                           <View className="flex-row items-center pl-4 h-full">
@@ -357,16 +357,16 @@ export default function SummaryIndex() {
                 ))}
 
                 {/* Totals Row - Category Column */}
-                <View className="bg-primary py-4 border-t-2 border-border px-4">
+                <View className="bg-primary py-4 border-t-2 border-border-default px-4">
                   <Text className="font-bold text-base text-primary-foreground">Total</Text>
                 </View>
               </View>
 
               {/* --- COLUMN 2: SCROLLABLE DATA (Header + Body) --- */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={true} className="bg-card">
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} className="bg-surface">
                 <View>
                   {/* Scrollable Period Headers */}
-                  <View className="flex-row bg-popover border-b-2 border-border py-4">
+                  <View className="flex-row bg-surface-elevated border-b-2 border-border-default py-4">
                     {periods.map((period, index) => (
                       <View key={index} style={{ width: columnWidth }} className="px-2">
                         <Text className="font-bold text-sm text-foreground text-center" numberOfLines={2}>
@@ -380,7 +380,7 @@ export default function SummaryIndex() {
                   {Object.entries(groupedData).map(([groupName, categories]) => (
                     <View key={groupName}>
                       {/* Group Header - Data Columns */}
-                      <View className="flex-row bg-popover py-3 border-b border-border" style={{ height: 58 }}>
+                      <View className="flex-row bg-surface-elevated py-3 border-b border-border-default" style={{ height: 58 }}>
                         {periods.map((period, periodIndex) => {
                           const groupTotal = Object.values(categories).reduce(
                             (sum, categoryTransactions) => sum + (categoryTransactions[periodIndex]?.amount || 0),
@@ -408,10 +408,10 @@ export default function SummaryIndex() {
                                 <Text
                                   className={`font-semibold text-sm text-center ${
                                     hasIncrease
-                                      ? "text-red-500"
+                                      ? "text-status-danger"
                                       : hasDecrease
-                                        ? "text-success-500"
-                                        : "text-typography-700"
+                                        ? "text-status-success"
+                                        : "text-foreground"
                                   }`}
                                 >
                                   {formatCurrency(groupTotal)}
@@ -441,8 +441,8 @@ export default function SummaryIndex() {
                           <View
                             key={`${groupName}-${categoryName}`}
                             className={`flex-row ${
-                              categoryIndex % 2 === 0 ? "bg-card" : "bg-background"
-                            } py-2 border-b border-border`}
+                              categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
+                            } py-2 border-b border-border-default`}
                             style={{ height: rowHeight }}
                           >
                             {periods.map((period, periodIndex) => {
@@ -464,10 +464,10 @@ export default function SummaryIndex() {
                                       <Text
                                         className={`text-sm text-center ${
                                           hasIncrease
-                                            ? "text-red-500"
+                                            ? "text-status-danger"
                                             : hasDecrease
-                                              ? "text-success-500"
-                                              : "text-typography-700"
+                                              ? "text-status-success"
+                                              : "text-foreground"
                                         } font-medium`}
                                         // } ${amount > 0 ? "font-medium" : "font-normal"}`}
                                       >
@@ -514,7 +514,7 @@ export default function SummaryIndex() {
                   ))}
 
                   {/* Totals Row - Data Columns */}
-                  <View className="flex-row bg-primary py-4 border-t-2 border-border">
+                  <View className="flex-row bg-primary py-4 border-t-2 border-border-default">
                     {comparisonData.map((periodData, periodIndex) => {
                       const previousTotal = periodIndex > 0 ? comparisonData[periodIndex - 1].totalExpenses : null;
                       const hasIncrease = previousTotal !== null && periodData.totalExpenses > previousTotal;
@@ -543,7 +543,7 @@ export default function SummaryIndex() {
           </View>
         ) : (
           <View className="flex-1 justify-center items-center p-10 bg-surface">
-            <Text className="text-base text-slate-500 text-center">No transaction data available for comparison</Text>
+            <Text className="text-base text-text-secondary text-center">No transaction data available for comparison</Text>
           </View>
         )}
       </ScrollView>

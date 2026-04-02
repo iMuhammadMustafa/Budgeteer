@@ -6,7 +6,7 @@ import { ALL_CREATE_VIEWS, ALL_DROP_VIEWS } from "./views";
 
 const DATABASE_NAME = "budgeteer.db";
 const MAX_OPEN_RETRIES = 3;
-const RETRY_DELAY_MS = 500;
+const RETRY_DELAY_MS = 1000;
 
 let database: SQLite.SQLiteDatabase | null = null;
 let isInitialized = false;
@@ -24,7 +24,7 @@ export const initializeSqliteDBAsync = async (): Promise<SQLite.SQLiteDatabase> 
 
     // Open database asynchronously — on web the OPFS file-handle pool
     // can be temporarily exhausted, yielding "cannot create file" /
-    // error-code-14.  Retry a few times with a short delay.
+    // error-code-14.  Retry a few times with OPFS cleanup + delay.
     database = await openWithRetry(DATABASE_NAME);
 
     // Enable foreign keys
@@ -151,12 +151,41 @@ export const closeSqliteDB = async (): Promise<void> => {
 };
 
 /**
+ * Try to clear stale OPFS file handles.
+ * The AccessHandlePoolVFS allocates a fixed pool of OPFS files; leftover
+ * journal/WAL files from crashed sessions can permanently fill the pool.
+ * Removing them gives the next open attempt a clean slate.
+ */
+const clearOpfsFiles = async (): Promise<void> => {
+    try {
+        if (typeof navigator === "undefined" || !navigator.storage?.getDirectory) {
+            return;
+        }
+        const root = await navigator.storage.getDirectory();
+        // Iterate over all entries and remove any that look like
+        // wa-sqlite pool files (they are numbered .NNN files)
+        for await (const [name] of (root as any).entries()) {
+            if (name.startsWith(".") || name.includes("-journal") || name.includes("-wal")) {
+                try {
+                    await root.removeEntry(name);
+                    console.log(`[SQLite] Removed stale OPFS entry: ${name}`);
+                } catch {
+                    // Ignore — entry might be locked
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[SQLite] OPFS cleanup skipped:", e);
+    }
+};
+
+/**
  * Open the database with retry logic for the web platform.
  * On web, expo-sqlite uses wa-sqlite with OPFS which has a limited
  * file-handle pool (AccessHandlePoolVFS, default capacity 6).
  * When the pool is temporarily exhausted we get "cannot create file" /
- * SQLITE_CANTOPEN (error code 14).  A short retry loop lets the pool
- * reclaim handles and usually succeeds on the second attempt.
+ * SQLITE_CANTOPEN (error code 14).  Between retries we attempt to clean
+ * up stale OPFS entries and wait for the browser to reclaim handles.
  */
 const openWithRetry = async (
     name: string,
@@ -175,9 +204,12 @@ const openWithRetry = async (
 
             console.warn(
                 `[SQLite] openDatabaseAsync failed (attempt ${attempt}/${retries}), ` +
-                `retrying in ${RETRY_DELAY_MS * attempt}ms…`,
+                `cleaning OPFS and retrying in ${RETRY_DELAY_MS * attempt}ms…`,
                 error,
             );
+
+            // Attempt to free stale OPFS handles before retrying
+            await clearOpfsFiles();
             await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
         }
     }

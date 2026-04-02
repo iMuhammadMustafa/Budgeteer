@@ -384,7 +384,12 @@ export default function Index() {
         return router.push("/Login");
       }
 
-      await setStorageMode(mode.id);
+      const success = await setStorageMode(mode.id);
+      if (!success) {
+        console.warn("Storage mode initialization failed — staying on landing page.");
+        return;
+      }
+
       if (mode.id === StorageMode.Local) {
         await setSession(
           {

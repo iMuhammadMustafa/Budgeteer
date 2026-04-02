@@ -11,7 +11,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 type StorageModeContextType = {
   isLoading: boolean;
   storageMode: StorageMode | null;
-  setStorageMode: (mode: StorageMode | null) => Promise<void>;
+  setStorageMode: (mode: StorageMode | null) => Promise<boolean>;
   dbContext: IRepositoryFactory;
 };
 
@@ -23,7 +23,7 @@ export const STORAGE_KEYS = {
 const storageModeContext = createContext<StorageModeContextType | undefined>({
   isLoading: false,
   storageMode: null,
-  setStorageMode: async (mode: StorageMode | null) => { },
+  setStorageMode: async (mode: StorageMode | null) => true,
   dbContext: null as any,
 });
 
@@ -42,7 +42,7 @@ export default function StorageModeProvider({ children }: { children: React.Reac
   }, []);
 
   const handleSetStorageMode = useCallback(
-    async (mode: StorageMode | null) => {
+    async (mode: StorageMode | null): Promise<boolean> => {
       if (!mode) {
         setStorageMode(null);
 
@@ -53,7 +53,7 @@ export default function StorageModeProvider({ children }: { children: React.Reac
         }
 
         await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
-        return;
+        return true;
       }
 
       setIsLoading(true);
@@ -74,11 +74,12 @@ export default function StorageModeProvider({ children }: { children: React.Reac
         await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
         setStorageMode(null);
         setIsLoading(false);
-        return;
+        return false;
       }
 
       setStorageMode(mode);
       setIsLoading(false);
+      return true;
     },
     [storageMode],
   );
