@@ -34,16 +34,16 @@ export default function TransactionsPageHeader({
               <ActivityIndicator size="small" color="#3b82f6" />
             ) : (
               <>
-                <Pressable onPress={openDeleteConfirm}>
+                <Pressable onPress={openDeleteConfirm} accessibilityLabel="Delete selected transactions" accessibilityRole="button">
                   <MyIcon name="Trash" className="text-foreground" size={20} />
                 </Pressable>
-                <Pressable onPress={openDuplicateConfirm}>
+                <Pressable onPress={openDuplicateConfirm} accessibilityLabel="Duplicate selected transactions" accessibilityRole="button">
                   <MyIcon name="Copy" className="text-foreground" size={20} />
                 </Pressable>
-                <Pressable onPress={openBatchUpdate}>
+                <Pressable onPress={openBatchUpdate} accessibilityLabel="Batch update selected transactions" accessibilityRole="button">
                   <MyIcon name="Pencil" className="text-foreground" size={20} />
                 </Pressable>
-                <Pressable onPress={clearSelection}>
+                <Pressable onPress={clearSelection} accessibilityLabel="Clear selection" accessibilityRole="button">
                   <MyIcon name="X" className="text-foreground" size={20} />
                 </Pressable>
               </>

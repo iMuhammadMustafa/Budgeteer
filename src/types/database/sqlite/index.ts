@@ -10,12 +10,29 @@ const RETRY_DELAY_MS = 1000;
 
 let database: SQLite.SQLiteDatabase | null = null;
 let isInitialized = false;
+let initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 /**
  * Initialize the SQLite database with all tables and views
  * Uses async APIs throughout
  */
 export const initializeSqliteDBAsync = async (): Promise<SQLite.SQLiteDatabase> => {
+    if (isInitialized && database) {
+        return database;
+    }
+
+    // Prevent concurrent initialization — return the in-flight promise if one exists
+    if (initPromise) {
+        return initPromise;
+    }
+
+    initPromise = _initializeImpl().finally(() => {
+        initPromise = null;
+    });
+    return initPromise;
+};
+
+const _initializeImpl = async (): Promise<SQLite.SQLiteDatabase> => {
     if (isInitialized && database) {
         return database;
     }
@@ -165,7 +182,17 @@ const clearOpfsFiles = async (): Promise<void> => {
         // Iterate over all entries and remove any that look like
         // wa-sqlite pool files (they are numbered .NNN files)
         for await (const [name] of (root as any).entries()) {
-            if (name.startsWith(".") || name.includes("-journal") || name.includes("-wal")) {
+            // Remove journal/WAL files AND the numbered pool files that
+            // AccessHandlePoolVFS pre-allocates (e.g. "0", "1", …).
+            // Keeping the main db file is fine — SQLite will recreate
+            // anything missing when it next opens successfully.
+            const isPoolFile = /^\d+$/.test(name);
+            const isAuxFile =
+                name.startsWith(".") ||
+                name.includes("-journal") ||
+                name.includes("-wal") ||
+                name.includes("-shm");
+            if (isPoolFile || isAuxFile) {
                 try {
                     await root.removeEntry(name);
                     console.log(`[SQLite] Removed stale OPFS entry: ${name}`);
@@ -223,6 +250,7 @@ const openWithRetry = async (
 export const resetSqliteDBConnection = (): void => {
     database = null;
     isInitialized = false;
+    initPromise = null;
 };
 
 export default {

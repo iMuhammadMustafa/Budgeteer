@@ -133,15 +133,20 @@ function DropdownField({
         dataSet={{ dropdownId: dropdownIdRef.current }}
       >
         <Pressable
-          className={`flex-row items-center justify-between p-3 rounded border ${showError ? "border-status-danger" : "border-input-border"
-            } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
+          className={`flex-row items-center justify-between p-3 rounded border ${
+            showError ? "border-status-danger" : "border-input-border"
+          } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
           onPress={handleToggle}
           disabled={disabled}
           testID="dropdown-button"
         >
           <View className="flex-row items-center flex-1 gap-2">
             {selectedItem?.icon && (
-              <MyIcon name={selectedItem.icon} className={selectedItem.iconColorClass ?? "text-text-secondary"} size={18} />
+              <MyIcon
+                name={selectedItem.icon}
+                className={selectedItem.iconColorClass ?? "text-text-secondary"}
+                size={18}
+              />
             )}
             <Text
               className={`flex-1 ${selectedItem ? "text-foreground" : "text-text-tertiary"} ${disabled ? "text-text-disabled" : ""}`}
@@ -258,6 +263,7 @@ function DropdownList({
       {showSearch && (
         <Pressable onPress={e => e.stopPropagation?.()} className="p-2 border-b border-border-default">
           <TextInput
+            testID="dropdown-search"
             className="p-2 bg-surface-elevated rounded border border-border-default text-foreground"
             placeholder="Search..."
             value={searchQuery}
@@ -270,7 +276,10 @@ function DropdownList({
       )}
 
       {addNew && (
-        <Pressable onPress={onAddNew} className="flex-row items-center gap-2 p-3 border-b border-border-default bg-surface-elevated">
+        <Pressable
+          onPress={onAddNew}
+          className="flex-row items-center gap-2 p-3 border-b border-border-default bg-surface-elevated"
+        >
           <MyIcon name={addNew.icon ?? "Plus"} size={18} className="text-primary" />
           <Text className="text-primary font-medium" selectable={false}>
             {addNew.label ?? `Add New ${addNew.entityType}`}
@@ -281,19 +290,14 @@ function DropdownList({
       <FlatList<OptionItem | string | undefined>
         data={groupBy ? groupedData : options}
         keyExtractor={(item, index) =>
-          groupBy
-            ? `group-${item ?? "undefined"}-${index}`
-            : (item as OptionItem)?.id ?? `option-${index}`
+          groupBy ? `group-${item ?? "undefined"}-${index}` : ((item as OptionItem)?.id ?? `option-${index}`)
         }
         renderItem={({ item }) => {
           if (groupBy) {
             const groupName = item as string | undefined;
             return (
               <>
-                <Text
-                  selectable={false}
-                  className="p-2 bg-surface-elevated text-text-secondary text-sm font-medium"
-                >
+                <Text selectable={false} className="p-2 bg-surface-elevated text-text-secondary text-sm font-medium">
                   {groupName ?? "Other"}
                 </Text>
                 <View className="flex-row flex-wrap justify-center">
@@ -372,10 +376,12 @@ interface DropdownOptionProps {
 function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOptionProps) {
   return (
     <Pressable
+      testID={`dropdown-option-${option.label}`}
       onPress={onPress}
       disabled={option.disabled}
-      className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${option.disabled ? "opacity-50" : ""
-        } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle"}`}
+      className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${
+        option.disabled ? "opacity-50" : ""
+      } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle"}`}
     >
       <View className={`flex-row items-center ${isGrouped ? "justify-center" : ""} gap-2`}>
         {option.icon && (
@@ -386,8 +392,13 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         <View className={isGrouped ? "" : "flex-1"}>
           <Text
             selectable={false}
-            className={`${option.disabled ? "text-text-disabled" : option.textColorClass ? `text-${option.textColorClass}` : "text-foreground"
-              } ${isSelected ? "font-medium" : ""}`}
+            className={`${
+              option.disabled
+                ? "text-text-disabled"
+                : option.textColorClass
+                  ? `text-${option.textColorClass}`
+                  : "text-foreground"
+            } ${isSelected ? "font-medium" : ""}`}
             numberOfLines={1}
           >
             {option.label}

@@ -18,8 +18,7 @@ export default function AccountsIndex() {
 
   const { data: accounts, isLoading, error } = accountService.useFindAllWithCategory();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
-  const { data: accountCategories } = accountCategoryService.useFindAll();
-  const { mutate: createTransaction, isPending: isCreating } = transactionService.useCreate();
+  const { mutate: upsertTransaction, isPending: isCreating } = transactionService.useUpsert();
   const { mutateAsync: updateAccountBalance } = accountService.useUpdateAccountBalance();
 
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
@@ -41,15 +40,17 @@ export default function AccountsIndex() {
   const handleTransfer = () => {
     if (!modalState.account || !sourceAccountId || !amount || isNaN(Number(amount))) return;
     const amt = Math.abs(Number(amount));
-    createTransaction({
-      name: "Transfer",
-      type: "Transfer",
-      amount: -amt, // negative in source account
-      accountid: sourceAccountId,
-      transferaccountid: modalState.account.id,
-      categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
-      date: new Date().toISOString(),
-      createdat: new Date().toISOString(),
+    upsertTransaction({
+      form: {
+        name: "Transfer",
+        type: "Transfer",
+        amount: -amt, // negative in source account
+        accountid: sourceAccountId,
+        transferaccountid: modalState.account.id,
+        categoryid: "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9",
+        date: new Date().toISOString(),
+        createdat: new Date().toISOString(),
+      },
     });
     setModalState({ open: false, account: null });
     setAmount("");
@@ -83,6 +84,7 @@ export default function AccountsIndex() {
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
           <Button
+            testID={`transfer-btn-${item.id}`}
             rightIcon="ArrowLeftRight"
             className="py-0 px-0"
             variant="ghost"
@@ -171,7 +173,13 @@ const AccountTransferModal = ({
       <View className="p-4">
         <Text className="text-lg font-bold mb-2">Transfer to {modalState.account?.name}</Text>
 
-        <TextInputField label="Amount" value={amount} onChange={setAmount} keyboardType="numeric" />
+        <TextInputField
+          testID="transfer-amount-input"
+          label="Amount"
+          value={amount}
+          onChange={setAmount}
+          keyboardType="numeric"
+        />
 
         <Text>Source</Text>
         <AccountSelecterDropdown
@@ -185,6 +193,7 @@ const AccountTransferModal = ({
 
         <View className="flex-row gap-4">
           <Button
+            testID="transfer-submit-btn"
             label={isCreating ? "Transferring..." : "Submit Transfer"}
             onPress={handleTransfer}
             isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}

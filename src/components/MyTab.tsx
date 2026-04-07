@@ -28,7 +28,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   showDeleted = false,
   dependencyConfig,
   customFindAll,
-  showRestore
+  showRestore,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -51,7 +51,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   showDeleted?: boolean;
   dependencyConfig?: {
     dependencyField: string;
-    dependencyService: Pick<IService<any, any>, 'useFindAll' | 'useSoftDelete' | 'useHardDelete'> & {
+    dependencyService: Pick<IService<any, any>, "useFindAll" | "useSoftDelete" | "useHardDelete"> & {
       useUpdateMultiple?: () => { mutate: (data: any, options?: any) => void };
     };
     dependencyType: string;
@@ -102,7 +102,14 @@ export default function MyTab<TModel, TTable extends TableNames>({
       <View className="flex-row justify-between items-center px-4 bg-background">
         <Text className="font-bold text-lg text-foreground">{title}</Text>
         <View className="flex-row items-center">
-          <Button testID="refresh-btn" variant="ghost" className="py-0 px-2" iconSize={20} onPress={handleRefresh} rightIcon="RefreshCw" />
+          <Button
+            testID="refresh-btn"
+            variant="ghost"
+            className="py-0 px-2"
+            iconSize={20}
+            onPress={handleRefresh}
+            rightIcon="RefreshCw"
+          />
           {UpsertModal && (
             <Button
               testID="add-btn"
@@ -205,14 +212,17 @@ export default function MyTab<TModel, TTable extends TableNames>({
                       }}
                       rightIcon="Trash2"
                     />
-                    {
-                      showRestore && (
-                        <Button testID="restore-btn" rightIcon="RotateCcw" variant="ghost" onPress={() => {
+                    {showRestore && (
+                      <Button
+                        testID="restore-btn"
+                        rightIcon="RotateCcw"
+                        variant="ghost"
+                        onPress={() => {
                           setItemToRestore(item);
                           setRestoreModalOpen(true);
-                        }} />
-                      )
-                    }
+                        }}
+                      />
+                    )}
                     {customAction && (
                       <View className="me-2">
                         {typeof customAction === "function" ? customAction(item) : customAction}
@@ -275,7 +285,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
   showDeleted?: boolean;
   dependencyConfig?: {
     dependencyField: string;
-    dependencyService: Pick<IService<any, any>, 'useFindAll' | 'useSoftDelete' | 'useHardDelete'> & {
+    dependencyService: Pick<IService<any, any>, "useFindAll" | "useSoftDelete" | "useHardDelete"> & {
       useUpdateMultiple?: () => { mutate: (data: any, options?: any) => void };
     };
     dependencyType: string;
@@ -293,15 +303,15 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const { data, isLoading, error } = showDeleted ? findAllDeletedQuery : findAllQuery;
   const { mutate: softDeleteMutate } = service.useSoftDelete();
   const { mutate: hardDeleteMutate } = service.useHardDelete();
-  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => { } };
+  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => {} };
   const { mutate: deleteMultipleDependencies } = dependencyConfig?.dependencyService?.useSoftDelete?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
   const { mutate: hardDeleteDependencies } = dependencyConfig?.dependencyService?.useHardDelete?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
   const { mutate: updateDependenciesMutate } = dependencyConfig?.dependencyService?.useUpdateMultiple?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
 
   // Use hardDelete when showing deleted items (Restore pages)
@@ -325,7 +335,7 @@ const useMyTab = <TModel, TTable extends TableNames>({
       setItemToRestore(null);
       setRestoreModalOpen(false);
     }
-  }
+  };
 
   // Get dependencies if dependency config is provided
   const { data: dependencyData } = dependencyConfig?.dependencyService?.useFindAll?.() || { data: [] };

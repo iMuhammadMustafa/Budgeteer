@@ -16,11 +16,11 @@ export default function TabNavigation({
           <Button
             key={route.name}
             variant="ghost"
-            className={`flex-1 rounded-none border-b-2 ${
-              currentRoute === route.path ? "border-success" : "border-transparent"
-            }`}
+            className={`flex-1 rounded-none border-b-2 ${currentRoute === route.path ? "border-success" : "border-transparent"
+              }`}
             onPress={() => router.replace(route.path as any)}
             label={route.name}
+            testID={`tab-${route.name}`}
           />
         ))}
       </View>

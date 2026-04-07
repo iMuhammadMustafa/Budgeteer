@@ -11,6 +11,7 @@ type TextInputFieldProps = {
   placeholder?: string;
   multiline?: boolean;
   maxLength?: number;
+  testID?: string;
 };
 
 const areEqual = (prevProps: TextInputFieldProps, nextProps: TextInputFieldProps) => {
@@ -32,11 +33,13 @@ function TextInputFieldMemo({
   placeholder,
   multiline = false,
   maxLength,
+  testID,
 }: TextInputFieldProps) {
   return (
     <View className={`my-1 ${className ?? ""}`}>
       <Text className="text-foreground">{label}</Text>
       <TextInput
+        testID={testID}
         className={`text-foreground border rounded-md p-3 border-input-border ${isReadOnly ? "bg-input-bg-disabled" : "bg-input-bg"} ${multiline ? "h-20" : ""}`}
         value={value ?? ""}
         onChangeText={onChange}

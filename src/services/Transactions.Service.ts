@@ -332,7 +332,13 @@ const createTransactionHelper = async (
   const transferid = formTransaction.type === "Transfer" ? GenerateUuid() : undefined;
 
   formTransaction.id = id;
-  formTransaction.transferid = transferid;
+  // IMPORTANT:
+  // For local SQLite, `transferid` has an immediate FK to `transactions(id)`.
+  // If both transfer rows point to each other at insert time, the first insert can fail
+  // because the referenced row does not yet exist.
+  // So we insert source row first without transferid, then insert the paired row,
+  // and finally link source -> paired via an update.
+  formTransaction.transferid = undefined;
   formTransaction.createdat = new Date().toISOString();
   formTransaction.createdby = userId;
   formTransaction.tenantid = tenantid;
@@ -340,7 +346,7 @@ const createTransactionHelper = async (
 
   transactions.push(formTransaction);
 
-  if (formTransaction.transferid && formTransaction.transferaccountid) {
+  if (transferid && formTransaction.transferaccountid) {
     const transferTransaction = {
       ...formTransaction,
       id: transferid,
@@ -354,6 +360,15 @@ const createTransactionHelper = async (
   }
 
   const newTransactions = await repo.createMultiple!(transactions, tenantid);
+
+  // TODO: This linking step is necessary due to the way SQLite handles FK constraints, but ideally we would handle this within a single transaction in the repository layer to ensure atomicity and avoid potential issues with concurrent operations.
+  // Link source transaction to the paired transfer after both rows exist.
+  if (transferid) {
+    await repo.update(id, { transferid }, tenantid);
+    if (newTransactions?.[0]) {
+      (newTransactions[0] as any).transferid = transferid;
+    }
+  }
 
   if (newTransactions) {
     await accountRepo.updateAccountBalance(formTransaction.accountid, formTransaction.amount!, tenantid);
