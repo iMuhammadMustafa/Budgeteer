@@ -9,6 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 .agents
+Claude.md
 
 # Native
 .kotlin/
@@ -45,4 +46,7 @@ app-example
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+e2e/.auth/
 .env.test
+
+anti/
