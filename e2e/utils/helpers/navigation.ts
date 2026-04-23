@@ -75,7 +75,7 @@ export async function navigateToRestoreTransactionCategories(page: Page) {
 }
 
 export async function navigateToTransactions(page: Page) {
-  await page.getByText("Transactions", { exact: true }).click();
+  await page.getByTestId("tab-transactions").click();
   await page.waitForURL("**/Transactions");
 }
 
@@ -89,7 +89,7 @@ export async function navigateToRestoreTransactions(page: Page) {
 }
 
 export async function navigateToDashboard(page: Page) {
-  await page.getByText("Dashboard", { exact: true }).click();
+  await page.getByTestId("tab-dashboard").click({ force: true });
   await page.waitForURL("**/Dashboard");
 }
 

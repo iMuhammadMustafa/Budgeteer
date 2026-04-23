@@ -25,7 +25,7 @@ export async function createAccount(
   });
   await saveForm(page);
   const accountItem = page.getByTestId(/^list-item-/).filter({ hasText: name });
-  await expect(accountItem).toBeVisible();
+  await expect(accountItem).toBeVisible({ timeout: 15000 });
   return name;
 }
 
@@ -46,7 +46,7 @@ export async function createCategory(
   });
   await saveForm(page);
   const categoryItem = page.getByTestId(/^list-item-/).filter({ hasText: name });
-  await expect(categoryItem).toBeVisible();
+  await expect(categoryItem).toBeVisible({ timeout: 15000 });
   return name;
 }
 

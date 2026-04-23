@@ -8,6 +8,7 @@ export default function TabsLayout() {
         name="Dashboard"
         options={{
           title: "Dashboard",
+          tabBarButtonTestID: "tab-dashboard",
           tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
         }}
       />
@@ -16,6 +17,7 @@ export default function TabsLayout() {
         name="Transactions"
         options={{
           title: "Transactions",
+          tabBarButtonTestID: "tab-transactions",
           tabBarIcon: ({ color }) => <MyIcon name="ArrowRightLeft" color={color} size={24} />,
         }}
       />
@@ -24,6 +26,7 @@ export default function TabsLayout() {
         name="AddTransaction"
         options={{
           title: "New Transaction",
+          tabBarButtonTestID: "tab-add-transaction",
           tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color} size={24} />,
         }}
       />
@@ -32,6 +35,7 @@ export default function TabsLayout() {
         name="Recurrings"
         options={{
           title: "Recurrings",
+          tabBarButtonTestID: "tab-recurrings",
           tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color} size={24} />,
         }}
       />
@@ -40,6 +44,7 @@ export default function TabsLayout() {
         name="Summary"
         options={{
           title: "Summary",
+          tabBarButtonTestID: "tab-summary",
           tabBarIcon: ({ color }) => <MyIcon name="Group" color={color} size={24} />,
         }}
       />

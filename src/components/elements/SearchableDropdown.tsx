@@ -1,12 +1,10 @@
 import { useAuth } from "@/src/providers/AuthProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  GestureResponderEvent,
   LayoutChangeEvent,
-  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
@@ -43,11 +41,17 @@ export default function SearchableDropdown({
   const [ignoreFetch, setIgnoreFetch] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchableDropdownItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [textLayout, setTextLayout] = useState<{ top: number; height: number; width: number }>({
     top: 0,
     height: 0,
     width: 0,
   });
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Use a ref to hold the latest searchAction to avoid triggering effects on every render
+  const searchActionRef = useRef(searchAction);
+  searchActionRef.current = searchAction;
 
   const { session } = useAuth();
 
@@ -74,7 +78,7 @@ export default function SearchableDropdown({
         setIsLoading(true);
 
         const tenantId = session?.user?.user_metadata?.tenantid;
-        const data = await searchAction(depouncedText, tenantId as string);
+        const data = await searchActionRef.current(depouncedText, tenantId as string);
         setSuggestions(data);
         setIsLoading(false);
       } else {
@@ -82,60 +86,87 @@ export default function SearchableDropdown({
       }
     };
     applySearch();
-  }, [depouncedText, ignoreFetch, searchAction, session?.user?.user_metadata?.tenantid]);
+  }, [depouncedText, ignoreFetch, session?.user?.user_metadata?.tenantid]);
 
-  const handleChange = (val: string) => {
-    setIgnoreFetch(false);
-    onChange(val);
-    setInputText(val);
-  };
-  const handleSelectSuggestion = (item: SearchableDropdownItem) => {
-    setIgnoreFetch(true);
-    setInputText(item.label);
-    onSelectItem(item);
-    setSuggestions([]);
-  };
+  const handleChange = useCallback(
+    (val: string) => {
+      setIgnoreFetch(false);
+      onChange(val);
+      setInputText(val);
+    },
+    [onChange],
+  );
 
-  const onLayoutChange = (event: LayoutChangeEvent) => {
+  const handleSelectSuggestion = useCallback(
+    (item: SearchableDropdownItem) => {
+      // Cancel any pending blur timeout so the dropdown doesn't re-close after selection
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+      setIgnoreFetch(true);
+      setInputText(item.label);
+      onSelectItem(item);
+      setSuggestions([]);
+    },
+    [onSelectItem],
+  );
+
+  const onLayoutChange = useCallback((event: LayoutChangeEvent) => {
     const { height, width, y } = event.nativeEvent.layout;
     setTextLayout({ height, width, top: y });
-  };
+  }, []);
 
-  const handleOutsidePress = (e: GestureResponderEvent) => {
-    e.stopPropagation();
-    if (suggestions.length === 0 && onPress) {
-      let values = onPress() as SearchableDropdownItem[];
-      setSuggestions(values);
-    } else {
-      // Clear suggestions and dismiss keyboard
-      setSuggestions([]);
-      // Keyboard.dismiss();
+  const handleFocus = useCallback(() => {
+    // Cancel any pending blur timeout (e.g. if user re-focuses quickly)
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
     }
-  };
+    setIsFocused(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    // Use a small delay so that tapping a suggestion item fires before we clear
+    blurTimeoutRef.current = setTimeout(() => {
+      setIsFocused(false);
+      setSuggestions([]);
+    }, 200);
+  }, []);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showSuggestions = isFocused && suggestions.length > 0;
 
   return (
     <>
-      <Pressable onPress={handleOutsidePress} className="flex-1 cursor-default">
-        <View className={`my-1 ${className ?? ""} `}>
-          <Text className="text-foreground">{label}</Text>
-          <TextInput
-            className="p-3 mb-4 border border-input-border rounded-md bg-input-bg text-foreground"
-            value={inputText ?? ""}
-            placeholder={placeholder ?? "Type to search.."}
-            onChangeText={handleChange}
-            onLayout={onLayoutChange}
-          />
-        </View>
-      </Pressable>
+      <View className={`my-1 ${className ?? ""} flex-1`}>
+        <Text className="text-foreground">{label}</Text>
+        <TextInput
+          className="p-3 mb-4 border border-input-border rounded-md bg-input-bg text-foreground"
+          value={inputText ?? ""}
+          placeholder={placeholder ?? "Type to search.."}
+          onChangeText={handleChange}
+          onLayout={onLayoutChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+      </View>
 
-      {isLoading ? (
+      {isLoading && isFocused ? (
         <ActivityIndicator
           className=" absolute z-10 bg-surface"
           style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
         />
       ) : (
-        suggestions &&
-        suggestions.length > 0 && (
+        showSuggestions && (
           <View
             className={`absolute z-10 bg-surface p-2 m-2`}
             style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
@@ -143,6 +174,7 @@ export default function SearchableDropdown({
             <FlatList
               data={suggestions}
               keyExtractor={item => item.id ?? item.label}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity className="border-b border-border-subtle p-2" onPress={() => handleSelectSuggestion(item)}>
                   <Text>{item.label}</Text>

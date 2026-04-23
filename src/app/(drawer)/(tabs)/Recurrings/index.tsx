@@ -14,6 +14,7 @@ export default function RecurringsScreen() {
   const recurringsService = useRecurringService();
 
   const { mutate: executeRecurring, isPending: isApplying } = recurringsService.useExecuteRecurring();
+  const { mutate: skipRecurring, isPending: isSkipping } = recurringsService.useSkipRecurring();
 
   // State for modal to enter amount
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,7 +48,21 @@ export default function RecurringsScreen() {
     );
   };
 
+  const handleSkipRecurring = (item: Recurring) => {
+    skipRecurring(
+      { recurring: item },
+      {
+        onSuccess: () => {
+          console.log("Recurring skipped successfully");
+        },
+      },
+    );
+  };
+
   const renderRecurringItem = (item: Recurring, isSelected: boolean, onLongPress: () => void, onPress: () => void) => {
+    // Only show skip button when the recurring has a fixed date schedule
+    const canSkip = !item.isdateflexible && !!item.nextoccurrencedate && !!item.recurrencerule;
+
     return (
       <>
         <View className="flex-1">
@@ -57,28 +72,41 @@ export default function RecurringsScreen() {
           <Text className="text-sm text-muted-foreground mb-2">{<RecurringDetails item={item} />}</Text>
           <RecurringStatusBadges recurring={item} />
         </View>
-        <Pressable
-          onPress={e => {
-            // e.stopPropagation();
-            // Show modal if amount is flexible OR if both amount and date are flexible
-            if (
-              !item.amount ||
-              item.amount === 0 ||
-              item.isamountflexible ||
-              (item.isamountflexible && item.isdateflexible)
-            ) {
-              setPendingRecurring(item);
-              setMode(item.type === "Income" ? "plus" : "minus");
-              setModalVisible(true);
-            } else {
-              handleExecuteRecurring(item);
-            }
-          }}
-          disabled={isApplying}
-          className="p-2 rounded-md ml-2"
-        >
-          <MyIcon name="Check" size={20} className="text-foreground" />
-        </Pressable>
+        <View className="flex-row items-center gap-1 ml-2">
+          {canSkip && (
+            <Pressable
+              onPress={() => handleSkipRecurring(item)}
+              disabled={isSkipping || isApplying}
+              className="p-2 rounded-md"
+              accessibilityLabel="Skip this occurrence"
+              accessibilityHint="Advances the next date without creating a transaction"
+            >
+              <MyIcon name="SkipForward" size={18} className="text-muted-foreground" />
+            </Pressable>
+          )}
+          <Pressable
+            onPress={e => {
+              // e.stopPropagation();
+              // Show modal if amount is flexible OR if both amount and date are flexible
+              if (
+                !item.amount ||
+                item.amount === 0 ||
+                item.isamountflexible ||
+                (item.isamountflexible && item.isdateflexible)
+              ) {
+                setPendingRecurring(item);
+                setMode(item.type === "Income" ? "plus" : "minus");
+                setModalVisible(true);
+              } else {
+                handleExecuteRecurring(item);
+              }
+            }}
+            disabled={isApplying || isSkipping}
+            className="p-2 rounded-md"
+          >
+            <MyIcon name="Check" size={20} className="text-foreground" />
+          </Pressable>
+        </View>
       </>
     );
   };

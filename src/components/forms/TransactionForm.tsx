@@ -70,7 +70,7 @@ const getValidationSchema = (type: string): ValidationSchema<TransactionFormType
     categoryid: [commonValidationRules.required("Category is required")],
     type: [commonValidationRules.required("Transaction type is required")],
     description: createDescriptionValidation(false),
-    notes: createDescriptionValidation(false),
+    notes: [],
   };
 
   // Add validation for transfer account
@@ -337,7 +337,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 <>
                   <Pressable
                     onPress={handleSwitchAccounts}
-                    className={`${Platform.OS === "web" ? "mx-2" : "my-2"} "p-2 self-center`}
+                    className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
                     accessible={true}
                     accessibilityRole="button"
                     accessibilityLabel="Switch source and destination accounts"
@@ -621,6 +621,11 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
       setMode(selectedMode);
 
+      // Sync transactionType state so the correct validation schema is used
+      if (selectedTransaction.type) {
+        setTransactionType(selectedTransaction.type);
+      }
+
       // Populate form with selected transaction data
       const populatedData: Partial<TransactionFormType> = {
         ...selectedTransaction,
@@ -768,6 +773,12 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const isEdit = !!transaction.id;
   const isLoading = isSubmitting || isCategoriesLoading || isAccountLoading;
 
+  const findByNameStable = useCallback(
+    (text: string, tenantId: string) => transactionService.useFindByName(text),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   return {
     formState,
     updateField,
@@ -793,7 +804,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     error,
     isEdit,
     isLoading,
-    findByName: transactionService.useFindByName,
+    findByName: findByNameStable,
     showOneMoreSuccess,
     isOneMoreSubmitting,
   };

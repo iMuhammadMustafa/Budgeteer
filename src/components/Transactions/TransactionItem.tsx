@@ -19,11 +19,16 @@ export default function TransactionItem({
 }) {
   const isSelected = selectedTransactions.find(t => t.id === transaction.id);
   const iconProp = getTransactionProp(transaction.type);
-  const isTransfer = transaction.type === "Transfer" && transaction.amount! < 0;
+  const isTransfer = transaction.type === "Transfer";
+  const isPositiveTransferSide = isTransfer && transaction.amount! > 0;
 
-  if (isTransfer) {
-    return;
+  // Hide the positive-amount side of a transfer (the paired row) only when
+  // its counterpart (negative side) is also present in the current list.
+  // When filtering by account, only one side may be present — render it normally.
+  if (isPositiveTransferSide && transferTransaction) {
+    return null;
   }
+
   return (
     <View className="flex-row items-center justify-between">
       <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
@@ -57,15 +62,10 @@ export default function TransactionItem({
           </View>
           <View className="flex items-end">
             <Text className={`text-${iconProp.textColor}`}>
-              {isTransfer
-                ? Math.abs(parseFloat(transaction.amount?.toString() ?? "0")).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-                : transaction.amount!.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+              {Math.abs(parseFloat(transaction.amount?.toString() ?? "0")).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
               {transaction.currency}
             </Text>
             <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>

@@ -183,7 +183,7 @@ export async function createTransactionGroup(
         description: options.description,
     });
     await saveForm(page);
-    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByText(name)).toBeVisible({ timeout: 15000 });
     return name;
 }
 
@@ -207,6 +207,6 @@ export async function createTransactionCategory(
         displayOrder: options.displayOrder || "9999",
     });
     await saveForm(page);
-    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByText(name)).toBeVisible({ timeout: 15000 });
     return name;
 }

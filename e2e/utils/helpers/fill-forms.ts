@@ -200,6 +200,7 @@ export async function fillTransactionCategoryForm(
 export async function fillTransactionName(scope: TransactionFormScope, name: string) {
   const form = getTransactionFormScope(scope);
   const nameInput = form.getByPlaceholder("Type to search..");
+  await nameInput.waitFor({ state: "visible", timeout: 15000 }).catch(() => {});
   await nameInput.fill(name);
 }
 

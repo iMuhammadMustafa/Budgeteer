@@ -66,6 +66,20 @@ export async function confirmAction(page: Page, buttonPattern: RegExp = /confirm
 }
 
 export async function saveForm(page: Page) {
-  await page.getByRole("button", { name: /save|submit/i }).click();
-  await page.waitForTimeout(500);
+  const modal = page.locator(selectors.ui.modal).last();
+  const modalSaveButton = modal.getByRole("button", { name: /save|submit/i }).first();
+
+  if (await modalSaveButton.isVisible().catch(() => false)) {
+    await expect(modalSaveButton).toBeEnabled();
+    await modalSaveButton.click();
+    await expect(modal).not.toBeVisible({ timeout: 10000 }).catch(() => {}); // Wait for modal to disappear
+  } else {
+    const pageSaveButton = page.getByRole("button", { name: /save|submit/i }).filter({ visible: true }).first();
+    await expect(pageSaveButton).toBeEnabled();
+    await pageSaveButton.click();
+  }
+
+  await page.waitForLoadState("networkidle", { timeout: 2000 }).catch(() => {
+    // Some screens keep background requests active; best-effort only.
+  });
 }

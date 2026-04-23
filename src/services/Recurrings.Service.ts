@@ -17,6 +17,9 @@ export interface IRecurringService extends IService<Recurring, TableNames.Recurr
   useExecuteRecurring: () => ReturnType<
     typeof useMutation<ApplyResult, Error, { recurring: Recurring; overrides?: ExecutionOverrides }>
   >;
+  useSkipRecurring: () => ReturnType<
+    typeof useMutation<Recurring, Error, { recurring: Recurring }>
+  >;
 }
 
 export function useRecurringService(): IRecurringService {
@@ -49,9 +52,44 @@ export function useRecurringService(): IRecurringService {
     });
   };
 
+  const useSkipRecurring = () => {
+    return useMutation({
+      mutationFn: async ({ recurring }: { recurring: Recurring }) => {
+        const userId = session!.user.id;
+
+        if (!recurring.nextoccurrencedate || !recurring.recurrencerule) {
+          throw new Error("Cannot skip: recurring has no next occurrence date or recurrence rule");
+        }
+
+        const nextDate = getNextOccurrence(
+          recurring.nextoccurrencedate,
+          recurring.recurrencerule,
+        ).toISOString();
+
+        const updateData: any = {
+          nextoccurrencedate: nextDate,
+          updatedby: userId,
+          updatedat: dayjs().toISOString(),
+        };
+
+        const updated = await recurringRepo.update(recurring.id, updateData, tenantId);
+        if (!updated) throw new Error("Failed to update recurring");
+        return updated;
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+      },
+      onError: error => {
+        console.error("Error skipping recurring:", error);
+        throw error;
+      },
+    });
+  };
+
   return {
     ...createServiceHooks<Recurring, TableNames.Recurrings>(TableNames.Recurrings, recurringRepo, tenantId, session),
     useExecuteRecurring,
+    useSkipRecurring,
   };
 }
 

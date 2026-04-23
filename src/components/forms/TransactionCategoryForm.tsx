@@ -51,7 +51,18 @@ const validationSchema: ValidationSchema<TransactionCategoryFormData> = {
     commonValidationRules.min(0, "Budget amount must be 0 or greater"),
     commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
-  budgetfrequency: [commonValidationRules.required("Budget frequency is required")],
+  budgetfrequency: [
+    commonValidationRules.custom(
+      (value, formData) => {
+        // Budget frequency is only required when budget amount is greater than 0
+        if (formData?.budgetamount && formData.budgetamount > 0) {
+          return !!value && value.trim().length > 0;
+        }
+        return true;
+      },
+      "Budget frequency is required when budget amount is greater than 0",
+    ),
+  ],
   description: createDescriptionValidation(false),
   displayorder: [
     commonValidationRules.required("Display order is required"),
@@ -89,14 +100,14 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
     name: "budgetfrequency",
     label: "Budget Frequency",
     type: "select",
-    required: true,
+    required: false,
     options: [
       { id: "Daily", label: "Daily", value: "Daily" },
       { id: "Weekly", label: "Weekly", value: "Weekly" },
       { id: "Monthly", label: "Monthly", value: "Monthly" },
       { id: "Yearly", label: "Yearly", value: "Yearly" },
     ],
-    description: "How often this budget amount applies",
+    description: "How often this budget amount applies (required if budget amount > 0)",
   },
   {
     name: "description",
@@ -259,7 +270,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1" nestedScrollEnabled={true}>
+      <ScrollView className="flex-1" nestedScrollEnabled={true} contentContainerStyle={{ flexGrow: 1 }}>
         <FormContainer
           onSubmit={handleFormSubmit}
           isValid={isValid && !isSubmitting}
