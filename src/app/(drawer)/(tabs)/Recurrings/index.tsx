@@ -1,3 +1,4 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import MyModal from "@/src/components/elements/MyModal";
 import { RecurringStatusBadges } from "@/src/components/elements/RecurringStatusBadges";
@@ -8,7 +9,7 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 export default function RecurringsScreen() {
   const recurringsService = useRecurringService();
@@ -74,20 +75,24 @@ export default function RecurringsScreen() {
         </View>
         <View className="flex-row items-center gap-1 ml-2">
           {canSkip && (
-            <Pressable
+            <Button
+              variant="ghost"
+              size="icon"
+              hapticFeedback="warning"
               onPress={() => handleSkipRecurring(item)}
               disabled={isSkipping || isApplying}
-              className="p-2 rounded-md"
               accessibilityLabel="Skip this occurrence"
               accessibilityHint="Advances the next date without creating a transaction"
+              testID={`btn-skip-recurring-${item.id}`}
             >
               <MyIcon name="SkipForward" size={18} className="text-muted-foreground" />
-            </Pressable>
+            </Button>
           )}
-          <Pressable
-            onPress={e => {
-              // e.stopPropagation();
-              // Show modal if amount is flexible OR if both amount and date are flexible
+          <Button
+            variant="ghost"
+            size="icon"
+            hapticFeedback="light"
+            onPress={() => {
               if (
                 !item.amount ||
                 item.amount === 0 ||
@@ -102,10 +107,10 @@ export default function RecurringsScreen() {
               }
             }}
             disabled={isApplying || isSkipping}
-            className="p-2 rounded-md"
+            testID={`btn-execute-recurring-${item.id}`}
           >
             <MyIcon name="Check" size={20} className="text-foreground" />
-          </Pressable>
+          </Button>
         </View>
       </>
     );
@@ -153,7 +158,10 @@ export default function RecurringsScreen() {
                 placeholder="Amount"
                 autoFocus
               />
-              <Pressable
+              <Button
+                variant="ghost"
+                size="icon"
+                hapticFeedback="selection"
                 className={`ml-2 p-2 rounded-md border min-w-[44px] min-h-[44px] justify-center items-center ${
                   pendingRecurring?.type === "Transfer"
                     ? "bg-sky-400 border-sky-400 opacity-70"
@@ -164,30 +172,35 @@ export default function RecurringsScreen() {
                 disabled={pendingRecurring?.type === "Transfer"}
                 onPress={() => {
                   if (pendingRecurring?.type === "Transfer") return;
-                  // if (Platform.OS !== "web") Haptics.selectionAsync();
                   setMode(m => (m === "plus" ? "minus" : "plus"));
                 }}
+                testID="btn-recurring-mode-toggle"
               >
                 {mode === "minus" ? (
                   <MyIcon name="Minus" size={24} className="text-gray-100" />
                 ) : (
                   <MyIcon name="Plus" size={24} className="text-gray-100" />
                 )}
-              </Pressable>
+              </Button>
             </View>
             <View className="flex-row justify-between w-full">
-              <Pressable
-                className="flex-1 p-3 rounded-md items-center mx-1 bg-secondary"
+              <Button
+                variant="secondary"
+                size="md"
+                className="flex-1 mx-1"
                 onPress={() => {
                   setModalVisible(false);
                   setAmountInput("");
                   setPendingRecurring(null);
                 }}
-              >
-                <Text className="font-bold text-white">Cancel</Text>
-              </Pressable>
-              <Pressable
-                className="flex-1 p-3 rounded-md items-center mx-1 bg-primary"
+                label="Cancel"
+                testID="btn-recurring-cancel"
+              />
+              <Button
+                variant="primary"
+                size="md"
+                hapticFeedback="success"
+                className="flex-1 mx-1"
                 onPress={() => {
                   if (pendingRecurring && amountInput) {
                     const amount = parseFloat(amountInput);
@@ -203,9 +216,9 @@ export default function RecurringsScreen() {
                   parseFloat(amountInput) <= 0 ||
                   isApplying
                 }
-              >
-                <Text className="font-bold text-white">Apply</Text>
-              </Pressable>
+                label="Apply"
+                testID="btn-recurring-apply"
+              />
             </View>
           </View>
         </MyModal>

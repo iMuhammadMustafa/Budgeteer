@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native";
+import Button from "./Button";
 import MyIcon from "./MyIcon";
 
 const modalStack: number[] = [];
 let nextModalId = 1;
-//The stack isn't actually being used atm but it's working so it's fine
 
 export default function MyModal({
   isOpen,
@@ -99,9 +99,15 @@ export default function MyModal({
             {title && (
               <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
                 <Text className="font-semibold text-foreground">{title}</Text>
-                <Pressable onPress={onClose} className="p-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onPress={() => { if (onClose) onClose(); }}
+                  accessibilityLabel="Close modal"
+                  testID="btn-modal-close"
+                >
                   <MyIcon name="X" size={20} className="text-text-secondary" />
-                </Pressable>
+                </Button>
               </View>
             )}
             <View className="flex-1">
@@ -145,9 +151,15 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
           <View className="bg-surface rounded-lg overflow-hidden flex-1">
             <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
               <Text className="font-semibold text-foreground">{title}</Text>
-              <Pressable onPress={onClose} className="p-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onPress={onClose}
+                accessibilityLabel="Close modal"
+                testID="btn-modal-wrapper-close"
+              >
                 <MyIcon name="X" size={20} className="text-text-secondary" />
-              </Pressable>
+              </Button>
             </View>
             <View className="flex-1">
               {children}

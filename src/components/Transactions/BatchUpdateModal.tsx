@@ -1,7 +1,7 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { Switch, Text, View } from "react-native";
 import Button from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -226,9 +226,13 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
     return (
         <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
-            <Pressable
+            <Button
+                variant="ghost"
+                size="md"
+                hapticFeedback="selection"
                 onPress={() => onToggle(!enabled)}
-                className="flex-row items-center justify-between p-3 bg-surface-elevated"
+                className="flex-row items-center justify-between p-3 bg-surface-elevated rounded-none"
+                testID={`btn-toggle-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
                 <View className="flex-row items-center">
                     <View
@@ -239,7 +243,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
                     </View>
                     <Text className="text-foreground font-medium">{label}</Text>
                 </View>
-            </Pressable>
+            </Button>
 
             {/* Content - only shown when enabled */}
             {enabled && (
