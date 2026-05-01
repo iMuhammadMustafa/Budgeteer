@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, FlatList, Modal, Pressable, Text, View } from "react-native";
+import Button from "./Button";
 import MyIcon from "./MyIcon";
 import TextInputField from "./TextInputField";
 
@@ -167,7 +168,10 @@ const IconItemComponent = memo(
     const handlePress = useCallback(() => onSelect(item.name), [onSelect, item.name]);
 
     return (
-      <Pressable
+      <Button
+        variant="ghost"
+        size="icon"
+        hapticFeedback="selection"
         onPress={handlePress}
         className={`
         flex-1 p-2 m-1 rounded-lg border-2 min-h-[80px]
@@ -176,6 +180,7 @@ const IconItemComponent = memo(
       `}
         accessibilityLabel={`Select ${item.name} icon`}
         accessibilityHint={item.isRecent ? "Recently used icon" : undefined}
+        testID={`icon-option-${item.name}`}
       >
         <View className="flex-1 justify-center items-center">
           <MyIcon name={item.name} size={24} color={isSelected ? "#3b82f6" : "#374151"} />
@@ -191,7 +196,7 @@ const IconItemComponent = memo(
           </Text>
           {item.isRecent && <View className="absolute -top-1 -right-1 w-3 h-3 bg-status-success rounded-full" />}
         </View>
-      </Pressable>
+      </Button>
     );
   },
 );
@@ -398,7 +403,10 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
       {/* <Text className="text-base font-medium text-gray-700 mb-2">{label}</Text> */}
 
       {/* Icon selector button */}
-      <Pressable
+      <Button
+        variant="ghost"
+        size="md"
+        hapticFeedback="light"
         className="
           p-3 rounded-md border border-input-border bg-input-bg
           flex-row items-center justify-center
@@ -408,10 +416,11 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
         onPress={handleModalOpen}
         accessibilityLabel={`Selected icon: ${selectedIcon}. Tap to change icon`}
         accessibilityHint="Opens icon picker modal"
+        testID="btn-icon-picker"
       >
         <MyIcon name={selectedIcon} size={24} className="text-foreground" />
         <Text className="ml-2 text-text-secondary font-medium">{selectedIcon}</Text>
-      </Pressable>
+      </Button>
 
       {/* Modal */}
       <Modal
@@ -434,13 +443,16 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
             <View className="p-4 border-b border-border-default">
               <View className="flex-row justify-between items-center mb-3">
                 <Text className="text-xl font-bold text-foreground">Choose an Icon</Text>
-                <Pressable
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onPress={handleModalClose}
                   className="p-2 rounded-full hover:bg-surface-elevated"
                   accessibilityLabel="Close"
+                  testID="btn-icon-picker-close"
                 >
                   <MyIcon name="X" size={20} color="#6b7280" />
-                </Pressable>
+                </Button>
               </View>
 
               {/* Search input */}
@@ -460,8 +472,11 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                       .concat(Object.keys(ICON_CATEGORIES))
                       .concat(hasLoadedAllIcons ? ["All"] : [])
                       .map(category => (
-                        <Pressable
+                        <Button
                           key={category}
+                          variant={selectedCategory === category ? "primary" : "outline"}
+                          size="sm"
+                          hapticFeedback="selection"
                           onPress={() => setSelectedCategory(category)}
                           className={`
                             px-3 py-1.5 mr-2 mb-2 rounded-full border
@@ -471,6 +486,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                                 : "bg-surface border-border-default hover:border-border-strong"
                             }
                           `}
+                          testID={`btn-icon-category-${category.toLowerCase()}`}
                         >
                           <Text
                             className={`
@@ -480,7 +496,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                           >
                             {category}
                           </Text>
-                        </Pressable>
+                        </Button>
                       ))}
                   </View>
                 </View>
