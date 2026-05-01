@@ -352,7 +352,6 @@ for (const mode of storageModes) {
       await verifyAccountBalance(page, accountName, "$1,500.00");
 
       await navigateToTransactionsViaDrawer(page);
-      await page.waitForTimeout(500);
 
       const hasAdjustmentTransaction = await verifyTransactionExists(page, {
         accountName,

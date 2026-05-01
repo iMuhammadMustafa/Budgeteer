@@ -80,7 +80,13 @@ export async function deleteItemWithDependencies(
             await page.waitForTimeout(300);
         }
 
-        await page.getByText(options.targetItemName, { exact: true }).last().click({ force: true });
+        // Use testID-based selector for reliable dropdown option selection
+        const optionByTestId = page.getByTestId(selectors.forms.dropdownOption(options.targetItemName));
+        if (await optionByTestId.isVisible().catch(() => false)) {
+            await optionByTestId.click({ force: true });
+        } else {
+            await page.getByText(options.targetItemName, { exact: true }).last().click({ force: true });
+        }
         await page.waitForTimeout(200);
     }
 
