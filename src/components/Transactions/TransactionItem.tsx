@@ -3,6 +3,7 @@ import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import TransactionAmount from "./TransactionAmount";
 
 export default function TransactionItem({
   transaction,
@@ -13,8 +14,8 @@ export default function TransactionItem({
 }: {
   transaction: TransactionsView;
   selectedTransactions: TransactionsView[];
-  handleLongPress: (item: TransactionsView) => void;
-  handlePress: (item: TransactionsView) => void;
+  handleLongPress: (item: TransactionsView, transferItem: TransactionsView) => void;
+  handlePress: (item: TransactionsView, transferItem: TransactionsView) => void;
   transferTransaction?: TransactionsView;
 }) {
   const isSelected = selectedTransactions.find(t => t.id === transaction.id);
@@ -35,8 +36,8 @@ export default function TransactionItem({
         <Pressable
           style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
           delayLongPress={300}
-          onLongPress={() => handleLongPress(transaction)}
-          onPress={() => handlePress(transaction)}
+          onLongPress={() => handleLongPress(transaction, transferTransaction)}
+          onPress={() => handlePress(transaction, transferTransaction)}
           className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
         >
           <View
@@ -61,13 +62,7 @@ export default function TransactionItem({
             )}
           </View>
           <View className="flex items-end">
-            <Text className={`text-${iconProp.textColor}`}>
-              {Math.abs(parseFloat(transaction.amount?.toString() ?? "0")).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-              {transaction.currency}
-            </Text>
+            <TransactionAmount amount={transaction.amount ?? 0} currency={transaction.currency} color={iconProp.textColor} />
             <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
               {transaction.accountname} {" | "}
               {transaction.runningbalance?.toLocaleString("en", {

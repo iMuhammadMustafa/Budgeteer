@@ -17,7 +17,8 @@ import {
 } from "@/src/utils/form-validation";
 import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
-import { Platform, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionGroupForm, { initialState as transactionGroupInitialState } from "./TransactionGroupForm";
 
 export type TransactionCategoryFormType =
@@ -92,7 +93,7 @@ const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCateg
     name: "budgetamount",
     label: "Budget Amount",
     type: "number",
-    required: true,
+    required: false,
     placeholder: "0.00",
     description: "The budgeted amount for this category",
   },
@@ -270,7 +271,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1" nestedScrollEnabled={true} contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView className="flex-1" nestedScrollEnabled={true} >
         <FormContainer
           onSubmit={handleFormSubmit}
           isValid={isValid && !isSubmitting}

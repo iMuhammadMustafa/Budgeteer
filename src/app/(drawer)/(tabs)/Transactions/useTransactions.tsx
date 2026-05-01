@@ -159,7 +159,7 @@ export default function useTransactions() {
     }
   };
 
-  const handlePress = (item: TransactionsView) => {
+  const handlePress = (item: TransactionsView, transferItem: TransactionsView) => {
     if (selectionMode) {
       // In selection mode, short press selects/deselects
       if (Platform.OS !== "web") Haptics.selectionAsync();
@@ -189,8 +189,8 @@ export default function useTransactions() {
     }
   };
 
-  const handleLongPress = (item: any) => {
-    if (selectionMode) handlePress(item);
+  const handleLongPress = (item: any, transferItem: TransactionsView) => {
+    if (selectionMode) handlePress(item, transferItem);
     if (Platform.OS !== "web") Haptics.selectionAsync();
     setSelectionMode(true);
     setSelectedTransactions(prev => [...prev, item]);

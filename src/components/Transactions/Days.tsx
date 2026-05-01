@@ -6,6 +6,7 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import TransactionItem from "@/src/components/Transactions/TransactionItem";
 import { GroupedData } from "@/src/types/components/Transactions.types";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
+import TransactionAmount from "./TransactionAmount";
 
 dayjs.extend(relativeTime);
 
@@ -19,8 +20,8 @@ export default function DaysList({
   day: string;
   data: GroupedData;
   selectedTransactions: TransactionsView[];
-  handleLongPress: (item: TransactionsView) => void;
-  handlePress: (item: TransactionsView) => void;
+  handleLongPress: (item: TransactionsView, transferItem: TransactionsView) => void;
+  handlePress: (item: TransactionsView, transferItem: TransactionsView) => void;
 }) {
   return (
     <View className="flex justify-center px-3 py-1">
@@ -43,12 +44,6 @@ export default function DaysList({
   );
 }
 function DaysListHeader({ day, data }: { day: string; data: GroupedData }) {
-  const amount = data[day].amount;
-  const amountString = amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const currency = data[day].transactions[0].currency;
   return (
     <View className="flex-row m-1 p-3 justify-between items-center bg-card border border-muted rounded-lg">
       <View className="flex-col items-start justify-start gap-2">
@@ -58,10 +53,7 @@ function DaysListHeader({ day, data }: { day: string; data: GroupedData }) {
           <Text className="text-foreground">{dayjs(day).fromNow()}</Text>
         </View>
       </View>
-      <Text className={`${data[day].amount > 0 ? "text-success-500" : "text-danger-500"}`}>
-        {amount > 0 ? `+` : ``}
-        {amountString} {currency}
-      </Text>
+      <TransactionAmount amount={data[day].amount} currency={data[day].transactions[0].currency} />
     </View>
   );
 }
