@@ -4,6 +4,7 @@ import {
     SQLITE_DEFAULT_TENANT_ID,
     SQLITE_DEFAULT_USER_ID,
     SQLITE_SEEDING_FLAGS,
+    escSql,
     getCurrentTimestamp,
 } from "./constants";
 import { getSqliteDB } from "./index";
@@ -186,7 +187,12 @@ export const setLocalSeededFlag = (seeded: boolean): void => {
 };
 
 /**
- * Seed the SQLite database with initial data for Local mode
+ * Seed the SQLite database with initial data for Local mode.
+ *
+ * All INSERTs are emitted as a single batched `execAsync` call wrapped in a
+ * BEGIN/COMMIT transaction so SQLite only fsyncs once at the end, instead of
+ * auto-committing after every row (which is what happens with individual
+ * `runAsync` calls and is the main reason seeding was slow).
  */
 export const seedSqliteDB = async (): Promise<void> => {
     // Check localStorage flag first
@@ -202,54 +208,53 @@ export const seedSqliteDB = async (): Promise<void> => {
     const userId = SQLITE_DEFAULT_USER_ID;
 
     try {
-        // Seed Transaction Groups
-        console.log("Seeding Transaction Groups...");
+        const statements: string[] = [];
+        statements.push("PRAGMA foreign_keys = OFF;");
+        statements.push("BEGIN TRANSACTION;");
+
+        // Transaction Groups
         for (const group of transactionGroupsData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.TransactionGroups} 
-         (id, name, type, color, icon, description, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-                [group.id, group.name, group.type, group.color, group.icon, group.description, group.displayorder, group.budgetamount, group.budgetfrequency, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.TransactionGroups} (id, name, type, color, icon, description, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(group.id)}, ${escSql(group.name)}, ${escSql(group.type)}, ${escSql(group.color)}, ${escSql(group.icon)}, ${escSql(group.description)}, ${group.displayorder}, ${group.budgetamount}, ${escSql(group.budgetfrequency)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Account Categories
-        console.log("Seeding Account Categories...");
+        // Account Categories
         for (const category of accountCategoriesData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.AccountCategories} 
-         (id, name, type, color, icon, displayorder, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-                [category.id, category.name, category.type, category.color, category.icon, category.displayorder, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.AccountCategories} (id, name, type, color, icon, displayorder, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(category.id)}, ${escSql(category.name)}, ${escSql(category.type)}, ${escSql(category.color)}, ${escSql(category.icon)}, ${category.displayorder}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Transaction Categories
-        console.log("Seeding Transaction Categories...");
+        // Transaction Categories
         for (const category of transactionCategoriesData) {
-            await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.TransactionCategories} 
-         (id, name, groupid, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) 
-         VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'monthly', ?, 0, ?, ?, ?)`,
-                [category.id, category.name, category.groupid, category.type, category.color, category.icon, tenantId, now, userId, now]
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.TransactionCategories} (id, name, groupid, type, color, icon, displayorder, budgetamount, budgetfrequency, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(category.id)}, ${escSql(category.name)}, ${escSql(category.groupid)}, ${escSql(category.type)}, ${escSql(category.color)}, ${escSql(category.icon)}, 0, 0, 'monthly', ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
-        // Seed Configurations
-        console.log("Seeding Configurations...");
+        statements.push("COMMIT;");
+        statements.push("PRAGMA foreign_keys = ON;");
+
+        await db.execAsync(statements.join("\n"));
+
+        // Configurations use a reserved keyword ("table") so we run them
+        // via parameterized `runAsync` which properly quotes identifiers.
         for (const config of configurationsData) {
             await db.runAsync(
-                `INSERT OR IGNORE INTO ${TableNames.Configurations} 
-         (id, key, value, type, "table", tenantid, isdeleted, createdat, createdby, updatedat) 
+                `INSERT OR IGNORE INTO ${TableNames.Configurations}
+         (id, key, value, type, "table", tenantid, isdeleted, createdat, createdby, updatedat)
          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
                 [config.id, config.key, config.value, config.type, config.table, tenantId, now, userId, now]
             );
         }
 
-        // Set the seeded flag
         setLocalSeededFlag(true);
         console.log("SQLite database seeded successfully!");
     } catch (error) {
+        try {
+            await db.execAsync("ROLLBACK; PRAGMA foreign_keys = ON;");
+        } catch { }
         console.error("Failed to seed SQLite database:", error);
         throw error;
     }

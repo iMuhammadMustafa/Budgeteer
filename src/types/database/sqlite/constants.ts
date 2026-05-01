@@ -84,6 +84,18 @@ export const SQLITE_DEMO = {
 export const getCurrentTimestamp = (): string => new Date().toISOString();
 
 /**
+ * Escape a value for safe inline SQL string embedding.
+ * - `null`/`undefined` → SQL `NULL`
+ * - numbers → numeric literal
+ * - everything else → single-quoted string with `'` doubled
+ */
+export const escSql = (val: string | number | null | undefined): string => {
+  if (val === null || val === undefined) return "NULL";
+  if (typeof val === "number") return Number.isFinite(val) ? String(val) : "NULL";
+  return `'${String(val).replace(/'/g, "''")}'`;
+};
+
+/**
  * Utility function to get the default tenant ID
  */
 export const getDefaultTenantId = (): string => SQLITE_DEFAULT_TENANT_ID;

@@ -11,6 +11,7 @@ import {
     SQLITE_DEMO_TENANT_ID,
     SQLITE_DEMO_USER_ID,
     SQLITE_SEEDING_FLAGS,
+    escSql,
     getCurrentTimestamp,
 } from "./constants";
 import { getSqliteDB } from "./index";
@@ -71,36 +72,58 @@ export const setDemoSeededFlag = (seeded: boolean): void => {
     }
 };
 
+type DemoTransaction = {
+    id: string;
+    name: string;
+    amount: number;
+    date: string;
+    description: string | null;
+    payee: string | null;
+    notes: string | null;
+    tags: string | null;
+    type: string;
+    isvoid: number;
+    accountid: string;
+    categoryid: string;
+    transferaccountid: string | null;
+    transferid: string | null;
+};
+
+/** Number of whole months of past history to seed (not counting the current month). */
+const DEMO_HISTORY_MONTHS = 20;
+/** Number of whole months of upcoming data to seed (for "this year" coverage). */
+const DEMO_FUTURE_MONTHS = 4;
+/** How many recent days (including today) get extra daily "small purchase" activity. */
+const DEMO_RECENT_DAYS = 14;
+
+/** Return a copy of `d` shifted by `days`. Mutation-free. */
+const addDays = (d: Date, days: number): Date => {
+    const out = new Date(d);
+    out.setDate(out.getDate() + days);
+    return out;
+};
+
+/** Round to 2 decimal places to keep demo amounts looking like real money. */
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
 /**
- * Generate demo transactions over the past 2 years
+ * Generate demo transactions spanning roughly DEMO_HISTORY_MONTHS before today
+ * through DEMO_FUTURE_MONTHS after today. Extending past "today" on purpose:
+ * the user should see demo data in "this week", "this month", and the
+ * remainder of "this year" views — not just historical data.
  */
-const generateDemoTransactions = () => {
-    const transactions: Array<{
-        id: string;
-        name: string;
-        amount: number;
-        date: string;
-        description: string | null;
-        payee: string | null;
-        notes: string | null;
-        tags: string | null;
-        type: string;
-        isvoid: number;
-        accountid: string;
-        categoryid: string;
-        transferaccountid: string | null;
-        transferid: string | null;
-    }> = [];
+const generateDemoTransactions = (): DemoTransaction[] => {
+    const transactions: DemoTransaction[] = [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const twoYearsAgo = new Date(today);
-    twoYearsAgo.setFullYear(today.getFullYear() - 2);
 
-    // Opening balances
-    const openingDate = new Date(twoYearsAgo);
-    openingDate.setDate(openingDate.getDate() - 1);
+    // History window starts on the 1st of the month DEMO_HISTORY_MONTHS ago.
+    const startMonth = new Date(today.getFullYear(), today.getMonth() - DEMO_HISTORY_MONTHS, 1);
+    const totalMonths = DEMO_HISTORY_MONTHS + 1 + DEMO_FUTURE_MONTHS;
 
+    // Opening balances: day before history window starts.
+    const openingDate = addDays(startMonth, -1);
     transactions.push(
         { id: GenerateUuid(), name: "Opening Balance", amount: 500, date: openingDate.toISOString(), description: "Initial balance", payee: null, notes: null, tags: null, type: "Initial", isvoid: 0, accountid: DEMO_IDS.ACC_CHECKING, categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS, transferaccountid: null, transferid: null },
         { id: GenerateUuid(), name: "Opening Balance", amount: 50000, date: openingDate.toISOString(), description: "Initial balance", payee: null, notes: null, tags: null, type: "Initial", isvoid: 0, accountid: DEMO_IDS.ACC_SAVINGS, categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS, transferaccountid: null, transferid: null },
@@ -108,156 +131,185 @@ const generateDemoTransactions = () => {
         { id: GenerateUuid(), name: "Opening Balance", amount: 200, date: openingDate.toISOString(), description: "Initial balance", payee: null, notes: null, tags: null, type: "Initial", isvoid: 0, accountid: DEMO_IDS.ACC_CASH, categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS, transferaccountid: null, transferid: null }
     );
 
-    // Generate monthly recurring transactions over 24 months
-    for (let month = 0; month < 24; month++) {
-        const monthDate = new Date(twoYearsAgo);
-        monthDate.setMonth(monthDate.getMonth() + month);
+    // Monthly recurring transactions across the whole window. We intentionally
+    // do NOT filter by "<= today" anymore so the user sees upcoming salary,
+    // rent, bills etc. for the current and next few months.
+    for (let month = 0; month < totalMonths; month++) {
+        const monthDate = new Date(startMonth.getFullYear(), startMonth.getMonth() + month, 1);
+        const year = monthDate.getFullYear();
+        const m = monthDate.getMonth();
 
-        // Salary (15th of each month)
-        const salaryDate = new Date(monthDate);
-        salaryDate.setDate(15);
-        if (salaryDate <= today) {
-            transactions.push({
-                id: GenerateUuid(),
-                name: "Salary",
-                amount: 5000 + Math.random() * 500,
-                date: salaryDate.toISOString(),
-                description: "Monthly salary",
-                payee: "Employer Inc.",
-                notes: null,
-                tags: JSON.stringify(["income", "salary"]),
-                type: "Income",
-                isvoid: 0,
-                accountid: DEMO_IDS.ACC_CHECKING,
-                categoryid: DEMO_IDS.TXCAT_SALARY,
-                transferaccountid: null,
-                transferid: null,
-            });
-        }
+        // Rent (1st)
+        transactions.push({
+            id: GenerateUuid(),
+            name: "Rent",
+            amount: -1500,
+            date: new Date(year, m, 1).toISOString(),
+            description: "Monthly rent",
+            payee: "Landlord",
+            notes: null,
+            tags: JSON.stringify(["bills", "housing"]),
+            type: "Expense",
+            isvoid: 0,
+            accountid: DEMO_IDS.ACC_CHECKING,
+            categoryid: DEMO_IDS.TXCAT_RENT,
+            transferaccountid: null,
+            transferid: null,
+        });
 
-        // Rent (1st of each month)
-        const rentDate = new Date(monthDate);
-        rentDate.setDate(1);
-        if (rentDate <= today) {
-            transactions.push({
-                id: GenerateUuid(),
-                name: "Rent",
-                amount: -1500,
-                date: rentDate.toISOString(),
-                description: "Monthly rent",
-                payee: "Landlord",
-                notes: null,
-                tags: JSON.stringify(["bills", "housing"]),
-                type: "Expense",
-                isvoid: 0,
-                accountid: DEMO_IDS.ACC_CHECKING,
-                categoryid: DEMO_IDS.TXCAT_RENT,
-                transferaccountid: null,
-                transferid: null,
-            });
-        }
+        // Electricity (5th)
+        transactions.push({
+            id: GenerateUuid(),
+            name: "Electric Bill",
+            amount: -round2(80 + Math.random() * 60),
+            date: new Date(year, m, 5).toISOString(),
+            description: "Monthly electricity",
+            payee: "Power Company",
+            notes: null,
+            tags: JSON.stringify(["bills", "utilities"]),
+            type: "Expense",
+            isvoid: 0,
+            accountid: DEMO_IDS.ACC_CHECKING,
+            categoryid: DEMO_IDS.TXCAT_ELECTRICITY,
+            transferaccountid: null,
+            transferid: null,
+        });
 
-        // Electricity (5th of each month)
-        const elecDate = new Date(monthDate);
-        elecDate.setDate(5);
-        if (elecDate <= today) {
-            transactions.push({
-                id: GenerateUuid(),
-                name: "Electric Bill",
-                amount: -(80 + Math.random() * 60),
-                date: elecDate.toISOString(),
-                description: "Monthly electricity",
-                payee: "Power Company",
-                notes: null,
-                tags: JSON.stringify(["bills", "utilities"]),
-                type: "Expense",
-                isvoid: 0,
-                accountid: DEMO_IDS.ACC_CHECKING,
-                categoryid: DEMO_IDS.TXCAT_ELECTRICITY,
-                transferaccountid: null,
-                transferid: null,
-            });
-        }
+        // Salary (15th)
+        transactions.push({
+            id: GenerateUuid(),
+            name: "Salary",
+            amount: round2(5000 + Math.random() * 500),
+            date: new Date(year, m, 15).toISOString(),
+            description: "Monthly salary",
+            payee: "Employer Inc.",
+            notes: null,
+            tags: JSON.stringify(["income", "salary"]),
+            type: "Income",
+            isvoid: 0,
+            accountid: DEMO_IDS.ACC_CHECKING,
+            categoryid: DEMO_IDS.TXCAT_SALARY,
+            transferaccountid: null,
+            transferid: null,
+        });
 
-        // Weekly groceries (4 per month)
+        // Weekly groceries (7th, 14th, 21st, 28th)
         for (let week = 0; week < 4; week++) {
-            const groceryDate = new Date(monthDate);
-            groceryDate.setDate(7 + week * 7);
-            if (groceryDate <= today) {
-                transactions.push({
-                    id: GenerateUuid(),
-                    name: "Groceries",
-                    amount: -(100 + Math.random() * 100),
-                    date: groceryDate.toISOString(),
-                    description: "Weekly groceries",
-                    payee: "Grocery Store",
-                    notes: null,
-                    tags: JSON.stringify(["food", "groceries"]),
-                    type: "Expense",
-                    isvoid: 0,
-                    accountid: DEMO_IDS.ACC_CREDIT,
-                    categoryid: DEMO_IDS.TXCAT_GROCERIES,
-                    transferaccountid: null,
-                    transferid: null,
-                });
-            }
+            transactions.push({
+                id: GenerateUuid(),
+                name: "Groceries",
+                amount: -round2(100 + Math.random() * 100),
+                date: new Date(year, m, 7 + week * 7).toISOString(),
+                description: "Weekly groceries",
+                payee: "Grocery Store",
+                notes: null,
+                tags: JSON.stringify(["food", "groceries"]),
+                type: "Expense",
+                isvoid: 0,
+                accountid: DEMO_IDS.ACC_CREDIT,
+                categoryid: DEMO_IDS.TXCAT_GROCERIES,
+                transferaccountid: null,
+                transferid: null,
+            });
         }
 
-        // Credit card payment (20th of each month)
-        const ccPayDate = new Date(monthDate);
-        ccPayDate.setDate(20);
-        if (ccPayDate <= today) {
-            const txId1 = GenerateUuid();
-            const txId2 = GenerateUuid();
-            transactions.push(
-                {
-                    id: txId1,
-                    name: "CC Payment",
-                    amount: -500,
-                    date: ccPayDate.toISOString(),
-                    description: "Credit card payment",
-                    payee: null,
-                    notes: null,
-                    tags: null,
-                    type: "Transfer",
-                    isvoid: 0,
-                    accountid: DEMO_IDS.ACC_CHECKING,
-                    categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS,
-                    transferaccountid: DEMO_IDS.ACC_CREDIT,
-                    transferid: txId2,
-                },
-                {
-                    id: txId2,
-                    name: "CC Payment",
-                    amount: 500,
-                    date: ccPayDate.toISOString(),
-                    description: "Credit card payment",
-                    payee: null,
-                    notes: null,
-                    tags: null,
-                    type: "Transfer",
-                    isvoid: 0,
-                    accountid: DEMO_IDS.ACC_CREDIT,
-                    categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS,
-                    transferaccountid: DEMO_IDS.ACC_CHECKING,
-                    transferid: txId1,
-                }
-            );
+        // Credit card payment (20th)
+        const txId1 = GenerateUuid();
+        const txId2 = GenerateUuid();
+        const ccDate = new Date(year, m, 20).toISOString();
+        transactions.push(
+            {
+                id: txId1,
+                name: "CC Payment",
+                amount: -500,
+                date: ccDate,
+                description: "Credit card payment",
+                payee: null,
+                notes: null,
+                tags: null,
+                type: "Transfer",
+                isvoid: 0,
+                accountid: DEMO_IDS.ACC_CHECKING,
+                categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS,
+                transferaccountid: DEMO_IDS.ACC_CREDIT,
+                transferid: txId2,
+            },
+            {
+                id: txId2,
+                name: "CC Payment",
+                amount: 500,
+                date: ccDate,
+                description: "Credit card payment",
+                payee: null,
+                notes: null,
+                tags: null,
+                type: "Transfer",
+                isvoid: 0,
+                accountid: DEMO_IDS.ACC_CREDIT,
+                categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS,
+                transferaccountid: DEMO_IDS.ACC_CHECKING,
+                transferid: txId1,
+            }
+        );
+    }
+
+    // Recent daily activity: guarantees that "today", "this week" and the
+    // current portion of "this month" have visible transactions.
+    const dailyTemplates: {
+        name: string;
+        payee: string;
+        categoryid: string;
+        minAmt: number;
+        maxAmt: number;
+        accountid: string;
+        tags: string[];
+    }[] = [
+        { name: "Coffee Shop", payee: "Starbucks", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 4, maxAmt: 8, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "coffee"] },
+        { name: "Lunch", payee: "Chipotle", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 10, maxAmt: 18, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "lunch"] },
+        { name: "Dinner", payee: "Local Bistro", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 22, maxAmt: 55, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining"] },
+        { name: "Fuel", payee: "Shell", categoryid: DEMO_IDS.TXCAT_FUEL, minAmt: 30, maxAmt: 60, accountid: DEMO_IDS.ACC_CREDIT, tags: ["car", "fuel"] },
+        { name: "Snacks", payee: "Corner Store", categoryid: DEMO_IDS.TXCAT_GROCERIES, minAmt: 3, maxAmt: 12, accountid: DEMO_IDS.ACC_CASH, tags: ["food"] },
+    ];
+
+    for (let daysAgo = 0; daysAgo < DEMO_RECENT_DAYS; daysAgo++) {
+        const day = addDays(today, -daysAgo);
+        // Guarantee at least one transaction for the last 3 days (covers today,
+        // yesterday, and the current-week window); make older days sparser.
+        const numTxns = daysAgo < 3 ? 1 + Math.floor(Math.random() * 2) : Math.random() > 0.45 ? 1 : 0;
+        for (let i = 0; i < numTxns; i++) {
+            const tmpl = dailyTemplates[Math.floor(Math.random() * dailyTemplates.length)];
+            // Add a few hours so intraday ordering looks natural.
+            const txDate = new Date(day);
+            txDate.setHours(9 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0, 0);
+            transactions.push({
+                id: GenerateUuid(),
+                name: tmpl.name,
+                amount: -round2(tmpl.minAmt + Math.random() * (tmpl.maxAmt - tmpl.minAmt)),
+                date: txDate.toISOString(),
+                description: tmpl.name,
+                payee: tmpl.payee,
+                notes: null,
+                tags: JSON.stringify(tmpl.tags),
+                type: "Expense",
+                isvoid: 0,
+                accountid: tmpl.accountid,
+                categoryid: tmpl.categoryid,
+                transferaccountid: null,
+                transferid: null,
+            });
         }
     }
 
     return transactions;
 };
 
-/** Escape a string value for safe SQL string embedding */
-const escSql = (val: string | null): string => {
-    if (val === null) return "NULL";
-    return `'${val.replace(/'/g, "''")}'`;
-};
-
 /**
  * Seed the SQLite database with demo data.
- * All INSERTs are batched into a single execAsync call for maximum speed.
+ *
+ * All INSERTs are concatenated into a single `execAsync` call wrapped in a
+ * BEGIN/COMMIT transaction. This is dramatically faster than running each
+ * INSERT separately, because SQLite otherwise auto-commits (and fsyncs) once
+ * per statement.
  */
 export const seedSqliteDemoDB = async (): Promise<void> => {
     // Check localStorage flag first
@@ -273,9 +325,12 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
     const userId = SQLITE_DEMO_USER_ID;
 
     try {
-        // Build all SQL statements as a single string for batched execution
+        // Build all SQL statements as a single string for batched execution.
+        // PRAGMA foreign_keys must be toggled OUTSIDE the transaction — SQLite
+        // silently ignores it inside one.
         const statements: string[] = [];
         statements.push("PRAGMA foreign_keys = OFF;");
+        statements.push("BEGIN TRANSACTION;");
 
         // --- Transaction Groups ---
         const transactionGroupsData = [
@@ -355,6 +410,7 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             );
         }
 
+        statements.push("COMMIT;");
         statements.push("PRAGMA foreign_keys = ON;");
 
         // Execute all statements in a single batched call
@@ -372,9 +428,9 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
         setDemoSeededFlag(true);
         console.log("SQLite demo database seeded successfully!");
     } catch (error) {
-        // Re-enable foreign keys even on error
+        // Roll back the transaction and re-enable foreign keys on failure.
         try {
-            await db.execAsync("PRAGMA foreign_keys = ON;");
+            await db.execAsync("ROLLBACK; PRAGMA foreign_keys = ON;");
         } catch { }
         console.error("Failed to seed SQLite demo database:", error);
         throw error;
