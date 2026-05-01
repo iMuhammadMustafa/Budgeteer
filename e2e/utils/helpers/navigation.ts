@@ -114,16 +114,17 @@ export async function navigateToAccountsViaDrawer(page: Page) {
 }
 
 export async function navigateToTransactionsViaDrawer(page: Page) {
-  // Use direct navigation since bottom tabs may not be visible on all pages
   await page.goto("/Transactions");
   await page.waitForLoadState("domcontentloaded");
 }
 
-/**
- * Navigate to the AddTransaction page via direct URL.
- */
 export async function navigateToAddTransaction(page: Page) {
   await page.goto("/AddTransaction");
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(500);
+}
+
+export async function navigateToSummary(page: Page) {
+  await page.goto("/Summary");
+  await page.waitForLoadState("domcontentloaded");
 }
