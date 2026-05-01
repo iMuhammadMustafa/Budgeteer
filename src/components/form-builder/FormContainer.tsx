@@ -1,7 +1,7 @@
 import Button from "@/src/components/elements/Button";
 import { FormContainerProps } from "@/src/types/components/forms.types";
 import { memo, useCallback } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 /**
  * FormContainer component provides consistent layout, submission handling, and loading states
@@ -63,17 +63,15 @@ function FormContainerComponent({
       {/* Form Actions */}
       <View className="flex-row justify-end space-x-3 mt-4 -z-10">
         {showReset && onReset && (
-          <Pressable
-            className="p-3 flex justify-center items-center border border-border-default rounded-md bg-surface"
+          <Button
+            variant="outline"
+            size="md"
             onPress={handleReset}
             disabled={isLoading}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Reset form"
+            label="Reset"
             accessibilityHint="Clears all form fields and resets to initial values"
-          >
-            <Text className={`text-center font-medium ${isLoading ? "text-text-disabled" : "text-text-secondary"}`}>Reset</Text>
-          </Pressable>
+            testID="btn-form-reset"
+          />
         )}
 
         <Button

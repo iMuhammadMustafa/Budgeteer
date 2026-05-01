@@ -1,8 +1,9 @@
+import Button from "@/src/components/elements/Button";
 import DashboardCharts from "@/src/components/Charts/DashboardCharts";
 import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import GridPattern from "@/src/components/GridPattern";
 import { RefreshCcw } from "lucide-react-native";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -34,9 +35,15 @@ export default function DashboardIndex() {
       <GridPattern />
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <Text className="text-xl font-bold text-foreground">Dashboard</Text>
-        <Pressable className="p-2">
-          <RefreshCcw size={24} color="#4CAF50" onPress={onRefresh} />
-        </Pressable>
+        <Button
+          variant="ghost"
+          size="icon"
+          onPress={onRefresh}
+          accessibilityLabel="Refresh dashboard"
+          testID="btn-refresh-dashboard"
+        >
+          <RefreshCcw size={24} color="#4CAF50" />
+        </Button>
       </View>
       <ScrollView
         className="flex-1 h-full"

@@ -1,6 +1,7 @@
 import { FormSectionProps } from "@/src/types/components/forms.types";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Button from "@/src/components/elements/Button";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -32,26 +33,27 @@ function FormSectionComponent({
       {title && (
         <View className="mb-3">
           {collapsible ? (
-            <Pressable
+            <Button
+              variant="ghost"
+              size="md"
+              hapticFeedback="selection"
               onPress={toggleExpanded}
               className="flex-row items-center justify-between p-2 rounded-md bg-surface-elevated border border-border-default"
-              accessible={true}
-              accessibilityRole="button"
               accessibilityLabel={`${title} section, ${isExpanded ? "expanded" : "collapsed"}`}
               accessibilityHint={`Tap to ${isExpanded ? "collapse" : "expand"} this section`}
-              accessibilityState={{ expanded: isExpanded }}
+              accessibilityState={{ expanded: isExpanded ? "true" : "false" }}
+              testID={`btn-section-${title?.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <Text
                 className="text-lg font-semibold text-foreground"
                 accessibilityRole="header"
-                accessibilityLevel={2}
               >
                 {title}
               </Text>
               <Text className="text-text-secondary text-lg" accessibilityHidden={true}>
                 {isExpanded ? "−" : "+"}
               </Text>
-            </Pressable>
+            </Button>
           ) : (
             <Text
               className="text-lg font-semibold text-foreground mb-2"

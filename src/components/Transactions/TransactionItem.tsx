@@ -1,8 +1,9 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import TransactionAmount from "./TransactionAmount";
 
 export default function TransactionItem({
@@ -33,12 +34,15 @@ export default function TransactionItem({
   return (
     <View className="flex-row items-center justify-between">
       <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
-        <Pressable
-          style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
+        <Button
+          variant="ghost"
+          size="sm"
+          hapticFeedback="light"
           delayLongPress={300}
           onLongPress={() => handleLongPress(transaction, transferTransaction)}
           onPress={() => handlePress(transaction, transferTransaction)}
           className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
+          testID={`transaction-item-${transaction.id}`}
         >
           <View
             className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-muted`}
@@ -88,7 +92,7 @@ export default function TransactionItem({
               </View>
             )}
           </View>
-        </Pressable>
+        </Button>
       </Link>
     </View>
   );

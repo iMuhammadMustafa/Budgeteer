@@ -1,6 +1,7 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 export default function SettingsIndex() {
   return (
@@ -17,9 +18,12 @@ export default function SettingsIndex() {
         {/* Settings Options */}
         <View className="bg-card rounded-xl border border-muted overflow-hidden">
           {/* Import/Export */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
             onPress={() => router.push("/Settings/ImportExport")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-settings-import-export"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="ArrowUpDown" size={20} className="text-primary" />
@@ -31,12 +35,15 @@ export default function SettingsIndex() {
               </Text>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Pressable>
+          </Button>
 
           {/* Appearance */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
             onPress={() => router.push("/Settings/Appearance")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-settings-appearance"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="Palette" size={20} className="text-primary" />
@@ -46,7 +53,7 @@ export default function SettingsIndex() {
               <Text className="text-sm text-muted-foreground">Theme, grid background & more</Text>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Pressable>
+          </Button>
 
           <View className="flex-row items-center p-4 opacity-50">
             <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">

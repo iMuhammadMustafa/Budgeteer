@@ -5,7 +5,7 @@ import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { router } from "expo-router";
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -91,9 +91,12 @@ function TransactionsListComponent({
         const iconToUse = (item as any).groupicon || item.icon;
 
         return (
-          <Pressable
+          <Button
+            variant="ghost"
+            size="md"
             onPress={() => onPress(item)}
             className="flex-row items-center justify-between p-4 bg-card/30 rounded-lg mb-2"
+            testID={`detail-transaction-${item.id}`}
           >
             <View className="flex-row items-center flex-1">
               {iconToUse && (
@@ -116,7 +119,7 @@ function TransactionsListComponent({
               </Text>
               <Text className="text-sm text-muted-foreground">{localDate.format("MMM D, YYYY")}</Text>
             </View>
-          </Pressable>
+          </Button>
         );
       }}
     />

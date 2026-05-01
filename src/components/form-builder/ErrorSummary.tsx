@@ -1,12 +1,10 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { FormError } from '@/src/types/components/forms.types';
 import { formatErrorMessage, groupErrorsByType, getMostCriticalError } from '@/src/utils/form-errors';
+import Button from '@/src/components/elements/Button';
 import ErrorMessage from './ErrorMessage';
 
-/**
- * Props for ErrorSummary component
- */
 interface ErrorSummaryProps {
   errors: FormError[];
   onDismiss?: () => void;
@@ -16,10 +14,6 @@ interface ErrorSummaryProps {
   className?: string;
 }
 
-/**
- * ErrorSummary component displays a summary of all form errors
- * with options to dismiss or retry. Provides accessible error navigation.
- */
 export default function ErrorSummary({
   errors,
   onDismiss,
@@ -91,16 +85,16 @@ export default function ErrorSummary({
         </Text>
         
         {onDismiss && (
-          <Pressable
+          <Button
+            variant="ghost"
+            size="icon"
             onPress={handleDismiss}
-            className="p-1"
-            accessible={true}
-            accessibilityRole="button"
             accessibilityLabel="Dismiss errors"
             accessibilityHint="Closes the error summary"
+            testID="btn-dismiss-errors"
           >
             <Text className="text-red-600 text-lg font-bold">×</Text>
-          </Pressable>
+          </Button>
         )}
       </View>
 
@@ -130,18 +124,16 @@ export default function ErrorSummary({
       {/* Actions */}
       {(showRetry && onRetry) && (
         <View className="flex-row justify-end mt-3 pt-3 border-t border-red-200">
-          <Pressable
+          <Button
+            variant="destructive"
+            size="sm"
+            hapticFeedback="error"
             onPress={handleRetry}
-            className="bg-red-600 px-4 py-2 rounded-md"
-            accessible={true}
-            accessibilityRole="button"
+            label="Try Again"
             accessibilityLabel="Retry operation"
             accessibilityHint="Attempts to retry the failed operation"
-          >
-            <Text className="text-white font-medium">
-              Try Again
-            </Text>
-          </Pressable>
+            testID="btn-retry-errors"
+          />
         </View>
       )}
 

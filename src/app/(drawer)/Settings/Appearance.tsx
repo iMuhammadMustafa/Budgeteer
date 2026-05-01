@@ -1,6 +1,7 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Platform, ScrollView, Switch, Text, View } from "react-native";
 
 export default function Appearance() {
   const { theme, isDarkMode, toggleTheme, showGrid, setShowGrid } = useTheme();
@@ -19,9 +20,13 @@ export default function Appearance() {
         {/* Settings Cards */}
         <View className="bg-card rounded-xl border border-muted overflow-hidden">
           {/* Theme Mode */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
+            hapticFeedback="selection"
             onPress={toggleTheme}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-toggle-theme"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name={isDarkMode ? "Moon" : "Sun"} size={20} className="text-primary" />
@@ -44,12 +49,16 @@ export default function Appearance() {
                 {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
               />
             </View>
-          </Pressable>
+          </Button>
 
           {/* Grid Background */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
+            hapticFeedback="selection"
             onPress={() => setShowGrid(!showGrid)}
-            className="flex-row items-center p-4 active:bg-muted/50"
+            className="flex-row items-center p-4 active:bg-muted/50 rounded-none justify-start"
+            testID="btn-toggle-grid"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="Grid3X3" size={20} className="text-primary" />
@@ -67,7 +76,7 @@ export default function Appearance() {
               thumbColor={showGrid ? "#5ddc9a" : "#fff"}
               {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
             />
-          </Pressable>
+          </Button>
         </View>
 
         {/* Preview hint */}
