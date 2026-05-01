@@ -72,7 +72,15 @@ export async function deleteItemWithDependencies(
         const dropdownBtn = modal.getByTestId(selectors.forms.dropdownButton);
         await dropdownBtn.click();
         await page.waitForTimeout(300);
-        await page.getByText(options.targetItemName, { exact: true }).first().click();
+
+        // Type in search box if visible to filter options
+        const searchBox = page.getByPlaceholder("Search...");
+        if (await searchBox.isVisible().catch(() => false)) {
+            await searchBox.fill(options.targetItemName);
+            await page.waitForTimeout(300);
+        }
+
+        await page.getByText(options.targetItemName, { exact: true }).last().click({ force: true });
         await page.waitForTimeout(200);
     }
 

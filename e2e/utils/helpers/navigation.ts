@@ -1,127 +1,84 @@
 import { Page } from "@playwright/test";
 
 // ============================================
-// DRAWER / MENU NAVIGATION
+// FAST NAVIGATION HELPERS (page.goto)
 // ============================================
 
 export async function navigateToAccountCategories(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /accounts/i }).click();
-  await page.getByLabel("Categories").first().click();
-  await page.waitForURL("**/Categories");
+  await page.goto("/Accounts/Categories");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToRestoreAccountCategories(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /restore/i }).click();
-  await page.waitForURL("**/Restore/**");
+  await page.goto("/Restore/AccountCategories");
   await page.waitForLoadState("domcontentloaded");
-  await page.getByLabel("Account Categories").click();
-  await page.waitForURL("**/Restore/AccountCategories");
 }
 
 export async function navigateToTransactionGroups(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /categories/i }).click();
-  await page.getByLabel("Groups").first().click();
-  await page.waitForURL("**/Categories/Groups");
+  await page.goto("/Categories/Groups");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToRestoreTransactionGroups(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /restore/i }).click();
-  await page.waitForURL("**/Restore/**");
+  await page.goto("/Restore/TransactionGroups");
   await page.waitForLoadState("domcontentloaded");
-  await page.getByLabel("Transaction Groups").click();
-  await page.waitForURL("**/Restore/TransactionGroups");
 }
 
 export async function navigateToAccounts(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.waitForTimeout(200);
-  await page.getByRole("button", { name: /accounts/i }).click();
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
-  await page.getByLabel("Accounts").first().click();
-  await page.waitForURL(/\/Accounts$/);
+  await page.goto("/Accounts");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToRestoreAccounts(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /restore/i }).click();
-  await page.waitForURL("**/Restore/**");
+  await page.goto("/Restore/Accounts");
   await page.waitForLoadState("domcontentloaded");
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
-  // There are two "Accounts" buttons - drawer (first) and content tab (second)
-  await page.getByRole("button", { name: "Accounts", exact: true }).nth(1).click();
-  await page.waitForURL("**/Restore/Accounts");
 }
 
 export async function navigateToTransactionCategories(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /categories/i }).click();
-  await page.getByTestId("tab-Categories").filter({ visible: true }).first().click();
-  await page.waitForURL("**/Categories");
+  await page.goto("/Categories");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToRestoreTransactionCategories(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /restore/i }).click();
-  await page.waitForURL("**/Restore/**");
+  await page.goto("/Restore/TransactionCategories");
   await page.waitForLoadState("domcontentloaded");
-  await page.getByLabel("Transaction Categories").click();
-  await page.waitForURL("**/Restore/TransactionCategories");
 }
 
 export async function navigateToTransactions(page: Page) {
-  await page.getByTestId("tab-transactions").click();
-  await page.waitForURL("**/Transactions");
+  await page.goto("/Transactions");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToRestoreTransactions(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /restore/i }).click();
-  await page.waitForURL("**/Restore/**");
+  await page.goto("/Restore/Transactions");
   await page.waitForLoadState("domcontentloaded");
-  await page.getByLabel("Transactions").click();
-  await page.waitForURL("**/Restore/Transactions");
 }
 
 export async function navigateToDashboard(page: Page) {
-  await page.getByTestId("tab-dashboard").click({ force: true });
-  await page.waitForURL("**/Dashboard");
+  await page.goto("/Dashboard");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToSettings(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.getByRole("button", { name: /settings/i }).click();
-  await page.waitForURL("**/Settings");
+  await page.goto("/Settings");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 // ============================================
-// DIRECT / SHORTCUT NAVIGATION
+// DIRECT / SHORTCUT NAVIGATION (aliases)
 // ============================================
 
 export async function navigateToAccountsViaDrawer(page: Page) {
-  await page.getByRole("button", { name: /menu/i }).first().click();
-  await page.waitForTimeout(200);
-  await page.getByRole("button", { name: /accounts/i }).click();
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
-  await page.getByLabel("Accounts").first().click();
-  await page.waitForURL(/\/Accounts$/);
+  await navigateToAccounts(page);
 }
 
 export async function navigateToTransactionsViaDrawer(page: Page) {
-  await page.goto("/Transactions");
-  await page.waitForLoadState("domcontentloaded");
+  await navigateToTransactions(page);
 }
 
 export async function navigateToAddTransaction(page: Page) {
   await page.goto("/AddTransaction");
   await page.waitForLoadState("domcontentloaded");
-  await page.waitForTimeout(500);
 }
 
 export async function navigateToSummary(page: Page) {

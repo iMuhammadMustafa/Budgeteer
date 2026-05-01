@@ -86,7 +86,6 @@ for (const mode of storageModes) {
 
     test("summary page displays time period selector", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(1000);
 
       await expect(page.getByText("monthly", { exact: false })).toBeVisible();
       await expect(page.getByText("quarterly", { exact: false })).toBeVisible();
@@ -95,10 +94,8 @@ for (const mode of storageModes) {
 
     test("switching to quarterly period updates displayed data", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(1000);
 
       await page.getByText(/quarterly/i).click();
-      await page.waitForTimeout(1000);
 
       // Should show quarterly column headers
       await expect(page.getByText(/Q[1-4]/).first()).toBeVisible({ timeout: 10000 });
@@ -106,10 +103,8 @@ for (const mode of storageModes) {
 
     test("switching to yearly period updates displayed data", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(1000);
 
       await page.getByText(/yearly/i).click();
-      await page.waitForTimeout(1000);
 
       // Should show year column headers
       const currentYear = new Date().getFullYear();
@@ -118,11 +113,9 @@ for (const mode of storageModes) {
 
     test("switching back to monthly period shows month columns", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(1000);
 
       // Ensure monthly is selected
       await page.getByText(/monthly/i).click();
-      await page.waitForTimeout(1000);
 
       const monthNames = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
       await expect(page.getByText(monthNames).first()).toBeVisible({ timeout: 10000 });
@@ -130,7 +123,6 @@ for (const mode of storageModes) {
 
     test("expense category appears in summary table", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(3000);
 
       // The test transaction group and category should appear if data loaded
       const hasData = await page
@@ -148,7 +140,6 @@ for (const mode of storageModes) {
 
     test("totals row is visible at bottom of summary table", async () => {
       await navigateToSummary(page);
-      await page.waitForTimeout(3000);
 
       const hasData = await page
         .getByText(/[Tt]otal/)
@@ -228,7 +219,6 @@ for (const mode of storageModes) {
 
       // Check summary page
       await navigateToSummary(page);
-      await page.waitForTimeout(3000);
 
       // The summary page should show data (expense summary heading visible means it loaded)
       await expect(page.getByText("Expense Summary")).toBeVisible({ timeout: 15000 });
@@ -255,7 +245,6 @@ for (const mode of storageModes) {
       });
 
       await navigateToSummary(page);
-      await page.waitForTimeout(3000);
 
       // Summary page should still load and display data
       await expect(page.getByText("Expense Summary")).toBeVisible({ timeout: 15000 });

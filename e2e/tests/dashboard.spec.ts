@@ -112,8 +112,6 @@ for (const mode of storageModes) {
 
       // Navigate to dashboard
       await navigateToDashboard(page);
-      await page.waitForTimeout(2000);
-
       // Charts should render (SVG elements present)
       await expect(page.locator("svg:visible").first()).toBeVisible({ timeout: 15000 });
     });
@@ -139,7 +137,6 @@ for (const mode of storageModes) {
       });
 
       await navigateToDashboard(page);
-      await page.waitForTimeout(2000);
 
       // Charts should still render with the updated data
       await expect(page.locator("svg:visible").first()).toBeVisible({ timeout: 15000 });
@@ -147,7 +144,6 @@ for (const mode of storageModes) {
 
     test("dashboard shows period labels for current month", async () => {
       await navigateToDashboard(page);
-      await page.waitForTimeout(2000);
 
       // Should display some kind of period indicator (month name, date range, etc.)
       const monthNames = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
@@ -189,7 +185,6 @@ for (const mode of storageModes) {
       });
 
       await navigateToDashboard(page);
-      await page.waitForTimeout(2000);
 
       // Dashboard should render with charts showing accumulated data
       const svgCount = await page.locator("svg:visible").count();

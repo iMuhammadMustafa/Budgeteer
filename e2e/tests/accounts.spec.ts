@@ -90,7 +90,6 @@ for (const mode of storageModes) {
 
       // Verify initial adjustment transaction was created
       await navigateToTransactionsViaDrawer(page);
-      await page.waitForTimeout(500);
 
       const hasInitialTransaction = await verifyTransactionExists(page, {
         accountName,

@@ -173,7 +173,7 @@ export async function fillTransactionCategoryForm(
   }
 
   if (budgetAmount) {
-    await page.getByRole("textbox", { name: "Budget Amount (required)" }).fill(budgetAmount);
+    await page.getByRole("textbox", { name: "Budget Amount" }).fill(budgetAmount);
   }
 
   if (budgetFrequency) {

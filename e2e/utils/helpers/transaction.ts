@@ -202,8 +202,8 @@ export async function createTransactionCategory(
     await fillTransactionCategoryForm(page, {
         name,
         groupName: options.groupName,
-        budgetAmount: options.budgetAmount || "0",
-        budgetFrequency: options.budgetFrequency || "Monthly",
+        budgetAmount: options.budgetAmount,
+        budgetFrequency: options.budgetFrequency,
         displayOrder: options.displayOrder || "9999",
     });
     await saveForm(page);
