@@ -335,9 +335,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
                       mode === "plus" ? "bg-success-400" : "bg-danger-400"
                     } border border-muted rounded-lg me-2 p-1.5`}
                     onPress={handleModeToggle}
-                    accessible={true}
                     testID="btn-mode-toggle"
-                    accessibilityRole="button"
                     accessibilityLabel={`Toggle amount sign, currently ${mode}`}
                   >
                     {mode === "minus" ? (

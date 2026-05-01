@@ -50,7 +50,7 @@ function FormSectionComponent({
               >
                 {title}
               </Text>
-              <Text className="text-text-secondary text-lg" accessibilityHidden={true}>
+              <Text className="text-text-secondary text-lg" aria-hidden={true}>
                 {isExpanded ? "−" : "+"}
               </Text>
             </Button>
@@ -58,6 +58,7 @@ function FormSectionComponent({
             <Text
               className="text-lg font-semibold text-foreground mb-2"
               accessibilityRole="header"
+              // @ts-expect-error accessibilityLevel is web/aria only
               accessibilityLevel={2}
             >
               {title}
@@ -80,6 +81,7 @@ function FormSectionComponent({
           accessible={true}
           accessibilityRole="list"
           accessibilityLabel={title ? `${title} section content` : "Form section content"}
+          // @ts-expect-error accessibilityDescribedBy is web/aria only
           accessibilityDescribedBy={descriptionId}
         >
           {children}

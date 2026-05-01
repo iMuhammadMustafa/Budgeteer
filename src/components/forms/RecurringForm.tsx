@@ -229,7 +229,6 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
                 formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-danger-400"
               } border border-muted rounded-lg p-1.5`}
               onPress={handleModeToggle}
-              accessibilityLabel="Toggle sign"
               testID="btn-recurring-mode-toggle"
               accessibilityLabel={`Toggle amount sign, currently ${mode}`}
             >

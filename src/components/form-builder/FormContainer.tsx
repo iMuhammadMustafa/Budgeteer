@@ -55,6 +55,7 @@ function FormContainerComponent({
         busy: isLoading,
         disabled: isLoading,
       }}
+      // @ts-expect-error onKeyDown is web-only
       onKeyDown={handleKeyPress}
     >
       {/* Form Content */}
