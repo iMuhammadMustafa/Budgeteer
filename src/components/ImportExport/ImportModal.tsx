@@ -6,6 +6,7 @@ import ImportService from "@/src/services/Import.Service";
 import { ExportData, ImportResult, ImportValidationResult } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import Button from "@/src/components/elements/Button";
 
 type ImportStep = "select" | "validating" | "preview" | "importing" | "complete";
 
@@ -397,9 +398,14 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                             {step === "importing" && "Importing..."}
                             {step === "complete" && "Import Complete"}
                         </Text>
-                        <Pressable onPress={handleClose} className="p-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onPress={handleClose}
+                            testID="btn-import-close"
+                        >
                             <MyIcon name="X" size={20} className="text-text-secondary" />
-                        </Pressable>
+                        </Button>
                     </View>
 
                     {renderContent()}

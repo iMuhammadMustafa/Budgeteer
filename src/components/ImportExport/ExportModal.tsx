@@ -8,6 +8,7 @@ import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/I
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
+
 export default function ExportModal({ visible, onClose }: {
     visible: boolean;
     onClose: () => void;
@@ -127,9 +128,14 @@ export default function ExportModal({ visible, onClose }: {
                     {/* Header */}
                     <View className="flex-row items-center justify-between p-4 border-b border-border-default bg-surface-elevated">
                         <Text className="font-semibold text-lg text-dark">Export Data</Text>
-                        <Pressable onPress={onClose} className="p-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onPress={onClose}
+                            testID="btn-export-close"
+                        >
                             <MyIcon name="X" size={20} className="text-text-secondary" />
-                        </Pressable>
+                        </Button>
                     </View>
 
                     <ScrollView className="flex-1 p-4">
@@ -138,10 +144,13 @@ export default function ExportModal({ visible, onClose }: {
                             <View className="mb-4">
                                 <Text className="text-sm font-medium text-foreground mb-2">Export Format</Text>
                                 <View className="flex-row gap-2">
-                                    <Pressable
+                                    <Button
+                                        variant={exportFormat === "json" ? "primary" : "ghost"}
+                                        size="md"
+                                        hapticFeedback="selection"
                                         onPress={() => setExportFormat("json")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-border-default"
-                                            }`}
+                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-border-default"}`}
+                                        testID="btn-export-json"
                                     >
                                         <View className="flex-row items-center">
                                             <MyIcon name="FileJson2" size={20} className={exportFormat === "json" ? "text-primary" : "text-text-secondary"} />
@@ -152,11 +161,14 @@ export default function ExportModal({ visible, onClose }: {
                                                 <Text className="text-xs text-text-tertiary">Full backup</Text>
                                             </View>
                                         </View>
-                                    </Pressable>
-                                    <Pressable
+                                    </Button>
+                                    <Button
+                                        variant={exportFormat === "csv" ? "primary" : "ghost"}
+                                        size="md"
+                                        hapticFeedback="selection"
                                         onPress={() => setExportFormat("csv")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-border-default"
-                                            }`}
+                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-border-default"}`}
+                                        testID="btn-export-csv"
                                     >
                                         <View className="flex-row items-center">
                                             <MyIcon name="FileSpreadsheet" size={20} className={exportFormat === "csv" ? "text-primary" : "text-text-secondary"} />
@@ -167,7 +179,7 @@ export default function ExportModal({ visible, onClose }: {
                                                 <Text className="text-xs text-text-tertiary">Single table</Text>
                                             </View>
                                         </View>
-                                    </Pressable>
+                                    </Button>
                                 </View>
                             </View>
                         )}
@@ -177,25 +189,29 @@ export default function ExportModal({ visible, onClose }: {
                             <View className="flex-row items-center justify-between mb-2">
                                 <Text className="text-sm font-medium text-foreground">Tables</Text>
                                 <View className="flex-row gap-2">
-                                    <Pressable onPress={selectAllTables}>
+                                    <Button variant="ghost" size="sm" onPress={selectAllTables} testID="btn-export-select-all">
                                         <Text className="text-xs text-primary">Select All</Text>
-                                    </Pressable>
+                                    </Button>
                                     <Text className="text-border-default">|</Text>
-                                    <Pressable onPress={deselectAllTables}>
+                                    <Button variant="ghost" size="sm" onPress={deselectAllTables} testID="btn-export-clear">
                                         <Text className="text-xs text-text-secondary">Clear</Text>
-                                    </Pressable>
+                                    </Button>
                                 </View>
                             </View>
 
                             <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_TABLES.map(table => (
-                                    <Pressable
+                                    <Button
                                         key={table}
+                                        variant="ghost"
+                                        size="md"
+                                        hapticFeedback="selection"
                                         onPress={() => {
                                             setSelectedView(null);
                                             toggleTable(table as TableNames);
                                         }}
-                                        className="flex-row items-center justify-between py-2 px-2"
+                                        className="flex-row items-center justify-between py-2 px-2 rounded-none"
+                                        testID={`btn-export-table-${table}`}
                                     >
                                         <View className="flex-row items-center">
                                             <MyIcon
@@ -214,7 +230,7 @@ export default function ExportModal({ visible, onClose }: {
                                             trackColor={{ false: "#d1d5db", true: "#93c5fd" }}
                                             thumbColor={selectedTables.has(table as TableNames) ? "#3b82f6" : "#f3f4f6"}
                                         />
-                                    </Pressable>
+                                    </Button>
                                 ))}
                             </View>
                         </View>
@@ -224,11 +240,14 @@ export default function ExportModal({ visible, onClose }: {
                             <Text className="text-sm font-medium text-foreground mb-2">Views (CSV only)</Text>
                             <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_VIEWS.map(view => (
-                                    <Pressable
+                                    <Button
                                         key={view}
+                                        variant="ghost"
+                                        size="md"
+                                        hapticFeedback="selection"
                                         onPress={() => selectView(view as ViewNames)}
-                                        className={`flex-row items-center py-2 px-2 rounded ${selectedView === view ? "bg-primary/10" : ""
-                                            }`}
+                                        className={`flex-row items-center py-2 px-2 rounded-none justify-start ${selectedView === view ? "bg-primary/10" : ""}`}
+                                        testID={`btn-export-view-${view}`}
                                     >
                                         <View
                                             className={`w-4 h-4 rounded-full border mr-2 items-center justify-center ${selectedView === view ? "border-primary bg-primary" : "border-border-default"
@@ -240,7 +259,7 @@ export default function ExportModal({ visible, onClose }: {
                                         </View>
                                         <MyIcon name="Eye" size={16} className="text-text-secondary mr-2" />
                                         <Text className="text-sm text-foreground">{formatViewName(view)}</Text>
-                                    </Pressable>
+                                    </Button>
                                 ))}
                             </View>
                         </View>

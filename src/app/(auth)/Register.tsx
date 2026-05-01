@@ -2,7 +2,9 @@ import supabase from "@/src/providers/Supabase";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, SafeAreaView, Text, TextInput } from "react-native";
+import { Alert, Text, TextInput } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "@/src/components/elements/Button";
 
 const initailRegisterState = {
   id: GenerateUuid(),
@@ -64,15 +66,16 @@ export default function Register() {
         onChangeText={text => setUser({ ...user, tenantId: text })}
       />
 
-      <Pressable
-        className={`p-4 mb-4 bg-primary rounded-lg items-center ${isValid ? "" : "opacity-50"}`}
+      <Button
+        variant="primary"
+        size="lg"
+        hapticFeedback="success"
+        className="p-4 mb-4 bg-primary rounded-lg items-center"
         onPress={signUpWithEmail}
         disabled={!isValid}
-      >
-        <Text className="text-foreground" selectable={false}>
-          Register
-        </Text>
-      </Pressable>
+        label="Register"
+        testID="btn-register"
+      />
       <Link className=" py-4 mb-4 bg-secondary rounded-lg items-center text-center" href="/Login">
         <Text className="text-foreground" selectable={false}>
           Login
