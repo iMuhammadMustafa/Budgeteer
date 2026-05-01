@@ -7,8 +7,8 @@ import MyIcon from "./MyIcon";
 
 // Type definitions
 export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "destructive";
-export type ButtonSize = "sm" | "md" | "lg";
-export type HapticFeedbackType = "light" | "medium" | "heavy" | "selection";
+export type ButtonSize = "sm" | "md" | "lg" | "icon";
+export type HapticFeedbackType = "light" | "medium" | "heavy" | "selection" | "success" | "error" | "warning";
 
 export interface ButtonProps {
   // Content
@@ -21,6 +21,8 @@ export interface ButtonProps {
   // Behavior
   onPress: () => void;
   onLongPress?: () => void;
+  onPressOut?: () => void;
+  delayLongPress?: number;
   disabled?: boolean;
   loading?: boolean;
 
@@ -40,7 +42,7 @@ export interface ButtonProps {
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
-  accessibilityState?: any;
+  accessibilityState?: Record<string, boolean | string | undefined>;
   accessibilityRole?:
   | "button"
   | "link"
@@ -111,7 +113,43 @@ const sizeStyles = {
     text: "text-base",
     iconSize: 20,
   },
+  icon: {
+    container: "p-2 rounded-md",
+    text: "text-sm",
+    iconSize: 20,
+  },
 };
+
+export async function triggerHaptic(type: HapticFeedbackType): Promise<void> {
+  if (Platform.OS === "web") return;
+  try {
+    switch (type) {
+      case "light":
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        break;
+      case "medium":
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        break;
+      case "heavy":
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        break;
+      case "selection":
+        await Haptics.selectionAsync();
+        break;
+      case "success":
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        break;
+      case "error":
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        break;
+      case "warning":
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        break;
+    }
+  } catch {
+    // Silently fail if haptics are not available
+  }
+}
 
 const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
   (
@@ -122,6 +160,8 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
       textContainerClasses,
       onPress,
       onLongPress,
+      onPressOut,
+      delayLongPress,
       disabled = false,
       loading = false,
       variant = "primary",
@@ -151,57 +191,18 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
     const sizeStyle = sizeStyles[size];
     const finalIconSize = iconSize || sizeStyle.iconSize;
 
-    // Handle press with haptic feedback
     const handlePress = async () => {
       if (isDisabled) return;
-
-      // Trigger haptic feedback on non-web platforms
-      if (hapticFeedback !== false && Platform.OS !== "web") {
-        try {
-          switch (hapticFeedback) {
-            case "light":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              break;
-            case "medium":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              break;
-            case "heavy":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              break;
-            case "selection":
-              await Haptics.selectionAsync();
-              break;
-          }
-        } catch (error) {
-          // Silently fail if haptics are not available
-          console.warn("Haptic feedback failed:", error);
-        }
+      if (hapticFeedback !== false) {
+        await triggerHaptic(hapticFeedback);
       }
-
       onPress();
     };
+
     const handleLongPress = async () => {
       if (isDisabled) return;
-      if (hapticFeedback !== false && Platform.OS !== "web") {
-        try {
-          switch (hapticFeedback) {
-            case "light":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              break;
-            case "medium":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              break;
-            case "heavy":
-              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              break;
-            case "selection":
-              await Haptics.selectionAsync();
-              break;
-          }
-        } catch (error) {
-          // Silently fail if haptics are not available
-          console.warn("Haptic feedback failed:", error);
-        }
+      if (hapticFeedback !== false) {
+        await triggerHaptic(hapticFeedback);
       }
       if (onLongPress) {
         onLongPress();
@@ -288,6 +289,8 @@ const Button = forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
         disabled={isDisabled}
         onPress={handlePress}
         onLongPress={handleLongPress}
+        onPressOut={onPressOut}
+        delayLongPress={delayLongPress}
         accessibilityRole={accessibilityRole}
         accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : label)}
         accessibilityHint={accessibilityHint}
