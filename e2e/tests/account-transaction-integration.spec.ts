@@ -312,7 +312,8 @@ for (const mode of storageModes) {
       const modal = page.locator(selectors.ui.modal);
       await modal.waitFor();
       await modal.getByRole("button", { name: /restore|confirm/i }).click();
-      await page.waitForTimeout(500);
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       // Verify balance reflects restored expense (1000 - 100 = 900)
       await navigateToAccounts(page);

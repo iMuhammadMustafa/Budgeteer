@@ -225,10 +225,12 @@ for (const mode of storageModes) {
       const restoreModal = page.locator(selectors.ui.modal);
       await restoreModal.waitFor();
       await restoreModal.getByRole("button", { name: /restore|confirm/i }).click();
+      await expect(restoreModal).not.toBeVisible({ timeout: 10000 });
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       await navigateToAccounts(page);
       const restoredAccountItem = page.getByTestId(/^list-item-/).filter({ hasText: accountName });
-      await expect(restoredAccountItem).toBeVisible();
+      await expect(restoredAccountItem).toBeVisible({ timeout: 10000 });
     });
 
     test("accounts are grouped by category", async () => {

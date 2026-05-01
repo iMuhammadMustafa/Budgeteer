@@ -400,7 +400,8 @@ for (const mode of storageModes) {
       const restoreModal = page.locator(selectors.ui.modal);
       await restoreModal.waitFor({ state: "visible" });
       await restoreModal.getByRole("button", { name: /restore|confirm/i }).click();
-      await expect(restoreModal).not.toBeVisible();
+      await expect(restoreModal).not.toBeVisible({ timeout: 10000 });
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       await navigateToTransactionsViaDrawer(page);
       await expectTransactionVisible(page, txnName);

@@ -163,10 +163,12 @@ for (const mode of storageModes) {
       const modal = page.locator(selectors.ui.modal);
       await modal.waitFor();
       await modal.getByRole("button", { name: /restore|confirm/i }).click();
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       // Verify it's back in the main list
       await navigateToTransactionGroups(page);
-      await expect(page.getByText(groupName)).toBeVisible();
+      await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });
     });
 
     test("groups are sorted by display order (descending)", async () => {

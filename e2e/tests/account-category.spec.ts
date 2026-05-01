@@ -167,9 +167,13 @@ for (const mode of storageModes) {
       const modal = page.locator(selectors.ui.modal);
       await modal.waitFor();
       await modal.getByRole("button", { name: /restore|confirm/i }).click();
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+
+      // Wait for restored item to disappear from the deleted list
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       await navigateToAccountCategories(page);
-      await expect(page.getByText(categoryName)).toBeVisible();
+      await expect(page.getByText(categoryName)).toBeVisible({ timeout: 10000 });
     });
 
     test("categories are sorted by display order (descending)", async () => {
