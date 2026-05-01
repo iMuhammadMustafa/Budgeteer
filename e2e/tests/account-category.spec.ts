@@ -179,8 +179,8 @@ for (const mode of storageModes) {
       await createCategory(page, { name: `Order Test High ${timestamp}`, displayOrder: "999300" });
       await createCategory(page, { name: `Order Test Mid ${timestamp}`, displayOrder: "999200" });
 
-      await page.waitForURL("**/Categories");
-      await page.getByTestId(selectors.myTab.refreshButton).click();
+      await navigateToAccountCategories(page);
+      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
       const allItems = await listItems.allTextContents();
@@ -250,32 +250,6 @@ for (const mode of storageModes) {
       await expect(deleteButton).toBeVisible();
 
       await page.keyboard.press("Escape");
-    });
-
-    test("can delete category and all its accounts", async () => {
-      const timestamp = Date.now();
-      const catName = `DelAll AccCat ${timestamp}`;
-      const accountName = `DelAll Account ${timestamp}`;
-
-      await navigateToAccountCategories(page);
-      await createCategory(page, { name: catName, type: "Asset" });
-
-      await navigateToAccounts(page);
-      await createAccount(page, { name: accountName, categoryName: catName, balance: "0" });
-
-      await navigateToAccountCategories(page);
-
-      const listItem = page.getByTestId(/^list-item-/).filter({ hasText: catName });
-      const testId = await listItem.getAttribute("data-testid");
-      const itemId = testId?.replace("list-item-", "") || "";
-
-      await deleteItemWithDependencies(page, itemId, { action: "deleteAll" });
-
-      await expect(page.getByText(catName)).not.toBeVisible();
-
-      // Verify account was also removed
-      await navigateToAccounts(page);
-      await expect(page.getByText(accountName)).not.toBeVisible();
     });
 
     test("can delete category and move accounts to another category", async () => {

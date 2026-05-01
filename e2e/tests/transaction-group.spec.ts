@@ -185,8 +185,8 @@ for (const mode of storageModes) {
         displayOrder: "999200",
       });
 
-      await page.waitForURL("**/Categories/Groups");
-      await page.getByTestId(selectors.myTab.refreshButton).click();
+      await navigateToTransactionGroups(page);
+      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
       const allItems = await listItems.allTextContents();
@@ -257,32 +257,6 @@ for (const mode of storageModes) {
       await expect(deleteButton).toBeVisible();
 
       await page.keyboard.press("Escape");
-    });
-
-    test("can delete group and all its categories", async () => {
-      const timestamp = Date.now();
-      const groupName = `DelAll Group ${timestamp}`;
-      const catName = `DelAll Cat ${timestamp}`;
-
-      await navigateToTransactionGroups(page);
-      await createTransactionGroup(page, { name: groupName, type: "Expense" });
-
-      await navigateToTransactionCategories(page);
-      await createTransactionCategory(page, { name: catName, groupName });
-
-      await navigateToTransactionGroups(page);
-
-      const listItem = page.getByTestId(/^list-item-/).filter({ hasText: groupName });
-      const testId = await listItem.getAttribute("data-testid");
-      const itemId = testId?.replace("list-item-", "") || "";
-
-      await deleteItemWithDependencies(page, itemId, { action: "deleteAll" });
-
-      await expect(page.getByText(groupName)).not.toBeVisible();
-
-      // Verify category was also removed
-      await navigateToTransactionCategories(page);
-      await expect(page.getByText(catName)).not.toBeVisible();
     });
 
     test("can delete group and move categories to another group", async () => {

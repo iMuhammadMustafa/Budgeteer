@@ -208,8 +208,8 @@ for (const mode of storageModes) {
         displayOrder: "999200",
       });
 
-      await page.getByTestId(selectors.myTab.refreshButton).click();
-      await page.waitForTimeout(500);
+      await navigateToTransactionCategories(page);
+      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
       const allItems = await listItems.allTextContents();
