@@ -1,9 +1,9 @@
-import Button from "@/src/components/elements/Button";
+import { triggerHaptic } from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import TransactionAmount from "./TransactionAmount";
 
 export default function TransactionItem({
@@ -34,15 +34,25 @@ export default function TransactionItem({
   return (
     <View className="flex-row items-center justify-between">
       <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
-        <Button
-          variant="ghost"
-          size="sm"
-          hapticFeedback="light"
+        <Pressable
           delayLongPress={300}
-          onLongPress={() => handleLongPress(transaction, transferTransaction)}
-          onPress={() => handlePress(transaction, transferTransaction)}
+          onLongPress={() => {
+            triggerHaptic("light");
+            handleLongPress(transaction, transferTransaction);
+          }}
+          onPress={() => {
+            triggerHaptic("light");
+            handlePress(transaction, transferTransaction);
+          }}
           className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
           testID={`transaction-item-${transaction.id}`}
+          accessibilityRole="link"
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.8 : 1,
+              transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+            },
+          ]}
         >
           <View
             className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-muted`}
@@ -92,7 +102,7 @@ export default function TransactionItem({
               </View>
             )}
           </View>
-        </Button>
+        </Pressable>
       </Link>
     </View>
   );
