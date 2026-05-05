@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, Modal, Platform, Pressable, Text, View } from "react-native";
+import { FlatList, Platform, Text, View } from "react-native";
+import MyModal from "./elements/MyModal";
 
 import Button from "./elements/Button";
 import { triggerHaptic } from "./elements/Button";
@@ -237,22 +238,27 @@ export default function CalculatorComponent({
       </Button>
 
       {modalVisible && (
-        <Modal visible={modalVisible} transparent={true} animationType="fade">
-          <Pressable
-            onPressOut={() => {
+        <MyModal
+          isOpen={modalVisible}
+          setIsOpen={open => {
+            if (!open) {
               handleButtonPress("clear");
               setModalVisible(false);
-            }}
-            className="bg-black/50 flex-1 justify-center items-center"
-          >
-            <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
+            }
+          }}
+          onClose={() => {
+            handleButtonPress("clear");
+            setModalVisible(false);
+          }}
+          title="Calculator"
+        >
+            <View className="p-4">
               <History history={history} />
               <Display currentExpression={currentExpression} result={result} />
               <CalcButtons handleButtonPress={handleButtonPress} />
               <FormActionButtons handleButtonPress={handleButtonPress} setModalVisible={setModalVisible} />
             </View>
-          </Pressable>
-        </Modal>
+        </MyModal>
       )}
     </>
   );

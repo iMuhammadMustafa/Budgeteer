@@ -1,7 +1,8 @@
 import { FormFieldProps, OptionItem } from "@/src/types/components/forms.types";
 import dayjs from "dayjs";
 import { memo, useCallback, useMemo } from "react";
-import { Switch, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
+import ThemedSwitch from "../elements/ThemedSwitch";
 import DropdownField from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 
@@ -172,7 +173,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       case "switch":
         return (
           <View className="flex-row items-center justify-between py-2">
-            <Switch
+            <ThemedSwitch
               {...baseAccessibilityProps}
               value={Boolean(value)}
               onValueChange={(newValue: boolean) => {
@@ -180,11 +181,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
                 handleBlur();
               }}
               disabled={disabled}
-              trackColor={{
-                false: disabled ? "#e5e7eb" : "#d1d5db",
-                true: disabled ? "#93c5fd" : "#3b82f6",
-              }}
-              thumbColor={disabled ? "#9ca3af" : "#ffffff"}
+              testID={`switch-${String(name)}`}
             />
           </View>
         );

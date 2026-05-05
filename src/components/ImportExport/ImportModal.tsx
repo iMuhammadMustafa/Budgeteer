@@ -5,7 +5,8 @@ import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import ImportService from "@/src/services/Import.Service";
 import { ExportData, ImportResult, ImportValidationResult } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import MyModal from "@/src/components/elements/MyModal";
 
 type ImportStep = "select" | "validating" | "preview" | "importing" | "complete";
 
@@ -383,34 +384,18 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
         );
     };
 
-    return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-            <View className="flex-1 bg-black/50 justify-center items-center">
-                <Pressable className="absolute inset-0" onPress={handleClose} />
-                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-surface rounded-lg overflow-hidden">
-                    {/* Header */}
-                    <View className="flex-row items-center justify-between p-4 border-b border-border-default bg-surface-elevated">
-                        <Text className="font-semibold text-lg text-dark">
-                            {step === "select" && "Import Data"}
-                            {step === "validating" && "Validating..."}
-                            {step === "preview" && "Review Import"}
-                            {step === "importing" && "Importing..."}
-                            {step === "complete" && "Import Complete"}
-                        </Text>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onPress={handleClose}
-                            testID="btn-import-close"
-                        >
-                            <MyIcon name="X" size={20} className="text-text-secondary" />
-                        </Button>
-                    </View>
+    const modalTitle = {
+        select: "Import Data",
+        validating: "Validating...",
+        preview: "Review Import",
+        importing: "Importing...",
+        complete: "Import Complete",
+    }[step];
 
+    return (
+        <MyModal isOpen={visible} setIsOpen={open => { if (!open) handleClose(); }} onClose={handleClose} title={modalTitle}>
                     {renderContent()}
-                </View>
-            </View>
-        </Modal>
+        </MyModal>
     );
 }
 

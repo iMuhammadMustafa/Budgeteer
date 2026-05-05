@@ -14,7 +14,8 @@ import { Inserts, Recurring, TransactionType, Updates } from "@/src/types/databa
 import dayjs from "dayjs";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 import Button from "../elements/Button";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -170,11 +171,10 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
 
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
-        <Switch
+        <ThemedSwitch
           value={!!formData.isDateFlexible}
           onValueChange={value => handleSwitchChange("isDateFlexible", value)}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={!!formData.isDateFlexible ? "#f5dd4b" : "#f4f3f4"}
+          testID="switch-flexible-date"
         />
       </View>
 
@@ -210,11 +210,10 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       )}
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
-        <Switch
+        <ThemedSwitch
           value={!!formData.isAmountFlexible}
           onValueChange={value => handleSwitchChange("isAmountFlexible", value)}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={!!formData.isAmountFlexible ? "#f5dd4b" : "#f4f3f4"}
+          testID="switch-flexible-amount"
         />
       </View>
 

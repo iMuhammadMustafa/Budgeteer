@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, FlatList, Modal, Pressable, Text, View } from "react-native";
+import { Dimensions, FlatList, Text, View } from "react-native";
+import MyModal from "./MyModal";
 import Button from "./Button";
 import MyIcon from "./MyIcon";
 import TextInputField from "./TextInputField";
@@ -423,38 +424,13 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
       </Button>
 
       {/* Modal */}
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleModalClose}
-        accessibilityViewIsModal={true}
+      <MyModal
+        isOpen={isModalVisible}
+        setIsOpen={open => { if (!open) handleModalClose(); }}
+        onClose={handleModalClose}
+        title="Choose an Icon"
       >
-        <Pressable
-          className="flex-1 bg-black/50 justify-center items-center p-4"
-          onPress={handleModalClose}
-          accessibilityLabel="Close icon picker"
-        >
-          <Pressable
-            className="w-full max-w-4xl bg-surface rounded-xl shadow-2xl max-h-[80%]"
-            onPress={e => e.stopPropagation()}
-          >
-            {/* Modal header */}
             <View className="p-4 border-b border-border-default">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-xl font-bold text-foreground">Choose an Icon</Text>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onPress={handleModalClose}
-                  className="p-2 rounded-full hover:bg-surface-elevated"
-                  accessibilityLabel="Close"
-                  testID="btn-icon-picker-close"
-                >
-                  <MyIcon name="X" size={20} color="#6b7280" />
-                </Button>
-              </View>
-
               {/* Search input */}
               <TextInputField
                 label="Search icons"
@@ -575,9 +551,7 @@ function IconPickerComponent({ label = "Icon", initialIcon = DEFAULT_ICON, onSel
                 </Text>
               </View>
             )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      </MyModal>
     </View>
   );
 }

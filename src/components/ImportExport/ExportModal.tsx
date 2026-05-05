@@ -6,7 +6,9 @@ import ExportService from "@/src/services/Export.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
+import MyModal from "@/src/components/elements/MyModal";
 
 
 export default function ExportModal({ visible, onClose }: {
@@ -121,23 +123,7 @@ export default function ExportModal({ visible, onClose }: {
     const canExport = selectedTables.size > 0 || selectedView !== null;
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <View className="flex-1 bg-black/50 justify-center items-center">
-                <Pressable className="absolute inset-0" onPress={onClose} />
-                <View className="w-[90%] max-w-[500px] max-h-[80%] bg-surface rounded-lg overflow-hidden">
-                    {/* Header */}
-                    <View className="flex-row items-center justify-between p-4 border-b border-border-default bg-surface-elevated">
-                        <Text className="font-semibold text-lg text-dark">Export Data</Text>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onPress={onClose}
-                            testID="btn-export-close"
-                        >
-                            <MyIcon name="X" size={20} className="text-text-secondary" />
-                        </Button>
-                    </View>
-
+        <MyModal isOpen={visible} setIsOpen={open => { if (!open) onClose(); }} onClose={onClose} title="Export Data">
                     <ScrollView className="flex-1 p-4">
                         {/* Export Format Selection (for tables) */}
                         {!selectedView && (
@@ -221,14 +207,13 @@ export default function ExportModal({ visible, onClose }: {
                                             />
                                             <Text className="text-sm text-foreground">{formatTableName(table)}</Text>
                                         </View>
-                                        <Switch
+                                        <ThemedSwitch
                                             value={selectedTables.has(table as TableNames) && !selectedView}
                                             onValueChange={() => {
                                                 setSelectedView(null);
                                                 toggleTable(table as TableNames);
                                             }}
-                                            trackColor={{ false: "#d1d5db", true: "#93c5fd" }}
-                                            thumbColor={selectedTables.has(table as TableNames) ? "#3b82f6" : "#f3f4f6"}
+                                            testID={`switch-export-table-${table}`}
                                         />
                                     </Button>
                                 ))}
@@ -308,9 +293,7 @@ export default function ExportModal({ visible, onClose }: {
                             </Button>
                         </View>
                     </View>
-                </View>
-            </View>
-        </Modal>
+        </MyModal>
     );
 }
 

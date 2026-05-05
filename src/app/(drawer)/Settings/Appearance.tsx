@@ -1,7 +1,8 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { Platform, ScrollView, Switch, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 
 export default function Appearance() {
   const { theme, isDarkMode, toggleTheme, showGrid, setShowGrid } = useTheme();
@@ -41,12 +42,10 @@ export default function Appearance() {
               <Text className="text-xs text-muted-foreground uppercase font-medium">
                 {theme}
               </Text>
-              <Switch
+              <ThemedSwitch
                 value={isDarkMode}
                 onValueChange={toggleTheme}
-                trackColor={{ false: "#d1d5db", true: "#2a6e53" }}
-                thumbColor={isDarkMode ? "#5ddc9a" : "#fff"}
-                {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
+                testID="switch-theme"
               />
             </View>
           </Button>
@@ -69,12 +68,10 @@ export default function Appearance() {
                 Show subtle grid pattern on backgrounds
               </Text>
             </View>
-            <Switch
+            <ThemedSwitch
               value={showGrid}
               onValueChange={setShowGrid}
-              trackColor={{ false: "#d1d5db", true: "#2a6e53" }}
-              thumbColor={showGrid ? "#5ddc9a" : "#fff"}
-              {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
+              testID="switch-grid"
             />
           </Button>
         </View>

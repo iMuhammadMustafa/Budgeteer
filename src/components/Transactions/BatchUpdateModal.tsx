@@ -1,7 +1,8 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import ThemedSwitch from "../elements/ThemedSwitch";
 import Button from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -188,11 +189,10 @@ export default function BatchUpdateModal({
                 >
                     <View className="flex-row items-center justify-between py-2">
                         <Text className="text-foreground">{newVoidStatus ? "Void" : "Active"}</Text>
-                        <Switch
+                        <ThemedSwitch
                             value={newVoidStatus}
                             onValueChange={setNewVoidStatus}
-                            trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
-                            thumbColor={newVoidStatus ? "#ffffff" : "#f4f4f5"}
+                            testID="switch-void-status"
                         />
                     </View>
                 </UpdateOptionRow>
