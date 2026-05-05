@@ -5,7 +5,8 @@ import DaysList from "@/src/components/Transactions/Days";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
 import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useTransactions from "./useTransactions";
 
@@ -47,7 +48,7 @@ export default function Transactions() {
   if (error)
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-danger-500">Error: {error.message}</Text>
+        <ThemedText variant="error" className="text-danger-500">Error: {error.message}</ThemedText>
       </View>
     );
 
@@ -80,7 +81,7 @@ export default function Transactions() {
         <SkeletonList length={5} customSkeleton={<DaySkeleton />} />
       ) : days.length === 0 ? (
         <View className="flex-1 justify-center items-center">
-          <Text className="text-xl text-muted">No transactions found</Text>
+          <ThemedText className="text-xl text-muted">No transactions found</ThemedText>
         </View>
       ) : (
         <FlatList

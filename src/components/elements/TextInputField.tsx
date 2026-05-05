@@ -1,5 +1,7 @@
 import { memo } from "react";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "./ThemedText";
+import ThemedInput from "./ThemedInput";
 
 type TextInputFieldProps = {
   label: string;
@@ -37,17 +39,16 @@ function TextInputFieldMemo({
 }: TextInputFieldProps) {
   return (
     <View className={`my-1 ${className ?? ""}`}>
-      <Text className="text-foreground">{label}</Text>
-      <TextInput
+      <ThemedText>{label}</ThemedText>
+      <ThemedInput
         testID={testID}
-        className={`text-foreground border rounded-md p-3 border-input-border ${isReadOnly ? "bg-input-bg-disabled" : "bg-input-bg"} ${multiline ? "h-20" : ""}`}
+        className={multiline ? "h-20" : ""}
         value={value ?? ""}
         onChangeText={onChange}
         keyboardType={keyboardType}
         aria-disabled={isReadOnly}
         editable={!isReadOnly}
         placeholder={placeholder}
-        placeholderClassName="text-text-tertiary"
         multiline={multiline}
         maxLength={maxLength}
       />

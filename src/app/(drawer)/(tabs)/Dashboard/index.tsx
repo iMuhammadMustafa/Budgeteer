@@ -3,7 +3,8 @@ import DashboardCharts from "@/src/components/Charts/DashboardCharts";
 import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import GridPattern from "@/src/components/GridPattern";
 import { RefreshCcw } from "lucide-react-native";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -34,7 +35,7 @@ export default function DashboardIndex() {
     <SafeAreaView className="w-full h-full m-auto flex-1">
       <GridPattern />
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
-        <Text className="text-xl font-bold text-foreground">Dashboard</Text>
+        <ThemedText variant="heading" className="text-xl">Dashboard</ThemedText>
         <Button
           variant="ghost"
           size="icon"

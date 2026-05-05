@@ -3,7 +3,8 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 import TransactionAmount from "./TransactionAmount";
 
 export default function TransactionItem({
@@ -64,20 +65,20 @@ export default function TransactionItem({
             />
           </View>
           <View className="flex-1">
-            <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
+            <ThemedText className={transaction.isvoid ? "line-through" : ""}>
               {transaction.name ?? transaction.categoryname ?? "Hello"}
-            </Text>
+            </ThemedText>
             {transaction.name !== transaction.categoryname && (
               <View className="flex-row justify-start items-center gap-2">
-                <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
+                <ThemedText className={transaction.isvoid ? "line-through" : ""}>
                   {transaction.categoryname}
-                </Text>
+                </ThemedText>
               </View>
             )}
           </View>
           <View className="flex items-end">
             <TransactionAmount amount={transaction.amount ?? 0} currency={transaction.currency} color={iconProp.textColor} />
-            <Text className={`text-foreground ${transaction.isvoid ? "line-through" : ""}`}>
+            <ThemedText className={transaction.isvoid ? "line-through" : ""}>
               {transaction.accountname} {" | "}
               {transaction.runningbalance?.toLocaleString("en", {
                 style: "currency",
@@ -85,12 +86,12 @@ export default function TransactionItem({
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
-            </Text>
+            </ThemedText>
             {isTransfer && transferTransaction && (
               <View className="flex-row items-center justify-center gap-2">
                 <MyIcon name="ArrowRight" size={15} className="text-foreground" />
 
-                <Text className={`text-foreground ${transferTransaction.isvoid ? "line-through" : ""}`}>
+                <ThemedText className={transferTransaction.isvoid ? "line-through" : ""}>
                   {transferTransaction.accountname} {" | "}
                   {transferTransaction.runningbalance?.toLocaleString("en", {
                     style: "currency",
@@ -98,7 +99,7 @@ export default function TransactionItem({
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
-                </Text>
+                </ThemedText>
               </View>
             )}
           </View>

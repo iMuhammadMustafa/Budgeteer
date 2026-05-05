@@ -9,7 +9,9 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
+import ThemedInput from "@/src/components/elements/ThemedInput";
 
 export default function RecurringsScreen() {
   const recurringsService = useRecurringService();
@@ -68,9 +70,9 @@ export default function RecurringsScreen() {
       <>
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-md text-foreground font-semibold flex-1">{item.name}</Text>
+            <ThemedText variant="label" className="flex-1">{item.name}</ThemedText>
           </View>
-          <Text className="text-sm text-muted-foreground mb-2">{<RecurringDetails item={item} />}</Text>
+          <ThemedText variant="caption" className="mb-2">{<RecurringDetails item={item} />}</ThemedText>
           <RecurringStatusBadges recurring={item} />
         </View>
         <View className="flex-row items-center gap-1 ml-2">
@@ -139,19 +141,19 @@ export default function RecurringsScreen() {
       {modalVisible && (
         <MyModal isOpen={modalVisible} setIsOpen={setModalVisible} onClose={handleClose}>
           <View className="bg-card rounded-xl p-6 items-center">
-            <Text className="text-lg font-bold mb-2 text-foreground">
+            <ThemedText variant="heading" className="mb-2">
               {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible
                 ? "Execute Flexible Transaction"
                 : "Enter Amount"}
-            </Text>
+            </ThemedText>
             {pendingRecurring?.isdateflexible && pendingRecurring?.isamountflexible && (
-              <Text className="text-sm text-foreground mb-4 text-center">
+              <ThemedText variant="caption" className="text-sm mb-4 text-center">
                 This transaction will be executed today with the amount you specify
-              </Text>
+              </ThemedText>
             )}
             <View className="w-full flex-row items-center mb-3">
-              <TextInput
-                className="flex-1 border border-input-border bg-input-bg rounded-md p-2 text-base mr-2"
+              <ThemedInput
+                className="flex-1 mr-2"
                 keyboardType="numeric"
                 value={amountInput}
                 onChangeText={setAmountInput}
