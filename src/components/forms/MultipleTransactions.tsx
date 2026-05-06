@@ -88,6 +88,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const { data: accounts, isLoading: isAccountsLoading } = accountsService.useFindAll();
   const transactionService = useTransactionService();
   const submitAllMutation = transactionService.useCreateMultipleTransactions();
+  const voidMutation = transactionService.useVoidTransaction();
 
   // State for tracking amounts and mode
   const [mode, setMode] = useState<"plus" | "minus">("minus");
@@ -137,8 +138,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Handle form submission
   const handleSubmit = useCallback(
     async (data: MultipleTransactionsFormData) => {
-      const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
-
       // Convert form data to array of transaction inserts
       const transactions = Object.values(data.transactions).map(trans => ({
         payee: data.payee,
@@ -155,10 +154,18 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         name: trans.name,
       }));
 
+      // If splitting an existing transaction, void the original first
+      if (data.originalTransactionId) {
+        await voidMutation.mutateAsync({
+          id: data.originalTransactionId,
+          item: transaction,
+        });
+      }
+
       await submitAllMutation.mutateAsync(transactions, {
         onSuccess: async () => {
           console.log({
-            message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
+            message: `Transaction ${data.originalTransactionId ? "Split" : "Created"} Successfully`,
             type: "success",
           });
           await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
@@ -166,7 +173,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         },
       });
     },
-    [submitAllMutation, transaction?.id, mode, currentAmount],
+    [submitAllMutation, voidMutation, transaction, mode],
   );
 
   // Form submission hook
@@ -264,8 +271,8 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     }
   }, []);
 
-  // Check if amounts balance
-  const isBalanced = Math.abs(currentAmount - (mode === "minus" ? -maxAmount : maxAmount)) < 0.01;
+  // Check if amounts balance (both currentAmount and maxAmount are absolute values)
+  const isBalanced = Math.abs(currentAmount - maxAmount) < 0.01;
 
   return (
     <SafeAreaView className="flex-1">
@@ -474,7 +481,7 @@ const TransactionsCreationList = ({
   // Add new transaction
   const addNewTransaction = useCallback(() => {
     const newTransactionId = GenerateUuid();
-    const remainingAmount = (mode === "minus" ? -maxAmount : maxAmount) - currentAmount;
+    const remainingAmount = maxAmount - currentAmount;
 
     const newTransaction: MultipleTransactionItemData = {
       name: "",
@@ -713,7 +720,7 @@ const TransactionsSummary = ({
   mode: "plus" | "minus";
   isBalanced: boolean;
 }) => {
-  const targetAmount = mode === "minus" ? -maxAmount : maxAmount;
+  const targetAmount = maxAmount;
   const remainingAmount = targetAmount - currentAmount;
 
   return (

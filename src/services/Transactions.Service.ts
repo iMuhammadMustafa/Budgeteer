@@ -37,6 +37,7 @@ export interface ITransactionService extends IService<Transaction, TableNames.Tr
   useCreateMultipleTransactions: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   useUpdateTransferTransaction: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
   useUpdateMultipleTransactions: () => ReturnType<typeof useMutation<void, Error, BatchUpdateParams>>;
+  useVoidTransaction: () => ReturnType<typeof useMutation<void, Error, { id: string; item?: any }>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -286,6 +287,28 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
+  const useVoidTransaction = () => {
+    return useMutation({
+      mutationFn: async ({ id, item }: { id: string; item?: any }) => {
+        await transactionRepo.update(id, { isvoid: true }, tenantId);
+        if (item && item.isvoid !== true && item.accountid && item.amount) {
+          await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
+        }
+        if (item?.transferid) {
+          await transactionRepo.update(item.transferid, { isvoid: true }, tenantId);
+          if (item.isvoid !== true && item.transferaccountid && item.amount) {
+            await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
+          }
+        }
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
   return {
     ...createServiceHooks<Transaction, TableNames.Transactions>(
       TableNames.Transactions,
@@ -315,6 +338,7 @@ export function useTransactionService(): ITransactionService {
     useUpdateTransferTransaction,
     useRestore,
     useUpdateMultipleTransactions,
+    useVoidTransaction,
   };
 }
 
