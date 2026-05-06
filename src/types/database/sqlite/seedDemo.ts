@@ -410,6 +410,28 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
             );
         }
 
+        // --- Transaction Items (sub-items for a few grocery transactions) ---
+        const groceryTransactions = transactions.filter(
+            (t) => t.name === "Groceries" && t.amount < 0
+        );
+        for (let i = 0; i < Math.min(3, groceryTransactions.length); i++) {
+            const txn = groceryTransactions[i];
+            const totalAbs = Math.abs(txn.amount);
+            const item1Amt = round2(totalAbs * 0.4);
+            const item2Amt = round2(totalAbs * 0.35);
+            const item3Amt = round2(totalAbs - item1Amt - item2Amt);
+            const items = [
+                { name: "Fruits & Vegetables", amount: item1Amt },
+                { name: "Dairy & Eggs", amount: item2Amt },
+                { name: "Bread & Snacks", amount: item3Amt },
+            ];
+            for (const item of items) {
+                statements.push(
+                    `INSERT OR IGNORE INTO ${TableNames.TransactionItems} (id, transactionid, name, amount, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(GenerateUuid())}, ${escSql(txn.id)}, ${escSql(item.name)}, ${item.amount}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
+                );
+            }
+        }
+
         statements.push("COMMIT;");
         statements.push("PRAGMA foreign_keys = ON;");
 
