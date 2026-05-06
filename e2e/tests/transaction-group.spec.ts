@@ -113,8 +113,9 @@ for (const mode of storageModes) {
         .getByRole("list", { name: "Transaction Group Details section content" })
         .getByTestId(selectors.forms.dropdownButton)
         .click();
-      await page.waitForTimeout(300);
-      await page.getByText("Expense", { exact: true }).last().click();
+      const expenseOption = page.getByText("Expense", { exact: true }).last();
+      await expenseOption.waitFor({ state: "visible" });
+      await expenseOption.click();
       await saveForm(page);
 
       // Verify type was changed
@@ -188,9 +189,9 @@ for (const mode of storageModes) {
       });
 
       await navigateToTransactionGroups(page);
-      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
+      await listItems.first().waitFor({ state: "visible" });
       const allItems = await listItems.allTextContents();
 
       const positionHigh = allItems.findIndex((text) => text.includes(`Order Test High ${timestamp}`));
@@ -254,7 +255,7 @@ for (const mode of storageModes) {
       await modal.waitFor({ state: "visible" });
 
       // Should show dependency info (category count)
-      await expect(modal.getByText(/categor/i)).toBeVisible();
+      await expect(modal.getByText(/categor/i).first()).toBeVisible();
       const deleteButton = modal.getByRole("button", { name: "Delete", exact: true });
       await expect(deleteButton).toBeVisible();
 

@@ -36,7 +36,6 @@ export async function deleteItemById(page: Page, itemId: string) {
         const alsoDeleteBtn = modal.getByRole("button", { name: /also delete all/i });
         if (await alsoDeleteBtn.isVisible().catch(() => false)) {
             await alsoDeleteBtn.click();
-            await page.waitForTimeout(300);
         }
     }
 
@@ -66,18 +65,15 @@ export async function deleteItemWithDependencies(
         const alsoDeleteBtn = modal.getByRole("button", { name: /also delete all/i });
         await expect(alsoDeleteBtn).toBeVisible();
         await alsoDeleteBtn.click();
-        await page.waitForTimeout(300);
     } else if (options.action === "moveTo" && options.targetItemName) {
         // Use the replacement dropdown to select target
         const dropdownBtn = modal.getByTestId(selectors.forms.dropdownButton);
         await dropdownBtn.click();
-        await page.waitForTimeout(300);
 
         // Type in search box if visible to filter options
         const searchBox = page.getByPlaceholder("Search...");
         if (await searchBox.isVisible().catch(() => false)) {
             await searchBox.fill(options.targetItemName);
-            await page.waitForTimeout(300);
         }
 
         // Use testID-based selector for reliable dropdown option selection
@@ -87,11 +83,10 @@ export async function deleteItemWithDependencies(
         } else {
             await page.getByText(options.targetItemName, { exact: true }).last().click({ force: true });
         }
-        await page.waitForTimeout(200);
     }
 
     const deleteButton = modal.getByRole("button", { name: "Delete", exact: true });
     await expect(deleteButton).toBeEnabled({ timeout: 5000 });
     await deleteButton.click();
-    await page.waitForTimeout(500);
+    await expect(modal).not.toBeVisible({ timeout: 10000 }).catch(() => {});
 }

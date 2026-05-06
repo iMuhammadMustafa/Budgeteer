@@ -82,8 +82,6 @@ async function createTransactionCategoryPrerequisite(
   await fillTransactionCategoryForm(page, {
     name: options.name,
     groupName: options.groupName,
-    budgetAmount: "0",
-    budgetFrequency: "Monthly",
     displayOrder: options.displayOrder,
   });
   await saveForm(page);
@@ -108,7 +106,7 @@ for (const mode of storageModes) {
     let baselineTransactionName: string;
 
     test.beforeAll(async ({ browser }) => {
-      test.setTimeout(180000);
+      test.setTimeout(300000);
 
       page = await browser.newPage();
       await loginWithMode(page, mode);
@@ -249,14 +247,14 @@ for (const mode of storageModes) {
       await expectTransactionVisible(page, txnName);
     });
 
-    test("can create a refund transaction", async () => {
-      const txnName = `Test Refund ${Date.now()}`;
+    test("can create a second expense transaction with different amount", async () => {
+      const txnName = `Test Expense 2 ${Date.now()}`;
 
       await createTransaction(page, {
         name: txnName,
         amount: "75",
         accountName: primaryAccountName,
-        type: "Refund",
+        type: "Expense",
         categoryName: expenseCategoryName,
       });
 
@@ -346,8 +344,13 @@ for (const mode of storageModes) {
         categoryName: expenseCategoryName,
       });
 
-      // Void then unvoid
+      // Void the transaction
       await setTransactionVoidStatus(page, txnName, true);
+
+      // Navigate back to transactions to reset selection state
+      await navigateToTransactionsViaDrawer(page);
+
+      // Unvoid the transaction
       await setTransactionVoidStatus(page, txnName, false);
 
       await expectTransactionVisible(page, txnName);

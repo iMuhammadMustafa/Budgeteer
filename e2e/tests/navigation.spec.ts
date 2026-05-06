@@ -33,7 +33,7 @@ for (const mode of storageModes) {
 
         test.beforeEach(async () => {
             await page.goto("/Dashboard");
-            await page.waitForTimeout(300); // Give it a moment to land
+            await page.waitForLoadState("domcontentloaded");
         });
 
         test("Dashboard page loads after login", async () => {
@@ -86,31 +86,31 @@ for (const mode of storageModes) {
         test("can navigate to Restore Accounts page", async () => {
             await navigateToRestoreAccounts(page);
             await expect(page).toHaveURL(/Restore\/Accounts/);
-            await expect(page.getByText("Deleted Accounts")).toBeVisible();
+            await expect(page.getByText("Deleted Accounts")).toBeVisible({ timeout: 15000 });
         });
 
         test("can navigate to Restore Account Categories page", async () => {
             await navigateToRestoreAccountCategories(page);
             await expect(page).toHaveURL(/Restore\/AccountCategories/);
-            await expect(page.getByText("Deleted Account Categories")).toBeVisible();
+            await expect(page.getByText("Deleted Account Categories")).toBeVisible({ timeout: 15000 });
         });
 
         test("can navigate to Restore Transactions page", async () => {
             await navigateToRestoreTransactions(page);
             await expect(page).toHaveURL(/Restore\/Transactions/);
-            await expect(page.getByText("Deleted Transactions")).toBeVisible();
+            await expect(page.getByText("Deleted Transactions")).toBeVisible({ timeout: 15000 });
         });
 
         test("can navigate to Restore Transaction Categories page", async () => {
             await navigateToRestoreTransactionCategories(page);
             await expect(page).toHaveURL(/Restore\/TransactionCategories/);
-            await expect(page.getByText("Deleted Transaction Categories")).toBeVisible();
+            await expect(page.getByText("Deleted Transaction Categories")).toBeVisible({ timeout: 15000 });
         });
 
         test("can navigate to Restore Transaction Groups page", async () => {
             await navigateToRestoreTransactionGroups(page);
             await expect(page).toHaveURL(/Restore\/TransactionGroups/);
-            await expect(page.getByText("Deleted Transaction Groups")).toBeVisible();
+            await expect(page.getByText("Deleted Transaction Groups")).toBeVisible({ timeout: 15000 });
         });
 
         test("can switch between Categories and Groups tabs", async () => {

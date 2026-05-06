@@ -92,7 +92,7 @@ for (const mode of storageModes) {
 
       // Verify budget amount persisted
       await openMyTabEditModal(page, categoryName);
-      await expect(page.getByRole("textbox", { name: "Budget Amount (required)" })).toHaveValue("500");
+      await expect(page.getByRole("textbox", { name: "Budget Amount" })).toHaveValue("500");
       await closeModal(page);
     });
 
@@ -129,14 +129,13 @@ for (const mode of storageModes) {
 
       const categorySection = page.getByRole("list", { name: "Category Details section content" });
       await categorySection.getByTestId(selectors.forms.dropdownButton).click();
-      await page.waitForTimeout(300);
       const searchBox = page.getByPlaceholder("Search...");
       if (await searchBox.isVisible().catch(() => false)) {
         await searchBox.fill(secondGroupName);
-        await page.waitForTimeout(300);
       }
-      await page.getByText(secondGroupName, { exact: true }).last().click({ force: true });
-      await page.waitForTimeout(200);
+      const groupOption = page.getByText(secondGroupName, { exact: true }).last();
+      await groupOption.waitFor({ state: "visible" });
+      await groupOption.click({ force: true });
 
       await saveForm(page);
 
@@ -211,9 +210,9 @@ for (const mode of storageModes) {
       });
 
       await navigateToTransactionCategories(page);
-      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
+      await listItems.first().waitFor({ state: "visible" });
       const allItems = await listItems.allTextContents();
 
       const posHigh = allItems.findIndex((t) => t.includes(`Order High ${timestamp}`));

@@ -71,15 +71,18 @@ export async function saveForm(page: Page) {
 
   if (await modalSaveButton.isVisible().catch(() => false)) {
     await expect(modalSaveButton).toBeEnabled();
-    await modalSaveButton.click();
-    await expect(modal).not.toBeVisible({ timeout: 10000 }).catch(() => {}); // Wait for modal to disappear
+    await modalSaveButton.click({ timeout: 10000 }).catch(async () => {
+      // Retry with force if click is intercepted (e.g., by dropdown overlay)
+      await modalSaveButton.click({ force: true });
+    });
+    await expect(modal).not.toBeVisible({ timeout: 10000 }).catch(() => {});
   } else {
     const pageSaveButton = page.getByRole("button", { name: /save|submit/i }).filter({ visible: true }).first();
     await expect(pageSaveButton).toBeEnabled();
-    await pageSaveButton.click();
+    await pageSaveButton.click({ timeout: 10000 }).catch(async () => {
+      await pageSaveButton.click({ force: true });
+    });
   }
 
-  await page.waitForLoadState("networkidle", { timeout: 2000 }).catch(() => {
-    // Some screens keep background requests active; best-effort only.
-  });
+  await page.waitForLoadState("domcontentloaded").catch(() => {});
 }

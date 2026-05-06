@@ -120,8 +120,9 @@ for (const mode of storageModes) {
         .getByRole("list", { name: "Category Details section" })
         .getByTestId(selectors.forms.dropdownButton)
         .click();
-      await page.waitForTimeout(300);
-      await page.getByText("Liability", { exact: true }).last().click();
+      const liabilityOption = page.getByText("Liability", { exact: true }).last();
+      await liabilityOption.waitFor({ state: "visible" });
+      await liabilityOption.click();
       await saveForm(page);
 
       // Verify type was changed
@@ -184,9 +185,9 @@ for (const mode of storageModes) {
       await createCategory(page, { name: `Order Test Mid ${timestamp}`, displayOrder: "999200" });
 
       await navigateToAccountCategories(page);
-      await page.waitForTimeout(1000);
 
       const listItems = page.getByTestId(/^list-item-/);
+      await listItems.first().waitFor({ state: "visible" });
       const allItems = await listItems.allTextContents();
 
       const positionHigh = allItems.findIndex((text) => text.includes(`Order Test High ${timestamp}`));
@@ -212,6 +213,7 @@ for (const mode of storageModes) {
     let testCategoryName: string;
 
     test.beforeAll(async ({ browser }) => {
+      test.setTimeout(120000);
       page = await browser.newPage();
       await loginWithMode(page, mode);
 

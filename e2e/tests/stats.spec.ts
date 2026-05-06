@@ -121,36 +121,31 @@ for (const mode of storageModes) {
       await expect(page.getByText(monthNames).first()).toBeVisible({ timeout: 10000 });
     });
 
-    test("expense category appears in summary table", async () => {
+    test("summary table shows expense data", async () => {
       await navigateToSummary(page);
 
-      // The test transaction group and category should appear if data loaded
-      const hasData = await page
-        .getByText(testTxnGroupName)
-        .isVisible({ timeout: 5000 })
-        .catch(() => false);
-      const hasNoData = await page
-        .getByText(/No transaction data/)
-        .isVisible({ timeout: 2000 })
-        .catch(() => false);
+      // Ensure monthly mode is selected so data renders
+      await page.getByText(/monthly/i).click();
+      await page.waitForLoadState("domcontentloaded");
 
-      // Either data is shown or a "no data" message — both are valid states
-      expect(hasData || hasNoData).toBe(true);
+      // The summary table should show the "Total" row, indicating data has loaded
+      await expect(page.getByText("Total")).toBeVisible({ timeout: 15000 });
+
+      // Verify expense data is rendered — either category name, group name, or expense amount
+      const hasExpenseData = await Promise.any([
+        page.getByText(testTxnCategoryName).waitFor({ state: "visible", timeout: 10000 }).then(() => true),
+        page.getByText(testTxnGroupName).waitFor({ state: "visible", timeout: 10000 }).then(() => true),
+        page.getByText("200").first().waitFor({ state: "visible", timeout: 10000 }).then(() => true),
+        page.getByText("300").first().waitFor({ state: "visible", timeout: 10000 }).then(() => true),
+        page.getByText("500").first().waitFor({ state: "visible", timeout: 10000 }).then(() => true),
+      ]).catch(() => false);
+      expect(hasExpenseData).toBe(true);
     });
 
     test("totals row is visible at bottom of summary table", async () => {
       await navigateToSummary(page);
 
-      const hasData = await page
-        .getByText(/[Tt]otal/)
-        .isVisible({ timeout: 5000 })
-        .catch(() => false);
-      const hasNoData = await page
-        .getByText(/No transaction data/)
-        .isVisible({ timeout: 2000 })
-        .catch(() => false);
-
-      expect(hasData || hasNoData).toBe(true);
+      await expect(page.getByText("Total")).toBeVisible({ timeout: 15000 });
     });
   });
 

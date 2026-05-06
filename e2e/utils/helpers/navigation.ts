@@ -6,7 +6,7 @@ import { Page } from "@playwright/test";
 
 async function navigateTo(page: Page, path: string) {
   await page.goto(path);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 export async function navigateToAccountCategories(page: Page) {
