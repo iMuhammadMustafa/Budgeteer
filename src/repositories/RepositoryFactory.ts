@@ -6,6 +6,7 @@ import { IRecurringRepository } from "./interfaces/IRecurringRepository";
 import { IStatsRepository } from "./interfaces/IStatsRepository";
 import { ITransactionCategoryRepository } from "./interfaces/ITransactionCategoryRepository";
 import { ITransactionGroupRepository } from "./interfaces/ITransactionGroupRepository";
+import { ITransactionItemRepository } from "./interfaces/ITransactionItemRepository";
 import { ITransactionRepository } from "./interfaces/ITransactionRepository";
 
 // Supabase repositories
@@ -16,6 +17,7 @@ import { RecurringSupaRepository } from "./supabase/Recurrings.api.supa";
 import { StatsSupaRepository } from "./supabase/Stats.supa";
 import { TransactionCategorySupaRepository } from "./supabase/TransactionCategories.supa";
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
+import { TransactionItemSupaRepository } from "./supabase/TransactionItems.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
 
 // SQLite repositories
@@ -26,6 +28,7 @@ import { RecurringSqliteRepository } from "./sqlite/Recurrings.sqlite";
 import { StatsSqliteRepository } from "./sqlite/Stats.sqlite";
 import { TransactionCategorySqliteRepository } from "./sqlite/TransactionCategories.sqlite";
 import { TransactionGroupSqliteRepository } from "./sqlite/TransactionGroups.sqlite";
+import { TransactionItemSqliteRepository } from "./sqlite/TransactionItems.sqlite";
 import { TransactionSqliteRepository } from "./sqlite/Transactions.sqlite";
 
 export interface IRepositoryFactory {
@@ -36,6 +39,7 @@ export interface IRepositoryFactory {
   StatsRepository(): IStatsRepository;
   TransactionCategoryRepository(): ITransactionCategoryRepository;
   TransactionGroupRepository(): ITransactionGroupRepository;
+  TransactionItemRepository(): ITransactionItemRepository;
   TransactionRepository(): ITransactionRepository;
 }
 
@@ -49,6 +53,7 @@ export function createRepositoryFactory(storageMode: StorageMode | null): IRepos
       StatsRepository: () => new StatsSupaRepository(),
       TransactionCategoryRepository: () => new TransactionCategorySupaRepository(),
       TransactionGroupRepository: () => new TransactionGroupSupaRepository(),
+      TransactionItemRepository: () => new TransactionItemSupaRepository(),
       TransactionRepository: () => new TransactionSupaRepository(),
     };
   }
@@ -60,6 +65,7 @@ export function createRepositoryFactory(storageMode: StorageMode | null): IRepos
     StatsRepository: () => new StatsSqliteRepository(),
     TransactionCategoryRepository: () => new TransactionCategorySqliteRepository(),
     TransactionGroupRepository: () => new TransactionGroupSqliteRepository(),
+    TransactionItemRepository: () => new TransactionItemSqliteRepository(),
     TransactionRepository: () => new TransactionSqliteRepository(),
   };
 }
