@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 import { OptionItem, TransactionFormData, ValidationSchema } from "@/src/types/components/forms.types";
@@ -22,6 +23,7 @@ import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
 import AccountForm, { initialState as accountInitialState } from "./AccountForm";
+import SubItemsSection, { SubItem } from "./SubItemsSection";
 import TransactionCategoryForm, { initialState as transactionCategoryInitialState } from "./TransactionCategoryForm";
 
 export type TransactionFormType = TransactionFormData & {
@@ -134,6 +136,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     error,
     showOneMoreSuccess,
     isOneMoreSubmitting,
+    subItems,
+    setSubItems,
+    subItemsBalanced,
   } = useTransactionForm({ transaction });
 
   return (
@@ -141,7 +146,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       <ScrollView className="flex-1">
         <FormContainer
           onSubmit={onSubmit}
-          isValid={isValid && !isSubmitting}
+          isValid={isValid && !isSubmitting && subItemsBalanced}
           isLoading={isSubmitting}
           submitLabel="Save Transaction"
           showReset={isDirty}
@@ -417,6 +422,19 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </View>
           </FormSection>
 
+          {/* Sub-Items Section */}
+          <SubItemsSection
+            items={subItems}
+            onChange={setSubItems}
+            transactionAmount={formState.data.amount}
+          />
+
+          {subItems.length > 0 && !subItemsBalanced && (
+            <View className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <Text className="text-yellow-700 text-sm">Sub-items total must equal the transaction amount</Text>
+            </View>
+          )}
+
           {/* Display submission error if any */}
           {error && (
             <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -433,10 +451,13 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const transactionCategoryService = useTransactionCategoryService();
   const accountService = useAccountService();
   const transactionService = useTransactionService();
+  const transactionItemService = useTransactionItemService();
 
   const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAllWithGroup();
   const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAllWithCategory();
   const { mutate: upsertTransaction } = transactionService.useUpsert();
+  const { data: existingItems } = transactionItemService.useFindByTransactionId(transaction.id);
+  const saveItemsMutation = transactionItemService.useSaveItems();
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
   const [isOneMoreSubmitting, setIsOneMoreSubmitting] = useState(false);
@@ -451,10 +472,32 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   );
 
   const [transactionType, setTransactionType] = useState<string>(initialFormData.type);
+  const [subItems, setSubItems] = useState<SubItem[]>([]);
+  const [subItemsInitialized, setSubItemsInitialized] = useState(false);
+
+  useEffect(() => {
+    if (existingItems && existingItems.length > 0 && !subItemsInitialized) {
+      setSubItems(
+        existingItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          amount: item.amount,
+          notes: item.notes,
+        })),
+      );
+      setSubItemsInitialized(true);
+    }
+  }, [existingItems, subItemsInitialized]);
 
   const validationSchema = useMemo(() => getValidationSchema(transactionType), [transactionType]);
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<TransactionFormType>(initialFormData, validationSchema);
+
+  const subItemsTotal = useMemo(
+    () => subItems.reduce((sum, item) => sum + (item.amount || 0), 0),
+    [subItems],
+  );
+  const subItemsBalanced = subItems.length === 0 || Math.abs(subItemsTotal - Math.abs(formState.data.amount || 0)) < 0.01;
 
   const handleSubmit = useCallback(
     async (data: TransactionFormType) => {
@@ -477,13 +520,31 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
           original: transaction.id ? (transaction as Transaction) : undefined,
         },
         {
+          onSuccess: async (result) => {
+            const txId = (result as Transaction)?.id || transaction.id;
+            if (txId && subItems.length > 0) {
+              await saveItemsMutation.mutateAsync({
+                transactionId: txId,
+                items: subItems.map(item => ({
+                  name: item.name,
+                  amount: item.amount,
+                  notes: item.notes,
+                })),
+              });
+            } else if (txId && subItems.length === 0 && existingItems && existingItems.length > 0) {
+              await saveItemsMutation.mutateAsync({
+                transactionId: txId,
+                items: [],
+              });
+            }
+          },
           onError: error => {
             console.error("Error saving transaction:", error);
           },
         },
       );
     },
-    [upsertTransaction, transaction, mode],
+    [upsertTransaction, transaction, mode, subItems, saveItemsMutation, existingItems],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -807,5 +868,8 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     findByName: findByNameStable,
     showOneMoreSuccess,
     isOneMoreSubmitting,
+    subItems,
+    setSubItems,
+    subItemsBalanced,
   };
 };
