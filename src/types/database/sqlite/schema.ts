@@ -117,6 +117,23 @@ export const CREATE_TRANSACTIONS_TABLE = `
   )
 `;
 
+export const CREATE_TRANSACTION_ITEMS_TABLE = `
+  CREATE TABLE IF NOT EXISTS ${TableNames.TransactionItems} (
+    id TEXT PRIMARY KEY,
+    transactionid TEXT NOT NULL,
+    name TEXT NOT NULL,
+    amount REAL NOT NULL DEFAULT 0,
+    notes TEXT,
+    tenantid TEXT NOT NULL,
+    isdeleted INTEGER NOT NULL DEFAULT 0,
+    createdat TEXT NOT NULL,
+    createdby TEXT,
+    updatedat TEXT,
+    updatedby TEXT,
+    FOREIGN KEY (transactionid) REFERENCES ${TableNames.Transactions}(id)
+  )
+`;
+
 export const CREATE_CONFIGURATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS ${TableNames.Configurations} (
     id TEXT PRIMARY KEY,
@@ -191,6 +208,8 @@ export const CREATE_INDICES = [
   `CREATE INDEX IF NOT EXISTS idx_recurrings_sourceaccountid ON ${TableNames.Recurrings}(sourceaccountid)`,
   `CREATE INDEX IF NOT EXISTS idx_recurrings_tenantid ON ${TableNames.Recurrings}(tenantid)`,
   `CREATE INDEX IF NOT EXISTS idx_configurations_tenantid ON ${TableNames.Configurations}(tenantid)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactionitems_transactionid ON ${TableNames.TransactionItems}(transactionid)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactionitems_tenantid ON ${TableNames.TransactionItems}(tenantid)`,
 ];
 
 /**
@@ -202,6 +221,7 @@ export const ALL_CREATE_TABLES = [
   CREATE_TRANSACTION_GROUPS_TABLE,
   CREATE_TRANSACTION_CATEGORIES_TABLE,
   CREATE_TRANSACTIONS_TABLE,
+  CREATE_TRANSACTION_ITEMS_TABLE,
   CREATE_CONFIGURATIONS_TABLE,
   CREATE_RECURRINGS_TABLE,
 ];

@@ -645,6 +645,56 @@ export type Database = {
           },
         ]
       }
+      transactionitems: {
+        Row: {
+          id: string
+          transactionid: string
+          name: string
+          amount: number
+          notes: string | null
+          tenantid: string
+          isdeleted: boolean
+          createdat: string
+          createdby: string | null
+          updatedat: string | null
+          updatedby: string | null
+        }
+        Insert: {
+          id?: string
+          transactionid: string
+          name: string
+          amount?: number
+          notes?: string | null
+          tenantid?: string
+          isdeleted?: boolean
+          createdat?: string
+          createdby?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Update: {
+          id?: string
+          transactionid?: string
+          name?: string
+          amount?: number
+          notes?: string | null
+          tenantid?: string
+          isdeleted?: boolean
+          createdat?: string
+          createdby?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactionitems_transactionid_fkey"
+            columns: ["transactionid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       search_distincttransactions: {

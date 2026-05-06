@@ -2,6 +2,7 @@ export enum TableNames {
   Accounts = "accounts",
   AccountCategories = "accountcategories",
   Transactions = "transactions",
+  TransactionItems = "transactionitems",
   TransactionCategories = "transactioncategories",
   TransactionGroups = "transactiongroups",
   Configurations = "configurations",
