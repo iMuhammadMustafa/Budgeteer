@@ -1,3 +1,4 @@
+import AutoBucketingSection from "@/src/components/AutoBucketingSection";
 import MyIcon from "@/src/components/elements/MyIcon";
 import MyModal from "@/src/components/elements/MyModal";
 import { RecurringStatusBadges } from "@/src/components/elements/RecurringStatusBadges";
@@ -120,6 +121,7 @@ export default function RecurringsScreen() {
   return (
     <>
       <View className="flex-1 bg-background">
+        <AutoBucketingSection />
         <MyTab
           customRenderItem={renderRecurringItem}
           title="Recurring Transactions"

@@ -4,6 +4,7 @@ import MyModal from "@/src/components/elements/MyModal";
 import TextInputField from "@/src/components/elements/TextInputField";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import MyTab from "@/src/components/MyTab";
+import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
@@ -22,6 +23,7 @@ export default function AccountsIndex() {
   const { mutateAsync: updateAccountBalance } = accountService.useUpdateAccountBalance();
 
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
+  const [bucketsModal, setBucketsModal] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
 
@@ -83,13 +85,22 @@ export default function AccountsIndex() {
         detailsContent={detailsContent}
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
-          <Button
-            testID={`transfer-btn-${item.id}`}
-            rightIcon="ArrowLeftRight"
-            className="py-0 px-0"
-            variant="ghost"
-            onPress={() => openTransferModal(item)}
-          />
+          <View className="flex-row items-center gap-0">
+            <Button
+              testID={`buckets-btn-${item.id}`}
+              rightIcon="PiggyBank"
+              className="py-0 px-0"
+              variant="ghost"
+              onPress={() => setBucketsModal({ open: true, account: item })}
+            />
+            <Button
+              testID={`transfer-btn-${item.id}`}
+              rightIcon="ArrowLeftRight"
+              className="py-0 px-0"
+              variant="ghost"
+              onPress={() => openTransferModal(item)}
+            />
+          </View>
         )}
         UpsertModal={(item: any) => <AccountForm account={item} />}
         initialState={initialState}
@@ -113,6 +124,22 @@ export default function AccountsIndex() {
           handleTransfer={handleTransfer}
           isCreating={isCreating}
         />
+      )}
+      {bucketsModal.open && bucketsModal.account && (
+        <MyModal
+          isOpen={bucketsModal.open}
+          setIsOpen={(open: boolean) => setBucketsModal({ open, account: open ? bucketsModal.account : null })}
+        >
+          <View className="p-2">
+            <Text className="text-lg font-bold px-4 pb-2 text-foreground">
+              {bucketsModal.account.name} - Savings Buckets
+            </Text>
+            <SavingsBucketsList
+              accountId={bucketsModal.account.id}
+              accountBalance={bucketsModal.account.balance}
+            />
+          </View>
+        </MyModal>
       )}
     </>
   );

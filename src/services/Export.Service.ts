@@ -88,6 +88,9 @@ export class ExportService {
                 case TableNames.Recurrings:
                     rawData = await dbContext.RecurringRepository().findAll(tenantId, { isDeleted: null });
                     break;
+                case TableNames.SavingsBuckets:
+                    rawData = await dbContext.SavingsBucketRepository().findAll(tenantId, { isDeleted: null });
+                    break;
                 case TableNames.Transactions:
                     rawData = await dbContext.TransactionRepository().findAll(tenantId, { isDeleted: null });
                     break;

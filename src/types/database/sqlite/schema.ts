@@ -171,6 +171,26 @@ export const CREATE_RECURRINGS_TABLE = `
   )
 `;
 
+export const CREATE_SAVINGS_BUCKETS_TABLE = `
+  CREATE TABLE IF NOT EXISTS ${TableNames.SavingsBuckets} (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    targetamount REAL NOT NULL DEFAULT 0,
+    currentamount REAL NOT NULL DEFAULT 0,
+    accountid TEXT NOT NULL,
+    icon TEXT NOT NULL DEFAULT 'PiggyBank',
+    color TEXT NOT NULL DEFAULT 'primary-100',
+    displayorder INTEGER NOT NULL DEFAULT 0,
+    tenantid TEXT NOT NULL,
+    isdeleted INTEGER NOT NULL DEFAULT 0,
+    createdat TEXT NOT NULL,
+    createdby TEXT,
+    updatedat TEXT,
+    updatedby TEXT,
+    FOREIGN KEY (accountid) REFERENCES ${TableNames.Accounts}(id)
+  )
+`;
+
 /**
  * Index definitions matching Supabase
  */
@@ -191,6 +211,8 @@ export const CREATE_INDICES = [
   `CREATE INDEX IF NOT EXISTS idx_recurrings_sourceaccountid ON ${TableNames.Recurrings}(sourceaccountid)`,
   `CREATE INDEX IF NOT EXISTS idx_recurrings_tenantid ON ${TableNames.Recurrings}(tenantid)`,
   `CREATE INDEX IF NOT EXISTS idx_configurations_tenantid ON ${TableNames.Configurations}(tenantid)`,
+  `CREATE INDEX IF NOT EXISTS idx_savingsbuckets_accountid ON ${TableNames.SavingsBuckets}(accountid)`,
+  `CREATE INDEX IF NOT EXISTS idx_savingsbuckets_tenantid ON ${TableNames.SavingsBuckets}(tenantid)`,
 ];
 
 /**
@@ -204,4 +226,5 @@ export const ALL_CREATE_TABLES = [
   CREATE_TRANSACTIONS_TABLE,
   CREATE_CONFIGURATIONS_TABLE,
   CREATE_RECURRINGS_TABLE,
+  CREATE_SAVINGS_BUCKETS_TABLE,
 ];
