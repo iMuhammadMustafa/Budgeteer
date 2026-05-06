@@ -72,15 +72,20 @@ for (const mode of storageModes) {
         });
 
         test("browser back navigation works", async () => {
-            // Ensure we are on home first before navigating and going back
+            // Navigate to Dashboard and wait for it to fully load
             await page.goto("/Dashboard");
-            // Navigate to Accounts using helper
-            await navigateToAccounts(page);
+            await page.waitForLoadState("domcontentloaded");
+            await expect(page).toHaveURL(/Dashboard/);
+
+            // Click a drawer link to navigate (creates proper history entry)
+            await page.getByText("Accounts").first().click();
+            await page.waitForURL("**/Accounts");
             await expect(page).toHaveURL(/Accounts/);
 
             // Go back to Dashboard
             await page.goBack();
-            await expect(page).toHaveURL(/Dashboard/);
+            await page.waitForLoadState("domcontentloaded");
+            await expect(page).toHaveURL(/Dashboard/, { timeout: 10000 });
         });
 
         test("can navigate to Restore Accounts page", async () => {

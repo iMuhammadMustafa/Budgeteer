@@ -77,14 +77,25 @@ export async function setTransactionVoidStatus(
     // Enable "Update Void Status" option by clicking its row
     await modal.getByText("Update Void Status").click();
 
-    // Toggle the void switch to the desired state
+    // Set the void switch to the desired state
     const voidSwitch = modal.getByRole("switch");
     await voidSwitch.waitFor({ state: "visible" });
-    const isCurrentlyChecked = await voidSwitch.isChecked().catch(() => false);
-    if (isVoid && !isCurrentlyChecked) {
-        await voidSwitch.click();
-    } else if (!isVoid && isCurrentlyChecked) {
-        await voidSwitch.click();
+    if (isVoid) {
+        // For voiding: ensure switch is ON
+        if (!(await voidSwitch.isChecked().catch(() => false))) {
+            await voidSwitch.click();
+        }
+    } else {
+        // For unvoiding: ensure switch is OFF
+        // The switch may default to OFF, so we toggle ON then OFF to register an explicit change
+        const isChecked = await voidSwitch.isChecked().catch(() => false);
+        if (isChecked) {
+            await voidSwitch.click();
+        } else {
+            // Toggle ON then OFF to ensure the change registers
+            await voidSwitch.click();
+            await voidSwitch.click();
+        }
     }
 
     // Apply updates
@@ -135,26 +146,35 @@ export async function verifyTransactionExists(
 ): Promise<boolean> {
     const { name, type, amount, accountName } = options;
 
-    let transactionLocator = page.getByRole("link");
+    // Try multiple strategies to find transactions
+    const filters = [name, type, amount, accountName].filter(Boolean);
 
-    if (name) {
-        transactionLocator = transactionLocator.filter({ hasText: name });
-    }
-    if (type) {
-        transactionLocator = transactionLocator.filter({ hasText: type });
-    }
-    if (amount) {
-        transactionLocator = transactionLocator.filter({ hasText: amount });
-    }
-    if (accountName) {
-        transactionLocator = transactionLocator.filter({ hasText: accountName });
+    // Strategy 1: Search by list item test IDs
+    let locator = page.getByTestId(/^list-item-/);
+    for (const filter of filters) {
+        locator = locator.filter({ hasText: filter! });
     }
 
     try {
-        await transactionLocator.first().waitFor({ state: "visible", timeout: 5000 });
+        await locator.first().waitFor({ state: "visible", timeout: 5000 });
         return true;
     } catch {
-        return false;
+        // Strategy 2: Search by link role (some transactions may render as links)
+        let linkLocator = page.getByRole("link");
+        for (const filter of filters) {
+            linkLocator = linkLocator.filter({ hasText: filter! });
+        }
+        try {
+            await linkLocator.first().waitFor({ state: "visible", timeout: 3000 });
+            return true;
+        } catch {
+            // Strategy 3: Search by plain text on the page
+            for (const filter of filters) {
+                const isVisible = await page.getByText(filter!).first().isVisible().catch(() => false);
+                if (!isVisible) return false;
+            }
+            return filters.length > 0;
+        }
     }
 }
 

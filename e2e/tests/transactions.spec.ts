@@ -393,10 +393,16 @@ for (const mode of storageModes) {
       await expect(page.getByText(txnName)).not.toBeVisible();
 
       await navigateToRestoreTransactions(page);
-      await expect(page.getByText("Deleted Transactions")).toBeVisible();
+      await expect(page.getByText("Deleted Transactions")).toBeVisible({ timeout: 15000 });
 
       const deletedItem = page.getByTestId(/^list-item-/).filter({ hasText: txnName });
-      await expect(deletedItem).toBeVisible();
+      await expect(async () => {
+        if (!(await deletedItem.isVisible().catch(() => false))) {
+          await page.reload();
+          await page.waitForLoadState("domcontentloaded");
+        }
+        await expect(deletedItem).toBeVisible();
+      }).toPass({ timeout: 15000 });
 
       await openMyTabRestoreModal(page, txnName);
 

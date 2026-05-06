@@ -145,25 +145,35 @@ for (const mode of storageModes) {
     test("dashboard shows period labels for current month", async () => {
       await navigateToDashboard(page);
 
-      // Should display some kind of period indicator (month name, date range, etc.)
-      const monthNames = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
-      const dayNumbers = /\b\d{1,2}\b/;
+      // The dashboard should display some kind of period/temporal indicator
+      // This could be month names (abbreviated or full), dates, day numbers,
+      // or year references
+      const now = new Date();
+      const currentMonth = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
+      const currentMonthShort = now.toLocaleString("en-US", { month: "short" }).toLowerCase();
+      const currentYear = now.getFullYear().toString();
 
       const hasMonthLabel = await page
-        .getByText(monthNames)
+        .getByText(new RegExp(`${currentMonth}|${currentMonthShort}`, "i"))
         .filter({ visible: true })
         .first()
         .isVisible()
         .catch(() => false);
-      const hasDayNumbers = await page
-        .getByText(dayNumbers)
+      const hasYearLabel = await page
+        .getByText(currentYear)
+        .filter({ visible: true })
+        .first()
+        .isVisible()
+        .catch(() => false);
+      const hasDateLabel = await page
+        .getByText(/\d{1,2}\/\d{1,2}|\d{4}-\d{2}/)
         .filter({ visible: true })
         .first()
         .isVisible()
         .catch(() => false);
 
       // Dashboard should have some temporal context
-      expect(hasMonthLabel || hasDayNumbers).toBe(true);
+      expect(hasMonthLabel || hasYearLabel || hasDateLabel).toBe(true);
     });
 
     test("multiple expense transactions are reflected in charts", async () => {

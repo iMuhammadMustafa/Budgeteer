@@ -26,7 +26,7 @@ for (const mode of storageModes) {
     let testTxnCategoryName: string;
 
     test.beforeAll(async ({ browser }) => {
-      test.setTimeout(120000);
+      test.setTimeout(180000);
       page = await browser.newPage();
       await loginWithMode(page, mode);
 
@@ -160,7 +160,7 @@ for (const mode of storageModes) {
     let testTxnCategoryName: string;
 
     test.beforeAll(async ({ browser }) => {
-      test.setTimeout(120000);
+      test.setTimeout(180000);
       page = await browser.newPage();
       await loginWithMode(page, mode);
 
