@@ -6,10 +6,16 @@ import { selectors } from "../selectors";
 // ============================================
 
 export async function openMyTabAddModal(page: Page, heading?: string) {
-  await page.getByTestId(selectors.myTab.addButton).filter({ visible: true }).first().click();
-  await page.waitForSelector(selectors.ui.modal);
+  const addBtn = page.getByTestId(selectors.myTab.addButton).filter({ visible: true }).first();
+  await expect(addBtn).toBeVisible({ timeout: 15000 });
+  await addBtn.click({ timeout: 10000 }).catch(async () => {
+    // Retry if element was detached from DOM during React re-render
+    await page.waitForLoadState("domcontentloaded");
+    await page.getByTestId(selectors.myTab.addButton).filter({ visible: true }).first().click();
+  });
+  await page.waitForSelector(selectors.ui.modal, { timeout: 10000 });
   if (heading) {
-    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible({ timeout: 10000 });
   }
 }
 
