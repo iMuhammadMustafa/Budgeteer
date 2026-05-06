@@ -496,7 +496,7 @@ const TransactionsCreationList = ({
       ...formState.data.transactions,
       [newTransactionId]: newTransaction,
     });
-  }, [formState.data.transactions, formState.data.groupid, updateField, maxAmount, currentAmount, mode]);
+  }, [formState.data.transactions, formState.data.groupid, updateField, maxAmount, currentAmount]);
 
   return (
     <View className="space-y-4">
