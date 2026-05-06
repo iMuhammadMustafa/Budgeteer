@@ -1,7 +1,8 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 
 export default function Appearance() {
@@ -12,10 +13,10 @@ export default function Appearance() {
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-foreground mb-2">Appearance</Text>
-          <Text className="text-sm text-muted-foreground">
+          <ThemedText variant="heading" className="text-2xl mb-2">Appearance</ThemedText>
+          <ThemedText variant="caption" className="text-sm text-muted-foreground">
             Customize how Budgeteer looks and feels
-          </Text>
+          </ThemedText>
         </View>
 
         {/* Settings Cards */}
@@ -33,15 +34,15 @@ export default function Appearance() {
               <MyIcon name={isDarkMode ? "Moon" : "Sun"} size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Theme Mode</Text>
-              <Text className="text-sm text-muted-foreground">
+              <ThemedText variant="label" className="text-base">Theme Mode</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
                 {isDarkMode ? "Dark mode is active" : "Light mode is active"}
-              </Text>
+              </ThemedText>
             </View>
             <View className="flex-row items-center gap-2">
-              <Text className="text-xs text-muted-foreground uppercase font-medium">
+              <ThemedText variant="caption" className="uppercase font-medium text-muted-foreground">
                 {theme}
-              </Text>
+              </ThemedText>
               <ThemedSwitch
                 value={isDarkMode}
                 onValueChange={toggleTheme}
@@ -63,10 +64,10 @@ export default function Appearance() {
               <MyIcon name="Grid3X3" size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Grid Background</Text>
-              <Text className="text-sm text-muted-foreground">
+              <ThemedText variant="label" className="text-base">Grid Background</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
                 Show subtle grid pattern on backgrounds
-              </Text>
+              </ThemedText>
             </View>
             <ThemedSwitch
               value={showGrid}
@@ -77,9 +78,9 @@ export default function Appearance() {
         </View>
 
         {/* Preview hint */}
-        <Text className="text-xs text-muted-foreground text-center mt-4">
+        <ThemedText variant="caption" className="text-center mt-4 text-muted-foreground">
           Changes are applied immediately and saved automatically
-        </Text>
+        </ThemedText>
       </View>
     </ScrollView>
   );

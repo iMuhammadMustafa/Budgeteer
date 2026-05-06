@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import Button from "@/src/components/elements/Button";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MyIcon from "@/src/components/elements/MyIcon";
@@ -258,7 +259,7 @@ export default function SummaryIndex() {
 
       {/* Header */}
       <View className="flex-row justify-between items-center p-4 bg-surface border-b border-border-default">
-        <Text className="text-2xl font-bold text-foreground">Expense Summary</Text>
+        <ThemedText variant="heading" className="text-2xl">Expense Summary</ThemedText>
         <Button
           variant="ghost"
           size="icon"

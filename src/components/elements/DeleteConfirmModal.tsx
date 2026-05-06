@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "./ThemedText";
 import Button from "./Button";
 import DropdownField from "./dropdown/DropdownField";
 import MyModal from "./MyModal";
@@ -59,17 +60,17 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
   return (
     <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleCancel}>
       <View className="p-4">
-        <Text className="text-xl font-bold text-foreground mb-4">Confirm Deletion</Text>
+        <ThemedText variant="heading" className="text-xl mb-4">Confirm Deletion</ThemedText>
 
-        <Text className="text-foreground mb-4">
+        <ThemedText className="mb-4">
           Are you sure you want to delete &quot;{itemToDelete?.name || itemName}&quot;?
-        </Text>
+        </ThemedText>
 
         {hasDependencies && (
           <View className="mb-4">
-            <Text className="text-foreground font-semibold mb-2">
+            <ThemedText variant="subheading" className="mb-2">
               This {itemName} has {dependencyCount} associated {dependencyType}.
-            </Text>
+            </ThemedText>
 
             {allowDeleteDependencies && (
               <View className="mb-4">
@@ -85,9 +86,9 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
 
             {showReplacementDropdown && (
               <View className="z-50">
-                <Text className="text-foreground mb-2">
+                <ThemedText className="mb-2">
                   Please select a {itemName} to move the {dependencyType} to:
-                </Text>
+                </ThemedText>
                 <DropdownField
                   label=""
                   options={replacementItems.map(item => ({

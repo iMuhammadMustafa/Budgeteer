@@ -1,7 +1,8 @@
 import Button from "@/src/components/elements/Button";
 import { FormContainerProps } from "@/src/types/components/forms.types";
 import { memo, useCallback } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "../elements/ThemedText";
 
 /**
  * FormContainer component provides consistent layout, submission handling, and loading states
@@ -102,7 +103,7 @@ function FormContainerComponent({
           accessibilityLiveRegion="polite"
         >
           <View className="bg-surface p-4 rounded-lg shadow-lg">
-            <Text className="text-text-secondary font-medium">Processing...</Text>
+            <ThemedText variant="label" className="text-text-secondary">Processing...</ThemedText>
           </View>
         </View>
       )}

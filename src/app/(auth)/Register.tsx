@@ -2,7 +2,9 @@ import supabase from "@/src/providers/Supabase";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, TextInput } from "react-native";
+import { Alert } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
+import ThemedInput from "@/src/components/elements/ThemedInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "@/src/components/elements/Button";
 
@@ -44,24 +46,24 @@ export default function Register() {
 
   return (
     <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
-      <Text className="text-foreground text-2xl font-bold mb-10 text-center">Register</Text>
-      <TextInput
-        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
+      <ThemedText variant="heading" className="text-2xl mb-10 text-center">Register</ThemedText>
+      <ThemedInput
+        className="my-2 p-4 text-lg"
         placeholder="Email"
         onChangeText={text => setUser({ ...user, email: text })}
       />
-      <TextInput
-        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
+      <ThemedInput
+        className="my-2 p-4 text-lg"
         placeholder="Password"
         onChangeText={text => setUser({ ...user, password: text })}
       />
-      <TextInput
-        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
+      <ThemedInput
+        className="my-2 p-4 text-lg"
         placeholder="Confirm Password"
         onChangeText={text => setUser({ ...user, confirmPassword: text })}
       />
-      <TextInput
-        className="border rounded-lg bg-input-bg my-2 p-4 text-lg"
+      <ThemedInput
+        className="my-2 p-4 text-lg"
         placeholder="Tenant Id"
         onChangeText={text => setUser({ ...user, tenantId: text })}
       />
@@ -77,9 +79,9 @@ export default function Register() {
         testID="btn-register"
       />
       <Link className=" py-4 mb-4 bg-secondary rounded-lg items-center text-center" href="/Login">
-        <Text className="text-foreground" selectable={false}>
+        <ThemedText selectable={false}>
           Login
-        </Text>
+        </ThemedText>
       </Link>
     </SafeAreaView>
   );

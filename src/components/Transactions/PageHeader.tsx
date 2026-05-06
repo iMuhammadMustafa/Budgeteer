@@ -2,7 +2,8 @@ import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
 import { Link } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 
 export default function TransactionsPageHeader({
   selectedTransactions,
@@ -21,10 +22,10 @@ export default function TransactionsPageHeader({
       <View className="flex-row">
         {selectedTransactions.length > 0 && (
           <>
-            <Text className=" text-primary-500 mr-4">{selectedTransactions.length} selected</Text>
-            <Text className=" text-primary-500 mr-4">
+            <ThemedText className="text-primary-500 mr-4">{selectedTransactions.length} selected</ThemedText>
+            <ThemedText className="text-primary-500 mr-4">
               {selectedSum.toFixed(2)} {selectedTransactions[0].currency}
-            </Text>
+            </ThemedText>
           </>
         )}
       </View>

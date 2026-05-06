@@ -5,7 +5,8 @@ import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { router } from "expo-router";
-import { FlatList, ScrollView, Text, View } from "react-native";
+import { FlatList, ScrollView, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useDashboard from "./useDashboardViewModel";
 
@@ -62,7 +63,7 @@ export default function DetailView() {
             <DaySkeleton />
           ) : !filteredTransactions || filteredTransactions.length === 0 ? (
             <View className="flex-1 justify-center items-center p-4">
-              <Text className="text-muted">No transactions found</Text>
+              <ThemedText variant="caption" className="text-muted">No transactions found</ThemedText>
             </View>
           ) : (
             <TransactionsListComponent transactions={filteredTransactions} onPress={handleTransactionPress} />
@@ -105,19 +106,19 @@ function TransactionsListComponent({
                 </View>
               )}
               <View className="flex-1">
-                <Text className="text-base text-foreground font-medium">{item.name || "Unnamed Transaction"}</Text>
-                <Text className="text-sm text-muted-foreground">
+                <ThemedText variant="label" className="text-base">{item.name || "Unnamed Transaction"}</ThemedText>
+                <ThemedText variant="caption">
                   {(item as any).groupname && item.categoryname
                     ? `${(item as any).groupname} • ${item.categoryname}`
                     : item.categoryname || "Uncategorized"}
-                </Text>
+                </ThemedText>
               </View>
             </View>
             <View className="items-end">
-              <Text className={`text-base font-medium ${isExpense ? "text-danger-500" : "text-success-500"}`}>
+              <ThemedText variant="label" className={`text-base ${isExpense ? "text-danger-500" : "text-success-500"}`}>
                 {isExpense ? "-" : "+"}${Math.abs(item.amount || 0).toFixed(2)}
-              </Text>
-              <Text className="text-sm text-muted-foreground">{localDate.format("MMM D, YYYY")}</Text>
+              </ThemedText>
+              <ThemedText variant="caption">{localDate.format("MMM D, YYYY")}</ThemedText>
             </View>
           </Button>
         );

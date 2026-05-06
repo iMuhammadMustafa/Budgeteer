@@ -1,7 +1,8 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "../elements/ThemedText";
 import ThemedSwitch from "../elements/ThemedSwitch";
 import Button from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
@@ -131,9 +132,9 @@ export default function BatchUpdateModal({
             <View className="p-4">
                 {/* Header info */}
                 <View className="bg-surface-elevated rounded-md p-3 mb-4">
-                    <Text className="text-foreground font-medium">
+                    <ThemedText variant="label">
                         {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
-                    </Text>
+                    </ThemedText>
                 </View>
 
                 {/* Date Update Option */}
@@ -188,7 +189,7 @@ export default function BatchUpdateModal({
                     onToggle={setEnableVoid}
                 >
                     <View className="flex-row items-center justify-between py-2">
-                        <Text className="text-foreground">{newVoidStatus ? "Void" : "Active"}</Text>
+                        <ThemedText>{newVoidStatus ? "Void" : "Active"}</ThemedText>
                         <ThemedSwitch
                             value={newVoidStatus}
                             onValueChange={setNewVoidStatus}
@@ -241,7 +242,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
                     >
                         {enabled && <MyIcon name="Check" size={14} className="text-white" />}
                     </View>
-                    <Text className="text-foreground font-medium">{label}</Text>
+                    <ThemedText variant="label">{label}</ThemedText>
                 </View>
             </Button>
 

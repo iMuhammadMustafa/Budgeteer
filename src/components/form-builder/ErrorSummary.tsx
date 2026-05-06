@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
+import ThemedText from '../elements/ThemedText';
 import { FormError } from '@/src/types/components/forms.types';
 import { formatErrorMessage, groupErrorsByType, getMostCriticalError } from '@/src/utils/form-errors';
 import Button from '@/src/components/elements/Button';
@@ -52,9 +53,9 @@ export default function ErrorSummary({
 
     return (
       <View key={type} className="mb-3">
-        <Text className="text-red-700 font-semibold text-sm mb-1">
+        <ThemedText variant="label" className="text-red-700 mb-1">
           {typeLabels[type as keyof typeof typeLabels] || 'Errors'}
-        </Text>
+        </ThemedText>
         {groupErrors.map((error, index) => (
           <View key={`${type}-${index}`} className="ml-2 mb-1">
             <ErrorMessage
@@ -77,12 +78,12 @@ export default function ErrorSummary({
     >
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-red-800 font-semibold text-base">
+        <ThemedText variant="subheading" className="text-red-800">
           {hasMultipleErrors 
             ? `${errors.length} Errors Found` 
             : 'Error Found'
           }
-        </Text>
+        </ThemedText>
         
         {onDismiss && (
           <Button
@@ -93,7 +94,7 @@ export default function ErrorSummary({
             accessibilityHint="Closes the error summary"
             testID="btn-dismiss-errors"
           >
-            <Text className="text-red-600 text-lg font-bold">×</Text>
+            <ThemedText variant="heading" className="text-red-600">×</ThemedText>
           </Button>
         )}
       </View>
@@ -138,7 +139,7 @@ export default function ErrorSummary({
       )}
 
       {/* Screen Reader Instructions */}
-      <Text 
+      <ThemedText 
         className="sr-only"
         accessibilityLabel={`To fix these errors: ${errors.map(e => formatErrorMessage(e)).join('. ')}`}
       />

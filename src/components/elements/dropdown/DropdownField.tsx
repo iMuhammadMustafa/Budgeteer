@@ -132,15 +132,14 @@ function DropdownField({
         onLayout={handleLayout}
         // @ts-ignore
         dataSet={{ dropdownId: dropdownIdRef.current }}
-        className="flex-row items-center"
       >
         <Button
           variant="ghost"
           size="md"
           hapticFeedback="light"
-          className={`flex-row items-center justify-between p-3 rounded-l border flex-1 ${
+          className={`flex-row items-center justify-between p-3 rounded border ${
             showError ? "border-status-danger" : "border-input-border"
-          } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"} ${!(showClear && selectedItem) && !addNew ? "rounded-r" : "border-r-0"}`}
+          } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
           onPress={handleToggle}
           disabled={disabled}
           testID="dropdown-button"
@@ -162,31 +161,29 @@ function DropdownField({
               {selectedItem?.label ?? placeholder ?? label}
             </Text>
           </View>
-          <MyIcon name={isOpen ? "ChevronUp" : "ChevronDown"} size={18} className="text-text-tertiary" />
-        </Button>
 
-        {showClear && selectedItem && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={handleClear}
-            className={`p-3 border border-l-0 ${showError ? "border-status-danger" : "border-input-border"} ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"} ${!addNew ? "rounded-r" : ""}`}
-            testID="dropdown-clear"
-          >
-            <MyIcon name="X" size={16} className="text-text-tertiary" />
-          </Button>
-        )}
-        {addNew && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={handleAddNew}
-            className={`p-3 rounded-r border border-l-0 ${showError ? "border-status-danger" : "border-input-border"} ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
-            testID="dropdown-add-new"
-          >
-            <MyIcon name="Plus" size={16} className="text-primary" />
-          </Button>
-        )}
+          <View className="flex-row items-center gap-1">
+            {showClear && selectedItem && (
+              <Pressable
+                onPress={e => { e.stopPropagation(); handleClear(); }}
+                className="p-1"
+                testID="dropdown-clear"
+              >
+                <MyIcon name="X" size={16} className="text-text-tertiary" />
+              </Pressable>
+            )}
+            {addNew && (
+              <Pressable
+                onPress={e => { e.stopPropagation(); handleAddNew(); }}
+                className="p-1 ml-1"
+                testID="dropdown-add-new"
+              >
+                <MyIcon name="Plus" size={16} className="text-primary" />
+              </Pressable>
+            )}
+            <MyIcon name={isOpen ? "ChevronUp" : "ChevronDown"} size={18} className="text-text-tertiary" />
+          </View>
+        </Button>
       </View>
 
       {/* Error Message */}

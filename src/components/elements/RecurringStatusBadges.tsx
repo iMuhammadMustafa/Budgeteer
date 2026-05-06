@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "./ThemedText";
 import MyIcon from "./MyIcon";
 
 interface RecurringStatusBadgesProps {
@@ -23,7 +24,7 @@ export const RecurringStatusBadges: React.FC<RecurringStatusBadgesProps> = ({ re
       {autoApplyEnabled && (
         <View className="bg-status-success-subtle px-2 py-0.5 rounded-full flex-row items-center">
           <MyIcon name="Zap" size={12} className="text-status-success mr-1" />
-          <Text className="text-xs text-status-success font-medium">Auto</Text>
+          <ThemedText variant="caption" className="text-status-success font-medium">Auto</ThemedText>
         </View>
       )}
 
@@ -39,9 +40,9 @@ export const RecurringStatusBadges: React.FC<RecurringStatusBadgesProps> = ({ re
             size={12}
             className={`mr-1 ${recurringType === "Transfer" ? "text-status-info" : "text-primary"}`}
           />
-          <Text className={`text-xs font-medium ${recurringType === "Transfer" ? "text-status-info" : "text-primary"}`}>
+          <ThemedText variant="caption" className={`font-medium ${recurringType === "Transfer" ? "text-status-info" : "text-primary"}`}>
             {recurringType === "CreditCardPayment" ? "CC Pay" : recurringType}
-          </Text>
+          </ThemedText>
         </View>
       )}
 
@@ -49,7 +50,7 @@ export const RecurringStatusBadges: React.FC<RecurringStatusBadgesProps> = ({ re
       {isAmountFlexible && (
         <View className="bg-status-warning-subtle px-2 py-0.5 rounded-full flex-row items-center">
           <MyIcon name="DollarSign" size={12} className="text-status-warning mr-1" />
-          <Text className="text-xs text-status-warning font-medium">Flex $</Text>
+          <ThemedText variant="caption" className="text-status-warning font-medium">Flex $</ThemedText>
         </View>
       )}
 
@@ -57,7 +58,7 @@ export const RecurringStatusBadges: React.FC<RecurringStatusBadgesProps> = ({ re
       {isDateFlexible && (
         <View className="bg-status-warning-subtle px-2 py-0.5 rounded-full flex-row items-center">
           <MyIcon name="Calendar" size={12} className="text-status-warning mr-1" />
-          <Text className="text-xs text-status-warning font-medium">Flex Date</Text>
+          <ThemedText variant="caption" className="text-status-warning font-medium">Flex Date</ThemedText>
         </View>
       )}
 
@@ -65,7 +66,7 @@ export const RecurringStatusBadges: React.FC<RecurringStatusBadgesProps> = ({ re
       {!recurring.isactive && (
         <View className="bg-muted px-2 py-0.5 rounded-full flex-row items-center">
           <MyIcon name="Pause" size={12} className="text-text-secondary mr-1" />
-          <Text className="text-xs text-text-secondary font-medium">Inactive</Text>
+          <ThemedText variant="caption" className="font-medium">Inactive</ThemedText>
         </View>
       )}
     </View>

@@ -2,6 +2,7 @@ import { FormFieldProps, OptionItem } from "@/src/types/components/forms.types";
 import dayjs from "dayjs";
 import { memo, useCallback, useMemo } from "react";
 import { Text, TextInput, View } from "react-native";
+import ThemedText from "../elements/ThemedText";
 import ThemedSwitch from "../elements/ThemedSwitch";
 import DropdownField from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -221,19 +222,19 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
     <View className={`my-2 ${className} ${type === "select" ? "z-20" : "z-0"}`}>
       {/* Field Label */}
       {label && type !== "switch" && (
-        <Text className={`text-foreground mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
+        <ThemedText className={`mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
           {label}
-          {required && <Text className="text-status-danger ml-1">*</Text>}
-        </Text>
+          {required && <ThemedText variant="error" className="ml-1">*</ThemedText>}
+        </ThemedText>
       )}
 
       {/* Switch fields have inline labels */}
       {type === "switch" && (
         <View className="flex-row items-center justify-between">
-          <Text className={`text-foreground ${required ? "font-medium" : ""}`} accessibilityRole="text">
+          <ThemedText className={`${required ? "font-medium" : ""}`} accessibilityRole="text">
             {label}
-            {required && <Text className="text-status-danger ml-1">*</Text>}
-          </Text>
+            {required && <ThemedText variant="error" className="ml-1">*</ThemedText>}
+          </ThemedText>
           {renderField()}
         </View>
       )}
@@ -243,21 +244,22 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
 
       {/* Field Description - use lower z-index to not overlap dropdowns */}
       {description && (
-        <Text id={descriptionId} className="text-text-secondary text-sm mt-1 relative z-0" accessibilityRole="text">
+        <ThemedText variant="caption" id={descriptionId} className="text-sm mt-1 relative z-0" accessibilityRole="text">
           {description}
-        </Text>
+        </ThemedText>
       )}
 
       {/* Error Message */}
       {hasError && (
-        <Text
+        <ThemedText
+          variant="error"
           id={errorId}
-          className="text-status-danger text-sm mt-1"
+          className="text-sm mt-1"
           accessibilityRole="text"
           accessibilityLiveRegion="polite"
         >
           {error}
-        </Text>
+        </ThemedText>
       )}
     </View>
   );

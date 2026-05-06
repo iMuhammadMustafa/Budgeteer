@@ -1,6 +1,7 @@
 import { FormSectionProps } from "@/src/types/components/forms.types";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "../elements/ThemedText";
 import Button from "@/src/components/elements/Button";
 
 /**
@@ -44,34 +45,36 @@ function FormSectionComponent({
               accessibilityState={{ expanded: isExpanded ? "true" : "false" }}
               testID={`btn-section-${title?.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <Text
-                className="text-lg font-semibold text-foreground"
+              <ThemedText
+                variant="subheading"
+                className="text-lg"
                 accessibilityRole="header"
               >
                 {title}
-              </Text>
-              <Text className="text-text-secondary text-lg" aria-hidden={true}>
+              </ThemedText>
+              <ThemedText variant="caption" className="text-lg" aria-hidden={true}>
                 {isExpanded ? "−" : "+"}
-              </Text>
+              </ThemedText>
             </Button>
           ) : (
-            <Text
-              className="text-lg font-semibold text-foreground mb-2"
+            <ThemedText
+              variant="subheading"
+              className="text-lg mb-2"
               accessibilityRole="header"
               // @ts-expect-error accessibilityLevel is web/aria only
               accessibilityLevel={2}
             >
               {title}
-            </Text>
+            </ThemedText>
           )}
         </View>
       )}
 
       {/* Section Description */}
       {description && (
-        <Text id={descriptionId} className="text-text-secondary text-sm mb-3" accessibilityRole="text">
+        <ThemedText variant="caption" id={descriptionId} className="text-sm mb-3" accessibilityRole="text">
           {description}
-        </Text>
+        </ThemedText>
       )}
 
       {/* Section Content */}
