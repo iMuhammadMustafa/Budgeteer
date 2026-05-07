@@ -154,13 +154,12 @@ export default function RecurringsScreen() {
                 autoFocus
               />
               <Pressable
-                className={`ml-2 p-2 rounded-md border min-w-[44px] min-h-[44px] justify-center items-center ${
-                  pendingRecurring?.type === "Transfer"
+                className={`ml-2 p-2 rounded-md border min-w-[44px] min-h-[44px] justify-center items-center ${pendingRecurring?.type === "Transfer"
                     ? "bg-sky-400 border-sky-400 opacity-70"
                     : mode === "plus"
                       ? "bg-green-500 border-green-500"
                       : "bg-red-500 border-red-500"
-                }`}
+                  }`}
                 disabled={pendingRecurring?.type === "Transfer"}
                 onPress={() => {
                   if (pendingRecurring?.type === "Transfer") return;

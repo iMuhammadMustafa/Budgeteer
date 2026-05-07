@@ -303,6 +303,7 @@ function getTableIcon(table: TableNames): string {
         [TableNames.TransactionCategories]: "Tag",
         [TableNames.Configurations]: "Settings",
         [TableNames.Recurrings]: "Repeat",
+        [TableNames.SavingsBuckets]: "PiggyBank",
         [TableNames.Transactions]: "Receipt",
     };
     return icons[table] || "Database";
