@@ -57,6 +57,8 @@ export default function SavingsBucketsList({ accountId, accountBalance }: Saving
     );
   }
 
+  const isOverAllocated = unallocated < 0;
+
   return (
     <View className="mt-2">
       <View className="flex-row items-center justify-between px-4 py-2">
@@ -73,10 +75,26 @@ export default function SavingsBucketsList({ accountId, accountBalance }: Saving
         />
       </View>
 
+      {/* Over-allocation warning */}
+      {isOverAllocated && (
+        <View className="mx-4 mb-2 p-2 bg-warning/10 border border-warning/30 rounded-md flex-row items-start gap-2">
+          <MyIcon name="AlertTriangle" size={16} className="text-warning mt-0.5" />
+          <View className="flex-1">
+            <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
+            <Text className="text-xs text-warning/80">
+              Bucket allocations exceed the account balance by{" "}
+              {Math.abs(unallocated).toLocaleString("en-US", { style: "currency", currency: "USD" })}.
+              Consider reducing bucket amounts to match the current balance.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Unallocated balance */}
       <View className="px-4 pb-2">
-        <Text className="text-xs text-muted-foreground">
+        <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
           Unallocated: {unallocated.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+          {isOverAllocated && " ⚠️"}
         </Text>
       </View>
 

@@ -1,3 +1,4 @@
+import AccountBucketsInline from "@/src/components/AccountBucketsInline";
 import Button from "@/src/components/elements/Button";
 import { AccountSelecterDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import MyModal from "@/src/components/elements/MyModal";
@@ -7,25 +8,46 @@ import MyTab from "@/src/components/MyTab";
 import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TableNames } from "@/src/types/database/TableNames";
-import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { SavingsBucket } from "@/src/types/database/Tables.Types";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Switch, Text, View } from "react-native";
 
 export default function AccountsIndex() {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
   const accountCategoryService = useAccountCategoryService();
+  const bucketService = useSavingsBucketService();
 
   const { data: accounts, isLoading, error } = accountService.useFindAllWithCategory();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
   const { mutate: upsertTransaction, isPending: isCreating } = transactionService.useUpsert();
   const { mutateAsync: updateAccountBalance } = accountService.useUpdateAccountBalance();
 
+  // Fetch ALL buckets in one query — avoids N+1
+  const { data: allBuckets } = bucketService.useFindAll();
+  const { mutate: allocateBucket, isPending: isAllocating } = bucketService.useAllocate();
+
+  const [showBuckets, setShowBuckets] = useState(false);
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [bucketsModal, setBucketsModal] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
+
+  // Group all buckets by accountId (computed once, no N+1)
+  const bucketsByAccountId = useMemo(() => {
+    if (!allBuckets) return {};
+    return allBuckets.reduce(
+      (acc, bucket) => {
+        const key = bucket.accountid;
+        (acc[key] = acc[key] || []).push(bucket);
+        return acc;
+      },
+      {} as Record<string, SavingsBucket[]>,
+    );
+  }, [allBuckets]);
 
   const openTransferModal = (account: any) => {
     setModalState({ open: true, account });
@@ -73,6 +95,17 @@ export default function AccountsIndex() {
     await updateAccountBalance({ accountId: newAccountId, amount: totalAmount });
   };
 
+  const handleBucketAllocate = (bucketId: string, amount: number, accountBalance: number) => {
+    allocateBucket(
+      { bucketId, amount, accountBalance },
+      {
+        onError: (error: Error) => {
+          console.error("Bucket allocation error:", error.message);
+        },
+      },
+    );
+  };
+
   return (
     <>
       <MyTab
@@ -81,27 +114,82 @@ export default function AccountsIndex() {
         queryKey={[TableNames.Accounts]}
         service={accountService}
         groupBy={"category.name"}
-        Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}
-        detailsContent={detailsContent}
-        customFindAll={accountService.useFindAllWithCategory}
-        customAction={(item: any) => (
-          <View className="flex-row items-center gap-0">
-            <Button
-              testID={`buckets-btn-${item.id}`}
-              rightIcon="PiggyBank"
-              className="py-0 px-0"
-              variant="ghost"
-              onPress={() => setBucketsModal({ open: true, account: item })}
-            />
-            <Button
-              testID={`transfer-btn-${item.id}`}
-              rightIcon="ArrowLeftRight"
-              className="py-0 px-0"
-              variant="ghost"
-              onPress={() => openTransferModal(item)}
-            />
+        Footer={
+          <View>
+            {/* Show Buckets Toggle */}
+            <View className="flex-row items-center justify-between px-2 py-1 border-b border-border">
+              <Text className="text-sm text-foreground">Show Buckets</Text>
+              <Switch
+                testID="show-buckets-toggle"
+                value={showBuckets}
+                onValueChange={setShowBuckets}
+                trackColor={{ false: "#767577", true: "rgb(var(--primary))" }}
+              />
+            </View>
+            <FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />
           </View>
-        )}
+        }
+        detailsContent={showBuckets ? undefined : detailsContent}
+        customFindAll={accountService.useFindAllWithCategory}
+        customRenderItem={
+          showBuckets
+            ? (item: any, isSelected: boolean, onLongPress: () => void, onPress: () => void) => (
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-md text-foreground">{item.name}</Text>
+                      <Text className="text-md text-foreground">{detailsContent(item)}</Text>
+                    </View>
+                    <View className="flex-row items-center gap-0">
+                      <Button
+                        testID={`buckets-btn-${item.id}`}
+                        rightIcon="PiggyBank"
+                        className="py-0 px-0"
+                        variant="ghost"
+                        onPress={() => setBucketsModal({ open: true, account: item })}
+                      />
+                      <Button
+                        testID={`transfer-btn-${item.id}`}
+                        rightIcon="ArrowLeftRight"
+                        className="py-0 px-0"
+                        variant="ghost"
+                        onPress={() => openTransferModal(item)}
+                      />
+                    </View>
+                  </View>
+                  {/* Inline bucket tree */}
+                  <AccountBucketsInline
+                    buckets={bucketsByAccountId[item.id] || []}
+                    accountBalance={item.balance}
+                    onAllocate={handleBucketAllocate}
+                    isAllocating={isAllocating}
+                  />
+                </View>
+              )
+            : undefined
+        }
+        customAction={
+          showBuckets
+            ? undefined
+            : (item: any) => (
+                <View className="flex-row items-center gap-0">
+                  <Button
+                    testID={`buckets-btn-${item.id}`}
+                    rightIcon="PiggyBank"
+                    className="py-0 px-0"
+                    variant="ghost"
+                    onPress={() => setBucketsModal({ open: true, account: item })}
+                  />
+                  <Button
+                    testID={`transfer-btn-${item.id}`}
+                    rightIcon="ArrowLeftRight"
+                    className="py-0 px-0"
+                    variant="ghost"
+                    onPress={() => openTransferModal(item)}
+                  />
+                </View>
+              )
+        }
         UpsertModal={(item: any) => <AccountForm account={item} />}
         initialState={initialState}
         dependencyConfig={{

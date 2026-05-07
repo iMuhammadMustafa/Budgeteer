@@ -133,11 +133,29 @@ function AccountBucketsAllocator({
     );
   }
 
+  const isOverAllocated = unallocated < 0;
+
   return (
     <View>
-      <Text className="text-xs text-muted-foreground mb-2">
+      {/* Over-allocation warning */}
+      {isOverAllocated && (
+        <View className="mb-2 p-2 bg-warning/10 border border-warning/30 rounded-md flex-row items-start gap-2">
+          <MyIcon name="AlertTriangle" size={14} className="text-warning mt-0.5" />
+          <View className="flex-1">
+            <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
+            <Text className="text-xs text-warning/80">
+              Buckets exceed account balance by{" "}
+              {Math.abs(unallocated).toLocaleString("en-US", { style: "currency", currency: "USD" })}.
+              Adjust bucket amounts below.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      <Text className={`text-xs mb-2 ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
         Account Balance: {account.balance.toLocaleString("en-US", { style: "currency", currency: "USD" })}
         {" · "}Unallocated: {unallocated.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+        {isOverAllocated && " ⚠️"}
       </Text>
 
       {buckets.map(bucket => (
