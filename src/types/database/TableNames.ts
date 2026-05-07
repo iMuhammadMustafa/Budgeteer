@@ -6,6 +6,7 @@ export enum TableNames {
   TransactionGroups = "transactiongroups",
   Configurations = "configurations",
   Recurrings = "recurrings",
+  SavingsBuckets = "savingsbuckets",
 }
 
 export enum ViewNames {

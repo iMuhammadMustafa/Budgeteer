@@ -16,6 +16,7 @@ export type TransactionGroup = Tables<"transactiongroups">;
 
 export type Configuration = Tables<"configurations">;
 export type Recurring = Tables<"recurrings"> & { type: TransactionType };
+export type SavingsBucket = Tables<"savingsbuckets">;
 
 // Materialized Views
 export type TransactionsView = Views<"transactionsview">;
