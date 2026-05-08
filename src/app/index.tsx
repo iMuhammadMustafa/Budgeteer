@@ -1,7 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useCallback, useEffect } from "react";
-import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Platform, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import Button from "@/src/components/elements/Button";
 import Animated, {
   FadeInDown,
   FadeInRight,

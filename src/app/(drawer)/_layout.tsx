@@ -10,7 +10,8 @@ import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
 import { useEffect } from "react";
-import { ActivityIndicator, Platform, Text, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -95,14 +96,14 @@ const Footer = () => {
   return (
     <>
       <View className="flex-row justify-around items-center py-2">
-        <Text
-          className="text-foreground text-center"
+        <ThemedText
+          className="text-center"
           onPress={async () => {
             if (Platform.OS !== "web") await Updates.checkForUpdateAsync();
           }}
         >
           Version 0.16.11
-        </Text>
+        </ThemedText>
         {isUpdatePending && !isDownloading && (
           <Button onPress={async () => await Updates.reloadAsync()} variant="outline" rightIcon="Power" size="sm" />
         )}
