@@ -5,7 +5,9 @@ import supabase from "@/src/providers/Supabase";
 import { StorageMode } from "@/src/types/StorageMode";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import { Alert, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
+import ThemedInput from "@/src/components/elements/ThemedInput";
 
 export default function Login() {
   const [user, setUser] = useState({ email: "", password: "" });
@@ -52,24 +54,24 @@ export default function Login() {
       />
 
       <View className="flex-row items-center mb-6">
-        <Text className="text-2xl mr-3">☁️</Text>
-        <Text className="text-foreground text-2xl font-bold">Cloud Login</Text>
+        <ThemedText className="text-2xl mr-3">☁️</ThemedText>
+        <ThemedText variant="heading" className="text-2xl">Cloud Login</ThemedText>
       </View>
 
-      <Text className="text-foreground opacity-70 mb-6">Sign in to access your cloud-synced data</Text>
+      <ThemedText className="opacity-70 mb-6">Sign in to access your cloud-synced data</ThemedText>
 
-      <TextInput
+      <ThemedInput
         placeholder="Email"
-        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-input-bg"
+        className="p-4 mb-4 border-primary text-lg"
         onChangeText={text => onTextChange("email", text)}
         value={user.email}
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      <TextInput
+      <ThemedInput
         placeholder="Password"
         secureTextEntry
-        className="p-4 mb-4 border border-primary rounded-lg text-lg bg-input-bg"
+        className="p-4 mb-4 border-primary text-lg"
         onChangeText={text => onTextChange("password", text)}
         value={user.password}
       />
@@ -82,14 +84,14 @@ export default function Login() {
         className="mb-4 bg"
       />
       <Link href="/Register" className="p-4 mb-4 bg-secondary rounded-lg items-center text-center">
-        <Text className="text-foreground font-semibold" selectable={false}>
+        <ThemedText variant="subheading" selectable={false}>
           Create Account
-        </Text>
+        </ThemedText>
       </Link>
 
-      <Text className="text-blue-500 text-center cursor-pointer" selectable={false}>
+      <ThemedText className="text-blue-500 text-center cursor-pointer" selectable={false}>
         Forgot Password?
-      </Text>
+      </ThemedText>
     </View>
   );
 }

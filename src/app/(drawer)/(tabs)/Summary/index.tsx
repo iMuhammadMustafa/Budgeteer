@@ -6,13 +6,14 @@ import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   Text,
   View,
 } from "react-native";
+import Button from "@/src/components/elements/Button";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MyIcon from "@/src/components/elements/MyIcon";
@@ -239,9 +240,14 @@ export default function SummaryIndex() {
           <Text className="text-sm text-muted-foreground text-center mb-4">
             {error instanceof Error ? error.message : "Unknown error occurred"}
           </Text>
-          <Pressable onPress={onRefresh} className="bg-primary py-3 px-6 rounded-lg">
-            <Text className="text-primary-foreground font-semibold">Try Again</Text>
-          </Pressable>
+          <Button
+            variant="primary"
+            size="md"
+            hapticFeedback="error"
+            onPress={onRefresh}
+            label="Try Again"
+            testID="btn-summary-retry"
+          />
         </View>
       </SafeAreaView>
     );
@@ -253,27 +259,36 @@ export default function SummaryIndex() {
 
       {/* Header */}
       <View className="flex-row justify-between items-center p-4 bg-surface border-b border-border-default">
-        <Text className="text-2xl font-bold text-foreground">Expense Summary</Text>
-        <Pressable onPress={onRefresh} className="p-2">
+        <ThemedText variant="heading" className="text-2xl">Expense Summary</ThemedText>
+        <Button
+          variant="ghost"
+          size="icon"
+          onPress={onRefresh}
+          testID="btn-summary-refresh"
+        >
           <RefreshCcw size={24} color="#10b981" />
-        </Pressable>
+        </Button>
       </View>
 
       {/* Time Period Selector */}
       <View className="bg-surface p-4 border-b border-border-default">
         <View className="flex-row bg-surface-elevated rounded-lg p-1">
           {(["monthly", "quarterly", "yearly"] as TimePeriod[]).map(period => (
-            <Pressable
+            <Button
               key={period}
+              variant={timePeriod === period ? "primary" : "ghost"}
+              size="sm"
+              hapticFeedback="selection"
               onPress={() => setTimePeriod(period)}
-              className={`flex-1 py-3 px-4 rounded-md items-center ${timePeriod === period ? "bg-primary" : ""}`}
+              className={`flex-1 py-3 px-4 rounded-md items-center`}
+              testID={`btn-period-${period}`}
             >
               <Text
                 className={`${timePeriod === period ? "text-primary-foreground" : "text-muted-foreground"} font-semibold capitalize`}
               >
                 {period}
               </Text>
-            </Pressable>
+            </Button>
           ))}
         </View>
       </View>

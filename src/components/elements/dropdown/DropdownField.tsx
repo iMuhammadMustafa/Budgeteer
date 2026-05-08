@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, FlatList, LayoutChangeEvent, Platform, Pressable, Text, TextInput, View } from "react-native";
+import Button from "../Button";
 
 import { AddNewConfig, DropDownProps, OptionItem } from "@/src/types/components/DropdownField.Types";
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
@@ -132,7 +133,10 @@ function DropdownField({
         // @ts-ignore
         dataSet={{ dropdownId: dropdownIdRef.current }}
       >
-        <Pressable
+        <Button
+          variant="ghost"
+          size="md"
+          hapticFeedback="light"
           className={`flex-row items-center justify-between p-3 rounded border ${
             showError ? "border-status-danger" : "border-input-border"
           } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
@@ -161,31 +165,25 @@ function DropdownField({
           <View className="flex-row items-center gap-1">
             {showClear && selectedItem && (
               <Pressable
-                onPress={e => {
-                  e.stopPropagation?.();
-                  handleClear();
-                }}
+                onPress={e => { e.stopPropagation(); handleClear(); }}
                 className="p-1"
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                testID="dropdown-clear"
               >
                 <MyIcon name="X" size={16} className="text-text-tertiary" />
               </Pressable>
             )}
             {addNew && (
               <Pressable
-                onPress={e => {
-                  e.stopPropagation?.();
-                  handleAddNew();
-                }}
+                onPress={e => { e.stopPropagation(); handleAddNew(); }}
                 className="p-1 ml-1"
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                testID="dropdown-add-new"
               >
                 <MyIcon name="Plus" size={16} className="text-primary" />
               </Pressable>
             )}
             <MyIcon name={isOpen ? "ChevronUp" : "ChevronDown"} size={18} className="text-text-tertiary" />
           </View>
-        </Pressable>
+        </Button>
       </View>
 
       {/* Error Message */}
@@ -261,7 +259,7 @@ function DropdownList({
   const listContent = (
     <>
       {showSearch && (
-        <Pressable onPress={e => e.stopPropagation?.()} className="p-2 border-b border-border-default">
+        <View className="p-2 border-b border-border-default">
           <TextInput
             testID="dropdown-search"
             className="p-2 bg-surface-elevated rounded border border-border-default text-foreground"
@@ -272,19 +270,22 @@ function DropdownList({
             placeholderTextColor="#9CA3AF"
             onFocus={e => e.stopPropagation?.()}
           />
-        </Pressable>
+        </View>
       )}
 
       {addNew && (
-        <Pressable
+        <Button
+          variant="ghost"
+          size="md"
           onPress={onAddNew}
-          className="flex-row items-center gap-2 p-3 border-b border-border-default bg-surface-elevated"
+          className="flex-row items-center gap-2 p-3 border-b border-border-default bg-surface-elevated rounded-none justify-start"
+          testID="dropdown-add-new-option"
         >
           <MyIcon name={addNew.icon ?? "Plus"} size={18} className="text-primary" />
           <Text className="text-primary font-medium" selectable={false}>
             {addNew.label ?? `Add New ${addNew.entityType}`}
           </Text>
-        </Pressable>
+        </Button>
       )}
 
       <FlatList<OptionItem | string | undefined>
@@ -375,13 +376,16 @@ interface DropdownOptionProps {
 
 function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOptionProps) {
   return (
-    <Pressable
+    <Button
+      variant="ghost"
+      size="md"
+      hapticFeedback="selection"
       testID={`dropdown-option-${option.label}`}
       onPress={onPress}
       disabled={option.disabled}
-      className={`p-3 ${isSelected ? "bg-primary/10" : ""} ${
+      className={`p-3 rounded-none ${isSelected ? "bg-primary/10" : ""} ${
         option.disabled ? "opacity-50" : ""
-      } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle"}`}
+      } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle justify-start"}`}
     >
       <View className={`flex-row items-center ${isGrouped ? "justify-center" : ""} gap-2`}>
         {option.icon && (
@@ -411,7 +415,7 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         </View>
         {isSelected && <MyIcon name="Check" size={16} className="text-primary" />}
       </View>
-    </Pressable>
+    </Button>
   );
 }
 

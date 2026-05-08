@@ -3,65 +3,72 @@ import { Keyboard, Platform, Pressable, Text, View } from "react-native";
 
 import dayjs from "dayjs";
 import DateTimePicker, { DateType } from "react-native-ui-datepicker";
+import Button from "./Button";
 import MyIcon from "./MyIcon";
 import MyModal from "./MyModal";
 
 type MyDateTimePickerProps = {
   label?: string;
   date: dayjs.Dayjs | null | undefined;
-  onChange: (dateISOString: string | null) => void; // Changed to ISO string or null
+  onChange: (dateISOString: string | null) => void;
   isModal?: boolean;
-  showClearButton?: boolean; // Added
-  onClear?: () => void; // Added
+  showClearButton?: boolean;
+  onClear?: () => void;
 };
 
 export default function MyDateTimePicker({
   label = "Date",
-  date, // Removed default to allow null/undefined
+  date,
   onChange,
   isModal = Platform.OS !== "web",
-  showClearButton = false, // Default to false
-  onClear, // Added
+  showClearButton = false,
+  onClear,
 }: MyDateTimePickerProps) {
   const [showDate, setShowDate] = useState(false);
-  const [pickerDate, setPickerDate] = useState(date ? dayjs(date) : dayjs()); // Internal state for picker
+  const [pickerDate, setPickerDate] = useState(date ? dayjs(date) : dayjs());
   const hasSetLayout = useRef(false);
   const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0 });
 
-  const onLayout = (event: any) => {
+  const onLayout = (event: { nativeEvent: { layout: { height: number; width: number; y: number } } }) => {
     if (!hasSetLayout.current) {
       const { height, width, y } = event.nativeEvent.layout;
       setButtonLayout({ height, width, top: y });
-      hasSetLayout.current = true; // Mark as set
+      hasSetLayout.current = true;
     }
   };
   return (
     <View className="my-1">
       <Text className="text-foreground">{label}</Text>
       <View className="flex-row items-center">
-        <Pressable
+        <Button
+          variant="ghost"
+          size="md"
+          hapticFeedback="light"
           onPress={() => {
             Keyboard.dismiss();
-            // Ensure pickerDate is valid when opening
             if (!date) setPickerDate(dayjs());
             else setPickerDate(dayjs(date));
             setShowDate(prev => !prev);
           }}
           className="border border-input-border rounded-md p-3 items-center mb-1 bg-input-bg flex-1"
-          onLayout={onLayout}
+          testID="btn-date-picker"
         >
           <Text selectable={false}>{date ? dayjs(date).format("MMM DD, YYYY") : "Select Date"}</Text>
-        </Pressable>
+        </Button>
         {showClearButton && date && onClear && (
-          <Pressable
+          <Button
+            variant="ghost"
+            size="icon"
             onPress={() => {
               onClear();
-              setShowDate(false); // Close picker if open
+              setShowDate(false);
             }}
             className="p-2 mb-1 ml-1 bg-muted rounded"
+            accessibilityLabel="Clear date"
+            testID="btn-date-clear"
           >
             <MyIcon name="X" size={18} className="text-text-secondary" />
-          </Pressable>
+          </Button>
         )}
       </View>
 
@@ -74,7 +81,7 @@ export default function MyDateTimePicker({
         >
           <DateTimePicker
             mode="single"
-            date={pickerDate} // Use internal pickerDate
+            date={pickerDate}
             showOutsideDays
             className="bg-card text-foreground "
             classNames={{
@@ -89,17 +96,14 @@ export default function MyDateTimePicker({
               header: "bg-background border-b border-border text-foreground",
               selected_month_label: "text-primary font-medium",
             }}
-            // timePicker // Removed time picker for date-only as per recurring table
             onChange={(params: { date: DateType }) => {
-              // Use DateType from library
               if (params.date) {
                 const newDate = dayjs(params.date);
-                setPickerDate(newDate); // Update internal picker state
-                onChange(newDate.toISOString()); // Pass ISO string back
+                setPickerDate(newDate);
+                onChange(newDate.toISOString());
               } else {
-                onChange(null); // Handle case where date is cleared in picker
+                onChange(null);
               }
-              // setShowDate(false); // Optionally close on change
             }}
             components={{
               IconNext: <MyIcon name="ChevronRight" size={20} className="text-foreground" />,
@@ -107,19 +111,27 @@ export default function MyDateTimePicker({
             }}
           />
           <View className="mt-2 flex-row space-x-2">
-            <Pressable
+            <Button
+              variant="secondary"
+              size="sm"
+              hapticFeedback="selection"
+              className="flex-1 bg-status-success-subtle"
               onPress={() => {
                 const today = dayjs();
                 setPickerDate(today);
                 onChange(today.toISOString());
               }}
-              className="flex-1 p-2 bg-status-success-subtle rounded-md"
-            >
-              <Text className="text-center text-foreground">Today</Text>
-            </Pressable>
-            <Pressable onPress={() => setShowDate(false)} className="flex-1 p-2 bg-primary rounded-md">
-              <Text className="text-white text-center">Pick</Text>
-            </Pressable>
+              label="Today"
+              testID="btn-date-today"
+            />
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              onPress={() => setShowDate(false)}
+              label="Pick"
+              testID="btn-date-pick"
+            />
           </View>
         </DateTimePickerContainer>
       )}
@@ -144,8 +156,6 @@ const DateTimePickerContainer = ({
     {!isModal ? (
       <View className="m-auto">
         <View
-          // Use a fixed width based on the measured button layout so the picker
-          // doesn't jump when month label width changes. Guard against 0 width.
           style={{ width: layout.width > 0 ? layout.width / 2 : undefined }}
         >
           {children}
@@ -153,12 +163,6 @@ const DateTimePickerContainer = ({
       </View>
     ) : (
       <MyModal isOpen={isVisible} setIsOpen={setIsVisible} onClose={() => setIsVisible(false)}>
-        {/* <Modal
-        visible={isVisible}
-        onDismiss={() => setIsVisible(false)}
-        // onBackButtonPress={() => setIsVisible(false)}
-        // onBackdropPress={() => setIsVisible(false)}
-      > */}
         <Pressable onPressOut={() => setIsVisible(false)}>
           <View className="m-auto items-center justify-center bg-background rounded-md p-1">{children}</View>
         </Pressable>

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native";
+import { BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
+import ThemedText from "./ThemedText";
+import Button from "./Button";
 import MyIcon from "./MyIcon";
 
 const modalStack: number[] = [];
 let nextModalId = 1;
-//The stack isn't actually being used atm but it's working so it's fine
 
 export default function MyModal({
   isOpen,
@@ -85,8 +86,8 @@ export default function MyModal({
             if (onClose) onClose();
           }}
         />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <Pressable
+          onPress={e => e.stopPropagation()}
           style={Platform.OS !== "web" ? {
             width: '90%',
             maxWidth: 500,
@@ -95,20 +96,31 @@ export default function MyModal({
           } : undefined}
           className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%] bg-card rounded-md border border-muted" : "bg-card rounded-md border border-muted"}
         >
-          <View className="bg-surface rounded-lg overflow-hidden flex-1">
-            {title && (
-              <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
-                <Text className="font-semibold text-foreground">{title}</Text>
-                <Pressable onPress={onClose} className="p-1">
-                  <MyIcon name="X" size={20} className="text-text-secondary" />
-                </Pressable>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            className="flex-1"
+          >
+            <View className="bg-surface rounded-lg overflow-hidden flex-1">
+              {title && (
+                <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
+                  <ThemedText variant="subheading">{title}</ThemedText>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onPress={() => { if (onClose) onClose(); }}
+                    accessibilityLabel="Close modal"
+                    testID="btn-modal-close"
+                  >
+                    <MyIcon name="X" size={20} className="text-text-secondary" />
+                  </Button>
+                </View>
+              )}
+              <View className="flex-1">
+                {children}
               </View>
-            )}
-            <View className="flex-1">
-              {children}
             </View>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Pressable>
       </View>
     </Modal>
   );
@@ -132,8 +144,8 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
     >
       <View className="flex-1 bg-black/50 justify-center items-center">
         <Pressable className="absolute inset-0" onPress={onClose} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <Pressable
+          onPress={e => e.stopPropagation()}
           style={Platform.OS !== "web" ? {
             width: '90%',
             maxWidth: 500,
@@ -142,18 +154,29 @@ export function ModalWrapper({ visible, onClose, title, children, animationType 
           } : undefined}
           className={Platform.OS === "web" ? "w-[90%] max-w-[500px] max-h-[80%]" : ""}
         >
-          <View className="bg-surface rounded-lg overflow-hidden flex-1">
-            <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
-              <Text className="font-semibold text-foreground">{title}</Text>
-              <Pressable onPress={onClose} className="p-1">
-                <MyIcon name="X" size={20} className="text-text-secondary" />
-              </Pressable>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            className="flex-1"
+          >
+            <View className="bg-surface rounded-lg overflow-hidden flex-1">
+              <View className="flex-row items-center justify-between p-3 border-b border-border-default bg-surface-elevated">
+                <ThemedText variant="subheading">{title}</ThemedText>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onPress={onClose}
+                  accessibilityLabel="Close modal"
+                  testID="btn-modal-wrapper-close"
+                >
+                  <MyIcon name="X" size={20} className="text-text-secondary" />
+                </Button>
+              </View>
+              <View className="flex-1">
+                {children}
+              </View>
             </View>
-            <View className="flex-1">
-              {children}
-            </View>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Pressable>
       </View>
     </Modal>
   );

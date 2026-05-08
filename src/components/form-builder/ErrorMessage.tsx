@@ -1,5 +1,5 @@
 import { ErrorMessageProps } from "@/src/types/components/forms.types";
-import { Text } from "react-native";
+import ThemedText from "../elements/ThemedText";
 
 /**
  * ErrorMessage component displays individual error messages with consistent styling
@@ -26,13 +26,14 @@ export default function ErrorMessage({ error, type = "field", className = "" }: 
   };
 
   return (
-    <Text
+    <ThemedText
+      variant="error"
       className={`${getErrorStyles()} ${className}`}
       accessibilityRole={getAccessibilityRole()}
       accessibilityLiveRegion="polite"
       accessibilityLabel={`Error: ${error}`}
     >
       {error}
-    </Text>
+    </ThemedText>
   );
 }

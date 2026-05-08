@@ -1,7 +1,9 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "../elements/ThemedText";
+import ThemedSwitch from "../elements/ThemedSwitch";
 import Button from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -130,9 +132,9 @@ export default function BatchUpdateModal({
             <View className="p-4">
                 {/* Header info */}
                 <View className="bg-surface-elevated rounded-md p-3 mb-4">
-                    <Text className="text-foreground font-medium">
+                    <ThemedText variant="label">
                         {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
-                    </Text>
+                    </ThemedText>
                 </View>
 
                 {/* Date Update Option */}
@@ -187,12 +189,11 @@ export default function BatchUpdateModal({
                     onToggle={setEnableVoid}
                 >
                     <View className="flex-row items-center justify-between py-2">
-                        <Text className="text-foreground">{newVoidStatus ? "Void" : "Active"}</Text>
-                        <Switch
+                        <ThemedText>{newVoidStatus ? "Void" : "Active"}</ThemedText>
+                        <ThemedSwitch
                             value={newVoidStatus}
                             onValueChange={setNewVoidStatus}
-                            trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
-                            thumbColor={newVoidStatus ? "#ffffff" : "#f4f4f5"}
+                            testID="switch-void-status"
                         />
                     </View>
                 </UpdateOptionRow>
@@ -226,9 +227,13 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
     return (
         <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
-            <Pressable
+            <Button
+                variant="ghost"
+                size="md"
+                hapticFeedback="selection"
                 onPress={() => onToggle(!enabled)}
-                className="flex-row items-center justify-between p-3 bg-surface-elevated"
+                className="flex-row items-center justify-between p-3 bg-surface-elevated rounded-none"
+                testID={`btn-toggle-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
                 <View className="flex-row items-center">
                     <View
@@ -237,9 +242,9 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
                     >
                         {enabled && <MyIcon name="Check" size={14} className="text-white" />}
                     </View>
-                    <Text className="text-foreground font-medium">{label}</Text>
+                    <ThemedText variant="label">{label}</ThemedText>
                 </View>
-            </Pressable>
+            </Button>
 
             {/* Content - only shown when enabled */}
             {enabled && (

@@ -1,6 +1,9 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 
 export default function Appearance() {
   const { theme, isDarkMode, toggleTheme, showGrid, setShowGrid } = useTheme();
@@ -10,70 +13,74 @@ export default function Appearance() {
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-foreground mb-2">Appearance</Text>
-          <Text className="text-sm text-muted-foreground">
+          <ThemedText variant="heading" className="text-2xl mb-2">Appearance</ThemedText>
+          <ThemedText variant="caption" className="text-sm text-muted-foreground">
             Customize how Budgeteer looks and feels
-          </Text>
+          </ThemedText>
         </View>
 
         {/* Settings Cards */}
         <View className="bg-card rounded-xl border border-muted overflow-hidden">
           {/* Theme Mode */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
+            hapticFeedback="selection"
             onPress={toggleTheme}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-toggle-theme"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name={isDarkMode ? "Moon" : "Sun"} size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Theme Mode</Text>
-              <Text className="text-sm text-muted-foreground">
+              <ThemedText variant="label" className="text-base">Theme Mode</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
                 {isDarkMode ? "Dark mode is active" : "Light mode is active"}
-              </Text>
+              </ThemedText>
             </View>
             <View className="flex-row items-center gap-2">
-              <Text className="text-xs text-muted-foreground uppercase font-medium">
+              <ThemedText variant="caption" className="uppercase font-medium text-muted-foreground">
                 {theme}
-              </Text>
-              <Switch
+              </ThemedText>
+              <ThemedSwitch
                 value={isDarkMode}
                 onValueChange={toggleTheme}
-                trackColor={{ false: "#d1d5db", true: "#2a6e53" }}
-                thumbColor={isDarkMode ? "#5ddc9a" : "#fff"}
-                {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
+                testID="switch-theme"
               />
             </View>
-          </Pressable>
+          </Button>
 
           {/* Grid Background */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
+            hapticFeedback="selection"
             onPress={() => setShowGrid(!showGrid)}
-            className="flex-row items-center p-4 active:bg-muted/50"
+            className="flex-row items-center p-4 active:bg-muted/50 rounded-none justify-start"
+            testID="btn-toggle-grid"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="Grid3X3" size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Grid Background</Text>
-              <Text className="text-sm text-muted-foreground">
+              <ThemedText variant="label" className="text-base">Grid Background</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
                 Show subtle grid pattern on backgrounds
-              </Text>
+              </ThemedText>
             </View>
-            <Switch
+            <ThemedSwitch
               value={showGrid}
               onValueChange={setShowGrid}
-              trackColor={{ false: "#d1d5db", true: "#2a6e53" }}
-              thumbColor={showGrid ? "#5ddc9a" : "#fff"}
-              {...(Platform.OS === "web" ? { activeThumbColor: "#5ddc9a" } : {})}
+              testID="switch-grid"
             />
-          </Pressable>
+          </Button>
         </View>
 
         {/* Preview hint */}
-        <Text className="text-xs text-muted-foreground text-center mt-4">
+        <ThemedText variant="caption" className="text-center mt-4 text-muted-foreground">
           Changes are applied immediately and saved automatically
-        </Text>
+        </ThemedText>
       </View>
     </ScrollView>
   );

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
+import ThemedText from "./elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
@@ -100,7 +101,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <View className="flex-row justify-between items-center px-4 bg-background">
-        <Text className="font-bold text-lg text-foreground">{title}</Text>
+        <ThemedText variant="heading" className="text-lg">{title}</ThemedText>
         <View className="flex-row items-center">
           <Button
             testID="refresh-btn"
@@ -137,7 +138,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
           Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
             <View key={groupName}>
               {!groupName ? null : (
-                <Text className="font-bold text-lg py-0 px-4 bg-card text-foreground">{groupName}</Text>
+                <ThemedText variant="heading" className="text-lg py-0 px-4 bg-card">{groupName}</ThemedText>
               )}
               {itemsInGroup.map((item: any) => {
                 const isSelected = selectedItems.some(selectedItem => item.id === selectedItem.id);
@@ -179,10 +180,10 @@ export default function MyTab<TModel, TTable extends TableNames>({
                             </View>
                           )}
                           <View className="flex-1">
-                            <Text className="text-md text-foreground">{item.name}</Text>
-                            <Text className="text-md text-foreground">
+                            <ThemedText className="text-md">{item.name}</ThemedText>
+                            <ThemedText className="text-md">
                               {detailsContent ? detailsContent(item) : item.details}
-                            </Text>
+                            </ThemedText>
                           </View>
                         </View>
                       )}
@@ -235,7 +236,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
           ))}
       </ScrollView>
 
-      {Footer && <View className="p-2">{typeof Footer === "string" ? <Text>{Footer}</Text> : Footer}</View>}
+      {Footer && <View className="p-2">{typeof Footer === "string" ? <ThemedText>{Footer}</ThemedText> : Footer}</View>}
       {isSelectionMode && (
         <Button
           className="absolute right-4 bottom-4 w-14 h-14 rounded-full justify-center items-center"
