@@ -26,20 +26,31 @@ if (Platform.OS === "web") {
     "React does not recognize the `backgroundColor` prop",
   ]);
 
+  const suppressedPatterns = [
+    "Unknown event handler property",
+    "React does not recognize the",
+    "accessibilityHint",
+    "backgroundColor",
+  ];
+
+  const shouldSuppress = (args: unknown[]) => {
+    const message = args[0];
+    if (typeof message !== "string") return false;
+    return suppressedPatterns.some(pattern => message.includes(pattern));
+  };
+
   // Suppress console warnings for web-specific React Native props
   const originalWarn = console.warn;
   console.warn = (...args) => {
-    const message = args[0];
-    if (
-      typeof message === "string" &&
-      (message.includes("Unknown event handler property") ||
-        message.includes("React does not recognize the") ||
-        message.includes("accessibilityHint") ||
-        message.includes("backgroundColor"))
-    ) {
-      return;
-    }
+    if (shouldSuppress(args)) return;
     originalWarn(...args);
+  };
+
+  // Suppress console errors for React Native Web responder props (onResponderGrant, etc.)
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (shouldSuppress(args)) return;
+    originalError(...args);
   };
 }
 
