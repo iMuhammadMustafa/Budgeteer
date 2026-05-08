@@ -264,12 +264,12 @@ const generateDemoTransactions = (): DemoTransaction[] => {
         accountid: string;
         tags: string[];
     }[] = [
-        { name: "Coffee Shop", payee: "Starbucks", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 4, maxAmt: 8, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "coffee"] },
-        { name: "Lunch", payee: "Chipotle", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 10, maxAmt: 18, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "lunch"] },
-        { name: "Dinner", payee: "Local Bistro", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 22, maxAmt: 55, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining"] },
-        { name: "Fuel", payee: "Shell", categoryid: DEMO_IDS.TXCAT_FUEL, minAmt: 30, maxAmt: 60, accountid: DEMO_IDS.ACC_CREDIT, tags: ["car", "fuel"] },
-        { name: "Snacks", payee: "Corner Store", categoryid: DEMO_IDS.TXCAT_GROCERIES, minAmt: 3, maxAmt: 12, accountid: DEMO_IDS.ACC_CASH, tags: ["food"] },
-    ];
+            { name: "Coffee Shop", payee: "Starbucks", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 4, maxAmt: 8, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "coffee"] },
+            { name: "Lunch", payee: "Chipotle", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 10, maxAmt: 18, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining", "lunch"] },
+            { name: "Dinner", payee: "Local Bistro", categoryid: DEMO_IDS.TXCAT_DINING, minAmt: 22, maxAmt: 55, accountid: DEMO_IDS.ACC_CREDIT, tags: ["dining"] },
+            { name: "Fuel", payee: "Shell", categoryid: DEMO_IDS.TXCAT_FUEL, minAmt: 30, maxAmt: 60, accountid: DEMO_IDS.ACC_CREDIT, tags: ["car", "fuel"] },
+            { name: "Snacks", payee: "Corner Store", categoryid: DEMO_IDS.TXCAT_GROCERIES, minAmt: 3, maxAmt: 12, accountid: DEMO_IDS.ACC_CASH, tags: ["food"] },
+        ];
 
     for (let daysAgo = 0; daysAgo < DEMO_RECENT_DAYS; daysAgo++) {
         const day = addDays(today, -daysAgo);
@@ -334,14 +334,14 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
 
         // --- Transaction Groups ---
         const transactionGroupsData = [
-            { id: DEMO_IDS.GROUP_ENTERTAINMENT, name: "Entertainment", type: "Expense", color: "error-100", icon: "Drama" },
-            { id: DEMO_IDS.GROUP_BILLS, name: "Bills", type: "Expense", color: "error-100", icon: "Plug" },
-            { id: DEMO_IDS.GROUP_HOUSEHOLD, name: "Household", type: "Expense", color: "error-100", icon: "House" },
-            { id: DEMO_IDS.GROUP_EMPLOYER, name: "Employer", type: "Income", color: "error-100", icon: "BriefcaseBusiness" },
-            { id: DEMO_IDS.GROUP_OTHER, name: "Other", type: "Expense", color: "error-100", icon: "Ellipsis" },
-            { id: DEMO_IDS.GROUP_ACCOUNTS, name: "Accounts", type: "Adjustment", color: "error-100", icon: "UserPen" },
-            { id: DEMO_IDS.GROUP_CAR, name: "Car", type: "Expense", color: "error-100", icon: "Car" },
-            { id: DEMO_IDS.GROUP_GROCERIES, name: "Groceries", type: "Expense", color: "error-100", icon: "ShoppingCart" },
+            { id: DEMO_IDS.GROUP_ENTERTAINMENT, name: "Entertainment", type: "Expense", color: "danger-100", icon: "Drama" },
+            { id: DEMO_IDS.GROUP_BILLS, name: "Bills", type: "Expense", color: "danger-100", icon: "Plug" },
+            { id: DEMO_IDS.GROUP_HOUSEHOLD, name: "Household", type: "Expense", color: "danger-100", icon: "House" },
+            { id: DEMO_IDS.GROUP_EMPLOYER, name: "Employer", type: "Income", color: "danger-100", icon: "BriefcaseBusiness" },
+            { id: DEMO_IDS.GROUP_OTHER, name: "Other", type: "Expense", color: "danger-100", icon: "Ellipsis" },
+            { id: DEMO_IDS.GROUP_ACCOUNTS, name: "Accounts", type: "Adjustment", color: "danger-100", icon: "UserPen" },
+            { id: DEMO_IDS.GROUP_CAR, name: "Car", type: "Expense", color: "danger-100", icon: "Car" },
+            { id: DEMO_IDS.GROUP_GROCERIES, name: "Groceries", type: "Expense", color: "danger-100", icon: "ShoppingCart" },
         ];
 
         for (const group of transactionGroupsData) {
@@ -352,12 +352,12 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
 
         // --- Account Categories ---
         const accountCategoriesData = [
-            { id: DEMO_IDS.CAT_BANK, name: "Bank", type: "Asset", color: "error-100", icon: "PiggyBank", displayorder: 1000 },
-            { id: DEMO_IDS.CAT_DEBIT, name: "Debit Card", type: "Asset", color: "error-100", icon: "Banknote", displayorder: 2000 },
-            { id: DEMO_IDS.CAT_CREDIT, name: "Credit Card", type: "Liability", color: "error-100", icon: "CreditCard", displayorder: 3000 },
-            { id: DEMO_IDS.CAT_CASH, name: "Cash", type: "Asset", color: "error-100", icon: "Banknote", displayorder: 4000 },
-            { id: DEMO_IDS.CAT_GIFT, name: "Gift Card", type: "Asset", color: "error-100", icon: "WalletCards", displayorder: 5000 },
-            { id: DEMO_IDS.CAT_LOAN, name: "Loan", type: "Liability", color: "error-100", icon: "Landmark", displayorder: 6000 },
+            { id: DEMO_IDS.CAT_BANK, name: "Bank", type: "Asset", color: "danger-100", icon: "PiggyBank", displayorder: 1000 },
+            { id: DEMO_IDS.CAT_DEBIT, name: "Debit Card", type: "Asset", color: "danger-100", icon: "Banknote", displayorder: 2000 },
+            { id: DEMO_IDS.CAT_CREDIT, name: "Credit Card", type: "Liability", color: "danger-100", icon: "CreditCard", displayorder: 3000 },
+            { id: DEMO_IDS.CAT_CASH, name: "Cash", type: "Asset", color: "danger-100", icon: "Banknote", displayorder: 4000 },
+            { id: DEMO_IDS.CAT_GIFT, name: "Gift Card", type: "Asset", color: "danger-100", icon: "WalletCards", displayorder: 5000 },
+            { id: DEMO_IDS.CAT_LOAN, name: "Loan", type: "Liability", color: "danger-100", icon: "Landmark", displayorder: 6000 },
         ];
 
         for (const cat of accountCategoriesData) {
