@@ -14,7 +14,9 @@ import { Inserts, Recurring, TransactionType, Updates } from "@/src/types/databa
 import dayjs from "dayjs";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
+import Button from "../elements/Button";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 import MyIcon from "../elements/MyIcon";
@@ -169,11 +171,10 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
 
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
-        <Switch
+        <ThemedSwitch
           value={!!formData.isDateFlexible}
           onValueChange={value => handleSwitchChange("isDateFlexible", value)}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={!!formData.isDateFlexible ? "#f5dd4b" : "#f4f3f4"}
+          testID="switch-flexible-date"
         />
       </View>
 
@@ -209,24 +210,25 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       )}
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
-        <Switch
+        <ThemedSwitch
           value={!!formData.isAmountFlexible}
           onValueChange={value => handleSwitchChange("isAmountFlexible", value)}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={!!formData.isAmountFlexible ? "#f5dd4b" : "#f4f3f4"}
+          testID="switch-flexible-amount"
         />
       </View>
 
       {!formData.isAmountFlexible && (
         <View className="flex-row justify-center items-center mb-4">
           <View className="me-2 mt-5 justify-center items-center">
-            <Pressable
+            <Button
+              variant="ghost"
+              size="icon"
+              hapticFeedback="selection"
               className={`${
                 formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-danger-400"
               } border border-muted rounded-lg p-1.5`}
               onPress={handleModeToggle}
-              accessible={true}
-              accessibilityRole="button"
+              testID="btn-recurring-mode-toggle"
               accessibilityLabel={`Toggle amount sign, currently ${mode}`}
             >
               {mode === "minus" ? (
@@ -234,7 +236,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
               ) : (
                 <MyIcon name="Plus" size={24} className="text-gray-100" />
               )}
-            </Pressable>
+            </Button>
           </View>
 
           <TextInputField
@@ -335,7 +337,15 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       )}
 
       <View className="flex-row text-center justify-around items-center gap-5 mt-5 mb-10">
-        <Pressable className="bg-primary px-8 py-3 rounded-md" disabled={isSubmitting} onPress={handleSubmit}>
+        <Button
+          variant="primary"
+          size="lg"
+          hapticFeedback="success"
+          className="bg-primary px-8 py-3 rounded-md"
+          disabled={isSubmitting}
+          onPress={handleSubmit}
+          testID="btn-recurring-submit"
+        >
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -343,7 +353,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
               {isEdit ? "Update" : "Save"}
             </Text>
           )}
-        </Pressable>
+        </Button>
       </View>
     </ScrollView>
   );

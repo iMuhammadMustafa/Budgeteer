@@ -1,6 +1,8 @@
 import { FormSectionProps } from "@/src/types/components/forms.types";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
+import ThemedText from "../elements/ThemedText";
+import Button from "@/src/components/elements/Button";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -32,43 +34,47 @@ function FormSectionComponent({
       {title && (
         <View className="mb-3">
           {collapsible ? (
-            <Pressable
+            <Button
+              variant="ghost"
+              size="md"
+              hapticFeedback="selection"
               onPress={toggleExpanded}
               className="flex-row items-center justify-between p-2 rounded-md bg-surface-elevated border border-border-default"
-              accessible={true}
-              accessibilityRole="button"
               accessibilityLabel={`${title} section, ${isExpanded ? "expanded" : "collapsed"}`}
               accessibilityHint={`Tap to ${isExpanded ? "collapse" : "expand"} this section`}
-              accessibilityState={{ expanded: isExpanded }}
+              accessibilityState={{ expanded: isExpanded ? "true" : "false" }}
+              testID={`btn-section-${title?.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <Text
-                className="text-lg font-semibold text-foreground"
+              <ThemedText
+                variant="subheading"
+                className="text-lg"
                 accessibilityRole="header"
-                accessibilityLevel={2}
               >
                 {title}
-              </Text>
-              <Text className="text-text-secondary text-lg" accessibilityHidden={true}>
+              </ThemedText>
+              <ThemedText variant="caption" className="text-lg" aria-hidden={true}>
                 {isExpanded ? "−" : "+"}
-              </Text>
-            </Pressable>
+              </ThemedText>
+            </Button>
           ) : (
-            <Text
-              className="text-lg font-semibold text-foreground mb-2"
+            <ThemedText
+              variant="subheading"
+              className="text-lg mb-2"
               accessibilityRole="header"
+              // @ts-expect-error accessibilityLevel is web/aria only
               accessibilityLevel={2}
             >
               {title}
-            </Text>
+            </ThemedText>
           )}
         </View>
       )}
 
       {/* Section Description */}
       {description && (
-        <Text id={descriptionId} className="text-text-secondary text-sm mb-3" accessibilityRole="text">
+        <ThemedText variant="caption" id={descriptionId} className="text-sm mb-3" accessibilityRole="text">
           {description}
-        </Text>
+        </ThemedText>
       )}
 
       {/* Section Content */}
@@ -78,6 +84,7 @@ function FormSectionComponent({
           accessible={true}
           accessibilityRole="list"
           accessibilityLabel={title ? `${title} section content` : "Form section content"}
+          // @ts-expect-error accessibilityDescribedBy is web/aria only
           accessibilityDescribedBy={descriptionId}
         >
           {children}

@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import ThemedText from "@/src/components/elements/ThemedText";
 
 export default function TransactionAmount({
     amount,
@@ -14,9 +14,9 @@ export default function TransactionAmount({
         maximumFractionDigits: 2,
     });
     return (
-        <Text className={`${color ? `text-${color}` : amount > 0 ? "text-success-500" : "text-danger-500"}`}>
+        <ThemedText className={`${color ? `text-${color}` : amount > 0 ? "text-success-500" : "text-danger-500"}`}>
             {amount > 0 ? `+` : ``}
             {amountString} {currency}
-        </Text>
+        </ThemedText>
     )
 }

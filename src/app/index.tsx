@@ -213,10 +213,14 @@ function HeroIllustration({ scale = 1, barPrimary, barAccent, isDark }: { scale?
 
 function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   return (
-    <Pressable
+    <Button
+      variant="ghost"
+      size="sm"
+      hapticFeedback="selection"
       onPress={onToggle}
       accessibilityLabel="Toggle theme"
       className="flex-row items-center gap-[7px] bg-toggle-bg/[0.07] border border-toggle-border/[0.12] rounded-[20px] py-[5px] pl-2 pr-[10px]"
+      testID="btn-theme-toggle"
     >
       <Text className="text-[13px] leading-[18px]">{dark ? "🌙" : "☀️"}</Text>
       <View style={{ width: 36, height: 20, borderRadius: 10, position: "relative" }} className="bg-toggle-track">
@@ -234,7 +238,7 @@ function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }
         />
       </View>
       <Text className="text-[11px] font-medium text-toggle-label/50">{dark ? "Dark" : "Light"}</Text>
-    </Pressable>
+    </Button>
   );
 }
 
@@ -259,15 +263,13 @@ function ModeCard({
 }) {
   return (
     <Animated.View entering={FadeInRight.delay(enterDelay).duration(480).springify()}>
-      <Pressable
+      <Button
+        variant="ghost"
+        size="lg"
+        hapticFeedback="light"
         testID={testID}
         onPress={onPress}
         className="bg-mode-card-bg/95 border border-mode-card-border/[0.08] rounded-[18px] py-[18px] px-5 flex-row items-center gap-4"
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          ...makeShadow(isDark ? 0.15 : 0.04, 8, 4),
-        })}
       >
         <View
           style={{
@@ -301,7 +303,7 @@ function ModeCard({
         >
           <Text style={{ fontSize: 16, color: accent, fontWeight: "700" }}>›</Text>
         </View>
-      </Pressable>
+      </Button>
     </Animated.View>
   );
 }

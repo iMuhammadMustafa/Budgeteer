@@ -1,12 +1,14 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { View } from "react-native";
 import Button from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 import MyIcon from "../elements/MyIcon";
 import MyModal from "../elements/MyModal";
+import ThemedSwitch from "../elements/ThemedSwitch";
+import ThemedText from "../elements/ThemedText";
 
 export interface BatchUpdatePayload {
     date?: string;
@@ -129,10 +131,10 @@ export default function BatchUpdateModal({
         <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleClose} title="Batch Update">
             <View className="p-4">
                 {/* Header info */}
-                <View className="bg-surface-elevated rounded-md p-3 mb-4">
-                    <Text className="text-foreground font-medium">
+                <View className="bg-card rounded-md p-3 mb-4">
+                    <ThemedText variant="label">
                         {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
-                    </Text>
+                    </ThemedText>
                 </View>
 
                 {/* Date Update Option */}
@@ -187,12 +189,11 @@ export default function BatchUpdateModal({
                     onToggle={setEnableVoid}
                 >
                     <View className="flex-row items-center justify-between py-2">
-                        <Text className="text-foreground">{newVoidStatus ? "Void" : "Active"}</Text>
-                        <Switch
+                        <ThemedText>{newVoidStatus ? "Void" : "Active"}</ThemedText>
+                        <ThemedSwitch
                             value={newVoidStatus}
                             onValueChange={setNewVoidStatus}
-                            trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
-                            thumbColor={newVoidStatus ? "#ffffff" : "#f4f4f5"}
+                            testID="switch-void-status"
                         />
                     </View>
                 </UpdateOptionRow>
@@ -226,20 +227,23 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
     return (
         <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
-            <Pressable
+            <Button
+                variant="ghost"
+                size="md"
+                hapticFeedback="selection"
                 onPress={() => onToggle(!enabled)}
-                className="flex-row items-center justify-between p-3 bg-surface-elevated"
+                className={`flex-row p-3 rounded-none items-center justify-start ${enabled ? "bg-surface-elevated" : "bg-card"}`}
+                testID={`btn-toggle-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
-                <View className="flex-row items-center">
-                    <View
-                        className={`w-5 h-5 rounded border mr-3 items-center justify-center ${enabled ? "bg-primary border-primary" : "border-border-default"
-                            }`}
-                    >
-                        {enabled && <MyIcon name="Check" size={14} className="text-white" />}
-                    </View>
-                    <Text className="text-foreground font-medium">{label}</Text>
+                <View
+                    className={`w-5 h-5 rounded border mr-3 items-center justify-center ${enabled ? "bg-primary border-primary" : "border-border-default"
+                        }`}
+                >
+                    {enabled && <MyIcon name="Check" size={14} className="text-white" />}
                 </View>
-            </Pressable>
+                <ThemedText variant="label">{label}</ThemedText>
+
+            </Button>
 
             {/* Content - only shown when enabled */}
             {enabled && (

@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
+import ThemedText from '../elements/ThemedText';
 import { FormError } from '@/src/types/components/forms.types';
 import { formatErrorMessage, groupErrorsByType, getMostCriticalError } from '@/src/utils/form-errors';
+import Button from '@/src/components/elements/Button';
 import ErrorMessage from './ErrorMessage';
 
-/**
- * Props for ErrorSummary component
- */
 interface ErrorSummaryProps {
   errors: FormError[];
   onDismiss?: () => void;
@@ -16,10 +15,6 @@ interface ErrorSummaryProps {
   className?: string;
 }
 
-/**
- * ErrorSummary component displays a summary of all form errors
- * with options to dismiss or retry. Provides accessible error navigation.
- */
 export default function ErrorSummary({
   errors,
   onDismiss,
@@ -58,9 +53,9 @@ export default function ErrorSummary({
 
     return (
       <View key={type} className="mb-3">
-        <Text className="text-red-700 font-semibold text-sm mb-1">
+        <ThemedText variant="label" className="text-red-700 mb-1">
           {typeLabels[type as keyof typeof typeLabels] || 'Errors'}
-        </Text>
+        </ThemedText>
         {groupErrors.map((error, index) => (
           <View key={`${type}-${index}`} className="ml-2 mb-1">
             <ErrorMessage
@@ -83,24 +78,24 @@ export default function ErrorSummary({
     >
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-red-800 font-semibold text-base">
+        <ThemedText variant="subheading" className="text-red-800">
           {hasMultipleErrors 
             ? `${errors.length} Errors Found` 
             : 'Error Found'
           }
-        </Text>
+        </ThemedText>
         
         {onDismiss && (
-          <Pressable
+          <Button
+            variant="ghost"
+            size="icon"
             onPress={handleDismiss}
-            className="p-1"
-            accessible={true}
-            accessibilityRole="button"
             accessibilityLabel="Dismiss errors"
             accessibilityHint="Closes the error summary"
+            testID="btn-dismiss-errors"
           >
-            <Text className="text-red-600 text-lg font-bold">×</Text>
-          </Pressable>
+            <ThemedText variant="heading" className="text-red-600">×</ThemedText>
+          </Button>
         )}
       </View>
 
@@ -130,23 +125,21 @@ export default function ErrorSummary({
       {/* Actions */}
       {(showRetry && onRetry) && (
         <View className="flex-row justify-end mt-3 pt-3 border-t border-red-200">
-          <Pressable
+          <Button
+            variant="destructive"
+            size="sm"
+            hapticFeedback="error"
             onPress={handleRetry}
-            className="bg-red-600 px-4 py-2 rounded-md"
-            accessible={true}
-            accessibilityRole="button"
+            label="Try Again"
             accessibilityLabel="Retry operation"
             accessibilityHint="Attempts to retry the failed operation"
-          >
-            <Text className="text-white font-medium">
-              Try Again
-            </Text>
-          </Pressable>
+            testID="btn-retry-errors"
+          />
         </View>
       )}
 
       {/* Screen Reader Instructions */}
-      <Text 
+      <ThemedText 
         className="sr-only"
         accessibilityLabel={`To fix these errors: ${errors.map(e => formatErrorMessage(e)).join('. ')}`}
       />
