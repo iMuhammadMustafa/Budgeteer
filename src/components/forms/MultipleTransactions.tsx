@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
 import { router } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../elements/Button";
 
 import {
   MultipleTransactionItemData,
@@ -325,13 +327,15 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
               <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
                 {/* Total Amount with Mode Toggle */}
                 <View className="flex-1 flex-row items-center">
-                  <Pressable
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    hapticFeedback="selection"
                     className={`${
                       mode === "plus" ? "bg-success-400" : "bg-danger-400"
                     } border border-muted rounded-lg me-2 p-1.5`}
                     onPress={handleModeToggle}
-                    accessible={true}
-                    accessibilityRole="button"
+                    testID="btn-mode-toggle"
                     accessibilityLabel={`Toggle amount sign, currently ${mode}`}
                   >
                     {mode === "minus" ? (
@@ -339,7 +343,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
                     ) : (
                       <MyIcon name="Plus" size={24} className="text-gray-100" />
                     )}
-                  </Pressable>
+                  </Button>
 
                   <View className="flex-1">
                     <FormField
@@ -494,16 +498,18 @@ const TransactionsCreationList = ({
   return (
     <View className="space-y-4">
       {/* Add New Transaction Button */}
-      <Pressable
-        className="p-3 bg-primary-500 text-white rounded-md flex-row items-center justify-center"
+      <Button
+        variant="primary"
+        size="md"
+        hapticFeedback="light"
+        className="p-3 bg-primary-500 rounded-md flex-row items-center justify-center"
         onPress={addNewTransaction}
-        accessible={true}
-        accessibilityRole="button"
         accessibilityLabel="Add new transaction"
+        testID="btn-add-transaction"
       >
         <MyIcon name="Plus" size={20} className="text-white mr-2" />
         <Text className="text-white font-medium">Add Transaction</Text>
-      </Pressable>
+      </Button>
 
       {/* Transactions List */}
       <ScrollView
@@ -688,15 +694,17 @@ const TransactionCard = ({
 
       {/* Delete Button */}
       {canDelete && (
-        <Pressable
+        <Button
+          variant="destructive"
+          size="icon"
+          hapticFeedback="medium"
           className="bg-red-500 hover:bg-red-600 rounded-md p-2 mt-2 self-start"
           onPress={handleDelete}
-          accessible={true}
-          accessibilityRole="button"
           accessibilityLabel="Delete transaction"
+          testID="btn-delete-transaction"
         >
           <MyIcon name="Trash" size={20} className="text-white" />
-        </Pressable>
+        </Button>
       )}
     </View>
   );

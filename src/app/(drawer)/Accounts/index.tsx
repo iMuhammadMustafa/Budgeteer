@@ -4,8 +4,9 @@ import MyModal from "@/src/components/elements/MyModal";
 import TextInputField from "@/src/components/elements/TextInputField";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import MyTab from "@/src/components/MyTab";
-import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
+import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 import { useState } from "react";
@@ -14,14 +15,17 @@ import { ActivityIndicator, Text, View } from "react-native";
 export default function AccountsIndex() {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
-  const accountCategoryService = useAccountCategoryService();
+  const bucketService = useSavingsBucketService();
 
   const { data: accounts, isLoading, error } = accountService.useFindAllWithCategory();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
   const { mutate: upsertTransaction, isPending: isCreating } = transactionService.useUpsert();
   const { mutateAsync: updateAccountBalance } = accountService.useUpdateAccountBalance();
 
+  const { data: bucketsByAccountId, isLoading: isLoadingBucketsByAccountId } = bucketService.useFindAllGroupedByAccount();
+
   const [modalState, setModalState] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
+  const [bucketsModal, setBucketsModal] = useState<{ open: boolean; account: any | null }>({ open: false, account: null });
   const [amount, setAmount] = useState("");
   const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
 
@@ -81,14 +85,33 @@ export default function AccountsIndex() {
         groupBy={"category.name"}
         Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} />}
         detailsContent={detailsContent}
+        isPageLoading={isLoadingBucketsByAccountId}
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
-          <Button
-            testID={`transfer-btn-${item.id}`}
-            rightIcon="ArrowLeftRight"
-            className="py-0 px-0"
-            variant="ghost"
-            onPress={() => openTransferModal(item)}
+          <View className="flex-row items-center gap-2">
+            <Button
+              testID={`buckets-btn-${item.id}`}
+              rightIcon="PiggyBank"
+              className="py-0 px-0"
+              iconSize={18}
+              variant="ghost"
+              onPress={() => setBucketsModal({ open: true, account: item })}
+            />
+            <Button
+              testID={`transfer-btn-${item.id}`}
+              rightIcon="ArrowLeftRight"
+              className="py-0 px-0"
+              variant="ghost"
+              onPress={() => openTransferModal(item)}
+            />
+          </View>
+        )}
+        itemChildren={(item: any) => (
+          <SavingsBucketsList
+            compact
+            accountId={item.id}
+            accountBalance={item.balance}
+            buckets={bucketsByAccountId ? (bucketsByAccountId[item.id] || []) : []}
           />
         )}
         UpsertModal={(item: any) => <AccountForm account={item} />}
@@ -114,6 +137,22 @@ export default function AccountsIndex() {
           isCreating={isCreating}
         />
       )}
+      {bucketsModal.open && bucketsModal.account && (
+        <MyModal
+          isOpen={bucketsModal.open}
+          setIsOpen={(open: boolean) => setBucketsModal({ open, account: open ? bucketsModal.account : null })}
+        >
+          <View className="p-2">
+            <Text className="text-lg font-bold px-4 pb-2 text-foreground">
+              {bucketsModal.account.name} - Savings Buckets
+            </Text>
+            <SavingsBucketsList
+              accountId={bucketsModal.account.id}
+              accountBalance={bucketsModal.account.balance}
+            />
+          </View>
+        </MyModal>
+      )}
     </>
   );
 }
@@ -138,6 +177,16 @@ const FooterContent = ({
             currency: "USD", // TODO: Make currency dynamic based on user settings
           })}
         </Text>
+        {/* Show Buckets Toggle */}
+        {/* <View className="flex-row items-center justify-between px-2 py-1 border-b border-border">
+          <Text className="text-sm text-foreground">Show Buckets</Text>
+          <Switch
+            testID="show-buckets-toggle"
+            value={showBuckets}
+            onValueChange={setShowBuckets}
+            trackColor={{ false: "#767577", true: "rgb(var(--primary))" }}
+          />
+        </View> */}
       </View>
     );
   }

@@ -1,7 +1,8 @@
 import { TransactionsView } from "@/src/types/database/Tables.Types";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import Button from "../elements/Button";
 import MyModal from "../elements/MyModal";
+import ThemedText from "../elements/ThemedText";
 
 export type BatchActionType = "delete" | "duplicate" | "update";
 
@@ -36,29 +37,29 @@ export default function BatchActionConfirmModal({
     return (
         <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleClose} title="Confirm">
             <View className="p-4">
-                <Text className="text-foreground text-base mb-4">
+                <ThemedText className="text-base mb-4">
                     Are you sure you want to {actionType} {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""}?
-                </Text>
+                </ThemedText>
 
                 {/* Transaction Summary */}
-                <View className="bg-gray-100 rounded-md p-3 mb-4">
+                <View className="bg-card rounded-md p-3 mb-4">
                     <View className="flex-row justify-between mb-2">
-                        <Text className="text-muted">Selected:</Text>
-                        <Text className="text-foreground font-medium">{selectedTransactions.length} transactions</Text>
+                        <ThemedText variant="label">Selected:</ThemedText>
+                        <ThemedText variant="label" className="text-base">{selectedTransactions.length} transactions</ThemedText>
                     </View>
                     <View className="flex-row justify-between">
-                        <Text className="text-muted">Total Amount:</Text>
-                        <Text className="text-foreground font-medium">
+                        <ThemedText variant="label">Total Amount:</ThemedText>
+                        <ThemedText variant="label" className="text-base">
                             {totalAmount.toFixed(2)} {currency}
-                        </Text>
+                        </ThemedText>
                     </View>
                 </View>
 
                 {/* Update Summary - only shown for update actions */}
                 {actionType === "update" && updateSummary && (
                     <View className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                        <Text className="text-blue-800 font-medium mb-1">Changes to apply:</Text>
-                        <Text className="text-blue-700">{updateSummary}</Text>
+                        <ThemedText variant="label" className="text-blue-800 mb-1">Changes to apply:</ThemedText>
+                        <ThemedText className="text-blue-700">{updateSummary}</ThemedText>
                     </View>
                 )}
 
@@ -66,7 +67,7 @@ export default function BatchActionConfirmModal({
                 {isLoading && (
                     <View className="flex-row items-center justify-center mb-4">
                         <ActivityIndicator size="small" color="#3b82f6" />
-                        <Text className="text-muted ml-2">Processing...</Text>
+                        <ThemedText variant="caption" className="text-muted ml-2">Processing...</ThemedText>
                     </View>
                 )}
 

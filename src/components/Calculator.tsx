@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, Modal, Platform, Pressable, Text, View } from "react-native";
+import { FlatList, Platform, Text, View } from "react-native";
+import MyModal from "./elements/MyModal";
 
-import * as Haptics from "expo-haptics";
+import Button from "./elements/Button";
+import { triggerHaptic } from "./elements/Button";
 import MyIcon from "./elements/MyIcon";
 
 const buttonRows = [
@@ -60,9 +62,7 @@ export default function CalculatorComponent({
 
   const handleButtonPress = useCallback(
     (buttonName: string) => {
-      if (Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+      triggerHaptic("light");
 
       switch (buttonName) {
         case "clear":
@@ -182,7 +182,7 @@ export default function CalculatorComponent({
         } else if (key === "Escape") {
           setModalVisible(false);
         }
-        lastClickedButton.current = null; // Reset last clicked button on any key press
+        lastClickedButton.current = null;
       }
     },
     [modalVisible, handleButtonPress],
@@ -205,7 +205,6 @@ export default function CalculatorComponent({
   }, [currentValue]);
 
   useEffect(() => {
-    // Keep ref updated with the latest state
     resultRef.current = result;
   }, [result]);
 
@@ -217,52 +216,60 @@ export default function CalculatorComponent({
   };
 
   const prepareExpression = (expr: string) => {
-    // Handle implicit multiplication and numbers with leading zeros
     return expr
       .replace(/(\d+|\))(?=\()/g, "$1*")
       .replace(/÷/g, "/")
       .replace(/x/g, "*")
-      .replace(/\b0+(\d+)/g, "$1") // Remove leading zeros
-      .replace(/([+\-*/]|^)0+(?=\d)/g, "$1"); // Remove leading zeros after operators or at the start
+      .replace(/\b0+(\d+)/g, "$1")
+      .replace(/([+\-*/]|^)0+(?=\d)/g, "$1");
   };
 
   return (
     <>
-      <Pressable
-        className="bg-surface border border-muted rounded-md mx-2 p-1.5 mt-5 justify-center items-center"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="bg-surface border border-muted rounded-md mx-2 p-1.5 mt-5"
         onPress={() => setModalVisible(true)}
+        accessibilityLabel="Open calculator"
+        testID="btn-open-calculator"
       >
         <MyIcon name="Calculator" size={30} className="text-foreground" />
-      </Pressable>
+      </Button>
 
       {modalVisible && (
-        <Modal visible={modalVisible} transparent={true} animationType="fade">
-          <Pressable
-            onPressOut={() => {
+        <MyModal
+          isOpen={modalVisible}
+          setIsOpen={open => {
+            if (!open) {
               handleButtonPress("clear");
               setModalVisible(false);
-            }}
-            className="bg-black/50 flex-1 justify-center items-center"
-          >
-            <View className="m-auto p-4 rounded-md border border-muted flex-grow-0 max-w-xs overflow-x-hidden bg-card">
+            }
+          }}
+          onClose={() => {
+            handleButtonPress("clear");
+            setModalVisible(false);
+          }}
+          title="Calculator"
+        >
+            <View className="p-4">
               <History history={history} />
               <Display currentExpression={currentExpression} result={result} />
-              <Buttons handleButtonPress={handleButtonPress} />
+              <CalcButtons handleButtonPress={handleButtonPress} />
               <FormActionButtons handleButtonPress={handleButtonPress} setModalVisible={setModalVisible} />
             </View>
-          </Pressable>
-        </Modal>
+        </MyModal>
       )}
     </>
   );
 }
-const History = ({ history }: any) => {
+const History = ({ history }: { history: string[] }) => {
   return (
     <View className="min-h-24 max-h-24 h-24 rounded-md overflow-hidden">
       <FlatList
         data={history}
         renderItem={({ item }) => (
-          <Text selectable={false} className={`text-foreground text-base mb-1`}>
+          <Text selectable={false} className="text-foreground text-base mb-1">
             {item}
           </Text>
         )}
@@ -270,18 +277,9 @@ const History = ({ history }: any) => {
         className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar"
       />
     </View>
-
-    // <ScrollView className="max-h-24 mb-2 flex-1 bg-card border border-muted rounded-md p-2 custom-scrollbar">
-    //   {history &&
-    //     history.map((item: any, index: number) => (
-    //       <Text selectable={false} key={index} className={`text-base mb-1`}>
-    //         {item}
-    //       </Text>
-    //     ))}
-    // </ScrollView>
   );
 };
-const Display = ({ currentExpression, result }: any) => {
+const Display = ({ currentExpression, result }: { currentExpression: string; result: string }) => {
   return (
     <View className="rounded-md bg-card border border-muted px-4">
       <View className="items-end">
@@ -297,20 +295,20 @@ const Display = ({ currentExpression, result }: any) => {
     </View>
   );
 };
-const Buttons = ({ handleButtonPress }: any) => {
+const CalcButtons = ({ handleButtonPress }: { handleButtonPress: (name: string) => void }) => {
   return (
     <View className="flex-col bg-card border border-muted p-2 my-1 m-auto">
       {buttonRows.map((row, rowIndex) => (
-        <View key={rowIndex} className={`flex-row gap-2 mb-2`}>
+        <View key={rowIndex} className="flex-row gap-2 mb-2">
           {row.map(button => (
-            <Button key={button.name} button={button} handleButtonPress={handleButtonPress} />
+            <CalcButton key={button.name} button={button} handleButtonPress={handleButtonPress} />
           ))}
         </View>
       ))}
     </View>
   );
 };
-const Button = ({
+const CalcButton = ({
   button,
   handleButtonPress,
 }: {
@@ -318,16 +316,18 @@ const Button = ({
   handleButtonPress: (buttonName: string) => void;
 }) => {
   return (
-    <Pressable
-      key={button.name}
-      id={button.name}
-      className={`w-14 h-14 justify-center items-center bg-muted rounded-lg`}
+    <Button
+      variant="ghost"
+      size="icon"
+      hapticFeedback={false}
+      className="w-14 h-14 justify-center items-center bg-muted rounded-lg"
       onPress={() => handleButtonPress(button.name)}
+      testID={`calc-btn-${button.name}`}
     >
-      <Text selectable={false} className={`text-xl`}>
+      <Text selectable={false} className="text-xl">
         {button.label}
       </Text>
-    </Pressable>
+    </Button>
   );
 };
 const FormActionButtons = ({
@@ -339,27 +339,29 @@ const FormActionButtons = ({
 }) => {
   return (
     <View className="flex-row justify-center items-center gap-5 mt-4">
-      <Pressable
-        className={`bg-danger-300 rounded-md p-4 `}
+      <Button
+        variant="destructive"
+        size="md"
+        hapticFeedback="medium"
+        className="bg-danger-300 rounded-md p-4"
         onPress={() => {
           handleButtonPress("clear");
           setModalVisible(false);
         }}
-      >
-        <Text selectable={false} className={`text-white font-bold text-center`}>
-          Close
-        </Text>
-      </Pressable>
-      <Pressable
-        className={`bg-primary rounded-md p-4`}
+        label="Close"
+        testID="calc-btn-close"
+      />
+      <Button
+        variant="primary"
+        size="md"
+        hapticFeedback="success"
+        className="rounded-md p-4"
         onPress={() => {
           handleButtonPress("submit");
         }}
-      >
-        <Text selectable={false} className={`text-white font-bold text-center`}>
-          Submit
-        </Text>
-      </Pressable>
+        label="Submit"
+        testID="calc-btn-submit"
+      />
     </View>
   );
 };

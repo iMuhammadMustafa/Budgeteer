@@ -202,6 +202,65 @@ export type Database = {
         }
         Relationships: []
       }
+      savingsbuckets: {
+        Row: {
+          accountid: string
+          color: string
+          createdat: string
+          createdby: string | null
+          currentamount: number
+          displayorder: number
+          icon: string
+          id: string
+          isdeleted: boolean
+          name: string
+          targetamount: number
+          tenantid: string
+          updatedat: string | null
+          updatedby: string | null
+        }
+        Insert: {
+          accountid: string
+          color?: string
+          createdat?: string
+          createdby?: string | null
+          currentamount?: number
+          displayorder?: number
+          icon?: string
+          id?: string
+          isdeleted?: boolean
+          name: string
+          targetamount?: number
+          tenantid?: string
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Update: {
+          accountid?: string
+          color?: string
+          createdat?: string
+          createdby?: string | null
+          currentamount?: number
+          displayorder?: number
+          icon?: string
+          id?: string
+          isdeleted?: boolean
+          name?: string
+          targetamount?: number
+          tenantid?: string
+          updatedat?: string | null
+          updatedby?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savingsbuckets_accountid_fkey"
+            columns: ["accountid"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurrings: {
         Row: {
           amount: number | null

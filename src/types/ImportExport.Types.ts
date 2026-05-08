@@ -5,6 +5,7 @@ import {
     AccountCategory,
     Configuration,
     Recurring,
+    SavingsBucket,
     Transaction,
     TransactionCategory,
     TransactionGroup,
@@ -34,6 +35,7 @@ export interface ExportDataTables {
     transactioncategories?: TransactionCategory[];
     configurations?: Configuration[];
     recurrings?: Recurring[];
+    savingsbuckets?: SavingsBucket[];
     transactions?: Transaction[];
 }
 
@@ -182,6 +184,7 @@ export const IMPORT_ORDER: readonly TableNames[] = [
     TableNames.Accounts, // Level 1: Depends on accountcategories
     TableNames.TransactionCategories, // Level 1: Depends on transactiongroups
     TableNames.Recurrings, // Level 2: Depends on accounts, transactioncategories
+    TableNames.SavingsBuckets, // Level 1: Depends on accounts
     TableNames.Transactions, // Level 2: Depends on accounts, transactioncategories
 ] as const;
 
@@ -195,6 +198,7 @@ export const EXPORTABLE_TABLES: readonly TableNames[] = [
     TableNames.TransactionCategories,
     TableNames.Configurations,
     TableNames.Recurrings,
+    TableNames.SavingsBuckets,
     TableNames.Transactions,
 ] as const;
 
@@ -399,6 +403,32 @@ export const TABLE_SCHEMAS: Record<TableNames, TableSchema> = {
                 foreignTable: TableNames.TransactionCategories,
                 foreignField: "id",
             },
+            tenantid: { type: "string", required: true },
+            isdeleted: { type: "boolean", required: false },
+            createdat: { type: "string", required: false },
+            createdby: { type: "string", required: false },
+            updatedat: { type: "string", required: false },
+            updatedby: { type: "string", required: false },
+        },
+    },
+    [TableNames.SavingsBuckets]: {
+        primaryKey: "id",
+        dependencies: [TableNames.Accounts],
+        fields: {
+            id: { type: "string", required: true },
+            name: { type: "string", required: true },
+            targetamount: { type: "number", required: false },
+            currentamount: { type: "number", required: false },
+            accountid: {
+                type: "string",
+                required: true,
+                isForeignKey: true,
+                foreignTable: TableNames.Accounts,
+                foreignField: "id",
+            },
+            icon: { type: "string", required: false },
+            color: { type: "string", required: false },
+            displayorder: { type: "number", required: false },
             tenantid: { type: "string", required: true },
             isdeleted: { type: "boolean", required: false },
             createdat: { type: "string", required: false },
