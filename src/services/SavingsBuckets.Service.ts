@@ -12,6 +12,7 @@ import { IService } from "./IService";
 export interface ISavingsBucketService extends IService<SavingsBucket, TableNames.SavingsBuckets> {
   useFindByAccountId: (accountId?: string) => ReturnType<typeof useQuery<SavingsBucket[]>>;
   useGetTotalAllocated: (accountId?: string) => ReturnType<typeof useQuery<number>>;
+  useFindAllGroupedByAccount: () => ReturnType<typeof useQuery<Record<string, SavingsBucket[]>>>;
   useAllocate: () => ReturnType<
     typeof useMutation<SavingsBucket | null, Error, { bucketId: string; amount: number; accountBalance: number }>
   >;
@@ -51,6 +52,23 @@ export function useSavingsBucketService(): ISavingsBucketService {
         return bucketRepo.getTotalAllocated(accountId!, tenantId);
       },
       enabled: !!accountId && !!tenantId,
+    });
+  };
+  const useFindAllGroupedByAccount = () => {
+    return useQuery<Record<string, SavingsBucket[]>>({
+      queryKey: [TableNames.SavingsBuckets, "grouped", tenantId],
+      queryFn: async () => {
+        const allBuckets = await bucketRepo.findAll(tenantId);
+        return allBuckets.reduce(
+          (acc, bucket) => {
+            const key = bucket.accountid;
+            (acc[key] = acc[key] || []).push(bucket);
+            return acc;
+          },
+          {} as Record<string, SavingsBucket[]>,
+        );
+      },
+      enabled: !!tenantId,
     });
   };
 
@@ -137,6 +155,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
     ),
     useFindByAccountId,
     useGetTotalAllocated,
+    useFindAllGroupedByAccount,
     useAllocate,
     useUpsertBucket,
   };
