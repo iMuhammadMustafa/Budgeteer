@@ -235,3 +235,29 @@ Alter table recurrings Enable Row Level Security;
 CREATE POLICY "Tenant access" ON recurrings as PERMISSIVE  for ALL USING (tenantid = auth.tenantid()); 
 CREATE INDEX "Recurrings_TenantId" ON Recurrings (TenantId); 
 CREATE INDEX "Recurrings_IsDeleted" ON Recurrings (IsDeleted); 
+
+
+-- Create savings buckets table
+CREATE TABLE IF NOT EXISTS savingsbuckets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    targetamount NUMERIC NOT NULL DEFAULT 0,
+    currentamount NUMERIC NOT NULL DEFAULT 0,
+    accountid UUID NOT NULL REFERENCES accounts(id),
+    icon TEXT NOT NULL DEFAULT 'PiggyBank',
+    color TEXT NOT NULL DEFAULT 'primary-100',
+    displayorder INTEGER NOT NULL DEFAULT 0,
+    tenantid UUID NOT NULL,
+    isdeleted BOOLEAN NOT NULL DEFAULT false,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdby UUID,
+    updatedat TIMESTAMPTZ,
+    updatedby UUID
+);
+
+
+Alter table savingsbuckets Enable Row Level Security;
+CREATE POLICY "Tenant access" ON savingsbuckets as PERMISSIVE  for ALL USING (tenantid = auth.tenantid()); 
+CREATE INDEX IF NOT EXISTS "SavingsBuckets_TenantId" ON savingsbuckets (TenantId); 
+CREATE INDEX IF NOT EXISTS "SavingsBuckets_IsDeleted" ON savingsbuckets (IsDeleted); 
+CREATE INDEX IF NOT EXISTS "SavingsBuckets_AccountId" ON savingsbuckets(accountid);

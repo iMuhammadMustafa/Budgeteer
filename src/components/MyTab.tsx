@@ -30,6 +30,8 @@ export default function MyTab<TModel, TTable extends TableNames>({
   dependencyConfig,
   customFindAll,
   showRestore,
+  itemChildren,
+  isPageLoading
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -61,6 +63,8 @@ export default function MyTab<TModel, TTable extends TableNames>({
     onAfterUpdate?: (dependencies: any[], oldItemId: string, newItemId: string) => Promise<void>;
   };
   customFindAll?: () => ReturnType<typeof service.useFindAll>;
+  itemChildren?: (item: TModel) => React.ReactNode;
+  isPageLoading?: boolean;
 }) {
   const {
     selectedItems,
@@ -97,7 +101,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
     dependencyConfig,
     customFindAll,
   });
-  if (isLoading) return <SkeletonList length={20} />;
+  if (isLoading || isPageLoading) return <SkeletonList length={20} />;
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <View className="flex-row justify-between items-center px-4 bg-background">
@@ -146,89 +150,91 @@ export default function MyTab<TModel, TTable extends TableNames>({
                   <View
                     key={item.id}
                     testID={`list-item-${item.id}`}
-                    className={`flex-row items-center ${groupName ? "py-1" : "py-2"} border-b border-gray-200 px-5 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
+                    className={`border-b border-gray-200 rounded-none text-foreground ${isSelected ? "bg-primary" : "bg-background"}`}
                   >
-                    {/* TODO fix Link usage*/}
-                    {/* <Link href={`${detailsUrl}${item.id}` as Href} asChild onPress={e => e.preventDefault()}> */}
-                    <Button
-                      variant="ghost"
-                      onLongPress={() => handleLongPress(item)}
-                      onPress={() => handlePress(item)}
-                      // rightIcon="ChevronRight"
-                      className={`flex-1 flex-row items-center py-0 px-0 rounded-none text-foreground`}
-                    >
-                      {customRenderItem ? (
-                        customRenderItem(
-                          item,
-                          isSelected,
-                          () => handleLongPress(item),
-                          () => handlePress(item),
-                        )
-                      ) : (
-                        <View className="flex flex-row flex-1 width-full">
-                          {icons && (
-                            <View
-                              className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.color ? item.color : "gray-300"}`}
-                            >
-                              {item.icon && (
-                                <MyIcon
-                                  name={item.icon}
-                                  size={18}
-                                  className={`color-card-foreground bg-${item.iconColor}`}
-                                />
-                              )}
-                            </View>
-                          )}
+                    <View className={`flex-row items-center ${groupName ? "py-1" : "py-2"} px-5`}>
+                      {/* TODO fix Link usage*/}
+                      {/* <Link href={`${detailsUrl}${item.id}` as Href} asChild onPress={e => e.preventDefault()}> */}
+                      <Button
+                        variant="ghost"
+                        onLongPress={() => handleLongPress(item)}
+                        onPress={() => handlePress(item)}
+                        // rightIcon="ChevronRight"
+                        className={`flex-1 flex-row items-center py-0 px-0 rounded-none text-foreground`}
+                      >
+                        {customRenderItem ? (
+                          customRenderItem(
+                            item,
+                            isSelected,
+                            () => handleLongPress(item),
+                            () => handlePress(item),
+                          )
+                        ) : (
+                          <View className="flex flex-row flex-1 width-full">
+                            {icons && (
+                              <View
+                                className={`w-8 h-8 rounded-full justify-center items-center mr-4 bg-${item.color ? item.color : "gray-300"}`}
+                              >
+                                {item.icon && (
+                                  <MyIcon
+                                    name={item.icon}
+                                    size={18}
+                                    className={`color-card-foreground bg-${item.iconColor}`}
+                                  />
+                                )}
+                              </View>
+                            )}
                           <View className="flex-1">
                             <ThemedText className="text-md">{item.name}</ThemedText>
                             <ThemedText className="text-md">
                               {detailsContent ? detailsContent(item) : item.details}
                             </ThemedText>
                           </View>
-                        </View>
+                        )}
+                      </Button>
+                      {/* </Link> */}
+                      {UpsertModal && (
+                        <Button
+                          testID={`edit-btn-${item.id}`}
+                          variant="ghost"
+                          className="py-0 px-0 me-2"
+                          iconSize={20}
+                          onPress={() => {
+                            setIsOpen(true);
+                            setCurrentItem(item);
+                          }}
+                          rightIcon="SquarePen"
+                        />
                       )}
-                    </Button>
-                    {/* </Link> */}
-                    {UpsertModal && (
                       <Button
-                        testID={`edit-btn-${item.id}`}
+                        testID={`delete-btn-${item.id}`}
                         variant="ghost"
                         className="py-0 px-0 me-2"
                         iconSize={20}
                         onPress={() => {
-                          setIsOpen(true);
-                          setCurrentItem(item);
+                          setItemToDelete(item);
+                          setDeleteModalOpen(true);
                         }}
-                        rightIcon="SquarePen"
+                        rightIcon="Trash2"
                       />
-                    )}
-                    <Button
-                      testID={`delete-btn-${item.id}`}
-                      variant="ghost"
-                      className="py-0 px-0 me-2"
-                      iconSize={20}
-                      onPress={() => {
-                        setItemToDelete(item);
-                        setDeleteModalOpen(true);
-                      }}
-                      rightIcon="Trash2"
-                    />
-                    {showRestore && (
-                      <Button
-                        testID="restore-btn"
-                        rightIcon="RotateCcw"
-                        variant="ghost"
-                        onPress={() => {
-                          setItemToRestore(item);
-                          setRestoreModalOpen(true);
-                        }}
-                      />
-                    )}
-                    {customAction && (
-                      <View className="me-2">
-                        {typeof customAction === "function" ? customAction(item) : customAction}
-                      </View>
-                    )}
+                      {showRestore && (
+                        <Button
+                          testID="restore-btn"
+                          rightIcon="RotateCcw"
+                          variant="ghost"
+                          onPress={() => {
+                            setItemToRestore(item);
+                            setRestoreModalOpen(true);
+                          }}
+                        />
+                      )}
+                      {customAction && (
+                        <View className="me-2">
+                          {typeof customAction === "function" ? customAction(item) : customAction}
+                        </View>
+                      )}
+                    </View>
+                    {itemChildren && itemChildren(item)}
                   </View>
                 );
               })}
@@ -304,15 +310,15 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const { data, isLoading, error } = showDeleted ? findAllDeletedQuery : findAllQuery;
   const { mutate: softDeleteMutate } = service.useSoftDelete();
   const { mutate: hardDeleteMutate } = service.useHardDelete();
-  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => {} };
+  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => { } };
   const { mutate: deleteMultipleDependencies } = dependencyConfig?.dependencyService?.useSoftDelete?.() || {
-    mutate: () => {},
+    mutate: () => { },
   };
   const { mutate: hardDeleteDependencies } = dependencyConfig?.dependencyService?.useHardDelete?.() || {
-    mutate: () => {},
+    mutate: () => { },
   };
   const { mutate: updateDependenciesMutate } = dependencyConfig?.dependencyService?.useUpdateMultiple?.() || {
-    mutate: () => {},
+    mutate: () => { },
   };
 
   // Use hardDelete when showing deleted items (Restore pages)

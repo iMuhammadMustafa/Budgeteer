@@ -8,6 +8,7 @@ import {
   Account,
   AccountCategory,
   Configuration,
+  SavingsBucket,
   Transaction,
   TransactionCategory,
   TransactionGroup,
@@ -334,6 +335,13 @@ export interface AccountCategoryFormData extends Omit<AccountCategory, "id" | "c
  * Configuration form data type
  */
 export interface ConfigurationFormData extends Omit<Configuration, "id" | "createdat" | "updatedat"> {
+  id?: string;
+}
+
+/**
+ * Savings Bucket form data type
+ */
+export interface SavingsBucketFormData extends Omit<SavingsBucket, "id" | "createdat" | "updatedat"> {
   id?: string;
 }
 

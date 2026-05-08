@@ -242,6 +242,8 @@ export class ImportService {
                 return dbContext.ConfigurationRepository();
             case TableNames.Recurrings:
                 return dbContext.RecurringRepository();
+            case TableNames.SavingsBuckets:
+                return dbContext.SavingsBucketRepository();
             case TableNames.Transactions:
                 return dbContext.TransactionRepository();
             default:
@@ -409,6 +411,9 @@ export class ImportService {
                 break;
             case TableNames.Recurrings:
                 await dbContext.RecurringRepository().create(record, tenantId);
+                break;
+            case TableNames.SavingsBuckets:
+                await dbContext.SavingsBucketRepository().create(record, tenantId);
                 break;
             case TableNames.Transactions:
                 await dbContext.TransactionRepository().create(record, tenantId);

@@ -16,6 +16,7 @@ import Button from "@/src/components/elements/Button";
 import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import BucketingSection from "@/src/components/BucketingSection";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useStatsService } from "@/src/services/Stats.Service";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/database/Tables.Types";
@@ -255,11 +256,9 @@ export default function SummaryIndex() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <StatusBar backgroundColor="#1e293b" barStyle="light-content" />
-
       {/* Header */}
       <View className="flex-row justify-between items-center p-4 bg-surface border-b border-border-default">
-        <ThemedText variant="heading" className="text-2xl">Expense Summary</ThemedText>
+        <ThemedText variant="heading" className="text-2xl">Summary</ThemedText>
         <Button
           variant="ghost"
           size="icon"
@@ -269,6 +268,12 @@ export default function SummaryIndex() {
           <RefreshCcw size={24} color="#10b981" />
         </Button>
       </View>
+
+      <View className="p-4">
+        <BucketingSection />
+      </View>
+
+
 
       {/* Time Period Selector */}
       <View className="bg-surface p-4 border-b border-border-default">
@@ -346,9 +351,8 @@ export default function SummaryIndex() {
                       return (
                         <View
                           key={`${groupName}-${categoryName}`}
-                          className={`${
-                            categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
-                          } py-2 border-b border-border-default px-4`}
+                          className={`${categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
+                            } py-2 border-b border-border-default px-4`}
                           style={{ height: rowHeight }}
                         >
                           <View className="flex-row items-center pl-4 h-full">
@@ -404,10 +408,10 @@ export default function SummaryIndex() {
                           const previousTotal =
                             periodIndex > 0
                               ? Object.values(categories).reduce(
-                                  (sum, categoryTransactions) =>
-                                    sum + (categoryTransactions[periodIndex - 1]?.amount || 0),
-                                  0,
-                                )
+                                (sum, categoryTransactions) =>
+                                  sum + (categoryTransactions[periodIndex - 1]?.amount || 0),
+                                0,
+                              )
                               : null;
 
                           const hasIncrease = previousTotal !== null && groupTotal > previousTotal;
@@ -421,13 +425,12 @@ export default function SummaryIndex() {
                             >
                               <View className="flex-row items-center justify-center" style={{ gap: 4 }}>
                                 <Text
-                                  className={`font-semibold text-sm text-center ${
-                                    hasIncrease
-                                      ? "text-status-danger"
-                                      : hasDecrease
-                                        ? "text-status-success"
-                                        : "text-foreground"
-                                  }`}
+                                  className={`font-semibold text-sm text-center ${hasIncrease
+                                    ? "text-status-danger"
+                                    : hasDecrease
+                                      ? "text-status-success"
+                                      : "text-foreground"
+                                    }`}
                                 >
                                   {formatCurrency(groupTotal)}
                                 </Text>
@@ -455,9 +458,8 @@ export default function SummaryIndex() {
                         return (
                           <View
                             key={`${groupName}-${categoryName}`}
-                            className={`flex-row ${
-                              categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
-                            } py-2 border-b border-border-default`}
+                            className={`flex-row ${categoryIndex % 2 === 0 ? "bg-surface" : "bg-background"
+                              } py-2 border-b border-border-default`}
                             style={{ height: rowHeight }}
                           >
                             {periods.map((period, periodIndex) => {
@@ -477,14 +479,13 @@ export default function SummaryIndex() {
                                   <View className="items-center justify-center h-full">
                                     <View className="flex-row items-center justify-center mb-1" style={{ gap: 4 }}>
                                       <Text
-                                        className={`text-sm text-center ${
-                                          hasIncrease
-                                            ? "text-status-danger"
-                                            : hasDecrease
-                                              ? "text-status-success"
-                                              : "text-foreground"
-                                        } font-medium`}
-                                        // } ${amount > 0 ? "font-medium" : "font-normal"}`}
+                                        className={`text-sm text-center ${hasIncrease
+                                          ? "text-status-danger"
+                                          : hasDecrease
+                                            ? "text-status-success"
+                                            : "text-foreground"
+                                          } font-medium`}
+                                      // } ${amount > 0 ? "font-medium" : "font-normal"}`}
                                       >
                                         {formatCurrency(amount)}
                                       </Text>
