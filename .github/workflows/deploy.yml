@@ -36,6 +36,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
@@ -50,9 +53,11 @@ jobs:
 
   # ──────────────────────────────────────────────
   # 2. Publish OTA update via EAS Update
+  #    Skipped when a native EAS build is requested
   # ──────────────────────────────────────────────
   deploy-eas-update:
     name: EAS Update (OTA)
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.eas_build == true) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
