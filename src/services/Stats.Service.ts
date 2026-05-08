@@ -235,7 +235,9 @@ export const getStatsDailyTransactionsHelper = (
     const day = dayjs(item.date).format("YYYY-MM-DD");
     const dots = acc[day]?.dots ?? [];
     const dotColor = item.type === "Income" ? "green" : item.type === "Expense" ? "red" : "teal";
-    dots.push({ key: item.type!, color: dotColor });
+    if (!dots.find((x: any) => x.key === item.type!)) {
+      dots.push({ key: item.type!, color: dotColor });
+    }
     acc[day] = { dots };
     return acc;
   }, {});
