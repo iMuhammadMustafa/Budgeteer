@@ -1,0 +1,171 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deploy (e.g. 0.17.0)"
+        required: true
+        type: string
+      eas_build:
+        description: "Trigger a native EAS build (preview profile)"
+        required: false
+        default: false
+        type: boolean
+
+# Cancel any in-progress runs on the same ref
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. Bump version across all version sources
+  # ──────────────────────────────────────────────
+  version-bump:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version
+        id: bump_type
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # Strip leading 'v' from tag (v0.17.0 → 0.17.0)
+            TAG="${{ github.event.release.tag_name }}"
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version in all files
+        id: bump
+        run: |
+          NEW_VERSION="${{ steps.bump_type.outputs.version }}"
+
+          # Read current version from _layout.tsx
+          CURRENT=$(grep -oP 'Version \K[0-9]+\.[0-9]+\.[0-9]+' src/app/\(drawer\)/_layout.tsx)
+          echo "Current version: $CURRENT"
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+          # 1. Update _layout.tsx  (Version X.Y.Z)
+          sed -i "s/Version $CURRENT/Version $NEW_VERSION/" src/app/\(drawer\)/_layout.tsx
+
+          # 2. Update package.json
+          sed -i "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW_VERSION\"/" package.json
+
+          # 3. Update app.json
+          sed -i "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW_VERSION\"/" app.json
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/app/\(drawer\)/_layout.tsx package.json app.json
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git push
+
+  # ──────────────────────────────────────────────
+  # 2. Deploy web app to Vercel
+  # ──────────────────────────────────────────────
+  deploy-vercel:
+    name: Deploy to Vercel
+    needs: version-bump
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main  # Pick up the version-bump commit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # 3. Publish OTA update via EAS Update
+  # ──────────────────────────────────────────────
+  deploy-eas-update:
+    name: EAS Update (OTA)
+    needs: version-bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Publish OTA update
+        run: eas update --branch preview --message "v${{ needs.version-bump.outputs.new_version }}" --non-interactive
+
+  # ──────────────────────────────────────────────
+  # 4. (Optional) Trigger a native EAS Build
+  # ──────────────────────────────────────────────
+  deploy-eas-build:
+    name: EAS Build (Native)
+    needs: version-bump
+    if: github.event_name == 'workflow_dispatch' && inputs.eas_build == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Android (preview)
+        run: eas build --platform android --profile preview --non-interactive
+
+      # Uncomment when iOS credentials are set up:
+      # - name: Build iOS (preview)
+      #   run: eas build --platform ios --profile preview --non-interactive
