@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
@@ -335,15 +335,17 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
               {formState.data.type === "Transfer" && (
                 <>
-                  <Pressable
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    hapticFeedback="selection"
                     onPress={handleSwitchAccounts}
                     className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
-                    accessible={true}
-                    accessibilityRole="button"
                     accessibilityLabel="Switch source and destination accounts"
+                    testID="btn-switch-accounts"
                   >
                     <MyIcon name="ArrowUpDown" size={24} className="text-foreground" />
-                  </Pressable>
+                  </Button>
 
                   <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
                     <FormField

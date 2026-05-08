@@ -1,6 +1,8 @@
+import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 
 export default function SettingsIndex() {
   return (
@@ -8,53 +10,59 @@ export default function SettingsIndex() {
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-foreground mb-2">Settings</Text>
-          <Text className="text-sm text-muted-foreground">
+          <ThemedText variant="heading" className="text-2xl mb-2">Settings</ThemedText>
+          <ThemedText variant="caption" className="text-sm text-muted-foreground">
             Manage your app preferences and data
-          </Text>
+          </ThemedText>
         </View>
 
         {/* Settings Options */}
         <View className="bg-card rounded-xl border border-muted overflow-hidden">
           {/* Import/Export */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
             onPress={() => router.push("/Settings/ImportExport")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-settings-import-export"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="ArrowUpDown" size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Import / Export</Text>
-              <Text className="text-sm text-muted-foreground">
+              <ThemedText variant="label">Import / Export</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
                 Transfer data between devices or storage modes
-              </Text>
+              </ThemedText>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Pressable>
+          </Button>
 
           {/* Appearance */}
-          <Pressable
+          <Button
+            variant="ghost"
+            size="lg"
             onPress={() => router.push("/Settings/Appearance")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50"
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-settings-appearance"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
               <MyIcon name="Palette" size={20} className="text-primary" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Appearance</Text>
-              <Text className="text-sm text-muted-foreground">Theme, grid background & more</Text>
+              <ThemedText variant="label">Appearance</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">Theme, grid background & more</ThemedText>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Pressable>
+          </Button>
 
           <View className="flex-row items-center p-4 opacity-50">
             <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">
               <MyIcon name="Bell" size={20} className="text-muted-foreground" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="font-medium text-foreground">Notifications</Text>
-              <Text className="text-sm text-muted-foreground">Coming soon</Text>
+              <ThemedText variant="label">Notifications</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">Coming soon</ThemedText>
             </View>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
           </View>

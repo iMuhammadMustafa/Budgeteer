@@ -7,9 +7,9 @@ import {
   LayoutChangeEvent,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
+import Button from "./Button";
 
 type SearchableDropdownType = {
   label: string;
@@ -173,12 +173,18 @@ export default function SearchableDropdown({
           >
             <FlatList
               data={suggestions}
-              keyExtractor={item => item.id ?? item.label}
+              keyExtractor={(item, index) => item.id ?? item.label + index}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
-                <TouchableOpacity className="border-b border-border-subtle p-2" onPress={() => handleSelectSuggestion(item)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="border-b border-border-subtle p-2 rounded-none justify-start"
+                  onPress={() => handleSelectSuggestion(item)}
+                  testID={`suggestion-${item.id ?? item.label}`}
+                >
                   <Text>{item.label}</Text>
-                </TouchableOpacity>
+                </Button>
               )}
             />
           </View>
