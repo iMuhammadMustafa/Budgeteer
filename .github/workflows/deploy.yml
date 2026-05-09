@@ -76,7 +76,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Publish OTA update
-        run: eas update --branch preview --message "${{ github.event.release.tag_name || 'manual deploy' }}" --non-interactive
+        run: eas update --branch preview --message "${{ github.event.release.tag_name || 'manual deploy' }}" --non-interactive --no-wait
 
   # ──────────────────────────────────────────────
   # 3. (Optional) Trigger a native EAS Build
@@ -102,7 +102,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build Android (preview)
-        run: eas build --platform android --profile preview --non-interactive
+        run: eas build --platform android --profile preview --non-interactive --no-wait
 
       # Uncomment when iOS credentials are set up:
       # - name: Build iOS (preview)
