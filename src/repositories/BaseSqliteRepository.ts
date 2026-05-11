@@ -284,6 +284,9 @@ export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
     }
 
     async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
+        for (const item of data) {
+            await this.update((item as any).id!, item, tenantId);
+        }
     }
 
     async deleteMultiple(ids: string[], tenantId: string): Promise<void> {

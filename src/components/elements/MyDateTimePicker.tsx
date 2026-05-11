@@ -39,7 +39,7 @@ export default function MyDateTimePicker({
   return (
     <View className="my-1">
       <Text className="text-foreground">{label}</Text>
-      <View className="flex-row items-center">
+      <View className="flex-row items-center w-full">
         <Button
           variant="ghost"
           size="md"
@@ -50,7 +50,7 @@ export default function MyDateTimePicker({
             else setPickerDate(dayjs(date));
             setShowDate(prev => !prev);
           }}
-          className="border border-input-border rounded-md p-3 items-center mb-1 bg-input-bg flex-1"
+          className="border border-input-border rounded-md p-3 items-center mb-1 bg-input-bg flex-1 min-w-[160px]"
           testID="btn-date-picker"
         >
           <Text selectable={false}>{date ? dayjs(date).format("MMM DD, YYYY") : "Select Date"}</Text>
@@ -156,7 +156,7 @@ const DateTimePickerContainer = ({
     {!isModal ? (
       <View className="m-auto">
         <View
-          style={{ width: layout.width > 0 ? layout.width / 2 : undefined }}
+          style={{ width: 300 }}
         >
           {children}
         </View>
@@ -164,7 +164,7 @@ const DateTimePickerContainer = ({
     ) : (
       <MyModal isOpen={isVisible} setIsOpen={setIsVisible} onClose={() => setIsVisible(false)}>
         <Pressable onPressOut={() => setIsVisible(false)}>
-          <View className="m-auto items-center justify-center bg-background rounded-md p-1">{children}</View>
+          <View className="m-auto items-center justify-center bg-background rounded-md p-1" style={{ width: 300 }}>{children}</View>
         </Pressable>
       </MyModal>
     )}

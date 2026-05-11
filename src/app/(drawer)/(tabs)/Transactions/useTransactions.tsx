@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { BackHandler, Platform } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
+
+import useBackAction from "@/src/utils/useBackAction";
 
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
@@ -57,18 +59,18 @@ export default function useTransactions() {
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
-  const backAction = (): boolean => {
+  const backAction = useCallback((): boolean => {
     if (selectionMode) {
       clearSelection();
       return true;
     }
     return false;
-  };
-  const clearSelection = () => {
+  }, [selectionMode]);
+  const clearSelection = useCallback(() => {
     setSelectedTransactions([]);
     setSelectedSum(0);
     setSelectionMode(false); // Clear selection mode when we clear selections
-  };
+  }, []);
   useBackAction(selectionMode, backAction);
 
   const copyTransactions = async () => {
@@ -300,22 +302,3 @@ export default function useTransactions() {
     executeConfirmedAction,
   };
 }
-
-const useBackAction = (selectionMode: boolean, backAction: () => boolean) => {
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      if (selectionMode) {
-        window.addEventListener("keydown", e => {
-          if (e.key === "Escape") {
-            backAction();
-          }
-        });
-      }
-    }
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
-    return () => {
-      backHandler.remove();
-      if (Platform.OS === "web") window.removeEventListener("keydown", () => { });
-    };
-  }, [selectionMode, backAction]);
-};

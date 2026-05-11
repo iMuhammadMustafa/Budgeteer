@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
-import { BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
+import useBackAction from "@/src/utils/useBackAction";
 import Button from "./Button";
 import MyIcon from "./MyIcon";
 import ThemedText from "./ThemedText";
-``
+
 
 const modalStack: number[] = [];
 let nextModalId = 1;
@@ -24,45 +25,27 @@ export default function MyModal({
 }) {
   const idRef = useRef<number>(nextModalId++);
 
+  // Register / unregister on the modal stack
   useEffect(() => {
     const currentId = idRef.current;
-    const handleEscKey = (e: KeyboardEvent) => {
-      if (modalStack[modalStack.length - 1] !== currentId) return;
-      if (e.key === "Escape") {
-        e.stopImmediatePropagation?.();
-        e.stopPropagation();
-        e.preventDefault();
-        setIsOpen(false);
-      }
-    };
-    if (Platform.OS === "web") {
-      window.addEventListener("keydown", handleEscKey);
+    if (isOpen) {
+      modalStack.push(currentId);
     }
-
-    const handleBackButton = () => {
-      if (modalStack[modalStack.length - 1] !== currentId) return false;
-      if (isOpen) {
-        setIsOpen(false);
-        return true;
-      }
-      return false;
-    };
-
-    const backHandler =
-      Platform.OS === "android" ? BackHandler.addEventListener("hardwareBackPress", handleBackButton) : undefined;
-
     return () => {
       const idx = modalStack.indexOf(currentId);
       if (idx !== -1) modalStack.splice(idx, 1);
-      if (backHandler) {
-        backHandler.remove();
-      }
-
-      if (Platform.OS === "web") {
-        window.removeEventListener("keydown", handleEscKey);
-      }
     };
-  }, [isOpen, setIsOpen]);
+  }, [isOpen]);
+
+  // Dismiss only if this modal is the top of the stack
+  const handleDismiss = useCallback(() => {
+    if (modalStack[modalStack.length - 1] !== idRef.current) return false;
+    if (onClose) onClose();
+    setIsOpen(false);
+    return true;
+  }, [setIsOpen, onClose]);
+
+  useBackAction(isOpen, handleDismiss);
 
   return (
     <Modal
@@ -71,22 +54,21 @@ export default function MyModal({
         if (onClose) onClose();
         setIsOpen(false);
       }}
-      onRequestClose={() => {
-        if (onClose) onClose();
-        setIsOpen(false);
-      }}
+      onRequestClose={Platform.OS !== "web" ? handleDismiss : undefined}
       transparent={true}
       animationType="fade"
       className="flex-1 justify-center items-center"
     >
       <View className="flex-1 bg-black/50 justify-center items-center">
+        {/* Backdrop: fills the screen behind the modal; tapping it dismisses */}
         <Pressable
           className="absolute inset-0 cursor-auto"
           onPress={e => {
             e.stopPropagation();
-            if (onClose) onClose();
+            handleDismiss();
           }}
         />
+        {/* Content container: stopPropagation prevents taps inside from reaching the backdrop */}
         <Pressable
           onPress={e => e.stopPropagation()}
           style={Platform.OS !== "web" ? {
@@ -95,7 +77,7 @@ export default function MyModal({
             maxHeight: '80%',
             minHeight: Dimensions.get('window').height * 0.5,
           } : undefined}
-          className={Platform.OS === "web" ? "w-[90%] max-w-[600px] max-h-[80%] bg-card rounded-md border border-muted" : "bg-card rounded-md border border-muted"}
+          className={`cursor-auto ${Platform.OS === "web" ? "w-[90%] max-w-[600px] max-h-[80%] bg-card rounded-md border border-muted" : "bg-card rounded-md border border-muted"}`}
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}

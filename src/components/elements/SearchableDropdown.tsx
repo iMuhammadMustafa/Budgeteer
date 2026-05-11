@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/providers/AuthProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
+import useBackAction from "@/src/utils/useBackAction";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -48,6 +49,7 @@ export default function SearchableDropdown({
     width: 0,
   });
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<TextInput>(null);
 
   // Use a ref to hold the latest searchAction to avoid triggering effects on every render
   const searchActionRef = useRef(searchAction);
@@ -143,6 +145,15 @@ export default function SearchableDropdown({
     };
   }, []);
 
+  // Handle back button (Android) and Escape key (web) to close suggestions
+  const dismissDropdown = useCallback(() => {
+    setIsFocused(false);
+    setSuggestions([]);
+    inputRef.current?.blur();
+  }, []);
+
+  useBackAction(isFocused, dismissDropdown);
+
   const showSuggestions = isFocused && suggestions.length > 0;
 
   return (
@@ -150,6 +161,7 @@ export default function SearchableDropdown({
       <View className={`my-1 ${className ?? ""} flex-1`}>
         <Text className="text-foreground">{label}</Text>
         <TextInput
+          ref={inputRef}
           className="p-3 mb-4 border border-input-border rounded-md bg-input-bg text-foreground"
           value={inputText ?? ""}
           placeholder={placeholder ?? "Type to search.."}

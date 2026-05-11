@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
+import useBackAction from "../utils/useBackAction";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
@@ -305,6 +306,13 @@ const useMyTab = <TModel, TTable extends TableNames>({
 }) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
+
+  // Handle back button (Android) and Escape key (web) to exit selection mode
+  const clearSelection = useCallback(() => {
+    setSelectedItems([]);
+  }, []);
+
+  useBackAction(isSelectionMode, clearSelection);
 
   const findAllQuery = customFindAll ? customFindAll() : service.useFindAll();
   const findAllDeletedQuery = service.useFindAllDeleted();
