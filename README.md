@@ -25,11 +25,11 @@ This project is built with a modern tech stack, featuring a React Native fronten
 
 
 <p align="center">  
-  <img width="20%" alt="image" src="https://github.com/user-attachments/assets/bf124eed-2a64-46f6-b738-de4065fb0869" />
-  <img width="20%"  alt="image" src="https://github.com/user-attachments/assets/391cfaba-a0ee-4d5d-b364-fb142a33350f" />
-  <img width="20%" alt="image" src="https://github.com/user-attachments/assets/ebe94a7f-0f36-489e-a720-d1cd652f264d" />
-  <img width="20%" alt="image" src="https://github.com/user-attachments/assets/89f4d385-efd9-4286-966f-2d79b5182148" />
-  <img width="20%"  alt="image" src="https://github.com/user-attachments/assets/88d5f7cb-665a-46b9-9c4b-3ace1e3e8dbf" />
+  <img width="19%" alt="image" src="https://github.com/user-attachments/assets/bf124eed-2a64-46f6-b738-de4065fb0869" />
+  <img width="19%"  alt="image" src="https://github.com/user-attachments/assets/391cfaba-a0ee-4d5d-b364-fb142a33350f" />
+  <img width="19%" alt="image" src="https://github.com/user-attachments/assets/ebe94a7f-0f36-489e-a720-d1cd652f264d" />
+  <img width="19%" alt="image" src="https://github.com/user-attachments/assets/89f4d385-efd9-4286-966f-2d79b5182148" />
+  <img width="19%" alt="image" src="https://github.com/user-attachments/assets/88d5f7cb-665a-46b9-9c4b-3ace1e3e8dbf" />
 </p>
 
 
