@@ -8,7 +8,7 @@ This project is built with a modern tech stack, featuring a React Native fronten
 
 ## 2. Live Demo & Screenshots
 
-- **Live Demo:** [Link to Live Demo]
+- **Live Demo:** ![Demo](budgeteer.muhammadmustafa.dev)
 - **Screenshots:**
   - ![Screenshot 1](placeholder.png)
   - ![Screenshot 2](placeholder.png)
