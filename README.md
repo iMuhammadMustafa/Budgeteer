@@ -10,9 +10,15 @@ This project is built with a modern tech stack, featuring a React Native fronten
 
 - **Live Demo:** [Demo](https://budgeteer.muhammadmustafa.dev/)
 - **Screenshots:**
-  - ![Screenshot 1](placeholder.png)
-  - ![Screenshot 2](placeholder.png)
-  - ![Screenshot 3](placeholder.png)
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/1dc4fe1e-032f-4df9-a8b2-a8f0bca2a4e3" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/9f2baa88-0c21-4e08-9b86-05ce90ba42ca" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/b9facbc1-a16a-43e2-bdef-5bc8a208c252" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/0f7f503f-7636-4986-b6cc-0cce2d6dbbca" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/3a418310-1d48-4729-a0f7-a7686022acdc" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/b23bc9b5-9ef1-4d50-abfd-5f04a0d9f3f5" />
+  - <img width="3840" height="1960" alt="image" src="https://github.com/user-attachments/assets/a0353889-467c-4c12-a5dc-ce1cb28674ae" />
+
+
 
 ## 3. Tech Stack
 
