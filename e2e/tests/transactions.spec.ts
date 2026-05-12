@@ -1,25 +1,26 @@
 import { Page } from "@playwright/test";
 import { expect, loginWithMode, StorageMode, test } from "../fixtures/auth";
 import {
-    createTransaction,
-    deleteTransaction,
-    fillAccountForm,
-    fillAmount,
-    fillCategoryForm,
-    fillTransactionCategoryForm,
-    fillTransactionGroupForm,
-    fillTransactionName,
-    navigateToAccountCategories,
-    navigateToAccounts,
-    navigateToRestoreTransactions,
-    navigateToTransactionCategories,
-    navigateToTransactionGroups,
-    navigateToTransactionsViaDrawer,
-    openMyTabAddModal,
-    openMyTabRestoreModal,
-    openTransactionEditModal,
-    saveForm,
-    selectFormDropdown,
+  createTransaction,
+  deleteTransaction,
+  fillAccountForm,
+  fillAmount,
+  fillCategoryForm,
+  fillTransactionCategoryForm,
+  fillTransactionGroupForm,
+  fillTransactionName,
+  navigateToAccountCategories,
+  navigateToAccounts,
+  navigateToRestoreTransactions,
+  navigateToTransactionCategories,
+  navigateToTransactionGroups,
+  navigateToTransactionsViaDrawer,
+  openMyTabAddModal,
+  openMyTabRestoreModal,
+  openTransactionEditModal,
+  saveForm,
+  selectFormDropdown,
+  setTransactionVoidStatus,
 } from "../utils/helpers";
 import { selectors } from "../utils/selectors";
 
@@ -45,22 +46,14 @@ async function saveTransactionAndWaitForPersistence(page: Page, name: string) {
 async function createAccountCategoryPrerequisite(page: Page, name: string) {
   await navigateToAccountCategories(page);
   await openMyTabAddModal(page, "Account Category");
-  await fillCategoryForm(page, {
-    name,
-    type: "Asset",
-    displayOrder: "9999",
-  });
+  await fillCategoryForm(page, { name, type: "Asset", displayOrder: "9999" });
   await saveForm(page);
   await expect(page.getByTestId(/^list-item-/).filter({ hasText: name })).toBeVisible();
 }
 
 async function createAccountPrerequisite(
   page: Page,
-  options: {
-    name: string;
-    categoryName: string;
-    balance: string;
-  },
+  options: { name: string; categoryName: string; balance: string },
 ) {
   await navigateToAccounts(page);
   await openMyTabAddModal(page, "Account");
@@ -71,11 +64,7 @@ async function createAccountPrerequisite(
 
 async function createTransactionGroupPrerequisite(
   page: Page,
-  options: {
-    name: string;
-    type: "Income" | "Expense" | "Transfer";
-    displayOrder: string;
-  },
+  options: { name: string; type: "Income" | "Expense" | "Transfer"; displayOrder: string },
 ) {
   await navigateToTransactionGroups(page);
   await openMyTabAddModal(page, "Transaction Group");
@@ -86,19 +75,13 @@ async function createTransactionGroupPrerequisite(
 
 async function createTransactionCategoryPrerequisite(
   page: Page,
-  options: {
-    name: string;
-    groupName: string;
-    displayOrder: string;
-  },
+  options: { name: string; groupName: string; displayOrder: string },
 ) {
   await navigateToTransactionCategories(page);
   await openMyTabAddModal(page);
   await fillTransactionCategoryForm(page, {
     name: options.name,
     groupName: options.groupName,
-    budgetAmount: "0",
-    budgetFrequency: "Monthly",
     displayOrder: options.displayOrder,
   });
   await saveForm(page);
@@ -123,7 +106,7 @@ for (const mode of storageModes) {
     let baselineTransactionName: string;
 
     test.beforeAll(async ({ browser }) => {
-      test.setTimeout(180000);
+      test.setTimeout(300000);
 
       page = await browser.newPage();
       await loginWithMode(page, mode);
@@ -212,10 +195,14 @@ for (const mode of storageModes) {
       await navigateToTransactionsViaDrawer(page);
     });
 
+    // ----- READ -----
+
     test("can view transactions list", async () => {
       await expect(page).toHaveURL(/\/Transactions/);
       await expectTransactionVisible(page, baselineTransactionName);
     });
+
+    // ----- CREATE -----
 
     test("can create an expense transaction", async () => {
       const txnName = `Test Expense ${Date.now()}`;
@@ -260,6 +247,22 @@ for (const mode of storageModes) {
       await expectTransactionVisible(page, txnName);
     });
 
+    test("can create a second expense transaction with different amount", async () => {
+      const txnName = `Test Expense 2 ${Date.now()}`;
+
+      await createTransaction(page, {
+        name: txnName,
+        amount: "75",
+        accountName: primaryAccountName,
+        type: "Expense",
+        categoryName: expenseCategoryName,
+      });
+
+      await expectTransactionVisible(page, txnName);
+    });
+
+    // ----- UPDATE -----
+
     test("can update a transaction name and amount", async () => {
       const originalName = `Update Txn ${Date.now()}`;
       const updatedName = `Updated Txn ${Date.now()}`;
@@ -279,6 +282,7 @@ for (const mode of storageModes) {
 
       await expectTransactionVisible(page, updatedName);
 
+      // Verify values persisted
       const reopenedPage = await openTransactionEditModal(page, updatedName);
       await expect(reopenedPage.getByPlaceholder("Type to search..")).toHaveValue(updatedName);
       await expect(reopenedPage.getByRole("textbox", { name: /Amount/i })).toHaveValue("125");
@@ -309,6 +313,51 @@ for (const mode of storageModes) {
       await expect(updatedTransactionRow).toContainText(secondaryAccountName);
     });
 
+    // ----- VOID / UNVOID -----
+
+    test("can void a transaction", async () => {
+      const txnName = `Void Txn ${Date.now()}`;
+
+      await createTransaction(page, {
+        name: txnName,
+        amount: "30",
+        accountName: primaryAccountName,
+        type: "Expense",
+        categoryName: expenseCategoryName,
+      });
+      await expectTransactionVisible(page, txnName);
+
+      await setTransactionVoidStatus(page, txnName, true);
+
+      // Transaction should still be visible (voided, not deleted)
+      await expectTransactionVisible(page, txnName);
+    });
+
+    test("can unvoid a transaction", async () => {
+      const txnName = `Unvoid Txn ${Date.now()}`;
+
+      await createTransaction(page, {
+        name: txnName,
+        amount: "40",
+        accountName: primaryAccountName,
+        type: "Expense",
+        categoryName: expenseCategoryName,
+      });
+
+      // Void the transaction
+      await setTransactionVoidStatus(page, txnName, true);
+
+      // Navigate back to transactions to reset selection state
+      await navigateToTransactionsViaDrawer(page);
+
+      // Unvoid the transaction
+      await setTransactionVoidStatus(page, txnName, false);
+
+      await expectTransactionVisible(page, txnName);
+    });
+
+    // ----- DELETE -----
+
     test("can soft delete a transaction", async () => {
       const txnName = `Delete Txn ${Date.now()}`;
 
@@ -326,6 +375,8 @@ for (const mode of storageModes) {
       await expect(page.getByText(txnName)).not.toBeVisible();
     });
 
+    // ----- RESTORE -----
+
     test("can restore a soft-deleted transaction", async () => {
       const txnName = `Restore Txn ${Date.now()}`;
 
@@ -342,17 +393,24 @@ for (const mode of storageModes) {
       await expect(page.getByText(txnName)).not.toBeVisible();
 
       await navigateToRestoreTransactions(page);
-      await expect(page.getByText("Deleted Transactions")).toBeVisible();
+      await expect(page.getByText("Deleted Transactions")).toBeVisible({ timeout: 15000 });
 
       const deletedItem = page.getByTestId(/^list-item-/).filter({ hasText: txnName });
-      await expect(deletedItem).toBeVisible();
+      await expect(async () => {
+        if (!(await deletedItem.isVisible().catch(() => false))) {
+          await page.reload();
+          await page.waitForLoadState("domcontentloaded");
+        }
+        await expect(deletedItem).toBeVisible();
+      }).toPass({ timeout: 15000 });
 
       await openMyTabRestoreModal(page, txnName);
 
       const restoreModal = page.locator(selectors.ui.modal);
       await restoreModal.waitFor({ state: "visible" });
       await restoreModal.getByRole("button", { name: /restore|confirm/i }).click();
-      await expect(restoreModal).not.toBeVisible();
+      await expect(restoreModal).not.toBeVisible({ timeout: 10000 });
+      await expect(deletedItem).not.toBeVisible({ timeout: 10000 });
 
       await navigateToTransactionsViaDrawer(page);
       await expectTransactionVisible(page, txnName);

@@ -28,8 +28,9 @@ export async function fillCategoryForm(
       .getByRole("list", { name: "Category Details section" })
       .getByTestId(selectors.forms.dropdownButton)
       .click();
-    await page.waitForTimeout(300);
-    await page.getByText(type, { exact: true }).last().click();
+    const typeOption = page.getByText(type, { exact: true }).last();
+    await typeOption.waitFor({ state: "visible" });
+    await typeOption.click();
   }
 
   if (displayOrder) {
@@ -64,13 +65,11 @@ export async function fillAccountForm(
       .getByRole("list", { name: /Basic Information/ })
       .getByTestId(selectors.forms.dropdownButton)
       .click();
-    await page.waitForTimeout(300);
 
     // Type the category name into the search field to filter options
     const searchField = page.getByPlaceholder("Search...");
     if (await searchField.isVisible().catch(() => false)) {
       await searchField.fill(categoryName);
-      await page.waitForTimeout(300);
     }
 
     // Prefer deterministic testID option selection when available
@@ -83,8 +82,6 @@ export async function fillAccountForm(
       await categoryOption.waitFor({ state: "visible", timeout: 10000 });
       await categoryOption.click({ force: true });
     }
-    // Wait for dropdown to close
-    await page.waitForTimeout(200);
   }
 
   if (balance) {
@@ -122,8 +119,9 @@ export async function fillTransactionGroupForm(
       .getByRole("list", { name: "Transaction Group Details section content" })
       .getByTestId(selectors.forms.dropdownButton)
       .click();
-    await page.waitForTimeout(300);
-    await page.getByText(type, { exact: true }).last().click();
+    const typeOpt = page.getByText(type, { exact: true }).last();
+    await typeOpt.waitFor({ state: "visible" });
+    await typeOpt.click();
   }
 
   if (displayOrder) {
@@ -158,31 +156,27 @@ export async function fillTransactionCategoryForm(
 
     // Click the Transaction Group dropdown
     await categorySection.getByTestId(selectors.forms.dropdownButton).click();
-    await page.waitForTimeout(300);
 
     // Use the search box to filter groups
     const searchBox = page.getByPlaceholder("Search...");
     if (await searchBox.isVisible().catch(() => false)) {
       await searchBox.fill(groupName);
-      await page.waitForTimeout(300);
     }
 
     // Select the group from filtered dropdown globally using .last() to avoid matching the dropdown button
     await page.getByText(groupName, { exact: true }).last().click({ force: true });
-    await page.waitForTimeout(200);
   }
 
   if (budgetAmount) {
-    await page.getByRole("textbox", { name: "Budget Amount (required)" }).fill(budgetAmount);
+    await page.getByRole("textbox", { name: "Budget Amount" }).fill(budgetAmount);
   }
 
   if (budgetFrequency) {
     // Select budget frequency from its dropdown in the Budget Settings section
     const budgetSection = page.getByRole("list", { name: "Budget Settings section content" });
     await budgetSection.getByTestId(selectors.forms.dropdownButton).click();
-    await page.waitForTimeout(300);
+    await page.getByText(budgetFrequency, { exact: true }).last().waitFor({ state: "visible" });
     await page.getByText(budgetFrequency, { exact: true }).last().click({ force: true });
-    await page.waitForTimeout(200);
   }
 
   if (displayOrder) {
@@ -209,7 +203,7 @@ export async function fillTransactionName(scope: TransactionFormScope, name: str
  */
 export async function fillAmount(scope: TransactionFormScope, amount: string) {
   const form = getTransactionFormScope(scope);
-  const amountInput = form.getByRole("textbox", { name: /Amount/i });
+  const amountInput = form.getByRole("textbox", { name: "Amount (required)" });
   await amountInput.fill(amount);
 }
 
@@ -234,16 +228,15 @@ export async function selectFormDropdown(page: Page, fieldLabel: string, optionT
       await fieldContainer.click();
     }
   }
-  await page.waitForTimeout(400);
 
   // Check if a search box appeared (popup dropdowns have a search)
   const searchBox = page.getByPlaceholder("Search...");
   if (await searchBox.isVisible().catch(() => false)) {
     await searchBox.fill(optionText);
-    await page.waitForTimeout(400);
   }
 
   // Select the option globally using .last() to pick the dropdown list item over the dropdown button
-  await page.getByText(optionText, { exact: true }).last().click({ force: true });
-  await page.waitForTimeout(300);
+  const option = page.getByText(optionText, { exact: true }).last();
+  await option.waitFor({ state: "visible" });
+  await option.click({ force: true });
 }

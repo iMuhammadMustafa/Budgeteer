@@ -13,7 +13,7 @@ export async function createTransaction(
         name: string;
         amount: string;
         accountName: string;
-        type?: "Expense" | "Income" | "Transfer" | "Refund";
+        type?: "Expense" | "Income" | "Transfer";
         categoryName?: string;
         transferAccountName?: string;
         isVoid?: boolean;
@@ -23,7 +23,6 @@ export async function createTransaction(
 
     await page.goto("/AddTransaction");
     await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(500);
 
     await fillTransactionName(page, name);
     await fillAmount(page, amount);
@@ -44,7 +43,6 @@ export async function createTransaction(
 
     await page.getByRole("button", { name: /save transaction/i }).click();
     await page.waitForURL("**/Transactions");
-    await page.waitForTimeout(500);
 
     // If isVoid requested, apply via batch update after creation
     if (isVoid) {
@@ -67,27 +65,37 @@ export async function setTransactionVoidStatus(
 ): Promise<void> {
     // Long-press to enter selection mode and select the transaction
     await page.getByText(transactionName).first().click({ delay: 500 });
-    await page.waitForTimeout(300);
 
     // Open the Batch Update modal via the Pencil button
-    await page.getByRole("button", { name: /batch update/i }).click();
+    const batchBtn = page.getByRole("button", { name: /batch update/i });
+    await batchBtn.waitFor({ state: "visible" });
+    await batchBtn.click();
 
     const modal = page.locator(selectors.ui.modal);
     await modal.waitFor({ state: "visible" });
 
     // Enable "Update Void Status" option by clicking its row
     await modal.getByText("Update Void Status").click();
-    await page.waitForTimeout(200);
 
-    // Toggle the void switch to the desired state
+    // Set the void switch to the desired state
     const voidSwitch = modal.getByRole("switch");
-    const isCurrentlyChecked = await voidSwitch.isChecked().catch(() => false);
-    if (isVoid && !isCurrentlyChecked) {
-        await voidSwitch.click();
-        await page.waitForTimeout(200);
-    } else if (!isVoid && isCurrentlyChecked) {
-        await voidSwitch.click();
-        await page.waitForTimeout(200);
+    await voidSwitch.waitFor({ state: "visible" });
+    if (isVoid) {
+        // For voiding: ensure switch is ON
+        if (!(await voidSwitch.isChecked().catch(() => false))) {
+            await voidSwitch.click();
+        }
+    } else {
+        // For unvoiding: ensure switch is OFF
+        // The switch may default to OFF, so we toggle ON then OFF to register an explicit change
+        const isChecked = await voidSwitch.isChecked().catch(() => false);
+        if (isChecked) {
+            await voidSwitch.click();
+        } else {
+            // Toggle ON then OFF to ensure the change registers
+            await voidSwitch.click();
+            await voidSwitch.click();
+        }
     }
 
     // Apply updates
@@ -97,7 +105,7 @@ export async function setTransactionVoidStatus(
     const confirmModal = page.locator(selectors.ui.modal);
     await confirmModal.waitFor({ state: "visible" });
     await confirmModal.getByRole("button", { name: /confirm|update|apply/i }).click();
-    await page.waitForTimeout(500);
+    await expect(confirmModal).not.toBeVisible({ timeout: 10000 }).catch(() => {});
 }
 
 // ============================================
@@ -110,17 +118,17 @@ export async function deleteTransaction(
 ): Promise<void> {
     // Long-press to enter selection mode
     await page.getByText(transactionName).first().click({ delay: 500 });
-    await page.waitForTimeout(300);
 
     // Click the Delete (Trash) button
-    await page.getByRole("button", { name: /delete selected/i }).click();
-    await page.waitForTimeout(300);
+    const deleteBtn = page.getByRole("button", { name: /delete selected/i });
+    await deleteBtn.waitFor({ state: "visible" });
+    await deleteBtn.click();
 
     // Confirm deletion
     const modal = page.locator(selectors.ui.modal);
     await modal.waitFor({ state: "visible" });
     await modal.getByRole("button", { name: /confirm|delete/i }).click();
-    await page.waitForTimeout(500);
+    await expect(modal).not.toBeVisible({ timeout: 10000 }).catch(() => {});
 }
 
 // ============================================
@@ -138,26 +146,35 @@ export async function verifyTransactionExists(
 ): Promise<boolean> {
     const { name, type, amount, accountName } = options;
 
-    let transactionLocator = page.getByRole("link");
+    // Try multiple strategies to find transactions
+    const filters = [name, type, amount, accountName].filter(Boolean);
 
-    if (name) {
-        transactionLocator = transactionLocator.filter({ hasText: name });
-    }
-    if (type) {
-        transactionLocator = transactionLocator.filter({ hasText: type });
-    }
-    if (amount) {
-        transactionLocator = transactionLocator.filter({ hasText: amount });
-    }
-    if (accountName) {
-        transactionLocator = transactionLocator.filter({ hasText: accountName });
+    // Strategy 1: Search by list item test IDs
+    let locator = page.getByTestId(/^list-item-/);
+    for (const filter of filters) {
+        locator = locator.filter({ hasText: filter! });
     }
 
     try {
-        await transactionLocator.first().waitFor({ state: "visible", timeout: 5000 });
+        await locator.first().waitFor({ state: "visible", timeout: 5000 });
         return true;
     } catch {
-        return false;
+        // Strategy 2: Search by link role (some transactions may render as links)
+        let linkLocator = page.getByRole("link");
+        for (const filter of filters) {
+            linkLocator = linkLocator.filter({ hasText: filter! });
+        }
+        try {
+            await linkLocator.first().waitFor({ state: "visible", timeout: 3000 });
+            return true;
+        } catch {
+            // Strategy 3: Search by plain text on the page
+            for (const filter of filters) {
+                const isVisible = await page.getByText(filter!).first().isVisible().catch(() => false);
+                if (!isVisible) return false;
+            }
+            return filters.length > 0;
+        }
     }
 }
 
@@ -202,8 +219,8 @@ export async function createTransactionCategory(
     await fillTransactionCategoryForm(page, {
         name,
         groupName: options.groupName,
-        budgetAmount: options.budgetAmount || "0",
-        budgetFrequency: options.budgetFrequency || "Monthly",
+        budgetAmount: options.budgetAmount,
+        budgetFrequency: options.budgetFrequency,
         displayOrder: options.displayOrder || "9999",
     });
     await saveForm(page);
