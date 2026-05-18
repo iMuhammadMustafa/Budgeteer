@@ -37,6 +37,8 @@ export interface ITransactionService extends IService<Transaction, TableNames.Tr
   useCreateMultipleTransactions: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   useUpdateTransferTransaction: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
   useUpdateMultipleTransactions: () => ReturnType<typeof useMutation<void, Error, BatchUpdateParams>>;
+  useSplitTransaction: () => ReturnType<typeof useMutation<any, Error, { original: TransactionsView; children: Inserts<TableNames.Transactions>[] }>>;
+  useFindSplitChildren: (splitFromId?: string) => ReturnType<typeof useQuery<Transaction[]>>;
 }
 
 export function useTransactionService(): ITransactionService {
@@ -49,6 +51,7 @@ export function useTransactionService(): ITransactionService {
   const { dbContext } = useStorageMode();
   const transactionRepo = dbContext.TransactionRepository();
   const accountRepo = dbContext.AccountRepository();
+  const transactionItemRepo = dbContext.TransactionItemRepository();
 
   const useFindAllView = (searchFilters?: TransactionFilters) => {
     return useQuery<TransactionsView[]>({
@@ -181,12 +184,15 @@ export function useTransactionService(): ITransactionService {
   const useSoftDelete = () => {
     return useMutation({
       mutationFn: async ({ id, item }: { id: string; item?: any }) => {
+        // Cascade soft-delete transaction items
+        await transactionItemRepo.deleteByTransactionId(id, tenantId);
         await transactionRepo.softDelete(id, tenantId);
         if (!item) return;
         if (item.isvoid !== true && item.accountid && item.amount) {
           await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
         }
         if (item.transferid) {
+          await transactionItemRepo.deleteByTransactionId(item.transferid, tenantId);
           await transactionRepo.softDelete(item.transferid, tenantId);
           if (item.isvoid !== true && item.transferaccountid && item.amount) {
             await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
@@ -197,6 +203,7 @@ export function useTransactionService(): ITransactionService {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
       },
     });
   };

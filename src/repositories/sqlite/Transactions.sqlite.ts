@@ -17,8 +17,9 @@ export class TransactionSqliteRepository
     extends BaseSqliteRepository<Transaction, TableNames.Transactions>
     implements ITransactionRepository {
     protected tableName = TableNames.Transactions;
-    protected orderByField = "date";
-    protected orderDirection: "ASC" | "DESC" = "DESC";
+    // protected orderByField = "date";
+    // protected orderDirection: "ASC" | "DESC" = "DESC";
+    protected orderByFieldsDesc = ["date"];
 
     /**
      * Find all transactions from view with enriched data and running balance
@@ -202,5 +203,14 @@ export class TransactionSqliteRepository
     ): Promise<Transaction[]> {
         // Use base class implementation which has schema filtering
         return super.createMultiple(data, tenantId);
+    }
+
+    async findBySplitFromId(splitFromId: string, tenantId: string): Promise<Transaction[]> {
+        const db = await getSqliteDB();
+        const rows = await db.getAllAsync<Record<string, unknown>>(
+            `SELECT * FROM ${TableNames.Transactions} WHERE splitfromid = ? AND tenantid = ? AND isdeleted = 0`,
+            [splitFromId, tenantId]
+        );
+        return rows.map((row) => this.mapFromRow(row));
     }
 }

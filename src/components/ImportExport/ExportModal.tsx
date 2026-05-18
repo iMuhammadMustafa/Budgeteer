@@ -307,6 +307,7 @@ function getTableIcon(table: TableNames): string {
         [TableNames.Recurrings]: "Repeat",
         [TableNames.SavingsBuckets]: "PiggyBank",
         [TableNames.Transactions]: "Receipt",
+        [TableNames.TransactionItems]: "List",
     };
     return icons[table] || "Database";
 }

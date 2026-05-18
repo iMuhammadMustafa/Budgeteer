@@ -11,6 +11,7 @@ export default function TransactionsPageHeader({
   openDeleteConfirm,
   openDuplicateConfirm,
   openBatchUpdate,
+  onSplit,
   isActionLoading,
   clearSelection,
   refreshTransactions,
@@ -57,6 +58,18 @@ export default function TransactionsPageHeader({
                 >
                   <MyIcon name="Copy" className="text-foreground" size={20} />
                 </Button>
+                {selectedTransactions.length === 1 && !selectedTransactions[0].isvoid && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onPress={onSplit}
+                    accessibilityLabel="Split transaction"
+                    testID="btn-split-transaction"
+                    className="m-0 p-0"
+                    leftIcon="Scissors"
+                    iconSize={20}
+                  />
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

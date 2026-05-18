@@ -115,6 +115,7 @@ export const clearSqliteDataByTenant = async (tenantId: string): Promise<void> =
 
     // Delete in reverse dependency order to respect foreign keys
     const tables = [
+        TableNames.TransactionItems,
         TableNames.SavingsBuckets,
         TableNames.Recurrings,
         TableNames.Transactions,
@@ -141,6 +142,7 @@ export const clearAllSqliteData = async (): Promise<void> => {
     console.log("Clearing all SQLite data...");
 
     const tables = [
+        TableNames.TransactionItems,
         TableNames.SavingsBuckets,
         TableNames.Recurrings,
         TableNames.Transactions,

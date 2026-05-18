@@ -43,6 +43,7 @@ export default function Transactions() {
     updateSummary,
     handleBatchUpdateSubmit,
     executeConfirmedAction,
+    handleSplit,
   } = useTransactions();
 
   if (error)
@@ -60,6 +61,7 @@ export default function Transactions() {
         openDeleteConfirm={() => openConfirmModal("delete")}
         openDuplicateConfirm={() => openConfirmModal("duplicate")}
         openBatchUpdate={() => setShowBatchUpdate(true)}
+        onSplit={handleSplit}
         isActionLoading={isActionLoading}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}

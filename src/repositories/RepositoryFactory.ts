@@ -8,6 +8,7 @@ import { ITransactionCategoryRepository } from "./interfaces/ITransactionCategor
 import { ITransactionGroupRepository } from "./interfaces/ITransactionGroupRepository";
 import { ISavingsBucketRepository } from "./interfaces/ISavingsBucketRepository";
 import { ITransactionRepository } from "./interfaces/ITransactionRepository";
+import { ITransactionItemRepository } from "./interfaces/ITransactionItemRepository";
 
 // Supabase repositories
 import { AccountCategorySupaRepository } from "./supabase/AccountCategories.supa";
@@ -19,6 +20,7 @@ import { TransactionCategorySupaRepository } from "./supabase/TransactionCategor
 import { TransactionGroupSupaRepository } from "./supabase/TransactionGroups.supa";
 import { SavingsBucketSupaRepository } from "./supabase/SavingsBuckets.supa";
 import { TransactionSupaRepository } from "./supabase/Transactions.supa";
+import { TransactionItemSupaRepository } from "./supabase/TransactionItems.supa";
 
 // SQLite repositories
 import { AccountCategorySqliteRepository } from "./sqlite/AccountCategories.sqlite";
@@ -30,6 +32,7 @@ import { TransactionCategorySqliteRepository } from "./sqlite/TransactionCategor
 import { TransactionGroupSqliteRepository } from "./sqlite/TransactionGroups.sqlite";
 import { SavingsBucketSqliteRepository } from "./sqlite/SavingsBuckets.sqlite";
 import { TransactionSqliteRepository } from "./sqlite/Transactions.sqlite";
+import { TransactionItemSqliteRepository } from "./sqlite/TransactionItems.sqlite";
 
 export interface IRepositoryFactory {
   AccountCategoryRepository(): IAccountCategoryRepository;
@@ -41,6 +44,7 @@ export interface IRepositoryFactory {
   TransactionGroupRepository(): ITransactionGroupRepository;
   SavingsBucketRepository(): ISavingsBucketRepository;
   TransactionRepository(): ITransactionRepository;
+  TransactionItemRepository(): ITransactionItemRepository;
 }
 
 export function createRepositoryFactory(storageMode: StorageMode | null): IRepositoryFactory {
@@ -55,6 +59,7 @@ export function createRepositoryFactory(storageMode: StorageMode | null): IRepos
       TransactionGroupRepository: () => new TransactionGroupSupaRepository(),
       SavingsBucketRepository: () => new SavingsBucketSupaRepository(),
       TransactionRepository: () => new TransactionSupaRepository(),
+      TransactionItemRepository: () => new TransactionItemSupaRepository(),
     };
   }
   return {
@@ -67,5 +72,6 @@ export function createRepositoryFactory(storageMode: StorageMode | null): IRepos
     TransactionGroupRepository: () => new TransactionGroupSqliteRepository(),
     SavingsBucketRepository: () => new SavingsBucketSqliteRepository(),
     TransactionRepository: () => new TransactionSqliteRepository(),
+    TransactionItemRepository: () => new TransactionItemSqliteRepository(),
   };
 }

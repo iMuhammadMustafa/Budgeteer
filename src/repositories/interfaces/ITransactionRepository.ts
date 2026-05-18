@@ -15,6 +15,7 @@ export interface ITransactionRepository extends IRepository<Transaction, TableNa
   findByName(text: string, tenantId: string): Promise<{ label: string; item: SearchDistinctTransactions }[]>;
   updateTransferTransaction(transaction: Updates<TableNames.Transactions>): Promise<Transaction>;
   findAllDeleted(tenantId: string, filters: TransactionFilters): Promise<Transaction[]>;
+  findBySplitFromId(splitFromId: string, tenantId: string): Promise<Transaction[]>;
 
   getAccountBalanceAtDate(accountId: string, date: Date, tenantId: string): Promise<number>;
   createMultiple(

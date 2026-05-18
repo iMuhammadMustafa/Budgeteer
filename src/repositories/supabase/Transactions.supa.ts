@@ -214,4 +214,16 @@ export class TransactionSupaRepository
 
     return query;
   };
+
+  async findBySplitFromId(splitFromId: string, tenantId: string): Promise<Transaction[]> {
+    const { data, error } = await supabase
+      .from(TableNames.Transactions)
+      .select()
+      .eq("tenantid", tenantId)
+      .eq("splitfromid", splitFromId)
+      .eq("isdeleted", false);
+
+    if (error) throw new Error(error.message);
+    return data as Transaction[];
+  }
 }
