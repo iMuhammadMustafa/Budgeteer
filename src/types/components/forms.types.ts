@@ -311,6 +311,18 @@ export interface TransactionFormData extends Omit<Transaction, "id" | "createdat
 }
 
 /**
+ * Sub-item for a transaction (line-item breakdown)
+ * categoryid is optional and informational only — stats always use parent category
+ */
+export interface TransactionSubItem {
+  id?: string;
+  name: string;
+  amount: number;
+  categoryid?: string | null;
+  notes?: string | null;
+}
+
+/**
  * Transaction Category form data type
  */
 export interface TransactionCategoryFormData extends Omit<TransactionCategory, "id" | "createdat" | "updatedat"> {

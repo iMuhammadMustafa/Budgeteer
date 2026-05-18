@@ -7,6 +7,7 @@ export type TransactionsPageHeaderProps = {
   openDeleteConfirm: () => void;
   openDuplicateConfirm: () => void;
   openBatchUpdate: () => void;
+  onSplit: () => void;
   isActionLoading: boolean;
   clearSelection: () => void;
   refreshTransactions: () => void;

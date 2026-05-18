@@ -11,6 +11,7 @@ export type Account = Tables<"accounts"> & { runningbalance?: number | null; cat
 export type AccountCategory = Tables<"accountcategories">;
 
 export type Transaction = Tables<"transactions">;
+export type TransactionItem = Tables<"transactionitems">;
 export type TransactionCategory = Tables<"transactioncategories"> & { group?: TransactionGroup };
 export type TransactionGroup = Tables<"transactiongroups">;
 

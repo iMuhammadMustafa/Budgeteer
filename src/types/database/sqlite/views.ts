@@ -17,6 +17,7 @@ export const CREATE_TRANSACTIONS_VIEW = `
     t.amount,
     t.date,
     t.payee,
+    t.splitfromid,
     t.type,
     t.isvoid,
     t.tenantid,
@@ -211,28 +212,28 @@ export const CREATE_STATS_TOTAL_ACCOUNT_BALANCE_VIEW = `
  * All view creation statements
  */
 export const ALL_CREATE_VIEWS = [
-    CREATE_TRANSACTIONS_VIEW,
-    CREATE_ACCOUNTS_WITH_RUNNING_BALANCE_VIEW,
-    CREATE_SEARCH_DISTINCT_TRANSACTIONS_VIEW,
-    CREATE_STATS_DAILY_TRANSACTIONS_VIEW,
-    CREATE_STATS_MONTHLY_TRANSACTION_TYPES_VIEW,
-    CREATE_STATS_MONTHLY_CATEGORIES_VIEW,
-    CREATE_STATS_MONTHLY_ACCOUNTS_VIEW,
-    CREATE_STATS_NET_WORTH_GROWTH_VIEW,
-    CREATE_STATS_TOTAL_ACCOUNT_BALANCE_VIEW,
+  CREATE_TRANSACTIONS_VIEW,
+  CREATE_ACCOUNTS_WITH_RUNNING_BALANCE_VIEW,
+  CREATE_SEARCH_DISTINCT_TRANSACTIONS_VIEW,
+  CREATE_STATS_DAILY_TRANSACTIONS_VIEW,
+  CREATE_STATS_MONTHLY_TRANSACTION_TYPES_VIEW,
+  CREATE_STATS_MONTHLY_CATEGORIES_VIEW,
+  CREATE_STATS_MONTHLY_ACCOUNTS_VIEW,
+  CREATE_STATS_NET_WORTH_GROWTH_VIEW,
+  CREATE_STATS_TOTAL_ACCOUNT_BALANCE_VIEW,
 ];
 
 /**
  * Drop all views (for recreation)
  */
 export const ALL_DROP_VIEWS = [
-    `DROP VIEW IF EXISTS ${ViewNames.TransactionsView}`,
-    `DROP VIEW IF EXISTS ${ViewNames.ViewAccountsWithRunningBalance}`,
-    `DROP VIEW IF EXISTS ${ViewNames.SearchDistinctTransactions}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsDailyTransactions}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyTransactionsTypes}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyCategoriesTransactions}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyAccountsTransactions}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsNetWorthGrowth}`,
-    `DROP VIEW IF EXISTS ${ViewNames.StatsTotalAccountBalance}`,
+  `DROP VIEW IF EXISTS ${ViewNames.TransactionsView}`,
+  `DROP VIEW IF EXISTS ${ViewNames.ViewAccountsWithRunningBalance}`,
+  `DROP VIEW IF EXISTS ${ViewNames.SearchDistinctTransactions}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsDailyTransactions}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyTransactionsTypes}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyCategoriesTransactions}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsMonthlyAccountsTransactions}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsNetWorthGrowth}`,
+  `DROP VIEW IF EXISTS ${ViewNames.StatsTotalAccountBalance}`,
 ];

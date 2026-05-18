@@ -21,8 +21,8 @@ export default function DaysList({
   day: string;
   data: GroupedData;
   selectedTransactions: TransactionsView[];
-  handleLongPress: (item: TransactionsView, transferItem: TransactionsView) => void;
-  handlePress: (item: TransactionsView, transferItem: TransactionsView) => void;
+  handleLongPress: (item: TransactionsView, transferItem?: TransactionsView) => void;
+  handlePress: (item: TransactionsView, transferItem?: TransactionsView) => void;
 }) {
   return (
     <View className="flex justify-center px-3 py-1">
@@ -34,8 +34,8 @@ export default function DaysList({
           <TransactionItem
             transaction={transaction}
             selectedTransactions={selectedTransactions}
-            handleLongPress={handleLongPress}
-            handlePress={handlePress}
+            handleLongPress={(item, transferItem) => handleLongPress(item, transferItem)}
+            handlePress={(item, transferItem) => handlePress(item, transferItem)}
             transferTransaction={data[day].transactions.find(t => t.id === transaction.transferid)}
           />
         )}

@@ -103,6 +103,7 @@ export const CREATE_TRANSACTIONS_TABLE = `
     categoryid TEXT NOT NULL,
     transferaccountid TEXT,
     transferid TEXT,
+    splitfromid TEXT,
     isvoid INTEGER NOT NULL DEFAULT 0,
     tenantid TEXT NOT NULL,
     isdeleted INTEGER NOT NULL DEFAULT 0,
@@ -113,7 +114,8 @@ export const CREATE_TRANSACTIONS_TABLE = `
     FOREIGN KEY (accountid) REFERENCES ${TableNames.Accounts}(id),
     FOREIGN KEY (categoryid) REFERENCES ${TableNames.TransactionCategories}(id),
     FOREIGN KEY (transferaccountid) REFERENCES ${TableNames.Accounts}(id),
-    FOREIGN KEY (transferid) REFERENCES ${TableNames.Transactions}(id)
+    FOREIGN KEY (transferid) REFERENCES ${TableNames.Transactions}(id),
+    FOREIGN KEY (splitfromid) REFERENCES ${TableNames.Transactions}(id)
   )
 `;
 
@@ -191,6 +193,26 @@ export const CREATE_SAVINGS_BUCKETS_TABLE = `
   )
 `;
 
+export const CREATE_TRANSACTION_ITEMS_TABLE = `
+  CREATE TABLE IF NOT EXISTS ${TableNames.TransactionItems} (
+    id TEXT PRIMARY KEY,
+    transactionid TEXT NOT NULL,
+    name TEXT NOT NULL,
+    amount REAL NOT NULL,
+    categoryid TEXT,
+    notes TEXT,
+    displayorder INTEGER NOT NULL DEFAULT 0,
+    tenantid TEXT NOT NULL,
+    isdeleted INTEGER NOT NULL DEFAULT 0,
+    createdat TEXT NOT NULL,
+    createdby TEXT,
+    updatedat TEXT,
+    updatedby TEXT,
+    FOREIGN KEY (transactionid) REFERENCES ${TableNames.Transactions}(id),
+    FOREIGN KEY (categoryid) REFERENCES ${TableNames.TransactionCategories}(id)
+  )
+`;
+
 /**
  * Index definitions matching Supabase
  */
@@ -207,12 +229,15 @@ export const CREATE_INDICES = [
   `CREATE INDEX IF NOT EXISTS idx_transactions_date ON ${TableNames.Transactions}(date)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_transferaccountid ON ${TableNames.Transactions}(transferaccountid)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_transferid ON ${TableNames.Transactions}(transferid)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactions_splitfromid ON ${TableNames.Transactions}(splitfromid)`,
   `CREATE INDEX IF NOT EXISTS idx_recurrings_categoryid ON ${TableNames.Recurrings}(categoryid)`,
   `CREATE INDEX IF NOT EXISTS idx_recurrings_sourceaccountid ON ${TableNames.Recurrings}(sourceaccountid)`,
   `CREATE INDEX IF NOT EXISTS idx_recurrings_tenantid ON ${TableNames.Recurrings}(tenantid)`,
   `CREATE INDEX IF NOT EXISTS idx_configurations_tenantid ON ${TableNames.Configurations}(tenantid)`,
   `CREATE INDEX IF NOT EXISTS idx_savingsbuckets_accountid ON ${TableNames.SavingsBuckets}(accountid)`,
   `CREATE INDEX IF NOT EXISTS idx_savingsbuckets_tenantid ON ${TableNames.SavingsBuckets}(tenantid)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactionitems_transactionid ON ${TableNames.TransactionItems}(transactionid)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactionitems_tenantid ON ${TableNames.TransactionItems}(tenantid)`,
 ];
 
 /**
@@ -227,4 +252,5 @@ export const ALL_CREATE_TABLES = [
   CREATE_CONFIGURATIONS_TABLE,
   CREATE_RECURRINGS_TABLE,
   CREATE_SAVINGS_BUCKETS_TABLE,
+  CREATE_TRANSACTION_ITEMS_TABLE,
 ];

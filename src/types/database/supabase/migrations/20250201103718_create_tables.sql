@@ -149,6 +149,7 @@ CREATE TABLE Transactions
     AccountId UUID NOT NULL,
     TransferId UUID,
     TransferAccountId UUID,
+    SplitFromId UUID REFERENCES Transactions(Id),
 
         
     CreatedBy UUID DEFAULT auth.uid(),
@@ -169,7 +170,9 @@ Alter table Transactions Enable Row Level Security;
 CREATE POLICY "Tenant access" ON Transactions as PERMISSIVE  for ALL USING (TenantId = auth.tenantid());
 CREATE INDEX "Transactions_TenantId" ON Transactions (TenantId);
 CREATE INDEX "Transactions_IsDeleted" ON Transactions (IsDeleted);
-CREATE INDEX "Transactions_Accountid_Date" ON transactions (accountid, date, id) WHERE IsDeleted = false AND IsVoid = false;;
+CREATE INDEX "Transactions_Accountid_Date" ON transactions (accountid, date, id) WHERE IsDeleted = false AND IsVoid = false;
+CREATE INDEX IF NOT EXISTS idx_transactions_splitfromid ON transactions(splitfromid);
+
 -- CREATE INDEX "Transactions_Accountid_Date" ON transactions (accountid, date, createdat, updatedat, type, id);
 
 
@@ -257,7 +260,46 @@ CREATE TABLE IF NOT EXISTS savingsbuckets (
 
 
 Alter table savingsbuckets Enable Row Level Security;
-CREATE POLICY "Tenant access" ON savingsbuckets as PERMISSIVE  for ALL USING (tenantid = auth.tenantid()); 
+-- CREATE POLICY "Tenant access" ON savingsbuckets as PERMISSIVE  for ALL USING (tenantid = auth.tenantid()); 
+CREATE POLICY "Tenant access" ON savingsbuckets as PERMISSIVE for ALL USING ( (tenantid = app_auth.tenantid()));
 CREATE INDEX IF NOT EXISTS "SavingsBuckets_TenantId" ON savingsbuckets (TenantId); 
 CREATE INDEX IF NOT EXISTS "SavingsBuckets_IsDeleted" ON savingsbuckets (IsDeleted); 
 CREATE INDEX IF NOT EXISTS "SavingsBuckets_AccountId" ON savingsbuckets(accountid);
+
+CREATE TABLE IF NOT EXISTS transactionitems (
+  id UUID DEFAULT uuid_generate_v7() PRIMARY KEY,
+  transactionid UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  categoryid UUID REFERENCES transactioncategories(id),
+  notes TEXT,
+  displayorder INTEGER NOT NULL DEFAULT 0,
+  tenantid UUID NOT NULL DEFAULT auth.uid(),
+  isdeleted BOOLEAN NOT NULL DEFAULT false,
+  createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
+  createdby UUID,
+  updatedat TIMESTAMPTZ,
+  updatedby UUID
+);
+
+ALTER TABLE transactionitems ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Tenant access" ON transactionitems as PERMISSIVE for ALL USING ( (tenantid = app_auth.tenantid()));
+-- CREATE POLICY "Users can view their own transaction items"
+--     ON transactionitems FOR SELECT
+--     USING (tenantid = (auth.jwt() -> 'user_metadata' ->> 'tenantid')::UUID);
+
+-- CREATE POLICY "Users can insert their own transaction items"
+--     ON transactionitems FOR INSERT
+--     WITH CHECK (tenantid = (auth.jwt() -> 'user_metadata' ->> 'tenantid')::UUID);
+
+-- CREATE POLICY "Users can update their own savings buckets"
+--     ON transactionitems FOR UPDATE
+--     USING (tenantid = (auth.jwt() -> 'user_metadata' ->> 'tenantid')::UUID);
+
+-- CREATE POLICY "Users can delete their own transaction items"
+--     ON transactionitems FOR DELETE
+--     USING (tenantid = (auth.jwt() -> 'user_metadata' ->> 'tenantid')::UUID);
+
+CREATE INDEX IF NOT EXISTS "TransactionItems_TenantId" ON transactionitems (tenantid);
+CREATE INDEX IF NOT EXISTS "TransactionItems_IsDeleted" ON transactionitems (isdeleted);
+CREATE INDEX IF NOT EXISTS "TransactionItems_TransactionId" ON transactionitems (transactionid);

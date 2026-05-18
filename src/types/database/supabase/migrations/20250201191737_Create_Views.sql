@@ -118,6 +118,7 @@ SELECT
   t.amount,
   t.type,
   t.payee,
+  t.splitfromid,
   -- t.description,
   -- t.tags,
   -- t.notes,
