@@ -118,12 +118,35 @@ interface ModalWrapperProps {
 }
 
 export function ModalWrapper({ visible, onClose, title, children, animationType = "fade" }: ModalWrapperProps) {
+  const idRef = useRef<number>(nextModalId++);
+
+  // Participate in the shared modal stack so a nested ModalWrapper consumes Escape
+  // before any outer MyModal does.
+  useEffect(() => {
+    const currentId = idRef.current;
+    if (visible) {
+      modalStack.push(currentId);
+    }
+    return () => {
+      const idx = modalStack.indexOf(currentId);
+      if (idx !== -1) modalStack.splice(idx, 1);
+    };
+  }, [visible]);
+
+  const handleDismiss = useCallback(() => {
+    if (modalStack[modalStack.length - 1] !== idRef.current) return false;
+    onClose();
+    return true;
+  }, [onClose]);
+
+  useBackAction(visible, handleDismiss);
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType={animationType}
-      onRequestClose={Platform.OS !== "web" ? onClose : undefined}
+      onRequestClose={Platform.OS !== "web" ? handleDismiss : undefined}
     >
       <View className="flex-1 bg-black/50 justify-center items-center">
         <Pressable className="absolute inset-0" onPress={onClose} />

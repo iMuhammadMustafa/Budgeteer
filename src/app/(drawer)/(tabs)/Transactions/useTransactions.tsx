@@ -64,14 +64,6 @@ export default function useTransactions() {
     setSelectedSum(0);
     setSelectionMode(false);
   }, []);
-  const backAction = useCallback((): boolean => {
-    if (selectionMode) {
-      clearSelection();
-      return true;
-    }
-    return false;
-  }, [selectionMode, clearSelection]);
-  useBackAction(selectionMode, backAction);
 
   const copyTransactions = async () => {
     setIsActionLoading(true);
@@ -262,6 +254,19 @@ export default function useTransactions() {
   };
 
   const [showSplitModal, setShowSplitModal] = useState(false);
+
+  const isAnyModalOpen = showSplitModal || showBatchUpdate || confirmAction !== null || showSearch;
+  const backAction = useCallback((): boolean => {
+    // When a modal is open, let the modal's own back handler claim Escape — otherwise
+    // selection-mode would consume it and the modal would never receive the event.
+    if (isAnyModalOpen) return false;
+    if (selectionMode) {
+      clearSelection();
+      return true;
+    }
+    return false;
+  }, [isAnyModalOpen, selectionMode, clearSelection]);
+  useBackAction(selectionMode, backAction);
 
   return {
     transactions,

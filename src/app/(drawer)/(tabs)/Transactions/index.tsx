@@ -133,10 +133,8 @@ export default function Transactions() {
       <SplitTransactionModal
         isOpen={showSplitModal}
         setIsOpen={setShowSplitModal}
-        onClose={() => {
-          setShowSplitModal(false);
-          clearSelection();
-        }}
+        onClose={() => setShowSplitModal(false)}
+        onSuccess={clearSelection}
         transaction={selectedTransactions[0]}
         categories={categories ?? []}
       />

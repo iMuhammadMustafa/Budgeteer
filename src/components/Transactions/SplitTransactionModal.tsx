@@ -1,66 +1,115 @@
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TableNames } from "@/src/types/database/TableNames";
-import { Inserts, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
+import { Inserts, Transaction, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
+import { getAmountMode } from "@/src/utils/amount.helper";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
+import AmountInput from "../elements/AmountInput";
 import Button from "../elements/Button";
 import { MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
-import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import MyModal from "../elements/MyModal";
 import ThemedText from "../elements/ThemedText";
-import { initialTransactionState } from "../forms/TransactionForm";
+
+type SplitChildInsert = Inserts<TableNames.Transactions>;
+
+interface SplitTransactionModalProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  /** Called when the user dismisses without applying (Cancel, X, Escape, backdrop). */
+  onClose: () => void;
+  /** Called after a successful split, in addition to onClose. Use this to clear selection. */
+  onSuccess?: () => void;
+  transaction: TransactionsView;
+  categories: TransactionCategory[];
+}
+
+const buildInitialSplits = (
+  originalAmount: number,
+  baseName: string | null | undefined,
+): SplitChildInsert[] => {
+  const isMinus = originalAmount <= 0;
+  return [
+    {
+      id: GenerateUuid(),
+      name: `${baseName ?? ""} (Part 1)`,
+      amount: originalAmount,
+      accountid: "",
+      categoryid: "",
+      date: new Date().toISOString(),
+    },
+    {
+      id: GenerateUuid(),
+      name: `${baseName ?? ""} (Part 2)`,
+      amount: isMinus ? -0 : 0,
+      accountid: "",
+      categoryid: "",
+      date: new Date().toISOString(),
+    },
+  ];
+};
 
 export default function SplitTransactionModal({
   isOpen,
   setIsOpen,
   onClose,
+  onSuccess,
   transaction,
   categories,
-}: {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  onClose: () => void;
-  transaction: TransactionsView;
-  categories: TransactionCategory[];
-}) {
+}: SplitTransactionModalProps) {
   const transactionService = useTransactionService();
   const splitMutation = transactionService.useSplitTransaction();
+  // The view is missing fields like notes/payee/tags/description – fetch the full row.
+  const { data: fullTransaction } = transactionService.useFindById(transaction?.id ?? undefined);
+  const source: Transaction | TransactionsView = (fullTransaction as Transaction | null) ?? transaction;
 
-  const initalSplits = useMemo(() => {
-    if (!transaction) return [];
-    return [
-      { ...initialTransactionState, name: `${transaction?.name} (Part 1)`, amount: transaction?.amount ?? 0 },
-      {
-        ...initialTransactionState,
-        name: `${transaction?.name} (Part 2)`,
-        amount: (transaction?.amount ?? 0) <= 0 ? -0 : 0,
-      },
-    ];
-  }, [transaction]);
+  const originalAmount = source?.amount ?? 0;
+  const originalMode = getAmountMode(originalAmount);
 
-  const [splits, setSplits] = useState<Inserts<TableNames.Transactions>[]>(initalSplits);
+  const initialSplits = useMemo(
+    () => (source ? buildInitialSplits(originalAmount, source.name) : []),
+    [source, originalAmount],
+  );
 
-  const splitsTotal = useMemo(() => {
-    return splits.reduce((sum, item) => sum + (item.amount ?? 0), 0);
-  }, [splits]);
+  const [splits, setSplits] = useState<SplitChildInsert[]>(initialSplits);
 
-  const originalAmount = transaction?.amount ?? 0;
-  const originalMode = originalAmount <= 0 ? "minus" : "plus";
-  const isBalanced = Math.abs(splitsTotal - originalAmount) === 0;
+  useEffect(() => {
+    setSplits(initialSplits);
+  }, [initialSplits]);
+
+  const splitsTotal = useMemo(
+    () => splits.reduce((sum, item) => sum + (item.amount ?? 0), 0),
+    [splits],
+  );
+
+  const isBalanced = Math.abs(splitsTotal - originalAmount) < 0.005;
 
   const addSplit = () => {
     const remaining = originalAmount - splitsTotal;
     const initialAmount = remaining === 0 && originalMode === "minus" ? -0 : remaining;
-    setSplits(prev => [...prev, { ...initialTransactionState, id: GenerateUuid(), name: "", amount: initialAmount }]);
+    setSplits(prev => [
+      ...prev,
+      {
+        id: GenerateUuid(),
+        name: "",
+        amount: initialAmount,
+        accountid: "",
+        categoryid: "",
+        date: new Date().toISOString(),
+      },
+    ]);
   };
 
   const removeSplit = (index: number) => {
     setSplits(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateSplit = (index: number, field: string, value: any) => {
+  const updateSplit = <K extends keyof SplitChildInsert>(
+    index: number,
+    field: K,
+    value: SplitChildInsert[K],
+  ) => {
     setSplits(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -69,39 +118,30 @@ export default function SplitTransactionModal({
   };
 
   const handleSubmit = async () => {
-    if (!transaction) return;
+    if (!source) return;
 
-    // Convert splits to transactions
-    const children = splits.map(s => {
-      return {
-        accountid: transaction.accountid!,
-        amount: s.amount,
-        categoryid: s.categoryid || transaction.categoryid!,
-        date: transaction.date!,
-        description: "",
-        groupid: transaction.groupid!,
-        isvoid: false,
-        name: s.name,
-        notes: "transaction.notes",
-        payee: "transaction.payee",
-        tags: "transaction.tags",
-        type: transaction.type!,
-      };
-    });
+    const children: SplitChildInsert[] = splits.map(s => ({
+      accountid: source.accountid!,
+      amount: s.amount,
+      categoryid: s.categoryid || source.categoryid!,
+      date: source.date!,
+      description: (source as Transaction).description ?? null,
+      isvoid: false,
+      name: s.name,
+      notes: (source as Transaction).notes ?? null,
+      payee: (source as Transaction).payee ?? null,
+      tags: (source as Transaction).tags ?? null,
+      type: source.type!,
+    }));
 
     await splitMutation.mutateAsync({
       original: transaction,
-      children: children,
+      children,
     });
 
+    onSuccess?.();
     onClose();
   };
-
-  useEffect(() => {
-    if (transaction) {
-      setSplits(initalSplits);
-    }
-  }, [transaction, initalSplits]);
 
   if (!transaction || !categories || !isOpen) return null;
 
@@ -138,52 +178,28 @@ export default function SplitTransactionModal({
                 <MyIcon name="X" size={14} className="text-danger-500" />
               </Button>
             </View>
-            <View className="flex-row items-center justify-center gap-2">
+            <View className="flex-row items-center gap-2 mb-2">
               <TextInput
                 className="border border-border rounded-md px-3 py-2 text-foreground bg-background flex-1"
                 placeholder="Name"
                 value={item.name ?? ""}
                 onChangeText={val => updateSplit(index, "name", val)}
               />
-              <View className="mt-2 z-50 flex-1">
+              <View className="flex-1 z-50">
                 <MyCategoriesDropdown
                   label=""
                   selectedValue={item.categoryid}
-                  onSelect={cat => updateSplit(index, "categoryid", cat?.id || null)}
+                  onSelect={cat => updateSplit(index, "categoryid", cat?.id ?? "")}
                   categories={categories}
                   isModal={true}
                 />
               </View>
             </View>
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-2 items-center" : "gap-2"}`}>
-              <View className="flex-row items-center gap-2 flex-1">
-                <ModeIcon
-                  onPress={() => updateSplit(index, "amount", -(item.amount ?? 0))}
-                  mode={(item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus"}
-                />
-                <TextInput
-                  placeholder="Amount"
-                  value={item.amount || Object.is(item.amount, -0) ? String(Math.abs(item.amount ?? 0)) : ""}
-                  onChangeText={val => {
-                    let cleanValue = val
-                      .replace(/[^0-9.]/g, "")
-                      .replace(/\.{2,}/g, ".")
-                      .replace(/^0+(?=\d)/, "");
-                    if (cleanValue.includes(".")) {
-                      const parts = cleanValue.split(".");
-                      if (parts[1] && parts[1].length > 2) {
-                        cleanValue = parts[0] + "." + parts[1].substring(0, 2);
-                      }
-                    }
-                    const parsed = parseFloat(cleanValue) || 0;
-                    const isMinus = (item.amount ?? 0) < 0 || Object.is(item.amount, -0);
-                    updateSplit(index, "amount", isMinus ? -parsed : parsed);
-                  }}
-                  keyboardType="decimal-pad"
-                  className="border border-border rounded-md px-3 py-2 text-foreground bg-background flex-1"
-                />
-              </View>
-            </View>
+            <AmountInput
+              amount={item.amount ?? 0}
+              onChange={val => updateSplit(index, "amount", val)}
+              testID={`input-split-amount-${index}`}
+            />
           </View>
         ))}
 
