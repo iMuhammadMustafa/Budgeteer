@@ -173,7 +173,7 @@ export async function fillTransactionCategoryForm(
   }
 
   if (budgetAmount) {
-    await page.getByRole("textbox", { name: "Budget Amount (required)" }).fill(budgetAmount);
+    await page.getByRole("textbox", { name: "Budget Amount" }).fill(budgetAmount);
   }
 
   if (budgetFrequency) {
@@ -209,7 +209,7 @@ export async function fillTransactionName(scope: TransactionFormScope, name: str
  */
 export async function fillAmount(scope: TransactionFormScope, amount: string) {
   const form = getTransactionFormScope(scope);
-  const amountInput = form.getByRole("textbox", { name: /Amount/i });
+  const amountInput = form.getByRole("textbox", { name: /Amount/i }).first();
   await amountInput.fill(amount);
 }
 

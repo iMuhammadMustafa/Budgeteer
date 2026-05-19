@@ -1,15 +1,17 @@
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
-import { OptionItem, TransactionFormData, ValidationSchema } from "@/src/types/components/forms.types";
+import { OptionItem, TransactionFormData, TransactionSubItem, ValidationSchema } from "@/src/types/components/forms.types";
 import { Transaction } from "@/src/types/database/Tables.Types";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
+import GenerateUuid from "@/src/utils/uuid.Helper";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CalculatorComponent from "../Calculator";
@@ -17,6 +19,7 @@ import Button from "../elements/Button";
 import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import SearchableDropdown from "../elements/SearchableDropdown";
+import ThemedText from "../elements/ThemedText";
 import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
@@ -41,6 +44,7 @@ export const initialTransactionState: TransactionFormType = {
   notes: "",
   tags: null,
   isvoid: false,
+  splitfromid: null,
   transferid: "",
   transferaccountid: null,
   mode: "minus",
@@ -134,6 +138,12 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     error,
     showOneMoreSuccess,
     isOneMoreSubmitting,
+    subItems,
+    addSubItem,
+    removeSubItem,
+    updateSubItem,
+    subItemsTotal,
+    isSubItemsBalanced,
   } = useTransactionForm({ transaction });
 
   return (
@@ -380,6 +390,111 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </View>
           </FormSection>
 
+          {/* Line Items Section — optional sub-item breakdown */}
+          <FormSection
+            title="Line Items"
+            description="Optional breakdown of this transaction into individual items"
+            actionBtn={
+              <Button
+                variant="outline"
+                size="icon"
+                onPress={() => addSubItem(formState.data.amount)}
+                leftIcon="Plus"
+                testID="btn-add-subitem"
+                className="mt-1"
+              />
+            }
+          >
+            {subItems.length > 0 && (
+              <View>
+                {/* Balance indicator */}
+                <View className="flex-row items-center justify-between mb-3 px-1">
+                  <ThemedText className="text-xs">
+                    Items total: {subItemsTotal.toFixed(2)}
+                  </ThemedText>
+                  <ThemedText
+                    className={`text-xs font-medium ${isSubItemsBalanced ? "text-success-500" : "text-danger-500"
+                      }`}
+                  >
+                    {isSubItemsBalanced
+                      ? "✓ Balanced"
+                      : `Remaining: ${(Math.abs(formState.data.amount) - subItemsTotal).toFixed(2)}`}
+                  </ThemedText>
+                </View>
+
+                {/* Sub-item cards */}
+                {subItems.map((item, index) => (
+                  <View
+                    key={item.id || index}
+                    className="border border-border rounded-lg p-3 mb-2 bg-card"
+                  >
+                    <View className="flex-row items-center justify-end mb-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onPress={() => removeSubItem(index)}
+                        accessibilityLabel={`Remove item ${index + 1}`}
+                        testID={`btn-remove-subitem-${index}`}
+                        className="m-0 p-0"
+                        hapticFeedback="light"
+                      >
+                        <MyIcon name="X" size={16} className="text-danger-500" />
+                      </Button>
+                    </View>
+                    <View className={`${Platform.OS === "web" ? "flex flex-row gap-2" : "gap-2"}`}>
+                      <View className="flex-[2]">
+                        <TextInput
+                          placeholder="Item name"
+                          value={item.name}
+                          onChangeText={(val) => updateSubItem(index, "name", val)}
+                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
+                          testID={`input-subitem-name-${index}`}
+                        />
+                      </View>
+                      <View className="justify-center">
+                        <ModeIcon
+                          onPress={() => updateSubItem(index, "amount", -(item.amount ?? 0))}
+                          mode={(item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus"}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <TextInput
+                          placeholder="Amount"
+                          value={item.amount || Object.is(item.amount, -0) ? String(Math.abs(item.amount)) : ""}
+                          onChangeText={(val) => {
+                            let cleanValue = val.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".").replace(/^0+(?=\d)/, "");
+                            if (cleanValue.includes(".")) {
+                              const parts = cleanValue.split(".");
+                              if (parts[1] && parts[1].length > 2) {
+                                cleanValue = parts[0] + "." + parts[1].substring(0, 2);
+                              }
+                            }
+                            const parsed = parseFloat(cleanValue) || 0;
+                            const isNegative = (item.amount ?? 0) < 0 || Object.is(item.amount, -0);
+                            updateSubItem(index, "amount", isNegative ? -parsed : parsed);
+                          }}
+                          keyboardType="decimal-pad"
+                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
+                          testID={`input-subitem-amount-${index}`}
+                        />
+                      </View>
+                      <View className="flex-[1.5]">
+                        <TextInput
+                          placeholder="Notes (optional)"
+                          value={item.notes || ""}
+                          onChangeText={(val) => updateSubItem(index, "notes", val || null)}
+                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background h-full"
+                          testID={`input-subitem-notes-${index}`}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+              </View>
+            )}
+          </FormSection>
+
           {/* Additional Information Section */}
           <FormSection title="Additional Information" description="Optional notes and tags">
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative z-10`}>
@@ -435,13 +550,66 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const transactionCategoryService = useTransactionCategoryService();
   const accountService = useAccountService();
   const transactionService = useTransactionService();
+  const transactionItemService = useTransactionItemService();
 
   const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAllWithGroup();
   const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAllWithCategory();
   const { mutate: upsertTransaction } = transactionService.useUpsert();
+  const createItemsMutation = transactionItemService.useCreateMultiple();
+  const deleteItemsMutation = transactionItemService.useDeleteByTransactionId();
+  const { data: existingItems, isLoading: isExistingItemsLoading } = transactionItemService.useFindByTransactionId(transaction.id);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
   const [isOneMoreSubmitting, setIsOneMoreSubmitting] = useState(false);
+
+  const [subItems, setSubItems] = useState<TransactionSubItem[]>([]);
+
+  useEffect(() => {
+    if (existingItems && existingItems.length > 0) {
+      setSubItems(
+        existingItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          amount: item.amount,
+          categoryid: item.categoryid,
+          notes: item.notes,
+        })),
+      );
+    }
+  }, [existingItems]);
+
+  const addSubItem = useCallback((parentAmount: number) => {
+    setSubItems((prev) => {
+      const currentTotal = prev.reduce((sum, item) => sum + Math.abs(item.amount ?? 0), 0);
+      const remaining = Math.max(0, Math.abs(parentAmount || 0) - currentTotal);
+
+      let initialAmount = remaining;
+      if (mode === "minus") {
+        initialAmount = remaining === 0 ? -0 : -remaining;
+      }
+
+      return [
+        ...prev,
+        { id: GenerateUuid(), name: "", amount: initialAmount, categoryid: null, notes: null },
+      ];
+    });
+  }, [mode]);
+
+  const removeSubItem = useCallback((index: number) => {
+    setSubItems((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateSubItem = useCallback((index: number, field: keyof TransactionSubItem, value: any) => {
+    setSubItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }, []);
+
+  const subItemsTotal = useMemo(() => {
+    return subItems.reduce((sum, item) => sum + Math.abs(item.amount || 0), 0);
+  }, [subItems]);
 
   const initialFormData: TransactionFormType = useMemo(
     () => ({
@@ -458,10 +626,21 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<TransactionFormType>(initialFormData, validationSchema);
 
+  // Whether sub-items are balanced against the transaction amount
+  const isSubItemsBalanced = useMemo(() => {
+    if (subItems.length === 0) return true;
+    return Math.abs(subItemsTotal - Math.abs(formState.data.amount)) < 0.01;
+  }, [subItems, subItemsTotal, formState.data.amount]);
+
   const handleSubmit = useCallback(
     async (data: TransactionFormType) => {
       if (data.type === "Transfer" && data.accountid === data.transferaccountid) {
         throw new Error("Source and destination accounts must be different");
+      }
+
+      // Validate sub-items balance if enabled
+      if (subItems.length > 0 && !isSubItemsBalanced) {
+        throw new Error("Line items must sum to the transaction amount");
       }
 
       const finalAmount = calculateFinalAmount(data, mode);
@@ -479,13 +658,37 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
           original: transaction.id ? (transaction as Transaction) : undefined,
         },
         {
+          onSuccess: async () => {
+            // Save sub-items after the transaction is created/updated
+            const txnId = data.id || submissionData.id;
+            if (txnId && subItems.length > 0) {
+              // Delete existing items first (for edits)
+              if (transaction.id) {
+                await deleteItemsMutation.mutateAsync(txnId);
+              }
+              // Create new items
+              const itemInserts = subItems.map((item, index) => ({
+                id: item.id || GenerateUuid(),
+                transactionid: txnId,
+                name: item.name,
+                amount: item.amount,
+                categoryid: item.categoryid || null,
+                notes: item.notes || null,
+                displayorder: index,
+              }));
+              await createItemsMutation.mutateAsync({ data: itemInserts });
+            } else if (txnId && transaction.id) {
+              // If sub-items were disabled, clean up any existing items
+              await deleteItemsMutation.mutateAsync(txnId);
+            }
+          },
           onError: error => {
             console.error("Error saving transaction:", error);
           },
         },
       );
     },
-    [upsertTransaction, transaction, mode],
+    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -785,7 +988,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     formState,
     updateField,
     setFieldTouched,
-    isValid,
+    isValid: isValid && isSubItemsBalanced,
     isDirty,
     isSubmitting,
     isCategoriesLoading,
@@ -809,5 +1012,11 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     findByName: findByNameStable,
     showOneMoreSuccess,
     isOneMoreSubmitting,
+    subItems,
+    addSubItem,
+    removeSubItem,
+    updateSubItem,
+    subItemsTotal,
+    isSubItemsBalanced,
   };
 };

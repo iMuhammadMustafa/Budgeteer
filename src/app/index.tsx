@@ -515,7 +515,7 @@ export default function Index() {
           <View className="w-full max-w-[420px]">
             <Animated.View entering={FadeInDown.delay(200)} className="mb-8">
               <Text className="font-bold text-[28px] text-heading tracking-tight mb-[10px]">Welcome back 👋</Text>
-              <Text className="text-[15px] text-subtext/50">Choose how you'd like to use Budgeteer</Text>
+              <Text className="text-[15px] text-subtext/50">Choose how you&apos;d like to use Budgeteer</Text>
             </Animated.View>
 
             {/* Divider */}
@@ -602,7 +602,7 @@ export default function Index() {
               Budgeteer
             </Text>
             <Text className="text-sm text-subtext/50 leading-[21px] max-w-[260px] text-center mt-3">
-              Choose how you'd like to get started
+              Choose how you&apos;d like to get started
             </Text>
           </Animated.View>
 

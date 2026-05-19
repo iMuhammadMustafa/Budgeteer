@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { router } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,13 +11,13 @@ import {
   ValidationSchema,
 } from "@/src/types/components/forms.types";
 
-import { queryClient } from "@/src/providers/QueryProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { ViewNames } from "@/src/types/database/TableNames";
+import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
+import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
@@ -90,6 +89,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const { data: accounts, isLoading: isAccountsLoading } = accountsService.useFindAll();
   const transactionService = useTransactionService();
   const submitAllMutation = transactionService.useCreateMultipleTransactions();
+  const splitMutation = transactionService.useSplitTransaction();
 
   // State for tracking amounts and mode
   const [mode, setMode] = useState<"plus" | "minus">("minus");
@@ -113,6 +113,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     () => (transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState),
     [transaction],
   );
+  const isSplitMode = !!transaction && transaction.splitfromid !== null;
 
   // Initialize form state
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
@@ -151,24 +152,50 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         accountid: data.accountid,
         groupid: data.groupid,
         categoryid: trans.categoryid,
-        amount: mode === "minus" ? -Math.abs(trans.amount) : Math.abs(trans.amount),
+        amount: trans.amount,
         notes: trans.notes,
-        tags: trans.tags,
+        tags: trans.tags ? JSON.stringify(trans.tags) : null,
         name: trans.name,
       }));
 
-      await submitAllMutation.mutateAsync(transactions, {
-        onSuccess: async () => {
-          console.log({
-            message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
-            type: "success",
-          });
-          await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
-          router.replace("/Transactions");
-        },
-      });
+      if (isSplitMode && splitMutation) {
+        // Split mode: void original + create children with splitfromid
+        await splitMutation.mutateAsync(
+          {
+            original: {
+              id: transaction?.id!,
+              accountid: transaction?.accountid!,
+              amount:
+                mode === "minus"
+                  ? -Math.abs(parseFloat(transaction?.amount?.toString() || "0"))
+                  : Math.abs(parseFloat(transaction?.amount?.toString() || "0")),
+              isvoid: false,
+            } as unknown as TransactionsView,
+            children: transactions,
+          },
+          {
+            onSuccess: async () => {
+              console.log({ message: "Transaction split successfully", type: "success" });
+              await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+              router.replace("/Transactions");
+            },
+          },
+        );
+      } else {
+        // Normal mode: create multiple transactions
+        await submitAllMutation.mutateAsync(transactions, {
+          onSuccess: async () => {
+            console.log({
+              message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
+              type: "success",
+            });
+            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+            router.replace("/Transactions");
+          },
+        });
+      }
     },
-    [submitAllMutation, transaction?.id, mode, currentAmount],
+    [submitAllMutation, splitMutation, transaction?.id, mode, currentAmount, isSplitMode],
   );
 
   // Form submission hook
@@ -282,7 +309,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
             onSubmit={onSubmit}
             isValid={isValid && isBalanced && !isSubmitting}
             isLoading={isSubmitting}
-            submitLabel="Save Multiple Transactions"
+            submitLabel={isSplitMode ? "Split Transaction" : "Save Multiple Transactions"}
             showReset={isDirty}
             onReset={handleReset}
           >
@@ -327,23 +354,9 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
               <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
                 {/* Total Amount with Mode Toggle */}
                 <View className="flex-1 flex-row items-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    hapticFeedback="selection"
-                    className={`${
-                      mode === "plus" ? "bg-success-400" : "bg-danger-400"
-                    } border border-muted rounded-lg me-2 p-1.5`}
-                    onPress={handleModeToggle}
-                    testID="btn-mode-toggle"
-                    accessibilityLabel={`Toggle amount sign, currently ${mode}`}
-                  >
-                    {mode === "minus" ? (
-                      <MyIcon name="Minus" size={24} className="text-gray-100" />
-                    ) : (
-                      <MyIcon name="Plus" size={24} className="text-gray-100" />
-                    )}
-                  </Button>
+                  <View className="me-2 mt-5 justify-center items-center">
+                    <ModeIcon onPress={handleModeToggle} mode={mode} />
+                  </View>
 
                   <View className="flex-1">
                     <FormField
@@ -480,9 +493,14 @@ const TransactionsCreationList = ({
     const newTransactionId = GenerateUuid();
     const remainingAmount = (mode === "minus" ? -maxAmount : maxAmount) - currentAmount;
 
+    let initialAmount = remainingAmount;
+    if (remainingAmount === 0 && mode === "minus") {
+      initialAmount = -0;
+    }
+
     const newTransaction: MultipleTransactionItemData = {
       name: "",
-      amount: Math.abs(remainingAmount),
+      amount: initialAmount,
       categoryid: "",
       notes: null,
       tags: null,
@@ -591,19 +609,13 @@ const TransactionCard = ({
 
       const numericAmount = parseFloat(cleanValue) || 0;
 
-      // Calculate remaining amount available
-      const otherTransactionsTotal = Object.entries(formState.data.transactions)
-        .filter(([transactionId]) => transactionId !== id)
-        .reduce((total: number, [, trans]) => total + ((trans as MultipleTransactionItemData).amount || 0), 0);
-
-      const availableAmount = maxAmount - otherTransactionsTotal;
-
-      // Limit to available amount
-      const finalAmount = Math.min(numericAmount, Math.max(0, availableAmount));
+      // Keep the current sign
+      const isNegative = (transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0);
+      const finalAmount = isNegative ? -numericAmount : numericAmount;
 
       updateTransactionField("amount", finalAmount);
     },
-    [formState.data.transactions, id, maxAmount, updateTransactionField],
+    [transaction.amount, updateTransactionField],
   );
 
   // Handle transaction deletion
@@ -619,18 +631,26 @@ const TransactionCard = ({
       className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}
     >
       {/* Amount Field */}
-      <FormField
-        config={{
-          name: "amount",
-          label: "Amount",
-          type: "number",
-          required: true,
-          placeholder: "0.00",
-        }}
-        value={transaction.amount?.toString() || "0"}
-        onChange={handleAmountChange}
-        className={Platform.OS === "web" ? "flex-1" : ""}
-      />
+      <View className={Platform.OS === "web" ? "flex-1 flex-row gap-2 items-center" : "flex-row gap-2 items-center"}>
+        <View className="mt-5 justify-center">
+          <ModeIcon
+            onPress={() => updateTransactionField("amount", -(transaction.amount ?? 0))}
+            mode={(transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0) ? "minus" : "plus"}
+          />
+        </View>
+        <FormField
+          config={{
+            name: "amount",
+            label: "Amount",
+            type: "number",
+            required: true,
+            placeholder: "0.00",
+          }}
+          value={Math.abs(transaction.amount ?? 0).toString() || "0"}
+          onChange={handleAmountChange}
+          className="flex-1"
+        />
+      </View>
 
       {/* Name Field */}
       <FormField
@@ -739,7 +759,9 @@ const TransactionsSummary = ({
 
         <View className="flex-row justify-between border-t border-border-default pt-2">
           <Text className="text-foreground font-medium">Remaining:</Text>
-          <Text className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-status-success" : "text-status-warning"}`}>
+          <Text
+            className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-status-success" : "text-status-warning"}`}
+          >
             {remainingAmount.toFixed(2)}
           </Text>
         </View>

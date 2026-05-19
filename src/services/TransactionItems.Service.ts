@@ -8,6 +8,7 @@ import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
 
 export interface ITransactionItemService extends IService<TransactionItem, TableNames.TransactionItems> {
+  useCreateMultiple: () => ReturnType<typeof useMutation<TransactionItem[], Error, { data: Inserts<TableNames.TransactionItems>[] }>>;
   useFindByTransactionId: (transactionId?: string) => ReturnType<typeof useQuery<TransactionItem[]>>;
   useDeleteByTransactionId: () => ReturnType<typeof useMutation<void, Error, string>>;
 }

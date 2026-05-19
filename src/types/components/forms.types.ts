@@ -206,6 +206,7 @@ export interface FormSectionProps {
   collapsible?: boolean;
   defaultExpanded?: boolean;
   description?: string;
+  actionBtn?: ReactNode;
   className?: string;
 }
 

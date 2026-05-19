@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Platform } from "react-native";
 
 import useBackAction from "@/src/utils/useBackAction";
@@ -59,18 +59,18 @@ export default function useTransactions() {
   const dailyTransactions = groupTransactions(transactions ?? []);
   const days = Object.keys(dailyTransactions);
 
+  const clearSelection = useCallback(() => {
+    setSelectedTransactions([]);
+    setSelectedSum(0);
+    setSelectionMode(false);
+  }, []);
   const backAction = useCallback((): boolean => {
     if (selectionMode) {
       clearSelection();
       return true;
     }
     return false;
-  }, [selectionMode]);
-  const clearSelection = useCallback(() => {
-    setSelectedTransactions([]);
-    setSelectedSum(0);
-    setSelectionMode(false); // Clear selection mode when we clear selections
-  }, []);
+  }, [selectionMode, clearSelection]);
   useBackAction(selectionMode, backAction);
 
   const copyTransactions = async () => {
@@ -161,7 +161,7 @@ export default function useTransactions() {
     }
   };
 
-  const handlePress = (item: TransactionsView, transferItem: TransactionsView) => {
+  const handlePress = (item: TransactionsView, transferItem?: TransactionsView) => {
     if (selectionMode) {
       // In selection mode, short press selects/deselects
       if (Platform.OS !== "web") Haptics.selectionAsync();
@@ -191,7 +191,7 @@ export default function useTransactions() {
     }
   };
 
-  const handleLongPress = (item: any, transferItem: TransactionsView) => {
+  const handleLongPress = (item: any, transferItem?: TransactionsView) => {
     if (selectionMode) handlePress(item, transferItem);
     if (Platform.OS !== "web") Haptics.selectionAsync();
     setSelectionMode(true);
@@ -261,6 +261,8 @@ export default function useTransactions() {
     refreshTransactions();
   };
 
+  const [showSplitModal, setShowSplitModal] = useState(false);
+
   return {
     transactions,
     error,
@@ -300,5 +302,7 @@ export default function useTransactions() {
     updateSummary,
     handleBatchUpdateSubmit,
     executeConfirmedAction,
+    showSplitModal,
+    setShowSplitModal,
   };
 }

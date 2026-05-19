@@ -1,8 +1,8 @@
+import Button from "@/src/components/elements/Button";
 import { FormSectionProps } from "@/src/types/components/forms.types";
 import { memo, useCallback, useMemo, useState } from "react";
 import { View } from "react-native";
 import ThemedText from "../elements/ThemedText";
-import Button from "@/src/components/elements/Button";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -14,6 +14,7 @@ function FormSectionComponent({
   collapsible = false,
   defaultExpanded = true,
   description,
+  actionBtn,
   className = "",
 }: FormSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -71,12 +72,14 @@ function FormSectionComponent({
       )}
 
       {/* Section Description */}
-      {description && (
-        <ThemedText variant="caption" id={descriptionId} className="text-sm mb-3" accessibilityRole="text">
-          {description}
-        </ThemedText>
-      )}
-
+      <View className="flex-row items-center justify-between">
+        {description && (
+          <ThemedText variant="caption" id={descriptionId} className="text-sm mb-3" accessibilityRole="text">
+            {description}
+          </ThemedText>
+        )}
+        {actionBtn && actionBtn}
+      </View>
       {/* Section Content */}
       {(!collapsible || isExpanded) && (
         <View

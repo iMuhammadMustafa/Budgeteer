@@ -67,7 +67,7 @@ export class DataValidationService {
 
             // Check required fields
             for (const [fieldName, fieldSchema] of Object.entries(schema.fields)) {
-                if (fieldSchema.required && (record[fieldName] === undefined || record[fieldName] === null)) {
+                if (fieldSchema.required && ((record as any)[fieldName] === undefined || (record as any)[fieldName] === null)) {
                     errors.push({
                         type: "MISSING_REQUIRED_FIELD",
                         table,
@@ -78,8 +78,8 @@ export class DataValidationService {
                 }
 
                 // Check field type if value is present
-                if (record[fieldName] !== undefined && record[fieldName] !== null) {
-                    const typeError = this.validateFieldType(table, recordId, fieldName, record[fieldName], fieldSchema.type);
+                if ((record as any)[fieldName] !== undefined && (record as any)[fieldName] !== null) {
+                    const typeError = this.validateFieldType(table, recordId, fieldName, (record as any)[fieldName], fieldSchema.type);
                     if (typeError) {
                         errors.push(typeError);
                     }
@@ -175,7 +175,7 @@ export class DataValidationService {
 
                 for (const [fieldName, fieldSchema] of Object.entries(schema.fields)) {
                     if (fieldSchema.isForeignKey && fieldSchema.foreignTable) {
-                        const foreignValue = record[fieldName];
+                        const foreignValue = (record as any)[fieldName];
 
                         // Skip null/undefined optional foreign keys
                         if (!foreignValue && !fieldSchema.required) continue;
@@ -257,9 +257,9 @@ export class DataValidationService {
             const recordId = record.id || "unknown";
 
             for (const [fieldName, fieldSchema] of Object.entries(schema.fields)) {
-                if (fieldSchema.isEnum && fieldSchema.enumValues && record[fieldName] !== undefined) {
-                    const value = record[fieldName];
-                    if (!fieldSchema.enumValues.includes(value)) {
+                if (fieldSchema.isEnum && fieldSchema.enumValues && (record as any)[fieldName] !== undefined) {
+                    const value = (record as any)[fieldName];
+                    if (!(fieldSchema.enumValues as string[]).includes(value)) {
                         errors.push({
                             type: "INVALID_ENUM",
                             table,

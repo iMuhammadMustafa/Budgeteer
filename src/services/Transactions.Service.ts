@@ -293,6 +293,81 @@ export function useTransactionService(): ITransactionService {
     });
   };
 
+  /**
+   * Split a transaction into multiple child transactions.
+   * 1. Void the original transaction (reverses its balance impact)
+   * 2. Create N new transactions with splitfromid pointing to the original
+   * 3. Each child gets its own balance impact applied
+   */
+  //TODO: What about transfers?
+  //TODO: centarlize helpers
+  const useSplitTransaction = () => {
+    return useMutation({
+      mutationFn: async ({
+        original,
+        children,
+      }: {
+        original: TransactionsView;
+        children: Inserts<TableNames.Transactions>[];
+      }) => {
+        const userId = session.user.id;
+
+        // 1. Void the original transaction
+        await transactionRepo.update(
+          original.id!,
+          { isvoid: true },
+          tenantId,
+        );
+
+        // Reverse original balance (voiding removes balance impact)
+        if (original.isvoid !== true && original.accountid && original.amount) {
+          await accountRepo.updateAccountBalance(original.accountid, -original.amount, tenantId);
+        }
+
+        // 2. Create child transactions with splitfromid
+        const childTransactions = children.map((child) => ({
+          ...child,
+          id: GenerateUuid(),
+          splitfromid: original.id!,
+          tenantid: tenantId,
+          createdby: userId,
+          updatedby: userId,
+          createdat: new Date().toISOString(),
+        }));
+
+        const created = await transactionRepo.createMultiple!(childTransactions, tenantId);
+
+        // 3. Apply balance for each child
+        for (const child of created) {
+          if (child.accountid && child.amount) {
+            await accountRepo.updateAccountBalance(child.accountid, child.amount, tenantId);
+          }
+        }
+
+        return created;
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
+        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+      },
+    });
+  };
+
+  /**
+   * Find all child transactions created from splitting a given transaction
+   */
+  const useFindSplitChildren = (splitFromId?: string) => {
+    return useQuery<Transaction[]>({
+      queryKey: [TableNames.Transactions, "split-children", splitFromId, tenantId],
+      queryFn: async () => {
+        if (!splitFromId) return [];
+        return transactionRepo.findBySplitFromId(splitFromId, tenantId);
+      },
+      enabled: !!splitFromId && !!tenantId,
+    });
+  };
+
   return {
     ...createServiceHooks<Transaction, TableNames.Transactions>(
       TableNames.Transactions,
@@ -322,6 +397,8 @@ export function useTransactionService(): ITransactionService {
     useUpdateTransferTransaction,
     useRestore,
     useUpdateMultipleTransactions,
+    useSplitTransaction,
+    useFindSplitChildren,
   };
 }
 

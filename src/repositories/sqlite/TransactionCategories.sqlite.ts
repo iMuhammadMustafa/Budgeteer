@@ -31,7 +31,7 @@ export class TransactionCategorySqliteRepository
       LEFT JOIN ${TableNames.TransactionGroups} tg ON tc.groupid = tg.id
       WHERE tc.tenantid = ?
     `;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         // isDeleted filter
         if (filters?.isDeleted === null) {

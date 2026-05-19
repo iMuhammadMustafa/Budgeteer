@@ -1,12 +1,13 @@
 import SkeletonList from "@/src/components/elements/SkeletonList";
+import ThemedText from "@/src/components/elements/ThemedText";
 import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
 import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
 import DaysList from "@/src/components/Transactions/Days";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
 import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
+import SplitTransactionModal from "@/src/components/Transactions/SplitTransactionModal";
 import { FlatList, View } from "react-native";
-import ThemedText from "@/src/components/elements/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useTransactions from "./useTransactions";
 
@@ -43,7 +44,8 @@ export default function Transactions() {
     updateSummary,
     handleBatchUpdateSubmit,
     executeConfirmedAction,
-    handleSplit,
+    showSplitModal,
+    setShowSplitModal,
   } = useTransactions();
 
   if (error)
@@ -61,7 +63,7 @@ export default function Transactions() {
         openDeleteConfirm={() => openConfirmModal("delete")}
         openDuplicateConfirm={() => openConfirmModal("duplicate")}
         openBatchUpdate={() => setShowBatchUpdate(true)}
-        onSplit={handleSplit}
+        onSplit={() => setShowSplitModal(true)}
         isActionLoading={isActionLoading}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}
@@ -126,6 +128,19 @@ export default function Transactions() {
         onConfirm={executeConfirmedAction}
         updateSummary={confirmAction === "update" ? updateSummary : undefined}
       />
+
+      {/* Split Transaction Modal */}
+      <SplitTransactionModal
+        isOpen={showSplitModal}
+        setIsOpen={setShowSplitModal}
+        onClose={() => {
+          setShowSplitModal(false);
+          clearSelection();
+        }}
+        transaction={selectedTransactions[0]}
+        categories={categories ?? []}
+      />
+
     </SafeAreaView>
   );
 }

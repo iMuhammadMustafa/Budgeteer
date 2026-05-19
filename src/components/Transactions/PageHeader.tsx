@@ -58,7 +58,7 @@ export default function TransactionsPageHeader({
                 >
                   <MyIcon name="Copy" className="text-foreground" size={20} />
                 </Button>
-                {selectedTransactions.length === 1 && !selectedTransactions[0].isvoid && (
+                {selectedTransactions.length === 1 && selectedTransactions.every(t => t.transferid === null) && !selectedTransactions[0].isvoid && (
                   <Button
                     variant="ghost"
                     size="icon"
