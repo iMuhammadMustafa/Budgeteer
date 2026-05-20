@@ -1,4 +1,5 @@
 import ThemedText from "@/src/components/elements/ThemedText";
+import { formatMoney } from "@/src/utils/currency";
 
 export default function TransactionAmount({
     amount,
@@ -9,14 +10,9 @@ export default function TransactionAmount({
     currency?: string | null
     color?: string
 }) {
-    const amountString = amount.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
     return (
         <ThemedText className={`${color ? `text-${color}` : amount > 0 ? "text-success-500" : "text-danger-500"}`}>
-            {amount > 0 ? `+` : ``}
-            {amountString} {currency}
+            {formatMoney(amount, currency, { signed: true })}
         </ThemedText>
     )
 }

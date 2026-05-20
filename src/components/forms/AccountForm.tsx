@@ -9,9 +9,11 @@ import FormField from "@/src/components/form-builder/FormField";
 import FormSection from "@/src/components/form-builder/FormSection";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account, Updates } from "@/src/types/database/Tables.Types";
+import { currencyDropdownOptions, DEFAULT_CURRENCY } from "@/src/utils/currency";
 import { commonValidationRules, createAccountNameValidation } from "@/src/utils/form-validation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFormState } from "../form-builder/hooks/useFormState";
@@ -34,14 +36,16 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
   const { data: runningBalance, isLoading: isLoadingRunningBalance } = accountService.useGetAccountRunningBalance(
     account.id,
   );
+  const { primaryCurrency } = usePrimaryCurrency();
 
   const initialFormData: AccountFormData = useMemo(
     () => ({
       ...account,
+      currency: account.currency || primaryCurrency || DEFAULT_CURRENCY,
       openBalance: openTransaction?.amount || null,
       addAdjustmentTransaction: true,
     }),
-    [account, openTransaction?.amount],
+    [account, openTransaction?.amount, primaryCurrency],
   );
 
   const validationSchema: ValidationSchema<AccountFormData> = useMemo(
@@ -317,9 +321,11 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
               config={{
                 name: "currency",
                 label: "Currency",
-                type: "text",
+                type: "select",
                 required: true,
-                placeholder: "USD",
+                options: currencyDropdownOptions,
+                popUp: Platform.OS !== "web",
+                description: "Native currency of this account",
               }}
               value={formState.data.currency}
               error={formState.errors.currency}

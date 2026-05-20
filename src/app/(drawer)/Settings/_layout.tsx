@@ -20,6 +20,14 @@ export default function SettingsLayout() {
           headerBackTitle: "Settings",
         }}
       />
+      <Stack.Screen
+        name="Currency"
+        options={{
+          headerShown: true,
+          title: "Primary Currency",
+          headerBackTitle: "Settings",
+        }}
+      />
     </Stack>
   );
 }

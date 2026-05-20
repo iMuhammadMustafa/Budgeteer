@@ -19,7 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import BucketingSection from "@/src/components/BucketingSection";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useStatsService } from "@/src/services/Stats.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/database/Tables.Types";
+import { formatMoney } from "@/src/utils/currency";
 
 dayjs.extend(quarterOfYear);
 
@@ -63,15 +65,13 @@ const getGradientColors = (usage: number): [string, string, string] => {
   return ["#10b981", "#f59e0b", "#ef4444"];
 };
 
-const formatCurrency = (amount: number): string => {
-  return `$${Math.abs(amount).toFixed(2)}`;
-};
-
 export default function SummaryIndex() {
   // State
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("monthly");
   const [refreshing, setRefreshing] = useState(false);
   const [focusedPeriod, setFocusedPeriod] = useState<number>(0); // Index of current period
+  const { primaryCurrency } = usePrimaryCurrency();
+  const formatCurrency = (amount: number): string => formatMoney(Math.abs(amount), primaryCurrency);
 
   // Refs for Scroll Sync
   const headerScrollRef = useRef<ScrollView>(null);

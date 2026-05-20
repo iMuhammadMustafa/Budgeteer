@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
+import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
+import { formatMoney } from "../utils/currency";
 import Button from "./elements/Button";
 import MyIcon from "./elements/MyIcon";
 import MyModal from "./elements/MyModal";
@@ -34,6 +36,7 @@ export default function SavingsBucketsList({
   const [editBucket, setEditBucket] = useState<SavingsBucket | null>(null);
   const [allocatingBucketId, setAllocatingBucketId] = useState<string | null>(null);
   const [allocateAmount, setAllocateAmount] = useState("");
+  const { primaryCurrency } = usePrimaryCurrency();
 
   const totalAllocated = buckets?.reduce((sum, b) => sum + b.currentamount, 0) ?? 0;
   const unallocated = accountBalance - totalAllocated;
@@ -83,7 +86,7 @@ export default function SavingsBucketsList({
         <View className="flex-row items-center gap-1 mb-1">
           {isOverAllocated && <MyIcon name="AlertTriangle" size={12} className="text-warning" />}
           <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
-            Unallocated: {unallocated.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+            Unallocated: {formatMoney(unallocated, primaryCurrency)}
             {isOverAllocated && " (over-allocated)"}
           </Text>
         </View>
@@ -96,9 +99,9 @@ export default function SavingsBucketsList({
               <Text className="text-xs font-medium text-foreground">{bucket.name}</Text>
               <View className="flex-row items-center gap-1">
                 <Text className="text-xs text-muted-foreground">
-                  {bucket.currentamount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                  {formatMoney(bucket.currentamount, primaryCurrency)}
                   {bucket.targetamount > 0 &&
-                    ` / ${bucket.targetamount.toLocaleString("en-US", { style: "currency", currency: "USD" })}`}
+                    ` / ${formatMoney(bucket.targetamount, primaryCurrency)}`}
                 </Text>
               </View>
               {/* Mini progress bar */}
@@ -188,7 +191,7 @@ export default function SavingsBucketsList({
             <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
             <Text className="text-xs text-warning/80">
               Bucket allocations exceed the account balance by{" "}
-              {Math.abs(unallocated).toLocaleString("en-US", { style: "currency", currency: "USD" })}.
+              {formatMoney(Math.abs(unallocated), primaryCurrency)}.
               Consider reducing bucket amounts to match the current balance.
             </Text>
           </View>
@@ -198,7 +201,7 @@ export default function SavingsBucketsList({
       {/* Unallocated balance */}
       <View className="px-4 pb-2">
         <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
-          Unallocated: {unallocated.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+          Unallocated: {formatMoney(unallocated, primaryCurrency)}
           {isOverAllocated && " ⚠️"}
         </Text>
       </View>
@@ -224,9 +227,9 @@ export default function SavingsBucketsList({
                 <Text className="text-sm font-medium text-foreground">{bucket.name}</Text>
                 <View className="flex-row items-center gap-1">
                   <Text className="text-xs text-muted-foreground">
-                    {bucket.currentamount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                    {formatMoney(bucket.currentamount, primaryCurrency)}
                     {bucket.targetamount > 0 &&
-                      ` / ${bucket.targetamount.toLocaleString("en-US", { style: "currency", currency: "USD" })}`}
+                      ` / ${formatMoney(bucket.targetamount, primaryCurrency)}`}
                   </Text>
                 </View>
                 {/* Progress bar */}

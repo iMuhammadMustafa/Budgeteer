@@ -1,10 +1,13 @@
 import supabase from "@/src/providers/Supabase";
+import { CURRENCIES, DEFAULT_CURRENCY } from "@/src/utils/currency";
 import GenerateUuid from "@/src/utils/uuid.Helper";
+import { storage } from "@/src/utils/storageUtils";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import ThemedText from "@/src/components/elements/ThemedText";
 import ThemedInput from "@/src/components/elements/ThemedInput";
+import DropdownField from "@/src/components/elements/dropdown/DropdownField";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "@/src/components/elements/Button";
 
@@ -14,7 +17,14 @@ const initailRegisterState = {
   password: "",
   confirmPassword: "",
   tenantId: "",
+  currency: DEFAULT_CURRENCY,
 };
+
+const currencyOptions = CURRENCIES.map((c) => ({
+  id: c.code,
+  label: `${c.code} — ${c.name}`,
+  value: c.code,
+}));
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -28,6 +38,11 @@ export default function Register() {
   );
   const signUpWithEmail = async () => {
     setLoading(true);
+    // Cache the chosen currency so it survives the redirect to /Login and
+    // the first profile read after the user signs in. usePrimaryCurrency
+    // syncs it into profiles.currency on first authenticated load.
+    await storage.setItem("app:primaryCurrency", user.currency);
+
     const { error } = await supabase.auth.signUp({
       email: user?.email,
       password: user.password,
@@ -35,6 +50,7 @@ export default function Register() {
         data: {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           tenantid: user.tenantId || user.id,
+          currency: user.currency,
         },
       },
     });
@@ -68,11 +84,20 @@ export default function Register() {
         onChangeText={text => setUser({ ...user, tenantId: text })}
       />
 
+      <ThemedText className="mt-2 mb-1 text-sm">Primary Currency</ThemedText>
+      <DropdownField
+        label=""
+        selectedValue={user.currency}
+        options={currencyOptions}
+        onSelect={(item) => setUser({ ...user, currency: (item?.value as string) ?? DEFAULT_CURRENCY })}
+        isModal={Platform.OS !== "web"}
+      />
+
       <Button
         variant="primary"
         size="lg"
         hapticFeedback="success"
-        className="p-4 mb-4 bg-primary rounded-lg items-center"
+        className="p-4 mt-4 mb-4 bg-primary rounded-lg items-center"
         onPress={signUpWithEmail}
         disabled={!isValid}
         label="Register"

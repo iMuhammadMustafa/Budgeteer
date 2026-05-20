@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, FlatList, LayoutChangeEvent, Platform, Pressable, Text, TextInput, View } from "react-native";
 import Button from "../Button";
 
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { AddNewConfig, DropDownProps, OptionItem } from "@/src/types/components/DropdownField.Types";
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
+import { formatMoney } from "@/src/utils/currency";
 import MyIcon from "../MyIcon";
 import MyModal, { ModalWrapper } from "../MyModal";
 
@@ -538,6 +540,7 @@ export const AccountSelecterDropdown = ({
   isModal: boolean;
   groupBy?: string;
 }) => {
+  const { primaryCurrency } = usePrimaryCurrency();
   return (
     <DropdownField
       isModal={isModal}
@@ -547,10 +550,7 @@ export const AccountSelecterDropdown = ({
         accounts?.map((account: Account & { category: { name: string } }) => ({
           id: account.id,
           label: account.name,
-          details: `${account.balance.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-          })}`,
+          details: formatMoney(account.balance, primaryCurrency),
           value: account,
           icon: account.icon,
           iconColorClass: `text-${account.color.replace("100", "500") ?? "gray-500"}`,

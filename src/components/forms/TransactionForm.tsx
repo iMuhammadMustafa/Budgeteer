@@ -4,12 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 import { OptionItem, TransactionFormData, TransactionSubItem, ValidationSchema } from "@/src/types/components/forms.types";
 import { Transaction } from "@/src/types/database/Tables.Types";
+import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { router } from "expo-router";
@@ -144,6 +147,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     updateSubItem,
     subItemsTotal,
     isSubItemsBalanced,
+    primaryCurrency,
+    transactionCurrency,
+    setTransactionCurrency,
+    displayedRate,
+    handleRateOverride,
+    convertedPreview,
+    isFxLoading,
+    isForeignCurrency,
   } = useTransactionForm({ transaction });
 
   return (
@@ -245,7 +256,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               <FormField
                 config={{
                   name: "amount",
-                  label: "Amount",
+                  label: `Amount${transactionCurrency ? ` (${transactionCurrency})` : ""}`,
                   type: "number",
                   required: true,
                   placeholder: "0.00",
@@ -258,6 +269,41 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </View>
 
             <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
+          </View>
+
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-30`}>
+            <View className={Platform.OS === "web" ? "flex-1" : ""}>
+              <FormField
+                config={{
+                  name: "currency",
+                  label: "Currency",
+                  type: "select",
+                  required: true,
+                  options: currencyDropdownOptions,
+                  popUp: Platform.OS !== "web",
+                  description: `Will be stored in ${primaryCurrency}`,
+                }}
+                value={transactionCurrency}
+                onChange={value => setTransactionCurrency(value || primaryCurrency)}
+              />
+            </View>
+            {isForeignCurrency && (
+              <View className={Platform.OS === "web" ? "flex-1" : ""}>
+                <FormField
+                  config={{
+                    name: "rate",
+                    label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
+                    type: "number",
+                    placeholder: isFxLoading ? "Loading…" : "0.00",
+                    description: isFxLoading
+                      ? "Fetching rate…"
+                      : `≈ ${formatMoney(convertedPreview, primaryCurrency)}`,
+                  }}
+                  value={displayedRate?.toString() ?? ""}
+                  onChange={handleRateOverride}
+                />
+              </View>
+            )}
           </View>
 
           <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-40`}>
@@ -564,6 +610,31 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const [subItems, setSubItems] = useState<TransactionSubItem[]>([]);
 
+  const { primaryCurrency } = usePrimaryCurrency();
+  const [transactionCurrency, setTransactionCurrency] = useState<string>(primaryCurrency || DEFAULT_CURRENCY);
+  const [rateOverride, setRateOverride] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (primaryCurrency && transactionCurrency === DEFAULT_CURRENCY && primaryCurrency !== DEFAULT_CURRENCY) {
+      setTransactionCurrency(primaryCurrency);
+    }
+  }, [primaryCurrency, transactionCurrency]);
+
+  const isForeignCurrency = transactionCurrency !== primaryCurrency;
+  const { rate: fxRate, isLoading: isFxLoading } = useExchangeRate(transactionCurrency, primaryCurrency);
+  const effectiveRate = rateOverride ?? fxRate ?? 1;
+  const displayedRate = effectiveRate;
+
+  const handleRateOverride = useCallback((value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".");
+    if (cleaned === "" || cleaned === ".") {
+      setRateOverride(null);
+      return;
+    }
+    const parsed = parseFloat(cleaned);
+    setRateOverride(isNaN(parsed) ? null : parsed);
+  }, []);
+
   useEffect(() => {
     if (existingItems && existingItems.length > 0) {
       setSubItems(
@@ -632,6 +703,11 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     return Math.abs(subItemsTotal - Math.abs(formState.data.amount)) < 0.01;
   }, [subItems, subItemsTotal, formState.data.amount]);
 
+  const convertedPreview = useMemo(() => {
+    const userTyped = Math.abs(Number(formState.data.amount) || 0);
+    return userTyped * (isForeignCurrency ? effectiveRate : 1);
+  }, [formState.data.amount, effectiveRate, isForeignCurrency]);
+
   const handleSubmit = useCallback(
     async (data: TransactionFormType) => {
       if (data.type === "Transfer" && data.accountid === data.transferaccountid) {
@@ -643,7 +719,12 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         throw new Error("Line items must sum to the transaction amount");
       }
 
-      const finalAmount = calculateFinalAmount(data, mode);
+      // TODO(multi-currency): persist original_amount, original_currency, exchange_rate
+      // on the transaction so receipts retain their native value. Today we convert at
+      // submit time and store only the primary-currency amount.
+      const rateForSubmit = isForeignCurrency ? effectiveRate : 1;
+      const convertedInput = Math.abs(Number(data.amount) || 0) * rateForSubmit;
+      const finalAmount = calculateFinalAmount({ ...data, amount: convertedInput }, mode);
 
       const submissionData = {
         ...data,
@@ -688,7 +769,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         },
       );
     },
-    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation],
+    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation, effectiveRate, isForeignCurrency],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -1018,5 +1099,13 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     updateSubItem,
     subItemsTotal,
     isSubItemsBalanced,
+    primaryCurrency,
+    transactionCurrency,
+    setTransactionCurrency,
+    displayedRate,
+    handleRateOverride,
+    convertedPreview,
+    isFxLoading,
+    isForeignCurrency,
   };
 };

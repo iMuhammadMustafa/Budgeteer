@@ -12,9 +12,12 @@ import {
 } from "@/src/types/components/forms.types";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
+import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import ModeIcon from "../elements/ModeIcon";
@@ -95,6 +98,32 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [maxAmount, setMaxAmount] = useState(0);
 
+  // Multi-currency state
+  const { primaryCurrency } = usePrimaryCurrency();
+  const [transactionCurrency, setTransactionCurrency] = useState<string>(primaryCurrency || DEFAULT_CURRENCY);
+  const [rateOverride, setRateOverride] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (primaryCurrency && transactionCurrency === DEFAULT_CURRENCY && primaryCurrency !== DEFAULT_CURRENCY) {
+      setTransactionCurrency(primaryCurrency);
+    }
+  }, [primaryCurrency, transactionCurrency]);
+
+  const isSplitMode = !!transaction && transaction.splitfromid !== null;
+  const isForeignCurrency = !isSplitMode && transactionCurrency !== primaryCurrency;
+  const { rate: fxRate, isLoading: isFxLoading } = useExchangeRate(transactionCurrency, primaryCurrency);
+  const effectiveRate = rateOverride ?? fxRate ?? 1;
+
+  const handleRateOverride = useCallback((value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".");
+    if (cleaned === "" || cleaned === ".") {
+      setRateOverride(null);
+      return;
+    }
+    const parsed = parseFloat(cleaned);
+    setRateOverride(isNaN(parsed) ? null : parsed);
+  }, []);
+
   // Create validation schema
   const validationSchema: ValidationSchema<MultipleTransactionsFormData> = useMemo(
     () => ({
@@ -113,7 +142,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     () => (transaction ? convertTransactionToMultipleForm(transaction) : initialMultipleTransactionsState),
     [transaction],
   );
-  const isSplitMode = !!transaction && transaction.splitfromid !== null;
 
   // Initialize form state
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
@@ -142,6 +170,10 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     async (data: MultipleTransactionsFormData) => {
       const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
 
+      // TODO(multi-currency): persist original_amount / original_currency / exchange_rate
+      // per row so receipts keep their native value. Today we convert at submit time.
+      const rateForSubmit = isForeignCurrency ? effectiveRate : 1;
+
       // Convert form data to array of transaction inserts
       const transactions = Object.values(data.transactions).map(trans => ({
         payee: data.payee,
@@ -152,7 +184,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         accountid: data.accountid,
         groupid: data.groupid,
         categoryid: trans.categoryid,
-        amount: trans.amount,
+        amount: (trans.amount ?? 0) * rateForSubmit,
         notes: trans.notes,
         tags: trans.tags ? JSON.stringify(trans.tags) : null,
         name: trans.name,
@@ -195,7 +227,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         });
       }
     },
-    [submitAllMutation, splitMutation, transaction?.id, mode, currentAmount, isSplitMode],
+    [submitAllMutation, splitMutation, transaction?.id, transaction?.accountid, transaction?.amount, mode, currentAmount, isSplitMode, effectiveRate, isForeignCurrency],
   );
 
   // Form submission hook
@@ -428,6 +460,41 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
                   className="flex-1"
                 />
               </View>
+
+              {!isSplitMode && (
+                <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+                  <FormField
+                    config={{
+                      name: "currency",
+                      label: "Currency",
+                      type: "select",
+                      required: true,
+                      options: currencyDropdownOptions,
+                      popUp: Platform.OS !== "web",
+                      description: `Will be stored in ${primaryCurrency}`,
+                    }}
+                    value={transactionCurrency}
+                    onChange={value => setTransactionCurrency(value || primaryCurrency)}
+                    className="flex-1"
+                  />
+                  {isForeignCurrency && (
+                    <FormField
+                      config={{
+                        name: "rate",
+                        label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
+                        type: "number",
+                        placeholder: isFxLoading ? "Loading…" : "0.00",
+                        description: isFxLoading
+                          ? "Fetching rate…"
+                          : `Total ≈ ${formatMoney(currentAmount * effectiveRate, primaryCurrency)}`,
+                      }}
+                      value={effectiveRate?.toString() ?? ""}
+                      onChange={handleRateOverride}
+                      className="flex-1"
+                    />
+                  )}
+                </View>
+              )}
             </FormSection>
 
             {/* Transactions List Section */}

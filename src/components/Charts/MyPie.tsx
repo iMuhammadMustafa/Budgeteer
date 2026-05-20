@@ -1,5 +1,7 @@
 import { useTheme } from "@/src/providers/ThemeProvider";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { PieData, PieProps } from "@/src/types/components/Charts.types";
+import { formatMoney } from "@/src/utils/currency";
 import { useState } from "react";
 import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { VictoryContainer, VictoryLabel, VictoryPie, VictoryTheme } from "victory-native";
@@ -18,6 +20,7 @@ export default function MyPie({
 }) {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
+  const { primaryCurrency } = usePrimaryCurrency();
   const [selectedSlice, setSelectedSlice] = useState<PieData | null>(
     highlightedSlice ? data.find(item => item.x === highlightedSlice) || null : null,
   );
@@ -154,10 +157,7 @@ export default function MyPie({
                 text={
                   selectedSlice !== null
                     ? `${selectedSlice.x}: ${(((selectedSlice.y || 0) / totalValue) * 100).toFixed(0)}%
-                  \n${selectedSlice?.y.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })}`
+                  \n${formatMoney(selectedSlice?.y, primaryCurrency)}`
                     : ""
                 }
                 events={

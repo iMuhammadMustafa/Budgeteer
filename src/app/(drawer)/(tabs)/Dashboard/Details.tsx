@@ -2,7 +2,9 @@ import DashboardCharts from "@/src/components/Charts/DashboardCharts";
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
+import { formatMoney } from "@/src/utils/currency";
 import dayjs from "dayjs";
 import { router } from "expo-router";
 import { FlatList, ScrollView, View } from "react-native";
@@ -81,6 +83,7 @@ function TransactionsListComponent({
   transactions: TransactionsView[];
   onPress: (transaction: TransactionsView) => void;
 }) {
+  const { primaryCurrency } = usePrimaryCurrency();
   return (
     <FlatList
       className="flex-1"
@@ -116,7 +119,7 @@ function TransactionsListComponent({
             </View>
             <View className="items-end">
               <ThemedText variant="label" className={`text-base ${isExpense ? "text-danger-500" : "text-success-500"}`}>
-                {isExpense ? "-" : "+"}${Math.abs(item.amount || 0).toFixed(2)}
+                {isExpense ? "-" : "+"}{formatMoney(Math.abs(item.amount || 0), primaryCurrency)}
               </ThemedText>
               <ThemedText variant="caption">{localDate.format("MMM D, YYYY")}</ThemedText>
             </View>

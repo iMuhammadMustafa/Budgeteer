@@ -1,7 +1,9 @@
 import { triggerHaptic } from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedText from "@/src/components/elements/ThemedText";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
+import { formatMoney } from "@/src/utils/currency";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
 import { Pressable, View } from "react-native";
@@ -24,6 +26,7 @@ export default function TransactionItem({
   const iconProp = getTransactionProp(transaction.type);
   const isTransfer = transaction.type === "Transfer";
   const isPositiveTransferSide = isTransfer && transaction.amount! > 0;
+  const { primaryCurrency } = usePrimaryCurrency();
 
   // Hide the positive-amount side of a transfer (the paired row) only when
   // its counterpart (negative side) is also present in the current list.
@@ -77,15 +80,10 @@ export default function TransactionItem({
             )}
           </View>
           <View className="flex items-end">
-            <TransactionAmount amount={transaction.amount ?? 0} currency={transaction.currency} color={iconProp.textColor} />
+            <TransactionAmount amount={transaction.amount ?? 0} currency={primaryCurrency} color={iconProp.textColor} />
             <ThemedText className={transaction.isvoid ? "line-through" : ""}>
               {transaction.accountname} {" | "}
-              {transaction.runningbalance?.toLocaleString("en", {
-                style: "currency",
-                currency: transaction.currency || "USD",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatMoney(transaction.runningbalance ?? 0, primaryCurrency)}
             </ThemedText>
             {isTransfer && transferTransaction && (
               <View className="flex-row items-center justify-center gap-2">
@@ -93,12 +91,7 @@ export default function TransactionItem({
 
                 <ThemedText className={transferTransaction.isvoid ? "line-through" : ""}>
                   {transferTransaction.accountname} {" | "}
-                  {transferTransaction.runningbalance?.toLocaleString("en", {
-                    style: "currency",
-                    currency: transferTransaction.currency!,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatMoney(transferTransaction.runningbalance ?? 0, primaryCurrency)}
                 </ThemedText>
               </View>
             )}

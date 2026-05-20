@@ -1,10 +1,12 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedText from "@/src/components/elements/ThemedText";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { router } from "expo-router";
 import { ScrollView, View } from "react-native";
 
 export default function SettingsIndex() {
+  const { primaryCurrency } = usePrimaryCurrency();
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="p-4">
@@ -53,6 +55,27 @@ export default function SettingsIndex() {
               <ThemedText variant="label">Appearance</ThemedText>
               <ThemedText variant="caption" className="text-sm text-muted-foreground">Theme, grid background & more</ThemedText>
             </View>
+            <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
+          </Button>
+
+          {/* Currency */}
+          <Button
+            variant="ghost"
+            size="lg"
+            onPress={() => router.push("/Settings/Currency")}
+            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
+            testID="btn-settings-currency"
+          >
+            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+              <MyIcon name="DollarSign" size={20} className="text-primary" />
+            </View>
+            <View className="ml-3 flex-1">
+              <ThemedText variant="label">Primary Currency</ThemedText>
+              <ThemedText variant="caption" className="text-sm text-muted-foreground">
+                Used for totals and as the default for new transactions
+              </ThemedText>
+            </View>
+            <ThemedText variant="caption" className="text-sm text-muted-foreground mr-2">{primaryCurrency}</ThemedText>
             <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
           </Button>
 
