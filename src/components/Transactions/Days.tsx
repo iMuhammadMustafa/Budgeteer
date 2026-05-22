@@ -1,7 +1,7 @@
+import ThemedText from "@/src/components/elements/ThemedText";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FlatList, View } from "react-native";
-import ThemedText from "@/src/components/elements/ThemedText";
 
 import MyIcon from "@/src/components/elements/MyIcon";
 import TransactionItem from "@/src/components/Transactions/TransactionItem";
@@ -54,7 +54,7 @@ function DaysListHeader({ day, data }: { day: string; data: GroupedData }) {
           <ThemedText>{dayjs(day).fromNow()}</ThemedText>
         </View>
       </View>
-      <TransactionAmount amount={data[day].amount} currency={data[day].transactions[0].currency} />
+      <TransactionAmount amount={data[day].amount} />
     </View>
   );
 }

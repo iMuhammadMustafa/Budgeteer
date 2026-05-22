@@ -1,6 +1,7 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedText from "@/src/components/elements/ThemedText";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
 import { Link } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
@@ -18,6 +19,7 @@ export default function TransactionsPageHeader({
   showSearch,
   setShowSearch,
 }: TransactionsPageHeaderProps) {
+  const { formatCurrency } = usePrimaryCurrency();
   return (
     <View className="flex-row w-full justify-between px-10 mt-1 pt-2">
       <View className="flex-row">
@@ -25,7 +27,7 @@ export default function TransactionsPageHeader({
           <>
             <ThemedText className="text-primary-500 mr-4">{selectedTransactions.length} selected</ThemedText>
             <ThemedText className="text-primary-500 mr-4">
-              {selectedSum.toFixed(2)} {selectedTransactions[0].currency}
+              {formatCurrency(selectedSum, true)}
             </ThemedText>
           </>
         )}

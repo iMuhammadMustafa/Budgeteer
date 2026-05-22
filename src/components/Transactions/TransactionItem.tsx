@@ -27,6 +27,7 @@ export default function TransactionItem({
   const isTransfer = transaction.type === "Transfer";
   const isPositiveTransferSide = isTransfer && transaction.amount! > 0;
   const { primaryCurrency } = usePrimaryCurrency();
+  const amount = isTransfer ? Math.abs(transaction.amount ?? 0) : transaction.amount ?? 0;
 
   // Hide the positive-amount side of a transfer (the paired row) only when
   // its counterpart (negative side) is also present in the current list.
@@ -80,7 +81,7 @@ export default function TransactionItem({
             )}
           </View>
           <View className="flex items-end">
-            <TransactionAmount amount={transaction.amount ?? 0} currency={primaryCurrency} color={iconProp.textColor} />
+            <TransactionAmount amount={amount} color={iconProp.textColor} showSigned={!isTransfer} />
             <ThemedText className={transaction.isvoid ? "line-through" : ""}>
               {transaction.accountname} {" | "}
               {formatMoney(transaction.runningbalance ?? 0, primaryCurrency)}

@@ -4,7 +4,6 @@ import { useAccountService } from "../services/Accounts.Service";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { Account, SavingsBucket } from "../types/database/Tables.Types";
-import { formatMoney } from "../utils/currency";
 import Button from "./elements/Button";
 import MyIcon from "./elements/MyIcon";
 
@@ -112,7 +111,7 @@ function AccountBucketsAllocator({
 }) {
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const { primaryCurrency } = usePrimaryCurrency();
+  const { formatCurrency } = usePrimaryCurrency();
 
   const totalAllocated = buckets.reduce((sum, b) => sum + b.currentamount, 0);
   const unallocated = account.balance - totalAllocated;
@@ -144,8 +143,7 @@ function AccountBucketsAllocator({
           <View className="flex-1">
             <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
             <Text className="text-xs text-warning/80">
-              Buckets exceed account balance by{" "}
-              {formatMoney(Math.abs(unallocated), primaryCurrency)}.
+              Buckets exceed account balance by {formatCurrency(unallocated, false)}.
             </Text>
           </View>
         </View>
@@ -154,8 +152,8 @@ function AccountBucketsAllocator({
       {/* Balance summary */}
       <View className="flex-row items-center justify-between mb-2">
         <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
-          Balance: {formatMoney(account.balance, primaryCurrency)}
-          {" · "}Unallocated: {formatMoney(unallocated, primaryCurrency)}
+          Balance: {formatCurrency(account.balance)}
+          {" · "}Unallocated: {formatCurrency(unallocated)}
         </Text>
       </View>
 

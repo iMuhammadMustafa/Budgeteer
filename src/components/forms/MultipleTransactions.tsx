@@ -11,15 +11,18 @@ import {
   ValidationSchema,
 } from "@/src/types/components/forms.types";
 
+import { queryClient } from "@/src/providers/QueryProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+import { ViewNames } from "@/src/types/database/TableNames";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
+import { router } from "expo-router";
 import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import FormContainer from "../form-builder/FormContainer";

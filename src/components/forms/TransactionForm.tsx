@@ -256,7 +256,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               <FormField
                 config={{
                   name: "amount",
-                  label: `Amount${transactionCurrency ? ` (${transactionCurrency})` : ""}`,
+                  label: `Amount`,
                   type: "number",
                   required: true,
                   placeholder: "0.00",
@@ -271,8 +271,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
           </View>
 
-          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-30`}>
-            <View className={Platform.OS === "web" ? "flex-1" : ""}>
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-50`}>
+            <View className={`z-50 ${Platform.OS === "web" ? "flex-1" : ""}`}>
               <FormField
                 config={{
                   name: "currency",
@@ -316,6 +316,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   required: true,
                   options: categoryOptions,
                   group: "group.name",
+                  popUp: Platform.OS !== "web",
                   addNew: {
                     entityType: "TransactionCategory",
                     label: "Add New Category",
@@ -368,7 +369,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     required: true,
                     options: accountOptions,
                     group: "category.name",
-                    popUp: true,
+                    popUp: Platform.OS !== "web",
                     addNew: {
                       entityType: "Account",
                       label: "Add New Account",

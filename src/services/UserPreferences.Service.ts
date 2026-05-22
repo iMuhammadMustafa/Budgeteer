@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
-import supabase from "@/src/providers/Supabase";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import supabase from "@/src/providers/Supabase";
 import { StorageMode } from "@/src/types/StorageMode";
-import { DEFAULT_CURRENCY } from "@/src/utils/currency";
+import { DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { storage } from "@/src/utils/storageUtils";
 
 const LOCAL_KEY = "app:primaryCurrency";
@@ -97,10 +97,16 @@ export function usePrimaryCurrency() {
     [setMutation],
   );
 
+  const formatCurrency = useCallback((amount: number, signed: boolean = true): string => {
+    return formatMoney(amount, data ?? DEFAULT_CURRENCY, { signed });
+  }, [data]);
+
+
   return {
     primaryCurrency: data ?? DEFAULT_CURRENCY,
     isLoading,
     setPrimaryCurrency,
     isSaving: setMutation.isPending,
+    formatCurrency,
   };
 }

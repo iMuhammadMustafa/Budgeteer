@@ -1,18 +1,19 @@
 import ThemedText from "@/src/components/elements/ThemedText";
-import { formatMoney } from "@/src/utils/currency";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 export default function TransactionAmount({
     amount,
-    currency,
-    color
+    color,
+    showSigned = true
 }: {
     amount: number,
-    currency?: string | null
-    color?: string
+    color?: string,
+    showSigned?: boolean
 }) {
+    const { formatCurrency } = usePrimaryCurrency();
     return (
         <ThemedText className={`${color ? `text-${color}` : amount > 0 ? "text-success-500" : "text-danger-500"}`}>
-            {formatMoney(amount, currency, { signed: true })}
+            {formatCurrency(amount, showSigned)}
         </ThemedText>
     )
 }

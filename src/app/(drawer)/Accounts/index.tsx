@@ -10,7 +10,6 @@ import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
-import { formatMoney } from "@/src/utils/currency";
 import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
@@ -18,7 +17,7 @@ export default function AccountsIndex() {
   const accountService = useAccountService();
   const transactionService = useTransactionService();
   const bucketService = useSavingsBucketService();
-  const { primaryCurrency } = usePrimaryCurrency();
+  const { formatCurrency } = usePrimaryCurrency();
 
   const { data: accounts, isLoading, error } = accountService.useFindAllWithCategory();
   const { data: totalBalanceData, isLoading: isLoadingTotalBalance } = accountService.useGetTotalAccountsBalance();
@@ -38,7 +37,7 @@ export default function AccountsIndex() {
     setSourceAccountId(null);
   };
 
-  const detailsContent = (item: any) => `Balance: ${formatMoney(item.balance, primaryCurrency)}`;
+  const detailsContent = (item: any) => `Balance: ${formatCurrency(item.balance)}`;
 
   const handleTransfer = () => {
     if (!modalState.account || !sourceAccountId || !amount || isNaN(Number(amount))) return;
@@ -82,7 +81,7 @@ export default function AccountsIndex() {
         queryKey={[TableNames.Accounts]}
         service={accountService}
         groupBy={"category.name"}
-        Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} primaryCurrency={primaryCurrency} />}
+        Footer={<FooterContent isLoadingTotalBalance={isLoadingTotalBalance} totalBalanceData={totalBalanceData} formatCurrency={formatCurrency} />}
         detailsContent={detailsContent}
         isPageLoading={isLoadingBucketsByAccountId}
         customFindAll={accountService.useFindAllWithCategory}
@@ -159,11 +158,11 @@ export default function AccountsIndex() {
 const FooterContent = ({
   isLoadingTotalBalance,
   totalBalanceData,
-  primaryCurrency,
+  formatCurrency,
 }: {
   isLoadingTotalBalance: boolean;
   totalBalanceData: { totalbalance: number } | null | undefined;
-  primaryCurrency: string;
+  formatCurrency: (amount: number) => string;
 }) => {
   if (isLoadingTotalBalance) {
     return <ActivityIndicator animating={true} className="my-1" />;
@@ -173,7 +172,7 @@ const FooterContent = ({
       <View className="bg-surface border-t border-border items-center rounded-b-lg shadow-md">
         <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
         <Text className="font-md font-pbold text-primary-focus text-foreground">
-          {formatMoney(totalBalanceData.totalbalance, primaryCurrency)}
+          {formatCurrency(totalBalanceData.totalbalance)}
         </Text>
         {/* Show Buckets Toggle */}
         {/* <View className="flex-row items-center justify-between px-2 py-1 border-b border-border">

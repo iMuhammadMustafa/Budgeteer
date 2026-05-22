@@ -240,7 +240,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
           onReset={handleReset}
         >
           {/* Basic Information Section */}
-          <FormSection title="Basic Information" description="Enter the account's basic details" className="z-10">
+          <FormSection title="Basic Information" description="Enter the account's basic details" className="z-50">
             <FormField
               config={{
                 name: "name",
@@ -296,7 +296,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
           </FormSection>
 
           {/* Appearance Section */}
-          <FormSection title="Appearance" description="Customize the account's visual appearance">
+          <FormSection title="Appearance" description="Customize the account's visual appearance" className="z-30">
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker
@@ -315,7 +315,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
           <FormSection
             title="Financial Information"
             description="Set up the account's financial details"
-            className="-z-10"
+            className="z-20"
           >
             <FormField
               config={{
@@ -343,7 +343,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
                     required: true,
                     placeholder: "0.00",
                   }}
-                  value={formState.data.balance?.toString()}
+                  value={formState.data.balance?.toFixed(2)}
                   error={formState.errors.balance}
                   touched={formState.touched.balance}
                   onChange={value => updateField("balance", value)}

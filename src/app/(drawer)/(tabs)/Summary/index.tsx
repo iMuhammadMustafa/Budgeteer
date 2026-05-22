@@ -21,7 +21,6 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import { useStatsService } from "@/src/services/Stats.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { StatsMonthlyCategoriesTransactions } from "@/src/types/database/Tables.Types";
-import { formatMoney } from "@/src/utils/currency";
 
 dayjs.extend(quarterOfYear);
 
@@ -70,8 +69,7 @@ export default function SummaryIndex() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("monthly");
   const [refreshing, setRefreshing] = useState(false);
   const [focusedPeriod, setFocusedPeriod] = useState<number>(0); // Index of current period
-  const { primaryCurrency } = usePrimaryCurrency();
-  const formatCurrency = (amount: number): string => formatMoney(Math.abs(amount), primaryCurrency);
+  const { formatCurrency } = usePrimaryCurrency();
 
   // Refs for Scroll Sync
   const headerScrollRef = useRef<ScrollView>(null);

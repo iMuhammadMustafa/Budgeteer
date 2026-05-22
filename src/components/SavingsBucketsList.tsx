@@ -3,7 +3,6 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
-import { formatMoney } from "../utils/currency";
 import Button from "./elements/Button";
 import MyIcon from "./elements/MyIcon";
 import MyModal from "./elements/MyModal";
@@ -36,7 +35,7 @@ export default function SavingsBucketsList({
   const [editBucket, setEditBucket] = useState<SavingsBucket | null>(null);
   const [allocatingBucketId, setAllocatingBucketId] = useState<string | null>(null);
   const [allocateAmount, setAllocateAmount] = useState("");
-  const { primaryCurrency } = usePrimaryCurrency();
+  const { formatCurrency } = usePrimaryCurrency();
 
   const totalAllocated = buckets?.reduce((sum, b) => sum + b.currentamount, 0) ?? 0;
   const unallocated = accountBalance - totalAllocated;
@@ -86,7 +85,7 @@ export default function SavingsBucketsList({
         <View className="flex-row items-center gap-1 mb-1">
           {isOverAllocated && <MyIcon name="AlertTriangle" size={12} className="text-warning" />}
           <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
-            Unallocated: {formatMoney(unallocated, primaryCurrency)}
+            Unallocated: {formatCurrency(unallocated, false)}
             {isOverAllocated && " (over-allocated)"}
           </Text>
         </View>
@@ -99,9 +98,9 @@ export default function SavingsBucketsList({
               <Text className="text-xs font-medium text-foreground">{bucket.name}</Text>
               <View className="flex-row items-center gap-1">
                 <Text className="text-xs text-muted-foreground">
-                  {formatMoney(bucket.currentamount, primaryCurrency)}
+                  {formatCurrency(bucket.currentamount)}
                   {bucket.targetamount > 0 &&
-                    ` / ${formatMoney(bucket.targetamount, primaryCurrency)}`}
+                    ` / ${formatCurrency(bucket.targetamount)}`}
                 </Text>
               </View>
               {/* Mini progress bar */}
@@ -191,7 +190,7 @@ export default function SavingsBucketsList({
             <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
             <Text className="text-xs text-warning/80">
               Bucket allocations exceed the account balance by{" "}
-              {formatMoney(Math.abs(unallocated), primaryCurrency)}.
+              {formatCurrency(unallocated, false)}.
               Consider reducing bucket amounts to match the current balance.
             </Text>
           </View>
@@ -201,7 +200,7 @@ export default function SavingsBucketsList({
       {/* Unallocated balance */}
       <View className="px-4 pb-2">
         <Text className={`text-xs ${isOverAllocated ? "text-warning font-semibold" : "text-muted-foreground"}`}>
-          Unallocated: {formatMoney(unallocated, primaryCurrency)}
+          Unallocated: {formatCurrency(unallocated)}
           {isOverAllocated && " ⚠️"}
         </Text>
       </View>
@@ -227,9 +226,9 @@ export default function SavingsBucketsList({
                 <Text className="text-sm font-medium text-foreground">{bucket.name}</Text>
                 <View className="flex-row items-center gap-1">
                   <Text className="text-xs text-muted-foreground">
-                    {formatMoney(bucket.currentamount, primaryCurrency)}
+                    {formatCurrency(bucket.currentamount)}
                     {bucket.targetamount > 0 &&
-                      ` / ${formatMoney(bucket.targetamount, primaryCurrency)}`}
+                      ` / ${formatCurrency(bucket.targetamount)}`}
                   </Text>
                 </View>
                 {/* Progress bar */}
