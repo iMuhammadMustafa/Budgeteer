@@ -1,15 +1,14 @@
+import Button from "@/src/components/elements/Button";
+import ThemedInput from "@/src/components/elements/ThemedInput";
+import ThemedText from "@/src/components/elements/ThemedText";
+import DropdownField from "@/src/components/elements/dropdown/DropdownField";
 import supabase from "@/src/providers/Supabase";
 import { CURRENCIES, DEFAULT_CURRENCY } from "@/src/utils/currency";
-import GenerateUuid from "@/src/utils/uuid.Helper";
 import { storage } from "@/src/utils/storageUtils";
+import GenerateUuid from "@/src/utils/uuid.Helper";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Platform } from "react-native";
-import ThemedText from "@/src/components/elements/ThemedText";
-import ThemedInput from "@/src/components/elements/ThemedInput";
-import DropdownField from "@/src/components/elements/dropdown/DropdownField";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Button from "@/src/components/elements/Button";
+import { Alert, Platform, View } from "react-native";
 
 const initailRegisterState = {
   id: GenerateUuid(),
@@ -26,6 +25,8 @@ const currencyOptions = CURRENCIES.map((c) => ({
   value: c.code,
 }));
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export default function Register() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initailRegisterState);
@@ -34,13 +35,15 @@ export default function Register() {
     user.email &&
     user.password &&
     user.confirmPassword &&
-    user.password === user.confirmPassword
+    user.password === user.confirmPassword &&
+    (!user.tenantId || (user.tenantId.trim().length > 2 && uuidRegex.test(user.tenantId)))
   );
   const signUpWithEmail = async () => {
     setLoading(true);
     // Cache the chosen currency so it survives the redirect to /Login and
     // the first profile read after the user signs in. usePrimaryCurrency
     // syncs it into profiles.currency on first authenticated load.
+    // TODO: move key to constants
     await storage.setItem("app:primaryCurrency", user.currency);
 
     const { error } = await supabase.auth.signUp({
@@ -61,7 +64,14 @@ export default function Register() {
   };
 
   return (
-    <SafeAreaView className="flex-col justify-center m-auto p-4 h-full w-full md:w-[50%]">
+    <View className="justify-center m-auto p-4 h-full w-full md:w-[50%]">
+      <Button
+        variant="ghost"
+        label="Back"
+        onPress={() => router.navigate("/")}
+        leftIcon="ArrowLeft"
+        className="self-start text-blue-600 text-center"
+      />
       <ThemedText variant="heading" className="text-2xl mb-10 text-center">Register</ThemedText>
       <ThemedInput
         className="my-2 p-4 text-lg"
@@ -71,11 +81,13 @@ export default function Register() {
       <ThemedInput
         className="my-2 p-4 text-lg"
         placeholder="Password"
+        secureTextEntry
         onChangeText={text => setUser({ ...user, password: text })}
       />
       <ThemedInput
         className="my-2 p-4 text-lg"
         placeholder="Confirm Password"
+        secureTextEntry
         onChangeText={text => setUser({ ...user, confirmPassword: text })}
       />
       <ThemedInput
@@ -83,16 +95,15 @@ export default function Register() {
         placeholder="Tenant Id"
         onChangeText={text => setUser({ ...user, tenantId: text })}
       />
-
-      <ThemedText className="mt-2 mb-1 text-sm">Primary Currency</ThemedText>
-      <DropdownField
-        label=""
-        selectedValue={user.currency}
-        options={currencyOptions}
-        onSelect={(item) => setUser({ ...user, currency: (item?.value as string) ?? DEFAULT_CURRENCY })}
-        isModal={Platform.OS !== "web"}
-      />
-
+      <View className="z-10">
+        <DropdownField
+          label="Primary Currency"
+          selectedValue={user.currency}
+          options={currencyOptions}
+          onSelect={(item) => setUser({ ...user, currency: (item?.value as string) ?? DEFAULT_CURRENCY })}
+          isModal={Platform.OS !== "web"}
+        />
+      </View>
       <Button
         variant="primary"
         size="lg"
@@ -108,6 +119,6 @@ export default function Register() {
           Login
         </ThemedText>
       </Link>
-    </SafeAreaView>
+    </View>
   );
 }
