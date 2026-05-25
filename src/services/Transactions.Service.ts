@@ -37,7 +37,9 @@ export interface ITransactionService extends IService<Transaction, TableNames.Tr
   useCreateMultipleTransactions: () => ReturnType<typeof useMutation<any, Error, Inserts<TableNames.Transactions>[]>>;
   useUpdateTransferTransaction: () => ReturnType<typeof useMutation<any, Error, Updates<TableNames.Transactions>>>;
   useUpdateMultipleTransactions: () => ReturnType<typeof useMutation<void, Error, BatchUpdateParams>>;
-  useSplitTransaction: () => ReturnType<typeof useMutation<any, Error, { original: TransactionsView; children: Inserts<TableNames.Transactions>[] }>>;
+  useSplitTransaction: () => ReturnType<
+    typeof useMutation<any, Error, { original: TransactionsView; children: Inserts<TableNames.Transactions>[] }>
+  >;
   useFindSplitChildren: (splitFromId?: string) => ReturnType<typeof useQuery<Transaction[]>>;
 }
 
@@ -313,22 +315,25 @@ export function useTransactionService(): ITransactionService {
         const userId = session.user.id;
 
         // 1. Void the original transaction
-        await transactionRepo.update(
-          original.id!,
-          { isvoid: true },
-          tenantId,
-        );
+        await transactionRepo.update(original.id!, { isvoid: true }, tenantId);
 
         // Reverse original balance (voiding removes balance impact)
         if (original.isvoid !== true && original.accountid && original.amount) {
           await accountRepo.updateAccountBalance(original.accountid, -original.amount, tenantId);
         }
 
-        // 2. Create child transactions with splitfromid
-        const childTransactions = children.map((child) => ({
+        // The parent's sub-items are now orphaned to a voided row. Drop them — the
+        // caller is expected to have transferred their values into `children` (e.g.
+        // SplitTransactionModal pre-fills children from the items).
+        await transactionItemRepo.voidByTransactionId(original.id!, tenantId);
+
+        // 2. Create child transactions with splitfromid. Force isvoid=false so a
+        // toggled parent never propagates its void state to fresh children.
+        const childTransactions = children.map(child => ({
           ...child,
           id: GenerateUuid(),
           splitfromid: original.id!,
+          isvoid: false,
           tenantid: tenantId,
           createdby: userId,
           updatedby: userId,
@@ -350,6 +355,7 @@ export function useTransactionService(): ITransactionService {
         await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
         await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
         await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
       },
     });
   };

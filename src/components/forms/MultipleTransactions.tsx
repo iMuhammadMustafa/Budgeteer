@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../elements/Button";
@@ -17,8 +17,9 @@ import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { ViewNames } from "@/src/types/database/TableNames";
-import { TransactionsView } from "@/src/types/database/Tables.Types";
+import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { Inserts, TransactionsView } from "@/src/types/database/Tables.Types";
+import { roundToCents } from "@/src/utils/amount.helper";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
@@ -77,7 +78,9 @@ const convertTransactionToMultipleForm = (transaction: TransactionFormType): Mul
     transactions: {
       [transactionId]: {
         name: transaction.name || "",
-        amount: Math.abs(transaction.amount || 0),
+        // Keep the sign — the per-row ModeIcon derives its chip color from the amount's sign,
+        // so stripping it here made the first row of every expense-split look like income.
+        amount: transaction.amount || 0,
         categoryid: transaction.categoryid || "",
         notes: transaction.notes || null,
         tags: transaction.tags || null,
@@ -105,9 +108,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const { primaryCurrency } = usePrimaryCurrency();
   const [transactionCurrency, setTransactionCurrency] = useState<string>(primaryCurrency || DEFAULT_CURRENCY);
   const [rateOverride, setRateOverride] = useState<number | null>(null);
+  const hasInitializedCurrencyRef = useRef(false);
 
+  // One-shot init only — never overwrite an explicit user pick (incl. USD).
   useEffect(() => {
-    if (primaryCurrency && transactionCurrency === DEFAULT_CURRENCY && primaryCurrency !== DEFAULT_CURRENCY) {
+    if (hasInitializedCurrencyRef.current) return;
+    if (!primaryCurrency) return;
+    hasInitializedCurrencyRef.current = true;
+    if (transactionCurrency !== primaryCurrency) {
       setTransactionCurrency(primaryCurrency);
     }
   }, [primaryCurrency, transactionCurrency]);
@@ -173,25 +181,37 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     async (data: MultipleTransactionsFormData) => {
       const totalAmount = mode === "minus" ? -Math.abs(currentAmount) : Math.abs(currentAmount);
 
-      // TODO(multi-currency): persist original_amount / original_currency / exchange_rate
-      // per row so receipts keep their native value. Today we convert at submit time.
       const rateForSubmit = isForeignCurrency ? effectiveRate : 1;
+      // In split mode every child must be active — the parent gets voided server-side and
+      // children must never inherit the parent's eventual isvoid=true.
+      const childIsVoid = isSplitMode ? false : data.isvoid;
 
-      // Convert form data to array of transaction inserts
-      const transactions = Object.values(data.transactions).map(trans => ({
-        payee: data.payee,
-        date: data.date,
-        description: data.description,
-        type: data.type as any,
-        isvoid: data.isvoid,
-        accountid: data.accountid,
-        groupid: data.groupid,
-        categoryid: trans.categoryid,
-        amount: (trans.amount ?? 0) * rateForSubmit,
-        notes: trans.notes,
-        tags: trans.tags ? JSON.stringify(trans.tags) : null,
-        name: trans.name,
-      }));
+      // Convert form data to array of transaction inserts. We cast via `unknown` because
+      //   (a) `tags` is stored as a JSON string in the DB even though the generated row
+      //       type says `string[]` (pre-existing), and
+      //   (b) `original_amount` / `original_currency` / `exchange_rate` aren't in the
+      //       generated Supabase types until the user runs the migration and `npm run supa-gen`.
+      const transactions = Object.values(data.transactions).map(trans => {
+        const originalAmount = trans.amount ?? 0;
+        const convertedAmount = roundToCents(originalAmount * rateForSubmit);
+        return {
+          payee: data.payee,
+          date: data.date,
+          description: data.description,
+          type: data.type as any,
+          isvoid: childIsVoid,
+          accountid: data.accountid,
+          groupid: data.groupid,
+          categoryid: trans.categoryid,
+          amount: convertedAmount,
+          original_amount: roundToCents(originalAmount),
+          original_currency: transactionCurrency,
+          exchange_rate: rateForSubmit,
+          notes: trans.notes,
+          tags: trans.tags ? JSON.stringify(trans.tags) : null,
+          name: trans.name,
+        };
+      }) as unknown as Inserts<TableNames.Transactions>[];
 
       if (isSplitMode && splitMutation) {
         // Split mode: void original + create children with splitfromid
@@ -230,7 +250,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         });
       }
     },
-    [submitAllMutation, splitMutation, transaction?.id, transaction?.accountid, transaction?.amount, mode, currentAmount, isSplitMode, effectiveRate, isForeignCurrency],
+    [submitAllMutation, splitMutation, transaction?.id, transaction?.accountid, transaction?.amount, mode, currentAmount, isSplitMode, effectiveRate, isForeignCurrency, transactionCurrency],
   );
 
   // Form submission hook
@@ -561,17 +581,24 @@ const TransactionsCreationList = ({
   // Add new transaction
   const addNewTransaction = useCallback(() => {
     const newTransactionId = GenerateUuid();
-    const remainingAmount = (mode === "minus" ? -maxAmount : maxAmount) - currentAmount;
+    // Round to cents so we never carry float drift (e.g. 0.000000000001) into the new row.
+    const signedMax = mode === "minus" ? -maxAmount : maxAmount;
+    const remainingAmount = roundToCents(signedMax - currentAmount);
 
-    let initialAmount = remainingAmount;
+    let initialAmount: number = remainingAmount;
     if (remainingAmount === 0 && mode === "minus") {
       initialAmount = -0;
     }
 
+    // Inherit the category from the most recently added row so users splitting a receipt
+    // into similar items don't have to repick the category every time.
+    const existingRows = Object.values(formState.data.transactions) as MultipleTransactionItemData[];
+    const lastCategoryId = [...existingRows].reverse().find(r => r?.categoryid)?.categoryid || "";
+
     const newTransaction: MultipleTransactionItemData = {
       name: "",
       amount: initialAmount,
-      categoryid: "",
+      categoryid: lastCategoryId,
       notes: null,
       tags: null,
       groupid: formState.data.groupid,
@@ -752,7 +779,7 @@ const TransactionCard = ({
         className={Platform.OS === "web" ? "flex-1" : ""}
       />
 
-      {/* Notes Field */}
+      {/* Notes Field — kept compact: this card already has Amount/Name/Category above it */}
       <FormField
         config={{
           name: "notes",
@@ -763,7 +790,7 @@ const TransactionCard = ({
         value={transaction.notes || ""}
         onChange={value => updateTransactionField("notes", value)}
         onBlur={() => setFieldTouched(`transactions.${id}.notes`)}
-        className={Platform.OS === "web" ? "flex-1" : ""}
+        className={`${Platform.OS === "web" ? "flex-1" : ""} min-h-[40px] max-h-[80px]`}
       />
 
       {/* Tags Field */}

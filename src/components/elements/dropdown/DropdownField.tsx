@@ -208,6 +208,7 @@ function DropdownField({
           addNew={addNew}
           onAddNew={handleAddNew}
           title={label}
+          dropdownId={dropdownIdRef.current}
         />
       )}
 
@@ -240,6 +241,7 @@ interface DropdownListProps {
   addNew?: AddNewConfig;
   onAddNew: () => void;
   title: string;
+  dropdownId?: string;
 }
 
 function DropdownList({
@@ -257,6 +259,7 @@ function DropdownList({
   addNew,
   onAddNew,
   title,
+  dropdownId,
 }: DropdownListProps) {
   const listContent = (
     <>
@@ -363,6 +366,9 @@ function DropdownList({
         maxHeight,
         zIndex: 9999,
       }}
+      // @ts-ignore — dataSet maps to data-* attributes on web so the outside-click handler
+      // in the parent treats clicks on the list (incl. its search input) as inside.
+      dataSet={dropdownId ? { dropdownId } : undefined}
     >
       {listContent}
     </View>

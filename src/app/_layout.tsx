@@ -1,18 +1,18 @@
 import "@/global.css";
-import ThemeProvider from "@/src/providers/ThemeProvider";
-import { Stack } from "expo-router";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import AppInitializer from "../providers/AppInitalizer";
-import AuthProvider from "../providers/AuthProvider";
-import StorageModeProvider from "../providers/StorageModeProvider";
-
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import { Stack } from "expo-router";
 import { Suspense } from "react";
 import { ActivityIndicator, LogBox, Platform } from "react-native";
-import QueryProvider from "../providers/QueryProvider";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+import AppInitializer from "@/src/providers/AppInitalizer";
+import AuthProvider from "@/src/providers/AuthProvider";
+import QueryProvider from "@/src/providers/QueryProvider";
+import StorageModeProvider from "@/src/providers/StorageModeProvider";
+import ThemeProvider from "@/src/providers/ThemeProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,19 +20,16 @@ dayjs.extend(relativeTime);
 
 // Suppress known third-party library warnings for web platform
 if (Platform.OS === "web") {
-  LogBox.ignoreLogs([
-    "Unknown event handler property",
-    "React does not recognize the `accessibilityHint` prop",
-    "React does not recognize the `backgroundColor` prop",
-  ]);
 
   const suppressedPatterns = [
     "Unknown event handler property",
-    "React does not recognize the",
-    "accessibilityHint",
+    "React does not recognize the `accessibilityHint` prop",
+    "React does not recognize the `backgroundColor` prop",
+
     "backgroundColor",
   ];
 
+  LogBox.ignoreLogs(suppressedPatterns);
   const shouldSuppress = (args: unknown[]) => {
     const message = args[0];
     if (typeof message !== "string") return false;

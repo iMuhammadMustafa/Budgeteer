@@ -92,22 +92,27 @@ CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
 
 CREATE OR REPLACE VIEW Search_DistinctTransactions WITH (security_invoker)
 AS 
- SELECT DISTINCT ON (transactions.name) transactions.name,
-    transactions.amount,
-    transactions.payee,
-    transactions.type,
-    transactions.isvoid,
-    transactions.description,
-    transactions.notes,
-    transactions.categoryid,
-    transactions.accountid,
-    transactions.transferid,
-    transactions.transferaccountid,
-    transactions.tenantid
-   FROM transactions
-  WHERE transactions.isdeleted = false
-    AND (transactions.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
-  ORDER BY transactions.name, transactions.date DESC;
+SELECT DISTINCT ON (t.name, t.tenantid)
+  t.name,
+  t.description,
+  t.payee,
+  t.notes,
+  t.amount,
+  t.type,
+  t.isvoid,
+  t.accountid,
+  t.categoryid,
+  t.transferaccountid,
+  t.transferid,
+  t.tenantid,
+  t.date AS last_used
+FROM transactions t
+WHERE t.isdeleted = false
+  AND t.name IS NOT NULL
+  AND t.name <> ''
+  AND (t.type = ANY (ARRAY['Expense'::TransactionTypes, 'Income'::TransactionTypes, 'Transfer'::TransactionTypes]))
+ORDER BY t.name, t.tenantid, t.date DESC;
+
 
 DROP MATERIALIZED VIEW IF EXISTS TransactionsView;
 CREATE MATERIALIZED VIEW TransactionsView AS

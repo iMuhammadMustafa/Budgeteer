@@ -128,10 +128,17 @@ export class TransactionSqliteRepository
     ): Promise<{ label: string; item: SearchDistinctTransactions }[]> {
         const db = await getSqliteDB();
 
+        // The view groups by name and returns the metadata from the most-recent transaction
+        // for that name (SQLite's MAX-aggregate bare-column behavior). Order by `last_used`
+        // and cap at 7 so the user sees their most recently used names first.
         const rows = await db.getAllAsync<Record<string, unknown>>(
-            `SELECT * FROM ${ViewNames.SearchDistinctTransactions} 
-       WHERE tenantid = ? AND (name LIKE ? OR payee LIKE ? OR description LIKE ?)
-       LIMIT 20`,
+            `SELECT * FROM ${ViewNames.SearchDistinctTransactions}
+       WHERE tenantid = ?
+         AND (name LIKE ? COLLATE NOCASE
+              OR payee LIKE ? COLLATE NOCASE
+              OR description LIKE ? COLLATE NOCASE)
+       ORDER BY last_used DESC
+       LIMIT 7`,
             [tenantId, `%${text}%`, `%${text}%`, `%${text}%`]
         );
 

@@ -71,11 +71,16 @@ export const CREATE_ACCOUNTS_WITH_RUNNING_BALANCE_VIEW = `
 `;
 
 /**
- * Search distinct transactions for autocomplete
+ * Search distinct transactions for autocomplete.
+ *
+ * One row per distinct name (within a tenant); the metadata returned comes from
+ * the most-recently dated transaction with that name so the autocomplete surfaces
+ * the user's latest categorisation/payee/account. Ordered by `last_used DESC` at
+ * the query layer (`findByName` LIMITs to 7).
  */
 export const CREATE_SEARCH_DISTINCT_TRANSACTIONS_VIEW = `
   CREATE VIEW IF NOT EXISTS ${ViewNames.SearchDistinctTransactions} AS
-  SELECT DISTINCT
+  SELECT
     t.name,
     t.description,
     t.payee,
@@ -87,9 +92,11 @@ export const CREATE_SEARCH_DISTINCT_TRANSACTIONS_VIEW = `
     t.categoryid,
     t.transferaccountid,
     t.transferid,
-    t.tenantid
+    t.tenantid,
+    MAX(t.date) AS last_used
   FROM ${TableNames.Transactions} t
-  WHERE t.isdeleted = 0
+  WHERE t.isdeleted = 0 AND t.name IS NOT NULL AND t.name <> ''
+  GROUP BY t.name, t.tenantid
 `;
 
 /**

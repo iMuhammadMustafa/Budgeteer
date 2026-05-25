@@ -7,6 +7,13 @@ export interface ParsedAmount {
   rawString: string;
 }
 
+/** Round to 2 decimal places. Use everywhere we persist or display a money value to avoid float drift. */
+export function roundToCents(n: number | null | undefined): number {
+  if (n === null || n === undefined || !Number.isFinite(n)) return 0;
+  const rounded = Math.round(n * 100) / 100;
+  return Object.is(n, -0) && rounded === 0 ? -0 : rounded;
+}
+
 /** Derive the visual mode for an amount value. `-0` counts as minus to preserve user intent. */
 export function getAmountMode(amount: number | null | undefined): "plus" | "minus" {
   if (amount === null || amount === undefined) return "minus";

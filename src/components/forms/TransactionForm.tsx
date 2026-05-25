@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
@@ -12,6 +12,7 @@ import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 import { OptionItem, TransactionFormData, TransactionSubItem, ValidationSchema } from "@/src/types/components/forms.types";
 import { Transaction } from "@/src/types/database/Tables.Types";
+import { roundToCents } from "@/src/utils/amount.helper";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
@@ -146,6 +147,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     removeSubItem,
     updateSubItem,
     subItemsTotal,
+    subItemsRemaining,
     isSubItemsBalanced,
     primaryCurrency,
     transactionCurrency,
@@ -155,6 +157,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     convertedPreview,
     isFxLoading,
     isForeignCurrency,
+    isRateStale,
+    currentFxRate,
   } = useTransactionForm({ transaction });
 
   return (
@@ -302,6 +306,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   value={displayedRate?.toString() ?? ""}
                   onChange={handleRateOverride}
                 />
+                {isRateStale && currentFxRate ? (
+                  <Text className="text-status-warning text-xs mt-1">
+                    FX rate has changed since this transaction was recorded — current rate: {currentFxRate.toFixed(4)}
+                  </Text>
+                ) : null}
               </View>
             )}
           </View>
@@ -454,7 +463,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           >
             {subItems.length > 0 && (
               <View>
-                {/* Balance indicator */}
+                {/* Balance indicator (signed: items with opposite mode net against the parent) */}
                 <View className="flex-row items-center justify-between mb-3 px-1">
                   <ThemedText className="text-xs">
                     Items total: {subItemsTotal.toFixed(2)}
@@ -465,7 +474,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   >
                     {isSubItemsBalanced
                       ? "✓ Balanced"
-                      : `Remaining: ${(Math.abs(formState.data.amount) - subItemsTotal).toFixed(2)}`}
+                      : `Remaining: ${subItemsRemaining.toFixed(2)}`}
                   </ThemedText>
                 </View>
 
@@ -614,9 +623,15 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { primaryCurrency } = usePrimaryCurrency();
   const [transactionCurrency, setTransactionCurrency] = useState<string>(primaryCurrency || DEFAULT_CURRENCY);
   const [rateOverride, setRateOverride] = useState<number | null>(null);
+  const hasInitializedCurrencyRef = useRef(false);
 
+  // One-shot init: when primaryCurrency loads after mount, adopt it.
+  // After the first sync we never overwrite the user's explicit choice (incl. picking USD).
   useEffect(() => {
-    if (primaryCurrency && transactionCurrency === DEFAULT_CURRENCY && primaryCurrency !== DEFAULT_CURRENCY) {
+    if (hasInitializedCurrencyRef.current) return;
+    if (!primaryCurrency) return;
+    hasInitializedCurrencyRef.current = true;
+    if (transactionCurrency !== primaryCurrency) {
       setTransactionCurrency(primaryCurrency);
     }
   }, [primaryCurrency, transactionCurrency]);
@@ -625,6 +640,18 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { rate: fxRate, isLoading: isFxLoading } = useExchangeRate(transactionCurrency, primaryCurrency);
   const effectiveRate = rateOverride ?? fxRate ?? 1;
   const displayedRate = effectiveRate;
+
+  // Surface a warning when the rate currently applied to the transaction (from the saved
+  // exchange_rate or the user's override) drifts noticeably from today's API rate. Only
+  // matters when editing a foreign-currency transaction; threshold is 0.5%.
+  const storedRate = (transaction as any).exchange_rate as number | undefined;
+  const isRateStale = useMemo(() => {
+    if (!transaction?.id) return false;
+    if (!isForeignCurrency) return false;
+    const baseRate = storedRate ?? rateOverride;
+    if (!baseRate || !fxRate || baseRate <= 0 || fxRate <= 0) return false;
+    return Math.abs(baseRate - fxRate) / fxRate > 0.005;
+  }, [transaction?.id, isForeignCurrency, storedRate, rateOverride, fxRate]);
 
   const handleRateOverride = useCallback((value: string) => {
     const cleaned = value.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".");
@@ -679,18 +706,43 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     });
   }, []);
 
+  // Signed sum so items with opposite mode (e.g. a refund line on an expense) net correctly
+  // against the parent. Rounded to cents to avoid float drift when comparing to the parent.
   const subItemsTotal = useMemo(() => {
-    return subItems.reduce((sum, item) => sum + Math.abs(item.amount || 0), 0);
+    return roundToCents(subItems.reduce((sum, item) => sum + (item.amount || 0), 0));
   }, [subItems]);
 
-  const initialFormData: TransactionFormType = useMemo(
-    () => ({
+  // On edit, prefer the user's original typed amount (in the original currency) so the
+  // form round-trips through FX without compounding rounding. Falls back to the stored
+  // primary-currency amount for legacy rows where original_* haven't been backfilled.
+  const initialFormData: TransactionFormType = useMemo(() => {
+    const storedOriginal = (transaction as any).original_amount as number | undefined;
+    const storedConverted = transaction.amount ?? 0;
+    const seedAmount = storedOriginal && storedOriginal !== 0 ? storedOriginal : storedConverted;
+    const seedMode = seedAmount && seedAmount !== 0 ? (seedAmount < 0 ? "minus" : "plus") : "minus";
+    return {
       ...transaction,
-      amount: Math.abs(transaction.amount ?? 0),
-      mode: transaction.amount && transaction.amount !== 0 ? (transaction.amount < 0 ? "minus" : "plus") : "minus",
-    }),
-    [transaction],
-  );
+      amount: Math.abs(seedAmount),
+      mode: seedMode,
+    };
+  }, [transaction]);
+
+  // Seed transactionCurrency + rateOverride from the stored original_* fields exactly once
+  // when editing. After that the user is in control.
+  const hasSeededFromOriginalRef = useRef(false);
+  useEffect(() => {
+    if (hasSeededFromOriginalRef.current) return;
+    if (!transaction?.id) return;
+    const origCurrency = (transaction as any).original_currency as string | undefined;
+    const origRate = (transaction as any).exchange_rate as number | undefined;
+    if (origCurrency) {
+      hasSeededFromOriginalRef.current = true;
+      setTransactionCurrency(origCurrency);
+      if (typeof origRate === "number" && Number.isFinite(origRate) && origRate > 0) {
+        setRateOverride(origRate);
+      }
+    }
+  }, [transaction]);
 
   const [transactionType, setTransactionType] = useState<string>(initialFormData.type);
 
@@ -698,11 +750,20 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
     useFormState<TransactionFormType>(initialFormData, validationSchema);
 
-  // Whether sub-items are balanced against the transaction amount
+  // formState.data.amount is stored as an absolute value; the form-wide `mode` carries the sign.
+  // Compare the signed parent against the signed sum of items.
+  const parentSigned = useMemo(
+    () => roundToCents(mode === "minus" ? -Math.abs(formState.data.amount) : Math.abs(formState.data.amount)),
+    [mode, formState.data.amount],
+  );
+  const subItemsRemaining = useMemo(
+    () => roundToCents(parentSigned - subItemsTotal),
+    [parentSigned, subItemsTotal],
+  );
   const isSubItemsBalanced = useMemo(() => {
     if (subItems.length === 0) return true;
-    return Math.abs(subItemsTotal - Math.abs(formState.data.amount)) < 0.01;
-  }, [subItems, subItemsTotal, formState.data.amount]);
+    return subItemsRemaining === 0;
+  }, [subItems, subItemsRemaining]);
 
   const convertedPreview = useMemo(() => {
     const userTyped = Math.abs(Number(formState.data.amount) || 0);
@@ -720,16 +781,20 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         throw new Error("Line items must sum to the transaction amount");
       }
 
-      // TODO(multi-currency): persist original_amount, original_currency, exchange_rate
-      // on the transaction so receipts retain their native value. Today we convert at
-      // submit time and store only the primary-currency amount.
       const rateForSubmit = isForeignCurrency ? effectiveRate : 1;
-      const convertedInput = Math.abs(Number(data.amount) || 0) * rateForSubmit;
+      const userTypedAbs = roundToCents(Math.abs(Number(data.amount) || 0));
+      const convertedInput = roundToCents(userTypedAbs * rateForSubmit);
       const finalAmount = calculateFinalAmount({ ...data, amount: convertedInput }, mode);
+      // Sign the original_amount the same way as the final amount so the relation
+      // `original_amount * exchange_rate ≈ amount` holds when signs are preserved.
+      const originalSigned = calculateFinalAmount({ ...data, amount: userTypedAbs }, mode);
 
       const submissionData = {
         ...data,
         amount: finalAmount,
+        original_amount: originalSigned,
+        original_currency: transactionCurrency,
+        exchange_rate: rateForSubmit,
         mode: undefined,
         payee: data.type === "Transfer" ? null : data.payee,
       };
@@ -770,7 +835,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         },
       );
     },
-    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation, effectiveRate, isForeignCurrency],
+    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation, effectiveRate, isForeignCurrency, transactionCurrency],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
@@ -1099,6 +1164,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     removeSubItem,
     updateSubItem,
     subItemsTotal,
+    subItemsRemaining,
     isSubItemsBalanced,
     primaryCurrency,
     transactionCurrency,
@@ -1108,5 +1174,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     convertedPreview,
     isFxLoading,
     isForeignCurrency,
+    isRateStale,
+    currentFxRate: fxRate,
   };
 };

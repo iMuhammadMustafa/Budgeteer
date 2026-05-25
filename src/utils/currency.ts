@@ -33,6 +33,38 @@ export const CURRENCIES: CurrencyOption[] = [
 
 const CURRENCY_BY_CODE = new Map(CURRENCIES.map((c) => [c.code, c]));
 
+/**
+ * Locale used to format each currency in its conventional position (prefix vs postfix).
+ * USD/GBP/CAD/AUD etc. are prefix; EUR/PLN/SEK/NOK/DKK are postfix.
+ * Falls back to en-US for unmapped codes.
+ */
+const CURRENCY_LOCALE: Record<string, string> = {
+  USD: "en-US",
+  EUR: "de-DE",
+  GBP: "en-GB",
+  JPY: "ja-JP",
+  CNY: "zh-CN",
+  CAD: "en-CA",
+  AUD: "en-AU",
+  CHF: "de-CH",
+  INR: "en-IN",
+  EGP: "ar-EG",
+  AED: "ar-AE",
+  SAR: "ar-SA",
+  TRY: "tr-TR",
+  BRL: "pt-BR",
+  MXN: "es-MX",
+  ZAR: "en-ZA",
+  SGD: "en-SG",
+  HKD: "zh-HK",
+  KRW: "ko-KR",
+  SEK: "sv-SE",
+  NOK: "nb-NO",
+  DKK: "da-DK",
+  PLN: "pl-PL",
+  NZD: "en-NZ",
+};
+
 export const DEFAULT_CURRENCY = "USD";
 
 export function getCurrency(code: string | null | undefined): CurrencyOption {
@@ -55,15 +87,16 @@ export function formatMoney(
 ): string {
   const value = Number(amount ?? 0);
   const currencyCode = (code || DEFAULT_CURRENCY).toUpperCase();
-  const locale = options?.locale ?? "en-US";
+  const locale = options?.locale ?? CURRENCY_LOCALE[currencyCode] ?? "en-US";
 
   try {
-    const formatted = Math.abs(value).toLocaleString(locale, {
+    const formatted = new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currencyCode,
+      currencyDisplay: "narrowSymbol",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    });
+    }).format(Math.abs(value));
     if (options?.signed && value > 0) return `+${formatted}`;
     if (value < 0) return `-${formatted}`;
     return formatted;

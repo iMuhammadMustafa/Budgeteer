@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 
+import { queryClient } from "@/src/providers/QueryProvider";
+
 import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import IconPicker from "@/src/components/elements/IconPicker";
 import FormContainer from "@/src/components/form-builder/FormContainer";
@@ -125,11 +127,20 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
         id: account.id,
         balance: runningBalance,
       };
-      updateAccount({
-        form: updatedAccount,
-        original: account as Account,
-        props: { addAdjustmentTransaction: false },
-      });
+      updateAccount(
+        {
+          form: updatedAccount,
+          original: account as Account,
+          props: { addAdjustmentTransaction: false },
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: [TableNames.Accounts, account.id, "RunningBalance"],
+            });
+          },
+        },
+      );
       // Also update form state to reflect new balance
       // updateField("balance", runningBalance);
       setInitialFormData({
@@ -392,7 +403,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
                       disabled: true,
                     }}
                     value={runningBalance}
-                    onChange={() => { }} // Read-only field
+                    onChange={() => {}} // Read-only field
                   />
                 </View>
                 <View className="mt-6">

@@ -5,4 +5,5 @@ import { IRepository } from "./IRepository";
 export interface ITransactionItemRepository extends IRepository<TransactionItem, TableNames.TransactionItems> {
   findByTransactionId(transactionId: string, tenantId: string): Promise<TransactionItem[]>;
   deleteByTransactionId(transactionId: string, tenantId: string): Promise<void>;
+  voidByTransactionId(transactionId: string, tenantId: string): Promise<void>;
 }

@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, TextInput, View } from "react-native";
 import { AmountMode, formatAmountForInput, getAmountMode, parseAmountInput } from "@/src/utils/amount.helper";
 import MyIcon from "./MyIcon";
@@ -41,18 +42,36 @@ export default function AmountInput({
 
   const chipBg = isTransfer ? "bg-info-400" : isMinus ? "bg-danger-400" : "bg-success-400";
 
+  // The display string is kept locally so that partial input like "0." (which parses to 0)
+  // doesn't get wiped on every keystroke. We re-sync from props when the input is blurred
+  // or when the upstream amount changes to something we didn't just type.
+  const [displayValue, setDisplayValue] = useState<string>(formatAmountForInput(amount));
+  const isFocusedRef = useRef(false);
+  const lastEmittedRef = useRef<number>(amount);
+
+  useEffect(() => {
+    if (isFocusedRef.current) return;
+    if (amount === lastEmittedRef.current) return;
+    setDisplayValue(formatAmountForInput(amount));
+    lastEmittedRef.current = amount;
+  }, [amount]);
+
   const handleToggle = () => {
     if (disabled || !allowNegativeFlip || isTransfer) return;
     if (Platform.OS !== "web") Haptics.selectionAsync();
     const nextMode: AmountMode = isMinus ? "plus" : "minus";
     onModeChange?.(nextMode);
     const abs = Math.abs(amount ?? 0);
-    onChange(nextMode === "minus" ? (abs === 0 ? -0 : -abs) : abs);
+    const next = nextMode === "minus" ? (abs === 0 ? -0 : -abs) : abs;
+    lastEmittedRef.current = next;
+    onChange(next);
   };
 
   const handleTextChange = (val: string) => {
     const parsed = parseAmountInput(val, resolvedMode, { allowNegativeFlip });
+    setDisplayValue(parsed.rawString);
     if (parsed.mode !== resolvedMode) onModeChange?.(parsed.mode);
+    lastEmittedRef.current = parsed.amount;
     onChange(parsed.amount);
   };
 
@@ -72,8 +91,13 @@ export default function AmountInput({
       <TextInput
         className="flex-1 px-3 py-2 text-foreground"
         placeholder={placeholder}
-        value={formatAmountForInput(amount)}
+        value={displayValue}
         onChangeText={handleTextChange}
+        onFocus={() => { isFocusedRef.current = true; }}
+        onBlur={() => {
+          isFocusedRef.current = false;
+          setDisplayValue(formatAmountForInput(amount));
+        }}
         keyboardType="decimal-pad"
         editable={!disabled}
         testID={testID}

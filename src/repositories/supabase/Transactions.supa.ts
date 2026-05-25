@@ -60,6 +60,7 @@ export class TransactionSupaRepository
       .select()
       .eq("tenantid", tenantId)
       .ilike("name", `%${text}%`)
+      .order("last_used", { ascending: false })
       .limit(7);
 
     if (error) throw error;

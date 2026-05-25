@@ -151,6 +151,9 @@ CREATE TABLE Transactions
     TransferAccountId UUID,
     SplitFromId UUID REFERENCES Transactions(Id),
 
+    original_amount   NUMERIC(18,2) NOT NULL DEFAULT 0,
+    original_currency text NOT NULL DEFAULT 'USD',
+    exchange_rate     real NOT NULL DEFAULT 1,
         
     CreatedBy UUID DEFAULT auth.uid(),
     CreatedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -276,6 +279,7 @@ CREATE TABLE IF NOT EXISTS transactionitems (
   displayorder INTEGER NOT NULL DEFAULT 0,
   tenantid UUID NOT NULL DEFAULT auth.uid(),
   isdeleted BOOLEAN NOT NULL DEFAULT false,
+  isvoid BOOLEAN NOT NULL DEFAULT false,
   createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
   createdby UUID,
   updatedat TIMESTAMPTZ,
