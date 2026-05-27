@@ -24,8 +24,6 @@ export default function DashboardIndex() {
     periodControls,
   } = useDashboard();
 
-  console.log("DashboardIndex rendered");
-
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -34,7 +32,9 @@ export default function DashboardIndex() {
     <SafeAreaView className="w-full h-full m-auto flex-1">
       <GridPattern />
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
-        <ThemedText variant="heading" className="text-xl">Dashboard</ThemedText>
+        <ThemedText variant="heading" className="text-xl">
+          Dashboard
+        </ThemedText>
         <Button
           variant="ghost"
           size="icon"

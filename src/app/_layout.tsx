@@ -1,5 +1,6 @@
 import "@/global.css";
 import dayjs from "dayjs";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
@@ -17,10 +18,10 @@ import ThemeProvider from "@/src/providers/ThemeProvider";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(relativeTime);
+dayjs.extend(quarterOfYear);
 
 // Suppress known third-party library warnings for web platform
 if (Platform.OS === "web") {
-
   const suppressedPatterns = [
     "Unknown event handler property",
     "React does not recognize the `accessibilityHint` prop",

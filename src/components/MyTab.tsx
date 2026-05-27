@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
-import useBackAction from "../utils/useBackAction";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { queryClient } from "../providers/QueryProvider";
 import { IService } from "../services/IService";
 import { TableNames } from "../types/database/TableNames";
 import { Updates } from "../types/database/Tables.Types";
+import useBackAction from "../utils/useBackAction";
 import ConfirmRestoreModal from "./ConfirmRestoreModal";
 import Button from "./elements/Button";
 import DeleteConfirmModal from "./elements/DeleteConfirmModal";
@@ -32,7 +32,7 @@ export default function MyTab<TModel, TTable extends TableNames>({
   customFindAll,
   showRestore,
   itemChildren,
-  isPageLoading
+  isPageLoading,
 }: {
   title: string;
   service: IService<TModel, TTable>;
@@ -106,7 +106,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
   return (
     <SafeAreaView className={`flex-1 bg-background  ${Platform.OS === "web" ? "max-w" : ""}`}>
       <View className="flex-row justify-between items-center px-4 bg-background">
-        <ThemedText variant="heading" className="text-lg">{title}</ThemedText>
+        <ThemedText variant="heading" className="text-lg">
+          {title}
+        </ThemedText>
         <View className="flex-row items-center">
           <Button
             testID="refresh-btn"
@@ -143,7 +145,9 @@ export default function MyTab<TModel, TTable extends TableNames>({
           Object.entries(groupedData).map(([groupName, itemsInGroup]) => (
             <View key={groupName}>
               {!groupName ? null : (
-                <ThemedText variant="heading" className="text-lg py-0 px-4 bg-card">{groupName}</ThemedText>
+                <ThemedText variant="heading" className="text-lg py-0 px-4 bg-card">
+                  {groupName}
+                </ThemedText>
               )}
               {itemsInGroup.map((item: any) => {
                 const isSelected = selectedItems.some(selectedItem => item.id === selectedItem.id);
@@ -195,6 +199,11 @@ export default function MyTab<TModel, TTable extends TableNames>({
                         )}
                       </Button>
                       {/* </Link> */}
+                      {customAction && (
+                        <View className="me-2">
+                          {typeof customAction === "function" ? customAction(item) : customAction}
+                        </View>
+                      )}
                       {UpsertModal && (
                         <Button
                           testID={`edit-btn-${item.id}`}
@@ -229,11 +238,6 @@ export default function MyTab<TModel, TTable extends TableNames>({
                             setRestoreModalOpen(true);
                           }}
                         />
-                      )}
-                      {customAction && (
-                        <View className="me-2">
-                          {typeof customAction === "function" ? customAction(item) : customAction}
-                        </View>
                       )}
                     </View>
                     {itemChildren && itemChildren(item)}
@@ -319,15 +323,15 @@ const useMyTab = <TModel, TTable extends TableNames>({
   const { data, isLoading, error } = showDeleted ? findAllDeletedQuery : findAllQuery;
   const { mutate: softDeleteMutate } = service.useSoftDelete();
   const { mutate: hardDeleteMutate } = service.useHardDelete();
-  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => { } };
+  const { mutate: updateMultipleMutate } = service.useUpdateMultiple?.() || { mutate: () => {} };
   const { mutate: deleteMultipleDependencies } = dependencyConfig?.dependencyService?.useSoftDelete?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
   const { mutate: hardDeleteDependencies } = dependencyConfig?.dependencyService?.useHardDelete?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
   const { mutate: updateDependenciesMutate } = dependencyConfig?.dependencyService?.useUpdateMultiple?.() || {
-    mutate: () => { },
+    mutate: () => {},
   };
 
   // Use hardDelete when showing deleted items (Restore pages)

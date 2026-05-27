@@ -80,7 +80,7 @@ const convertTransactionToMultipleForm = (transaction: TransactionFormType): Mul
         name: transaction.name || "",
         // Keep the sign — the per-row ModeIcon derives its chip color from the amount's sign,
         // so stripping it here made the first row of every expense-split look like income.
-        amount: transaction.amount || 0,
+        amount: parseFloat(transaction.amount?.toString() || "0") || 0,
         categoryid: transaction.categoryid || "",
         notes: transaction.notes || null,
         tags: transaction.tags || null,
@@ -172,7 +172,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Calculate current total amount from all transactions
   const currentAmount = useMemo(() => {
     return Object.values(formState.data.transactions).reduce((total, transaction) => {
-      return total + (transaction.amount || 0);
+      return total + (Number(transaction.amount) || 0);
     }, 0);
   }, [formState.data.transactions]);
 

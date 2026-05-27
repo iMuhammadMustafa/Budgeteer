@@ -52,11 +52,7 @@ export function usePrimaryCurrency() {
             // If signup cached a non-default choice and the profile is still
             // at the schema default, push the cached choice up so the user
             // doesn't lose their pick on first login.
-            if (
-              cached &&
-              cached !== DEFAULT_CURRENCY &&
-              (!profileCurrency || profileCurrency === DEFAULT_CURRENCY)
-            ) {
+            if (cached && cached !== DEFAULT_CURRENCY && (!profileCurrency || profileCurrency === DEFAULT_CURRENCY)) {
               await supabase.from("profiles").update({ currency: cached }).eq("id", userId);
               return cached;
             }
@@ -79,28 +75,24 @@ export function usePrimaryCurrency() {
     mutationFn: async (code: string) => {
       await writeLocal(code);
       if (storageMode === StorageMode.Cloud && userId) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ currency: code })
-          .eq("id", userId);
+        const { error } = await supabase.from("profiles").update({ currency: code }).eq("id", userId);
         if (error) throw error;
       }
       return code;
     },
-    onSuccess: (code) => {
+    onSuccess: code => {
       queryClient.setQueryData(queryKey(storageMode, userId), code);
     },
   });
 
-  const setPrimaryCurrency = useCallback(
-    (code: string) => setMutation.mutateAsync(code),
-    [setMutation],
+  const setPrimaryCurrency = useCallback((code: string) => setMutation.mutateAsync(code), [setMutation]);
+
+  const formatCurrency = useCallback(
+    (amount: number | null = 0, signed: boolean = true): string => {
+      return formatMoney(amount, data ?? DEFAULT_CURRENCY, { signed });
+    },
+    [data],
   );
-
-  const formatCurrency = useCallback((amount: number, signed: boolean = true): string => {
-    return formatMoney(amount, data ?? DEFAULT_CURRENCY, { signed });
-  }, [data]);
-
 
   return {
     primaryCurrency: data ?? DEFAULT_CURRENCY,

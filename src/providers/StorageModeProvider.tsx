@@ -35,6 +35,13 @@ export default function StorageModeProvider({ children }: { children: React.Reac
   useEffect(() => {
     const fetchStorageMode = async () => {
       const mode = await storage.getItem(STORAGE_KEYS.STORAGE_MODE);
+      // Re-run demo seed on every startup so version-bumped seed additions are applied
+      // to users who were already in Demo mode before new seed data was added.
+      // All INSERTs use OR IGNORE so existing data is never duplicated.
+      if (mode === StorageMode.Demo) {
+        await initializeSqliteDBAsync();
+        await seedSqliteDemoDB();
+      }
       setStorageMode(mode as StorageMode);
       setIsLoading(false);
     };

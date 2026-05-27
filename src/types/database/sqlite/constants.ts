@@ -44,6 +44,7 @@ export const SQLITE_DEFAULT_COLOR = "error-100";
 export const SQLITE_SEEDING_FLAGS = {
   LOCAL_SEEDED: "budgeteer-local-seeded",
   DEMO_SEEDED: "budgeteer-demo-seeded",
+  DEMO_VERSION: "budgeteer-demo-seed-version",
 } as const;
 
 /**

@@ -50,25 +50,41 @@ const DEMO_IDS = {
     ACC_SAVINGS: "019313ea-448f-7c15-9b2e-7d2d3e4f5a6b",
     ACC_CREDIT: "019313ea-448f-7c15-9b2e-7d5d6e7f8a90",
     ACC_CASH: "019313ea-448f-7c15-9b2e-7d1c2d3e4f5a",
+
+    // Demo Recurrings
+    REC_RENT: "b1a2c3d4-e5f6-7890-abcd-ef1234567801",
+    REC_ELECTRIC: "b1a2c3d4-e5f6-7890-abcd-ef1234567802",
+    REC_SALARY: "b1a2c3d4-e5f6-7890-abcd-ef1234567803",
+    REC_GROCERIES: "b1a2c3d4-e5f6-7890-abcd-ef1234567804",
+    REC_CC_PAYMENT: "b1a2c3d4-e5f6-7890-abcd-ef1234567805",
+    REC_FUEL: "b1a2c3d4-e5f6-7890-abcd-ef1234567806",
 };
 
+/** Increment this whenever new demo seed data is added. Forces a re-seed for existing demo users. */
+const DEMO_SEED_VERSION = "2";
+
 /**
- * Check if demo data has been seeded using localStorage flag
+ * Check if demo data has been seeded using localStorage flag.
+ * Returns false if the stored version doesn't match DEMO_SEED_VERSION,
+ * which triggers a re-seed so existing users pick up new seed additions.
  */
 export const isDemoSeeded = (): boolean => {
     if (typeof localStorage === "undefined") return false;
+    if (localStorage.getItem(SQLITE_SEEDING_FLAGS.DEMO_VERSION) !== DEMO_SEED_VERSION) return false;
     return localStorage.getItem(SQLITE_SEEDING_FLAGS.DEMO_SEEDED) === "true";
 };
 
 /**
- * Set the demo seeded flag in localStorage
+ * Set the demo seeded flag (and current version) in localStorage
  */
 export const setDemoSeededFlag = (seeded: boolean): void => {
     if (typeof localStorage === "undefined") return;
     if (seeded) {
         localStorage.setItem(SQLITE_SEEDING_FLAGS.DEMO_SEEDED, "true");
+        localStorage.setItem(SQLITE_SEEDING_FLAGS.DEMO_VERSION, DEMO_SEED_VERSION);
     } else {
         localStorage.removeItem(SQLITE_SEEDING_FLAGS.DEMO_SEEDED);
+        localStorage.removeItem(SQLITE_SEEDING_FLAGS.DEMO_VERSION);
     }
 };
 
@@ -105,6 +121,28 @@ const addDays = (d: Date, days: number): Date => {
 
 /** Round to 2 decimal places to keep demo amounts looking like real money. */
 const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * Return the next occurrence date for a monthly recurring on a specific day-of-month.
+ * If that day has already passed this month, returns next month.
+ */
+const nextMonthlyDate = (dayOfMonth: number): string => {
+    const today = new Date();
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+    if (thisMonth > today) return thisMonth.toISOString();
+    return new Date(today.getFullYear(), today.getMonth() + 1, dayOfMonth).toISOString();
+};
+
+/**
+ * Return the next occurrence date for a weekly recurring, `weeksAhead` weeks from today.
+ * weeksAhead = 0 means the very next 7-day window (i.e. one week from today).
+ */
+const nextWeeklyDate = (daysFromNow = 7): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromNow);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+};
 
 /**
  * Generate demo transactions spanning roughly DEMO_HISTORY_MONTHS before today
@@ -407,6 +445,124 @@ export const seedSqliteDemoDB = async (): Promise<void> => {
         for (const txn of transactions) {
             statements.push(
                 `INSERT OR IGNORE INTO ${TableNames.Transactions} (id, name, amount, date, description, payee, notes, tags, type, isvoid, accountid, categoryid, transferaccountid, transferid, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(txn.id)}, ${escSql(txn.name)}, ${txn.amount}, ${escSql(txn.date)}, ${escSql(txn.description)}, ${escSql(txn.payee)}, ${escSql(txn.notes)}, ${escSql(txn.tags)}, ${escSql(txn.type)}, ${txn.isvoid}, ${escSql(txn.accountid)}, ${escSql(txn.categoryid)}, ${escSql(txn.transferaccountid)}, ${escSql(txn.transferid)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
+            );
+        }
+
+        // --- Recurrings ---
+        const recurringsData = [
+            {
+                id: DEMO_IDS.REC_RENT,
+                name: "Rent",
+                amount: -1500,
+                description: "Monthly rent payment",
+                payeename: "Landlord",
+                type: "Expense",
+                recurringtype: "Standard",
+                recurrencerule: "FREQ=MONTHLY;BYMONTHDAY=1",
+                nextoccurrencedate: nextMonthlyDate(1),
+                isactive: 1,
+                isamountflexible: 0,
+                isdateflexible: 0,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_RENT,
+                sourceaccountid: DEMO_IDS.ACC_CHECKING,
+                transferaccountid: null,
+            },
+            {
+                id: DEMO_IDS.REC_ELECTRIC,
+                name: "Electric Bill",
+                amount: -110,
+                description: "Monthly electricity",
+                payeename: "Power Company",
+                type: "Expense",
+                recurringtype: "Standard",
+                recurrencerule: "FREQ=MONTHLY;BYMONTHDAY=5",
+                nextoccurrencedate: nextMonthlyDate(5),
+                isactive: 1,
+                isamountflexible: 1,
+                isdateflexible: 0,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_ELECTRICITY,
+                sourceaccountid: DEMO_IDS.ACC_CHECKING,
+                transferaccountid: null,
+            },
+            {
+                id: DEMO_IDS.REC_SALARY,
+                name: "Salary",
+                amount: 5000,
+                description: "Monthly salary deposit",
+                payeename: "Employer Inc.",
+                type: "Income",
+                recurringtype: "Standard",
+                recurrencerule: "FREQ=MONTHLY;BYMONTHDAY=15",
+                nextoccurrencedate: nextMonthlyDate(15),
+                isactive: 1,
+                isamountflexible: 1,
+                isdateflexible: 0,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_SALARY,
+                sourceaccountid: DEMO_IDS.ACC_CHECKING,
+                transferaccountid: null,
+            },
+            {
+                id: DEMO_IDS.REC_GROCERIES,
+                name: "Weekly Groceries",
+                amount: -150,
+                description: "Weekly grocery run",
+                payeename: "Grocery Store",
+                type: "Expense",
+                recurringtype: "Standard",
+                recurrencerule: "FREQ=WEEKLY;INTERVAL=1",
+                nextoccurrencedate: nextWeeklyDate(7),
+                isactive: 1,
+                isamountflexible: 1,
+                isdateflexible: 1,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_GROCERIES,
+                sourceaccountid: DEMO_IDS.ACC_CREDIT,
+                transferaccountid: null,
+            },
+            {
+                id: DEMO_IDS.REC_CC_PAYMENT,
+                name: "CC Payment",
+                amount: -500,
+                description: "Monthly credit card payment",
+                payeename: null,
+                type: "Transfer",
+                recurringtype: "CreditCardPayment",
+                recurrencerule: "FREQ=MONTHLY;BYMONTHDAY=20",
+                nextoccurrencedate: nextMonthlyDate(20),
+                isactive: 1,
+                isamountflexible: 1,
+                isdateflexible: 0,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_ACCOUNT_OPS,
+                sourceaccountid: DEMO_IDS.ACC_CHECKING,
+                transferaccountid: DEMO_IDS.ACC_CREDIT,
+            },
+            {
+                id: DEMO_IDS.REC_FUEL,
+                name: "Fuel",
+                amount: -45,
+                description: "Weekly fuel fill-up",
+                payeename: "Shell",
+                type: "Expense",
+                recurringtype: "Standard",
+                recurrencerule: "FREQ=WEEKLY;INTERVAL=1",
+                nextoccurrencedate: nextWeeklyDate(5),
+                isactive: 1,
+                isamountflexible: 1,
+                isdateflexible: 1,
+                autoapplyenabled: 0,
+                categoryid: DEMO_IDS.TXCAT_FUEL,
+                sourceaccountid: DEMO_IDS.ACC_CREDIT,
+                transferaccountid: null,
+            },
+        ];
+
+        for (const rec of recurringsData) {
+            statements.push(
+                `INSERT OR IGNORE INTO ${TableNames.Recurrings} (id, name, amount, currencycode, description, notes, payeename, type, recurringtype, recurrencerule, nextoccurrencedate, enddate, isactive, isamountflexible, isdateflexible, autoapplyenabled, lastautoappliedat, lastexecutedat, failedattempts, maxfailedattempts, categoryid, sourceaccountid, transferaccountid, tenantid, isdeleted, createdat, createdby, updatedat) VALUES (${escSql(rec.id)}, ${escSql(rec.name)}, ${rec.amount}, 'USD', ${escSql(rec.description)}, NULL, ${escSql(rec.payeename)}, ${escSql(rec.type)}, ${escSql(rec.recurringtype)}, ${escSql(rec.recurrencerule)}, ${escSql(rec.nextoccurrencedate)}, NULL, ${rec.isactive}, ${rec.isamountflexible}, ${rec.isdateflexible}, ${rec.autoapplyenabled}, NULL, NULL, 0, 3, ${escSql(rec.categoryid)}, ${escSql(rec.sourceaccountid)}, ${escSql(rec.transferaccountid)}, ${escSql(tenantId)}, 0, ${escSql(now)}, ${escSql(userId)}, ${escSql(now)});`
             );
         }
 
