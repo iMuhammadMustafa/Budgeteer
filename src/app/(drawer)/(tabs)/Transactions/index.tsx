@@ -1,5 +1,6 @@
 import SkeletonList from "@/src/components/elements/SkeletonList";
 import ThemedText from "@/src/components/elements/ThemedText";
+import GridPattern from "@/src/components/GridPattern";
 import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
 import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
 import DaysList from "@/src/components/Transactions/Days";
@@ -8,7 +9,6 @@ import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
 import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
 import SplitTransactionModal from "@/src/components/Transactions/SplitTransactionModal";
 import { FlatList, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import useTransactions from "./useTransactions";
 
 export default function Transactions() {
@@ -51,12 +51,15 @@ export default function Transactions() {
   if (error)
     return (
       <View className="flex-1 justify-center items-center">
-        <ThemedText variant="error" className="text-danger-500">Error: {error.message}</ThemedText>
+        <ThemedText variant="error" className="text-danger-500">
+          Error: {error.message}
+        </ThemedText>
       </View>
     );
 
   return (
-    <SafeAreaView className="w-full h-full bg-background">
+    <>
+      <GridPattern />
       <TransactionsPageHeader
         selectedTransactions={selectedTransactions}
         selectedSum={selectedSum}
@@ -67,7 +70,6 @@ export default function Transactions() {
         isActionLoading={isActionLoading}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}
-        showSearch={showSearch}
         setShowSearch={setShowSearch}
       />
 
@@ -108,7 +110,6 @@ export default function Transactions() {
         />
       )}
 
-      {/* Batch Update Modal */}
       <BatchUpdateModal
         isOpen={showBatchUpdate}
         setIsOpen={setShowBatchUpdate}
@@ -118,18 +119,6 @@ export default function Transactions() {
         onUpdate={handleBatchUpdateSubmit}
       />
 
-      {/* Single Confirmation Modal - action type controls display */}
-      <BatchActionConfirmModal
-        isOpen={confirmAction !== null}
-        setIsOpen={open => !open && closeConfirmModal()}
-        actionType={confirmAction ?? "delete"}
-        selectedTransactions={selectedTransactions}
-        isLoading={isActionLoading}
-        onConfirm={executeConfirmedAction}
-        updateSummary={confirmAction === "update" ? updateSummary : undefined}
-      />
-
-      {/* Split Transaction Modal */}
       <SplitTransactionModal
         isOpen={showSplitModal}
         setIsOpen={setShowSplitModal}
@@ -139,6 +128,15 @@ export default function Transactions() {
         categories={categories ?? []}
       />
 
-    </SafeAreaView>
+      <BatchActionConfirmModal
+        isOpen={confirmAction !== null}
+        setIsOpen={open => !open && closeConfirmModal()}
+        actionType={confirmAction ?? "delete"}
+        selectedTransactions={selectedTransactions}
+        isLoading={isActionLoading}
+        onConfirm={executeConfirmedAction}
+        updateSummary={confirmAction === "update" ? updateSummary : undefined}
+      />
+    </>
   );
 }

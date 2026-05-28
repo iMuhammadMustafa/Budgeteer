@@ -1,15 +1,10 @@
 import { useAuth } from "@/src/providers/AuthProvider";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 import useBackAction from "@/src/utils/useBackAction";
+import { usePathname } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  LayoutChangeEvent,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { createPortal } from "react-dom";
+import { ActivityIndicator, FlatList, LayoutChangeEvent, Platform, Text, TextInput, View } from "react-native";
 import Button from "./Button";
 
 type SearchableDropdownType = {
@@ -43,12 +38,14 @@ export default function SearchableDropdown({
   const [suggestions, setSuggestions] = useState<SearchableDropdownItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [textLayout, setTextLayout] = useState<{ top: number; height: number; width: number }>({
+  const [textLayout, setTextLayout] = useState<{ top: number; height: number; width: number; left: number }>({
     top: 0,
     height: 0,
     width: 0,
+    left: 0,
   });
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownIdRef = useRef<string>(`dropdown-${Date.now()}-${Math.random()}`);
   const inputRef = useRef<TextInput>(null);
 
   // Use a ref to hold the latest searchAction to avoid triggering effects on every render
@@ -57,9 +54,45 @@ export default function SearchableDropdown({
 
   const { session } = useAuth();
 
+  const showSuggestions = isFocused && suggestions.length > 0;
+
   useEffect(() => {
     setInputText(initalValue);
   }, [initalValue]);
+
+  const pathname = usePathname();
+  useEffect(() => {
+    setIsFocused(false);
+    setSuggestions([]);
+    inputRef.current?.blur();
+  }, [pathname]);
+
+  // Handle outside click on web for SearchableDropdown
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    if (!showSuggestions && !(isLoading && isFocused)) return;
+
+    const handleOutsideClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(`[data-dropdown-id="${dropdownIdRef.current}"]`)) {
+        return;
+      }
+      setIsFocused(false);
+      setSuggestions([]);
+      inputRef.current?.blur();
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("touchstart", handleOutsideClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [showSuggestions, isLoading, isFocused]);
 
   useEffect(() => {
     if (ignoreFetch) {
@@ -109,15 +142,50 @@ export default function SearchableDropdown({
       setIgnoreFetch(true);
       setInputText(item.label);
       onSelectItem(item);
-      setSuggestions([]);
     },
     [onSelectItem],
   );
 
-  const onLayoutChange = useCallback((event: LayoutChangeEvent) => {
-    const { height, width, y } = event.nativeEvent.layout;
-    setTextLayout({ height, width, top: y });
+  const wrapperRef = useRef<View>(null);
+
+  const updateLayout = useCallback(() => {
+    if (Platform.OS === "web" && inputRef.current) {
+      const target = inputRef.current as any;
+      if (target?.getBoundingClientRect) {
+        const rect = target.getBoundingClientRect();
+        setTextLayout({ height: rect.height, width: rect.width, top: rect.top, left: rect.left });
+      }
+    }
   }, []);
+
+  const onLayoutChange = useCallback((event: LayoutChangeEvent) => {
+    const { height, width, y, x } = event.nativeEvent.layout;
+    if (Platform.OS === "web") {
+      const target = event.target as any;
+      if (target?.getBoundingClientRect) {
+        const rect = target.getBoundingClientRect();
+        setTextLayout({ height, width, top: rect.top, left: rect.left });
+        return;
+      }
+    }
+    setTextLayout({ height, width, top: y, left: x });
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || (!showSuggestions && !(isLoading && isFocused))) return;
+
+    updateLayout();
+
+    const handleScrollOrResize = () => updateLayout();
+
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [showSuggestions, isLoading, isFocused, updateLayout]);
 
   const handleFocus = useCallback(() => {
     // Cancel any pending blur timeout (e.g. if user re-focuses quickly)
@@ -125,8 +193,9 @@ export default function SearchableDropdown({
       clearTimeout(blurTimeoutRef.current);
       blurTimeoutRef.current = null;
     }
+    updateLayout();
     setIsFocused(true);
-  }, []);
+  }, [updateLayout]);
 
   const handleBlur = useCallback(() => {
     // Use a small delay so that tapping a suggestion item fires before we clear
@@ -154,11 +223,14 @@ export default function SearchableDropdown({
 
   useBackAction(isFocused, dismissDropdown);
 
-  const showSuggestions = isFocused && suggestions.length > 0;
-
   return (
     <>
-      <View className={`my-1 ${className ?? ""} flex-1`}>
+      <View
+        ref={wrapperRef}
+        className={`${className ?? ""} flex-1`}
+        // @ts-ignore
+        dataSet={{ dropdownId: dropdownIdRef.current }}
+      >
         <Text className="text-foreground">{label}</Text>
         <TextInput
           ref={inputRef}
@@ -172,36 +244,57 @@ export default function SearchableDropdown({
         />
       </View>
 
-      {isLoading && isFocused ? (
-        <ActivityIndicator
-          className=" absolute z-10 bg-surface"
-          style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
-        />
-      ) : (
-        showSuggestions && (
-          <View
-            className={`absolute z-10 bg-surface p-2 m-2`}
-            style={{ top: textLayout.top + textLayout.height + 1, width: textLayout.width }}
-          >
-            <FlatList
-              data={suggestions}
-              keyExtractor={(item, index) => item.id ?? item.label + index}
-              keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="border-b border-border-subtle p-2 rounded-none justify-start"
-                  onPress={() => handleSelectSuggestion(item)}
-                  testID={`suggestion-${item.id ?? item.label}`}
-                >
-                  <Text>{item.label}</Text>
-                </Button>
-              )}
-            />
-          </View>
-        )
-      )}
+      {isLoading && isFocused
+        ? (() => {
+            const indicator = (
+              <ActivityIndicator
+                className="absolute bg-surface"
+                style={{
+                  position: Platform.OS === "web" ? ("fixed" as any) : ("absolute" as any),
+                  top: textLayout.top + textLayout.height + 1,
+                  left: textLayout.left,
+                  width: textLayout.width,
+                  zIndex: 99999,
+                }}
+              />
+            );
+            return Platform.OS === "web" && typeof document !== "undefined"
+              ? createPortal(indicator, document.body)
+              : indicator;
+          })()
+        : showSuggestions &&
+          (() => {
+            const list = (
+              <View
+                className="bg-surface p-2 my-1 rounded-lg shadow-lg border border-border-default"
+                style={{
+                  position: Platform.OS === "web" ? ("fixed" as any) : ("absolute" as any),
+                  top: textLayout.top + textLayout.height + 1,
+                  left: textLayout.left,
+                  width: textLayout.width,
+                  zIndex: 99999,
+                }}
+              >
+                <FlatList
+                  data={suggestions}
+                  keyExtractor={(item, index) => item.id ?? item.label + index}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item }) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="border-b border-border-subtle p-2 rounded-none justify-start"
+                      onPress={() => handleSelectSuggestion(item)}
+                      testID={`suggestion-${item.id ?? item.label}`}
+                    >
+                      <Text>{item.label}</Text>
+                    </Button>
+                  )}
+                />
+              </View>
+            );
+            return Platform.OS === "web" && typeof document !== "undefined" ? createPortal(list, document.body) : list;
+          })()}
     </>
   );
 }

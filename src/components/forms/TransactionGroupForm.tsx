@@ -261,7 +261,7 @@ function TransactionGroupFormComponent({ group, onSuccess, onCancel }: Transacti
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection title="Transaction Group Details" className="z-50">
+          <FormSection title="Transaction Group Details">
             {/* Render standard form fields */}
             {formFields.map(fieldConfig => (
               <FormField
@@ -276,7 +276,7 @@ function TransactionGroupFormComponent({ group, onSuccess, onCancel }: Transacti
             ))}
           </FormSection>
 
-          <FormSection title="Budget Settings" className="z-40">
+          <FormSection title="Budget Settings">
             {/* Budget Amount with custom handler */}
             <FormField
               config={budgetFields[0]}
@@ -300,7 +300,7 @@ function TransactionGroupFormComponent({ group, onSuccess, onCancel }: Transacti
 
           <FormSection title="Appearance">
             {/* Icon and Color Selection */}
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
               </View>

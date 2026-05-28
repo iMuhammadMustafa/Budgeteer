@@ -231,7 +231,7 @@ function AccountCategoryFormComponent({ category, onSuccess, onCancel }: Account
 
           <FormSection title="Appearance">
             {/* Icon and Color Selection */}
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker onSelect={handleIconSelect} label="Icon" initialIcon={formState.data.icon ?? "BadgeInfo"} />
               </View>

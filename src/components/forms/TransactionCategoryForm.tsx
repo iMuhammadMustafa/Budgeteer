@@ -283,7 +283,6 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
           <FormSection
             title="Category Details"
             description="Basic information about the transaction category"
-            className="z-50"
           >
             {/* Name field */}
             <FormField
@@ -296,7 +295,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
             />
 
             {/* Group selection with custom dropdown */}
-            <View className="my-2 relative z-50">
+            <View className="my-2 relative">
               <Text className="text-foreground mb-1 font-medium">
                 Transaction Group <Text className="text-status-danger ml-1">*</Text>
               </Text>
@@ -325,13 +324,13 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
               {formState.touched.groupid && formState.errors.groupid && (
                 <Text className="text-status-danger text-sm mt-1">{formState.errors.groupid}</Text>
               )}
-              <Text className="text-text-secondary text-sm mt-1 -z-10">
+              <Text className="text-text-secondary text-sm mt-1">
                 Select the transaction group this category belongs to
               </Text>
             </View>
 
             {/* Description field - lower z-index so dropdown can appear above */}
-            <View className="relative -z-20">
+            <View className="relative">
               <FormField
                 config={formFields[4]}
                 value={formState.data.description}
@@ -346,7 +345,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
           <FormSection
             title="Budget Settings"
             description="Configure budget amounts and frequency"
-            className="relative z-10"
+            className="relative"
           >
             {/* Budget Amount and Frequency in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-start justify-between`}>
@@ -380,10 +379,10 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
           <FormSection
             title="Appearance"
             description="Customize the visual appearance of this category"
-            className="relative z-0"
+            className="relative"
           >
             {/* Icon and Color Selection in responsive layout */}
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between z-10`}>
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
                 {formState.touched.icon && formState.errors.icon && (

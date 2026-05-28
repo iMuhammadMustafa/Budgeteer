@@ -138,7 +138,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
       case "select":
         // Ensure selectedValue matches the type of option values
         return (
-          <View className="relative z-50">
+          <View className="relative">
             <DropdownField
               label={label}
               selectedValue={options.find(opt => opt.value === value) ? value : null}
@@ -219,7 +219,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
   };
 
   return (
-    <View className={`my-2 ${className} ${type === "select" ? "z-20" : "z-0"}`}>
+    <View className={`my-2 ${className}`}>
       {/* Field Label */}
       {label && type !== "switch" && (
         <ThemedText className={`mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
@@ -244,7 +244,7 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
 
       {/* Field Description - use lower z-index to not overlap dropdowns */}
       {description && (
-        <ThemedText variant="caption" id={descriptionId} className="text-sm mt-1 relative z-0" accessibilityRole="text">
+        <ThemedText variant="caption" id={descriptionId} className="text-sm mt-1" accessibilityRole="text">
           {description}
         </ThemedText>
       )}

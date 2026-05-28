@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Dimensions, FlatList, LayoutChangeEvent, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { usePathname } from "expo-router";
 import Button from "../Button";
 
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
@@ -33,6 +35,7 @@ function DropdownField({
   const [buttonLayout, setButtonLayout] = useState({ height: 0, width: 0, top: 0, y: 0, x: 0 });
   const dropdownIdRef = useRef<string>(`dropdown-${Date.now()}-${Math.random()}`);
   const addNewIdRef = useRef<string>(`addnew-${Date.now()}-${Math.random()}`);
+  const wrapperRef = useRef<View>(null);
 
   const useModalMode = forceModal ?? Platform.OS !== "web";
 
@@ -57,12 +60,17 @@ function DropdownField({
     return [...new Set(filteredOptions.map(option => option.group))];
   }, [filteredOptions, groupBy]);
 
+  const pathname = usePathname();
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
   // Handle outside click on web (inline mode only)
   useEffect(() => {
     if (Platform.OS !== "web") return;
     if (!isOpen || useModalMode) return;
 
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleOutsideClick = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target.closest(`[data-dropdown-id="${dropdownIdRef.current}"]`)) {
         return;
@@ -71,20 +79,34 @@ function DropdownField({
     };
 
     const timer = setTimeout(() => {
-      document.addEventListener("click", handleOutsideClick);
+      document.addEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("touchstart", handleOutsideClick);
     }, 0);
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
     };
   }, [isOpen, useModalMode]);
 
+  const updateLayout = useCallback(() => {
+    if (Platform.OS === "web" && wrapperRef.current) {
+      const target = wrapperRef.current as any;
+      if (target?.getBoundingClientRect) {
+        const rect = target.getBoundingClientRect();
+        setButtonLayout({ height: rect.height, width: rect.width, top: rect.top, y: rect.top, x: rect.left });
+      }
+    }
+  }, []);
+
   const handleToggle = useCallback(() => {
     if (disabled) return;
+    // Update layout synchronously so it renders in the correct position immediately
+    updateLayout();
     setIsOpen(prev => !prev);
     setSearchQuery("");
-  }, [disabled]);
+  }, [disabled, updateLayout]);
 
   const handleSelect = useCallback(
     (item: OptionItem) => {
@@ -126,11 +148,28 @@ function DropdownField({
     setButtonLayout({ height, width, top: y, y, x });
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web" || !isOpen || useModalMode) return;
+
+    updateLayout();
+
+    const handleScrollOrResize = () => updateLayout();
+
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isOpen, useModalMode, updateLayout]);
+
   const showError = error && touched;
 
   return (
-    <View className={`my-1 flex-1 relative ${className}`}>
+    <View className={`my-1 flex-1 ${className}`}>
       <View
+        ref={wrapperRef}
         onLayout={handleLayout}
         // @ts-ignore
         dataSet={{ dropdownId: dropdownIdRef.current }}
@@ -139,8 +178,9 @@ function DropdownField({
           variant="ghost"
           size="md"
           hapticFeedback="light"
-          className={`flex-row items-center justify-between p-3 rounded border ${showError ? "border-status-danger" : "border-input-border"
-            } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
+          className={`flex-row items-center justify-between p-3 rounded border ${
+            showError ? "border-status-danger" : "border-input-border"
+          } ${disabled ? "bg-input-bg-disabled" : "bg-input-bg"}`}
           onPress={handleToggle}
           disabled={disabled}
           testID="dropdown-button"
@@ -166,17 +206,23 @@ function DropdownField({
           <View className="flex-row items-center gap-1">
             {showClear && selectedItem && (
               <Pressable
-                onPress={e => { e.stopPropagation(); handleClear(); }}
+                onPress={e => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
                 className="p-1"
                 testID="dropdown-clear"
-              // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <MyIcon name="X" size={16} className="text-text-tertiary" />
               </Pressable>
             )}
             {addNew && (
               <Pressable
-                onPress={e => { e.stopPropagation(); handleAddNew(); }}
+                onPress={e => {
+                  e.stopPropagation();
+                  handleAddNew();
+                }}
                 className="p-1 ml-1"
                 testID="dropdown-add-new"
               >
@@ -354,17 +400,20 @@ function DropdownList({
     );
   }
 
+  // Portal the dropdown to document.body so it escapes any stacking context.
+  // Position it with position:fixed using the trigger button's bounding rect.
   const maxHeight = Math.min(SCREEN_HEIGHT - buttonLayout.y - buttonLayout.height - 20, 250);
 
-  return (
+  const dropdownElement = (
     <View
-      className="absolute bg-surface rounded-lg shadow-lg border border-border-default overflow-hidden"
+      className="bg-surface rounded-lg shadow-lg border border-border-default overflow-hidden"
       style={{
-        top: buttonLayout.height + 4,
-        left: 0,
-        right: 0,
+        position: "fixed" as any,
+        top: buttonLayout.y + buttonLayout.height + 4,
+        left: buttonLayout.x,
+        width: buttonLayout.width,
         maxHeight,
-        zIndex: 9999,
+        zIndex: 99999,
       }}
       // @ts-ignore — dataSet maps to data-* attributes on web so the outside-click handler
       // in the parent treats clicks on the list (incl. its search input) as inside.
@@ -373,6 +422,14 @@ function DropdownList({
       {listContent}
     </View>
   );
+
+  // On web, portal to document.body to escape stacking context / z-index issues.
+  // On native this code path is never reached (native always uses modal mode).
+  if (Platform.OS === "web" && typeof document !== "undefined") {
+    return createPortal(dropdownElement, document.body);
+  }
+
+  return dropdownElement;
 }
 
 interface DropdownOptionProps {
@@ -391,8 +448,9 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
       testID={`dropdown-option-${option.label}`}
       onPress={onPress}
       disabled={option.disabled}
-      className={`p-3 rounded-none ${isSelected ? "bg-primary/10" : ""} ${option.disabled ? "opacity-50" : ""
-        } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle justify-start"}`}
+      className={`p-3 rounded-none ${isSelected ? "bg-primary/10" : ""} ${
+        option.disabled ? "opacity-50" : ""
+      } ${isGrouped ? "w-1/3 min-w-[100px] items-center" : "border-b border-border-subtle justify-start"}`}
     >
       <View className={`flex-row items-center ${isGrouped ? "justify-center" : ""} gap-2`}>
         {option.icon && (
@@ -403,12 +461,13 @@ function DropdownOption({ option, isSelected, onPress, isGrouped }: DropdownOpti
         <View className={isGrouped ? "" : "flex-1"}>
           <Text
             selectable={false}
-            className={`${option.disabled
-              ? "text-text-disabled"
-              : option.textColorClass
-                ? `text-${option.textColorClass}`
-                : "text-foreground"
-              } ${isSelected ? "font-medium" : ""}`}
+            className={`${
+              option.disabled
+                ? "text-text-disabled"
+                : option.textColorClass
+                  ? `text-${option.textColorClass}`
+                  : "text-foreground"
+            } ${isSelected ? "font-medium" : ""}`}
             numberOfLines={1}
           >
             {option.label}
@@ -443,27 +502,25 @@ export const MyCategoriesDropdown = ({
   onClear?: () => void;
 }) => {
   return (
-    <View className="flex-row items-end flex-grow">
-      <DropdownField
-        isModal={isModal}
-        label={label}
-        selectedValue={selectedValue}
-        options={
-          categories?.map(category => ({
-            id: category.id,
-            label: category.name ?? "Unnamed Category",
-            value: category,
-            icon: category.icon ?? undefined,
-            iconColorClass: `text-${category.color}`,
-            group: category.group?.name ?? "Uncategorized",
-          })) ?? []
-        }
-        groupBy="group"
-        onSelect={onSelect}
-        showClear={showClearButton}
-        onClear={onClear}
-      />
-    </View>
+    <DropdownField
+      isModal={isModal}
+      label={label}
+      selectedValue={selectedValue}
+      options={
+        categories?.map(category => ({
+          id: category.id,
+          label: category.name ?? "Unnamed Category",
+          value: category,
+          icon: category.icon ?? undefined,
+          iconColorClass: `text-${category.color}`,
+          group: category.group?.name ?? "Uncategorized",
+        })) ?? []
+      }
+      groupBy="group"
+      onSelect={onSelect}
+      showClear={showClearButton}
+      onClear={onClear}
+    />
   );
 };
 

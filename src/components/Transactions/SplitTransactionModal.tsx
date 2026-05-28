@@ -26,10 +26,7 @@ interface SplitTransactionModalProps {
   categories: TransactionCategory[];
 }
 
-const buildInitialSplits = (
-  originalAmount: number,
-  baseName: string | null | undefined,
-): SplitChildInsert[] => {
+const buildInitialSplits = (originalAmount: number, baseName: string | null | undefined): SplitChildInsert[] => {
   const isMinus = originalAmount <= 0;
   return [
     {
@@ -95,10 +92,7 @@ export default function SplitTransactionModal({
     setSplits(initialSplits);
   }, [initialSplits]);
 
-  const splitsTotal = useMemo(
-    () => roundToCents(splits.reduce((sum, item) => sum + (item.amount ?? 0), 0)),
-    [splits],
-  );
+  const splitsTotal = useMemo(() => roundToCents(splits.reduce((sum, item) => sum + (item.amount ?? 0), 0)), [splits]);
 
   const isBalanced = roundToCents(splitsTotal - originalAmount) === 0;
 
@@ -122,11 +116,7 @@ export default function SplitTransactionModal({
     setSplits(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateSplit = <K extends keyof SplitChildInsert>(
-    index: number,
-    field: K,
-    value: SplitChildInsert[K],
-  ) => {
+  const updateSplit = <K extends keyof SplitChildInsert>(index: number, field: K, value: SplitChildInsert[K]) => {
     setSplits(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -188,11 +178,7 @@ export default function SplitTransactionModal({
         </View>
 
         {/* The list scrolls; the action buttons stay pinned outside the scroll so they remain reachable. */}
-        <ScrollView
-          className="max-h-[420px]"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
+        <ScrollView className="max-h-[420px]" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
           {splits.map((item, index) => (
             <View key={item.id ?? index} className="border border-border rounded-lg p-3 mb-2 bg-card">
               <View className="flex-row items-center justify-between mb-2">
@@ -208,15 +194,12 @@ export default function SplitTransactionModal({
                   value={item.name ?? ""}
                   onChangeText={val => updateSplit(index, "name", val)}
                 />
-                <View className="flex-1 z-50">
-                  <MyCategoriesDropdown
-                    label=""
-                    selectedValue={item.categoryid}
-                    onSelect={cat => updateSplit(index, "categoryid", cat?.id ?? "")}
-                    categories={categories}
-                    isModal={true}
-                  />
-                </View>
+                <MyCategoriesDropdown
+                  selectedValue={item.categoryid}
+                  onSelect={cat => updateSplit(index, "categoryid", cat?.id ?? "")}
+                  categories={categories}
+                  isModal
+                />
               </View>
               <AmountInput
                 amount={item.amount ?? 0}

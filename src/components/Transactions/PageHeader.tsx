@@ -3,8 +3,9 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedText from "@/src/components/elements/ThemedText";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
+import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { Link } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 
 export default function TransactionsPageHeader({
   selectedTransactions,
@@ -16,84 +17,79 @@ export default function TransactionsPageHeader({
   isActionLoading,
   clearSelection,
   refreshTransactions,
-  showSearch,
   setShowSearch,
 }: TransactionsPageHeaderProps) {
   const { formatCurrency } = usePrimaryCurrency();
+  const isSelection = selectedTransactions.length > 0;
+  const isSingleNonVoidTransfer =
+    isSelection &&
+    selectedTransactions.length === 1 &&
+    selectedTransactions.every(t => t.transferid === null) &&
+    !selectedTransactions[0].isvoid;
   return (
     <View className="flex-row w-full justify-between px-10 mt-1 pt-2">
-      <View className="flex-row">
-        {selectedTransactions.length > 0 && (
-          <>
-            <ThemedText className="text-primary-500 mr-4">{selectedTransactions.length} selected</ThemedText>
-            <ThemedText className="text-primary-500 mr-4">
-              {formatCurrency(selectedSum, true)}
-            </ThemedText>
-          </>
-        )}
-      </View>
+      <SelectedInfo
+        selectedTransactions={selectedTransactions}
+        formatCurrency={formatCurrency}
+        selectedSum={selectedSum}
+      />
       <View className="flex-row justify-between items-center gap-3">
-        {selectedTransactions.length > 0 ? (
+        {isSelection ? (
           <>
-            {isActionLoading ? (
-              <ActivityIndicator size="small" color="#3b82f6" />
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  hapticFeedback="medium"
-                  onPress={openDeleteConfirm}
-                  accessibilityLabel="Delete selected transactions"
-                  testID="btn-delete-selected"
-                  className="m-0 p-0"
-                >
-                  <MyIcon name="Trash" className="text-foreground" size={20} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onPress={openDuplicateConfirm}
-                  accessibilityLabel="Duplicate selected transactions"
-                  testID="btn-duplicate-selected"
-                  className="m-0 p-0"
-                >
-                  <MyIcon name="Copy" className="text-foreground" size={20} />
-                </Button>
-                {selectedTransactions.length === 1 && selectedTransactions.every(t => t.transferid === null) && !selectedTransactions[0].isvoid && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onPress={onSplit}
-                    accessibilityLabel="Split transaction"
-                    testID="btn-split-transaction"
-                    className="m-0 p-0"
-                    leftIcon="Scissors"
-                    iconSize={20}
-                  />
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onPress={openBatchUpdate}
-                  accessibilityLabel="Batch update selected transactions"
-                  testID="btn-batch-update"
-                  className="m-0 p-0"
-                >
-                  <MyIcon name="Pencil" className="text-foreground" size={20} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onPress={clearSelection}
-                  accessibilityLabel="Clear selection"
-                  testID="btn-clear-selection"
-                  className="m-0 p-0"
-                >
-                  <MyIcon name="X" className="text-foreground" size={20} />
-                </Button>
-              </>
+            <Button
+              variant="ghost"
+              size="icon"
+              hapticFeedback="medium"
+              onPress={openDeleteConfirm}
+              accessibilityLabel="Delete selected transactions"
+              testID="btn-delete-selected"
+              className="m-0 p-0"
+              leftIcon="Trash"
+              disabled={isActionLoading}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onPress={openDuplicateConfirm}
+              accessibilityLabel="Duplicate selected transactions"
+              testID="btn-duplicate-selected"
+              className="m-0 p-0"
+              leftIcon="Copy"
+              disabled={isActionLoading}
+            />
+            {isSingleNonVoidTransfer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onPress={onSplit}
+                accessibilityLabel="Split transaction"
+                testID="btn-split-transaction"
+                className="m-0 p-0"
+                leftIcon="Scissors"
+                iconSize={20}
+                disabled={isActionLoading}
+              />
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onPress={openBatchUpdate}
+              accessibilityLabel="Batch update selected transactions"
+              testID="btn-batch-update"
+              className="m-0 p-0"
+              leftIcon="Pencil"
+              disabled={isActionLoading}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onPress={clearSelection}
+              accessibilityLabel="Clear selection"
+              testID="btn-clear-selection"
+              className="m-0 p-0"
+              leftIcon="X"
+              disabled={isActionLoading}
+            />
           </>
         ) : (
           <>
@@ -104,9 +100,8 @@ export default function TransactionsPageHeader({
               accessibilityLabel="Search transactions"
               testID="btn-search-transactions"
               className="m-0 p-0"
-            >
-              <MyIcon name="Search" className="text-foreground" size={20} />
-            </Button>
+              leftIcon="Search"
+            />
             <Button
               variant="ghost"
               size="icon"
@@ -114,15 +109,35 @@ export default function TransactionsPageHeader({
               accessibilityLabel="Refresh transactions"
               testID="btn-refresh-transactions"
               className="m-0 p-0"
-            >
-              <MyIcon name="RefreshCw" className="text-foreground" size={20} />
-            </Button>
+              leftIcon="RefreshCw"
+            />
             <Link href="/AddTransaction" className="items-center justify-center">
               <MyIcon name="Plus" className="text-foreground" size={20} />
             </Link>
           </>
         )}
       </View>
+    </View>
+  );
+}
+
+function SelectedInfo({
+  selectedTransactions,
+  formatCurrency,
+  selectedSum,
+}: {
+  selectedTransactions: TransactionsView[];
+  formatCurrency: (amount?: number | null, signed?: boolean) => string;
+  selectedSum: number;
+}) {
+  return (
+    <View className="flex-row">
+      {selectedTransactions.length > 0 && (
+        <>
+          <ThemedText className="text-foreground mr-4">{selectedTransactions.length} selected</ThemedText>
+          <ThemedText className="text-foreground mr-4">{formatCurrency(selectedSum, true)}</ThemedText>
+        </>
+      )}
     </View>
   );
 }

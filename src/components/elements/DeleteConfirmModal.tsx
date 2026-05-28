@@ -60,7 +60,9 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
   return (
     <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleCancel}>
       <View className="p-4">
-        <ThemedText variant="heading" className="text-xl mb-4">Confirm Deletion</ThemedText>
+        <ThemedText variant="heading" className="text-xl mb-4">
+          Confirm Deletion
+        </ThemedText>
 
         <ThemedText className="mb-4">
           Are you sure you want to delete &quot;{itemToDelete?.name || itemName}&quot;?
@@ -85,7 +87,7 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
             )}
 
             {showReplacementDropdown && (
-              <View className="z-50">
+              <>
                 <ThemedText className="mb-2">
                   Please select a {itemName} to move the {dependencyType} to:
                 </ThemedText>
@@ -100,12 +102,12 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
                   selectedValue={selectedReplacementId}
                   onSelect={(item: any) => setSelectedReplacementId(item?.id)}
                 />
-              </View>
+              </>
             )}
           </View>
         )}
 
-        <View className="flex-row justify-end gap-2 mt-4 -z-10">
+        <View className="flex-row justify-end gap-2 mt-4">
           <Button variant="outline" onPress={handleCancel}>
             Cancel
           </Button>

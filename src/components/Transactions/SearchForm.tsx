@@ -1,15 +1,15 @@
+import Button from "@/src/components/elements/Button";
 import {
   AccountSelecterDropdown,
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
 } from "@/src/components/elements/dropdown/DropdownField";
-import Button from "@/src/components/elements/Button";
 import MyModal from "@/src/components/elements/MyModal";
 import TextInputField from "@/src/components/elements/TextInputField";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
+import { TransactionSearchFormProps } from "@/src/types/components/Transactions.types";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 
 export default function TransactionSearchForm({
   filters,
@@ -19,15 +19,7 @@ export default function TransactionSearchForm({
   onSubmit,
   isOpen,
   setIsOpen,
-}: {
-  filters?: TransactionFilters | null;
-  categories: TransactionCategory[];
-  accounts: Account[];
-  onClear: () => void;
-  onSubmit: (filters: TransactionFilters | null) => void;
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-}) {
+}: TransactionSearchFormProps) {
   const [searchParams, setSearchParams] = useState<TransactionFilters | null>(filters ?? null);
 
   const handleTextChange = (name: keyof TransactionFilters, text: string) => {
@@ -39,34 +31,41 @@ export default function TransactionSearchForm({
   return (
     <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={() => setIsOpen(false)}>
       <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
-        <TextInputField label="Name" value={searchParams?.name} onChange={text => handleTextChange("name", text)} />
         <TextInputField
-          label="Amount"
+          placeholder="Name"
+          value={searchParams?.name}
+          onChange={text => handleTextChange("name", text)}
+        />
+        <TextInputField
+          placeholder="Amount"
           value={searchParams?.amount?.toString()}
           onChange={text => handleTextChange("amount", text)}
         />
-        <MyCategoriesDropdown
-          selectedValue={searchParams?.categoryid}
-          categories={categories}
-          onSelect={value => handleTextChange("categoryid", value!.id)}
-          isModal
-        />
+        <View>
+          <MyCategoriesDropdown
+            selectedValue={searchParams?.categoryid}
+            categories={categories}
+            onSelect={value => handleTextChange("categoryid", value!.id)}
+            isModal={Platform.OS !== "web"}
+          />
+        </View>
         <AccountSelecterDropdown
           label="Account"
           selectedValue={searchParams?.accountid}
           onSelect={(value: any) => {
             handleTextChange("accountid", value.id);
           }}
-          isModal
+          isModal={Platform.OS !== "web"}
           accounts={accounts}
           groupBy="group"
         />
+
         <MyTransactionTypesDropdown
           selectedValue={searchParams?.type}
           onSelect={value => {
             handleTextChange("type", value.value);
           }}
-          isModal
+          isModal={Platform.OS !== "web"}
           isEdit={false}
         />
 

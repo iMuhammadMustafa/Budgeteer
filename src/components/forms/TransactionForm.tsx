@@ -10,7 +10,12 @@ import { useTransactionItemService } from "@/src/services/TransactionItems.Servi
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
-import { OptionItem, TransactionFormData, TransactionSubItem, ValidationSchema } from "@/src/types/components/forms.types";
+import {
+  OptionItem,
+  TransactionFormData,
+  TransactionSubItem,
+  ValidationSchema,
+} from "@/src/types/components/forms.types";
 import { Transaction } from "@/src/types/database/Tables.Types";
 import { roundToCents } from "@/src/utils/amount.helper";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
@@ -172,7 +177,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           showReset={isDirty}
           onReset={resetForm}
         >
-          <View className="flex-row justify-end mb-4 gap-2">
+          <View className="flex-row justify-end  gap-2">
             <Button
               label="Clear"
               variant="secondary"
@@ -201,15 +206,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </View>
           </View>
 
-          <View className="mb-2 z-50">
-            <SearchableDropdown
-              label="Name"
-              searchAction={findByName}
-              initalValue={transaction.name}
-              onSelectItem={onSelectItem}
-              onChange={val => updateField("name", val)}
-            />
-          </View>
+          <SearchableDropdown
+            label="Name"
+            searchAction={findByName}
+            initalValue={transaction.name}
+            onSelectItem={onSelectItem}
+            onChange={val => updateField("name", val)}
+            className="mb-1"
+          />
 
           {formState.data.type !== "Transfer" && (
             <FormField
@@ -275,8 +279,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
           </View>
 
-          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-50`}>
-            <View className={`z-50 ${Platform.OS === "web" ? "flex-1" : ""}`}>
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
               <FormField
                 config={{
                   name: "currency",
@@ -299,9 +303,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
                     type: "number",
                     placeholder: isFxLoading ? "Loading…" : "0.00",
-                    description: isFxLoading
-                      ? "Fetching rate…"
-                      : `≈ ${formatMoney(convertedPreview, primaryCurrency)}`,
+                    description: isFxLoading ? "Fetching rate…" : `≈ ${formatMoney(convertedPreview, primaryCurrency)}`,
                   }}
                   value={displayedRate?.toString() ?? ""}
                   onChange={handleRateOverride}
@@ -315,7 +317,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             )}
           </View>
 
-          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} z-40`}>
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
             <View className="flex-1">
               <FormField
                 config={{
@@ -367,8 +369,8 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           </View>
 
           {/* Account Information Section */}
-          <FormSection className="z-30">
-            <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""} z-20`}>
+          <FormSection>
+            <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
               <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
                 <FormField
                   config={{
@@ -383,11 +385,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                       entityType: "Account",
                       label: "Add New Account",
                       renderForm: ({ onSuccess, onCancel }) => (
-                        <AccountForm
-                          account={accountInitialState}
-                          onSuccess={onSuccess}
-                          onCancel={onCancel}
-                        />
+                        <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
                       ),
                     },
                   }}
@@ -426,11 +424,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                           entityType: "Account",
                           label: "Add New Account",
                           renderForm: ({ onSuccess, onCancel }) => (
-                            <AccountForm
-                              account={accountInitialState}
-                              onSuccess={onSuccess}
-                              onCancel={onCancel}
-                            />
+                            <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
                           ),
                         },
                       }}
@@ -465,25 +459,17 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               <View>
                 {/* Balance indicator (signed: items with opposite mode net against the parent) */}
                 <View className="flex-row items-center justify-between mb-3 px-1">
-                  <ThemedText className="text-xs">
-                    Items total: {subItemsTotal.toFixed(2)}
-                  </ThemedText>
+                  <ThemedText className="text-xs">Items total: {subItemsTotal.toFixed(2)}</ThemedText>
                   <ThemedText
-                    className={`text-xs font-medium ${isSubItemsBalanced ? "text-success-500" : "text-danger-500"
-                      }`}
+                    className={`text-xs font-medium ${isSubItemsBalanced ? "text-success-500" : "text-danger-500"}`}
                   >
-                    {isSubItemsBalanced
-                      ? "✓ Balanced"
-                      : `Remaining: ${subItemsRemaining.toFixed(2)}`}
+                    {isSubItemsBalanced ? "✓ Balanced" : `Remaining: ${subItemsRemaining.toFixed(2)}`}
                   </ThemedText>
                 </View>
 
                 {/* Sub-item cards */}
                 {subItems.map((item, index) => (
-                  <View
-                    key={item.id || index}
-                    className="border border-border rounded-lg p-3 mb-2 bg-card"
-                  >
+                  <View key={item.id || index} className="border border-border rounded-lg p-3 mb-2 bg-card">
                     <View className="flex-row items-center justify-end mb-2">
                       <Button
                         variant="ghost"
@@ -502,7 +488,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         <TextInput
                           placeholder="Item name"
                           value={item.name}
-                          onChangeText={(val) => updateSubItem(index, "name", val)}
+                          onChangeText={val => updateSubItem(index, "name", val)}
                           className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
                           testID={`input-subitem-name-${index}`}
                         />
@@ -517,8 +503,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         <TextInput
                           placeholder="Amount"
                           value={item.amount || Object.is(item.amount, -0) ? String(Math.abs(item.amount)) : ""}
-                          onChangeText={(val) => {
-                            let cleanValue = val.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".").replace(/^0+(?=\d)/, "");
+                          onChangeText={val => {
+                            let cleanValue = val
+                              .replace(/[^0-9.]/g, "")
+                              .replace(/\.{2,}/g, ".")
+                              .replace(/^0+(?=\d)/, "");
                             if (cleanValue.includes(".")) {
                               const parts = cleanValue.split(".");
                               if (parts[1] && parts[1].length > 2) {
@@ -538,7 +527,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         <TextInput
                           placeholder="Notes (optional)"
                           value={item.notes || ""}
-                          onChangeText={(val) => updateSubItem(index, "notes", val || null)}
+                          onChangeText={val => updateSubItem(index, "notes", val || null)}
                           className="border border-border rounded-md px-3 py-2 text-foreground bg-background h-full"
                           testID={`input-subitem-notes-${index}`}
                         />
@@ -546,14 +535,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                     </View>
                   </View>
                 ))}
-
               </View>
             )}
           </FormSection>
 
           {/* Additional Information Section */}
           <FormSection title="Additional Information" description="Optional notes and tags">
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative z-10`}>
+            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative`}>
               <FormField
                 config={{
                   name: "tags",
@@ -613,7 +601,9 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const { mutate: upsertTransaction } = transactionService.useUpsert();
   const createItemsMutation = transactionItemService.useCreateMultiple();
   const deleteItemsMutation = transactionItemService.useDeleteByTransactionId();
-  const { data: existingItems, isLoading: isExistingItemsLoading } = transactionItemService.useFindByTransactionId(transaction.id);
+  const { data: existingItems, isLoading: isExistingItemsLoading } = transactionItemService.useFindByTransactionId(
+    transaction.id,
+  );
   const [mode, setMode] = useState<"plus" | "minus">("minus");
   const [showOneMoreSuccess, setShowOneMoreSuccess] = useState(false);
   const [isOneMoreSubmitting, setIsOneMoreSubmitting] = useState(false);
@@ -666,7 +656,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   useEffect(() => {
     if (existingItems && existingItems.length > 0) {
       setSubItems(
-        existingItems.map((item) => ({
+        existingItems.map(item => ({
           id: item.id,
           name: item.name,
           amount: item.amount,
@@ -677,29 +667,29 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     }
   }, [existingItems]);
 
-  const addSubItem = useCallback((parentAmount: number) => {
-    setSubItems((prev) => {
-      const currentTotal = prev.reduce((sum, item) => sum + Math.abs(item.amount ?? 0), 0);
-      const remaining = Math.max(0, Math.abs(parentAmount || 0) - currentTotal);
+  const addSubItem = useCallback(
+    (parentAmount: number) => {
+      setSubItems(prev => {
+        const currentTotal = prev.reduce((sum, item) => sum + Math.abs(item.amount ?? 0), 0);
+        const remaining = Math.max(0, Math.abs(parentAmount || 0) - currentTotal);
 
-      let initialAmount = remaining;
-      if (mode === "minus") {
-        initialAmount = remaining === 0 ? -0 : -remaining;
-      }
+        let initialAmount = remaining;
+        if (mode === "minus") {
+          initialAmount = remaining === 0 ? -0 : -remaining;
+        }
 
-      return [
-        ...prev,
-        { id: GenerateUuid(), name: "", amount: initialAmount, categoryid: null, notes: null },
-      ];
-    });
-  }, [mode]);
+        return [...prev, { id: GenerateUuid(), name: "", amount: initialAmount, categoryid: null, notes: null }];
+      });
+    },
+    [mode],
+  );
 
   const removeSubItem = useCallback((index: number) => {
-    setSubItems((prev) => prev.filter((_, i) => i !== index));
+    setSubItems(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const updateSubItem = useCallback((index: number, field: keyof TransactionSubItem, value: any) => {
-    setSubItems((prev) => {
+    setSubItems(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
@@ -756,10 +746,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     () => roundToCents(mode === "minus" ? -Math.abs(formState.data.amount) : Math.abs(formState.data.amount)),
     [mode, formState.data.amount],
   );
-  const subItemsRemaining = useMemo(
-    () => roundToCents(parentSigned - subItemsTotal),
-    [parentSigned, subItemsTotal],
-  );
+  const subItemsRemaining = useMemo(() => roundToCents(parentSigned - subItemsTotal), [parentSigned, subItemsTotal]);
   const isSubItemsBalanced = useMemo(() => {
     if (subItems.length === 0) return true;
     return subItemsRemaining === 0;
@@ -835,7 +822,18 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         },
       );
     },
-    [upsertTransaction, transaction, mode, subItems, isSubItemsBalanced, createItemsMutation, deleteItemsMutation, effectiveRate, isForeignCurrency, transactionCurrency],
+    [
+      upsertTransaction,
+      transaction,
+      mode,
+      subItems,
+      isSubItemsBalanced,
+      createItemsMutation,
+      deleteItemsMutation,
+      effectiveRate,
+      isForeignCurrency,
+      transactionCurrency,
+    ],
   );
 
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {

@@ -11,18 +11,17 @@ export type TransactionsPageHeaderProps = {
   isActionLoading: boolean;
   clearSelection: () => void;
   refreshTransactions: () => void;
-  showSearch: boolean;
   setShowSearch: (value: boolean) => void;
 };
 
 export type TransactionSearchFormProps = {
-  isOpen: boolean;
-  setIsOpen: (value: boolean) => void;
-  searchParams: TransactionFilters | null;
-  accounts: Account[];
+  filters?: TransactionFilters | null;
   categories: TransactionCategory[];
-  onSubmit: (filters: TransactionFilters | null) => void;
+  accounts: Account[];
   onClear: () => void;
+  onSubmit: (filters: TransactionFilters | null) => void;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 };
 
 export type GroupedData = {

@@ -1,10 +1,10 @@
 import { memo } from "react";
 import { View } from "react-native";
-import ThemedText from "./ThemedText";
 import ThemedInput from "./ThemedInput";
+import ThemedText from "./ThemedText";
 
 type TextInputFieldProps = {
-  label: string;
+  label?: string;
   value: string | null | undefined;
   onChange: (text: any) => void;
   keyboardType?: "default" | "numeric" | "email-address";
@@ -39,7 +39,7 @@ function TextInputFieldMemo({
 }: TextInputFieldProps) {
   return (
     <View className={`my-1 ${className ?? ""}`}>
-      <ThemedText>{label}</ThemedText>
+      {label && <ThemedText>{label}</ThemedText>}
       <ThemedInput
         testID={testID}
         className={multiline ? "h-20" : ""}

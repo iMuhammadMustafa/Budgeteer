@@ -1,3 +1,4 @@
+import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import {
   parseRecurrenceRule,
@@ -15,7 +16,6 @@ import dayjs from "dayjs";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
-import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 import Button from "../elements/Button";
 import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
@@ -113,15 +113,14 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
   return (
     <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
       {!isEdit && (
-        <View className="mb-2 z-50">
-          <SearchableDropdown
-            label="Blueprint Transaction (Optional)"
-            placeholder="Search transaction by name..."
-            searchAction={transactionService.useFindByName}
-            onSelectItem={handleBlueprintTransactionSelect}
-            onChange={() => {}}
-          />
-        </View>
+        <SearchableDropdown
+          label="Blueprint Transaction (Optional)"
+          placeholder="Search transaction by name..."
+          searchAction={transactionService.useFindByName}
+          onSelectItem={handleBlueprintTransactionSelect}
+          onChange={() => {}}
+          className="my-1"
+        />
       )}
 
       <TextInputField
@@ -129,7 +128,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         value={formData.name}
         onChange={text => handleTextChange("name", text)}
         placeholder="e.g., Rent Payment"
-        className="-z-10"
+        className=""
       />
       <TextInputField
         label="Description"
@@ -137,36 +136,32 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         onChange={text => handleTextChange("description", text)}
         placeholder="e.g., Monthly apartment rent"
         multiline
-        className="-z-10"
+        className=""
       />
-      <View className="z-40">
+      <DropdownField
+        label="Recurring Category"
+        options={recurringCategoryOptions}
+        selectedValue={formData.recurringType}
+        onSelect={(item: OptionItem | null) => {
+          if (item) {
+            handleTextChange("recurringType", item.id as RecurringType);
+          }
+        }}
+        isModal={Platform.OS !== "web"}
+      />
+
+      {formData.recurringType === RecurringType.Standard && (
         <DropdownField
-          label="Recurring Category"
-          options={recurringCategoryOptions}
-          selectedValue={formData.recurringType}
+          label="Transaction Type"
+          options={recurringTypeOptions}
+          selectedValue={formData.type}
           onSelect={(item: OptionItem | null) => {
             if (item) {
-              handleTextChange("recurringType", item.id as RecurringType);
+              handleTextChange("type", item.id as TransactionType);
             }
           }}
           isModal={Platform.OS !== "web"}
         />
-      </View>
-
-      {formData.recurringType === RecurringType.Standard && (
-        <View className=" z-30">
-          <DropdownField
-            label="Transaction Type"
-            options={recurringTypeOptions}
-            selectedValue={formData.type}
-            onSelect={(item: OptionItem | null) => {
-              if (item) {
-                handleTextChange("type", item.id as TransactionType);
-              }
-            }}
-            isModal={Platform.OS !== "web"}
-          />
-        </View>
       )}
 
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
@@ -185,20 +180,18 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
             date={dayjs(formData.nextoccurrencedate)}
             onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
           />
-          <View className="z-30">
-            <DropdownField
-              label="Frequency"
-              options={recurrenceFrequencyOptions}
-              selectedValue={formData.frequency}
-              onSelect={(item: OptionItem | null) => {
-                // Handle null item
-                if (item) {
-                  handleTextChange("frequency", item.id as RecurrenceFrequency);
-                }
-              }}
-              isModal={Platform.OS !== "web"}
-            />
-          </View>
+          <DropdownField
+            label="Frequency"
+            options={recurrenceFrequencyOptions}
+            selectedValue={formData.frequency}
+            onSelect={(item: OptionItem | null) => {
+              // Handle null item
+              if (item) {
+                handleTextChange("frequency", item.id as RecurrenceFrequency);
+              }
+            }}
+            isModal={Platform.OS !== "web"}
+          />
           <TextInputField
             label="Interval"
             value={formData.interval.toString()}
@@ -250,38 +243,34 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         </View>
       )}
 
-      <View className="z-30">
-        <AccountSelecterDropdown
-          label="Source Account"
-          selectedValue={formData.sourceaccountid}
-          onSelect={accountOption => {
-            if (accountOption) {
-              handleTextChange("sourceaccountid", accountOption.id);
-              // Auto-set currency based on account
-              const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
-              if (selectedAccount?.currency) {
-                handleTextChange("currencycode", selectedAccount.currency);
-              }
+      <AccountSelecterDropdown
+        label="Source Account"
+        selectedValue={formData.sourceaccountid}
+        onSelect={accountOption => {
+          if (accountOption) {
+            handleTextChange("sourceaccountid", accountOption.id);
+            // Auto-set currency based on account
+            const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
+            if (selectedAccount?.currency) {
+              handleTextChange("currencycode", selectedAccount.currency);
             }
-          }}
-          accounts={accounts}
-          isModal={Platform.OS !== "web"}
-          groupBy="category.name"
-        />
-      </View>
+          }
+        }}
+        accounts={accounts}
+        isModal={Platform.OS !== "web"}
+        groupBy="category.name"
+      />
 
       {formData.recurringType === RecurringType.Transfer && (
         <>
-          <View className="z-20">
-            <AccountSelecterDropdown
-              label="To Account (Destination)"
-              selectedValue={formData.transferaccountid}
-              onSelect={account => handleTextChange("transferaccountid", account?.id || null)}
-              accounts={accounts}
-              isModal={Platform.OS !== "web"}
-              groupBy="category.name"
-            />
-          </View>
+          <AccountSelecterDropdown
+            label="To Account (Destination)"
+            selectedValue={formData.transferaccountid}
+            onSelect={account => handleTextChange("transferaccountid", account?.id || null)}
+            accounts={accounts}
+            isModal={Platform.OS !== "web"}
+            groupBy="category.name"
+          />
           {formData.sourceaccountid &&
             formData.transferaccountid &&
             formData.sourceaccountid === formData.transferaccountid && (
@@ -300,23 +289,21 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
             //   maxLength={3}
             // /> */}
 
-      <View className="z-10">
-        <MyCategoriesDropdown
-          label="Category"
-          selectedValue={formData.categoryid}
-          categories={categories}
-          onSelect={category => handleTextChange("categoryid", category?.id || null)}
-          isModal={Platform.OS !== "web"}
-          showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
-          onClear={() => handleTextChange("categoryid", null)}
-        />
-      </View>
+      <MyCategoriesDropdown
+        label="Category"
+        selectedValue={formData.categoryid}
+        categories={categories}
+        onSelect={category => handleTextChange("categoryid", category?.id || null)}
+        isModal={Platform.OS !== "web"}
+        showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
+        onClear={() => handleTextChange("categoryid", null)}
+      />
       <TextInputField
         label="Payee Name (Optional)"
         value={formData.payeename ?? ""}
         onChange={text => handleTextChange("payeename", text)}
         placeholder="e.g., Landlord Name"
-        className="-z-10"
+        className=""
       />
       <TextInputField
         label="Notes (Optional)"
@@ -324,7 +311,6 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         onChange={text => handleTextChange("notes", text)}
         placeholder="Any additional notes"
         multiline
-        className="-z-10"
       />
       {formData.isDateFlexible && formData.isAmountFlexible && (
         <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
