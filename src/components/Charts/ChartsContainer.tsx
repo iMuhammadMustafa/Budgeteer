@@ -15,7 +15,7 @@ export default function ChartsContainer({
   children: React.ReactNode;
 }) {
   return (
-    <View className="gap-2 py-1 my-1 bg-card m-auto rounded-md border border-muted">
+    <View className="gap-2 py-2 my-1 bg-card m-auto rounded-md border border-muted">
       {children}
       {isPeriodControl && onPrev && onNext && <PeriodControls label={label} onPrev={onPrev} onNext={onNext} />}
     </View>

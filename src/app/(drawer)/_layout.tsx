@@ -1,6 +1,7 @@
 import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
+import ThemedText from "@/src/components/elements/ThemedText";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -11,7 +12,6 @@ import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
-import ThemedText from "@/src/components/elements/ThemedText";
 
 export default function DrawerLayout() {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -69,19 +69,19 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
-        name="Settings"
-        options={{
-          drawerLabel: "Settings",
-          title: "Settings",
-          drawerIcon: ({ color }: any) => <MyIcon name="Settings" color={color} size={24} />,
-        }}
-      />
-      <Drawer.Screen
         name="Restore"
         options={{
           drawerLabel: "Restore",
           title: "Restore",
           drawerIcon: ({ color }: any) => <MyIcon name="History" color={color} size={24} />,
+        }}
+      />
+      <Drawer.Screen
+        name="Settings"
+        options={{
+          drawerLabel: "Settings",
+          title: "Settings",
+          drawerIcon: ({ color }: any) => <MyIcon name="Settings" color={color} size={24} />,
         }}
       />
     </Drawer>

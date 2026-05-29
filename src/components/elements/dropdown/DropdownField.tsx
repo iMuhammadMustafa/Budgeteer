@@ -1,7 +1,7 @@
+import { usePathname } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Dimensions, FlatList, LayoutChangeEvent, Platform, Pressable, Text, TextInput, View } from "react-native";
-import { usePathname } from "expo-router";
 import Button from "../Button";
 
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
@@ -167,7 +167,7 @@ function DropdownField({
   const showError = error && touched;
 
   return (
-    <View className={`my-1 flex-1 ${className}`}>
+    <View className={`flex-1 ${className}`}>
       <View
         ref={wrapperRef}
         onLayout={handleLayout}

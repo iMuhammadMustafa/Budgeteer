@@ -1,8 +1,8 @@
+import { AmountMode, formatAmountForInput, getAmountMode, parseAmountInput } from "@/src/utils/amount.helper";
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, TextInput, View } from "react-native";
-import { AmountMode, formatAmountForInput, getAmountMode, parseAmountInput } from "@/src/utils/amount.helper";
-import MyIcon from "./MyIcon";
+import { Platform, TextInput, View } from "react-native";
+import Button from "./Button";
 
 interface AmountInputProps {
   amount: number;
@@ -19,6 +19,7 @@ interface AmountInputProps {
   testID?: string;
   className?: string;
   disabled?: boolean;
+  testId?: string;
 }
 
 /**
@@ -35,6 +36,7 @@ export default function AmountInput({
   testID,
   className,
   disabled = false,
+  testId = "amount-input-field",
 }: AmountInputProps) {
   const resolvedMode: AmountMode = mode ?? getAmountMode(amount);
   const isMinus = resolvedMode === "minus";
@@ -78,22 +80,27 @@ export default function AmountInput({
   return (
     <View
       className={`flex-row items-stretch border border-input-border rounded-md overflow-hidden bg-input-bg ${className ?? ""}`}
+      testID={testId}
     >
-      <Pressable
+      <Button
         onPress={handleToggle}
-        disabled={disabled || !allowNegativeFlip || isTransfer}
-        accessibilityLabel={`Toggle amount sign, currently ${resolvedMode}`}
+        variant="ghost"
+        rightIcon={isMinus ? "Minus" : isTransfer ? "ArrowRightLeft" : "Plus"}
+        className={`${chipBg} justify-center items-center px-3 rounded-none`}
+        iconSize={15}
+        iconColor="white"
         testID="btn-amount-mode-toggle"
-        className={`${chipBg} justify-center items-center px-3`}
-      >
-        <MyIcon name={isMinus ? "Minus" : isTransfer ? "ArrowRightLeft" : "Plus"} size={18} className="text-white" />
-      </Pressable>
+        accessibilityLabel={`Toggle amount sign, currently ${resolvedMode}`}
+        disabled={disabled || !allowNegativeFlip || isTransfer}
+      />
       <TextInput
-        className="flex-1 px-3 py-2 text-foreground"
+        className="flex-1 px-3 text-foreground"
         placeholder={placeholder}
         value={displayValue}
         onChangeText={handleTextChange}
-        onFocus={() => { isFocusedRef.current = true; }}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
         onBlur={() => {
           isFocusedRef.current = false;
           setDisplayValue(formatAmountForInput(amount));

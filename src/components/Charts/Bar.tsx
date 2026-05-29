@@ -1,11 +1,13 @@
 import { BarProps } from "@/src/types/components/Charts.types";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { Platform, Text, useWindowDimensions } from "react-native";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 import { BarEmptyState } from "./ChartEmptyState";
 
 export default function Bar({ data, label, color, hideY, selectedDate, onDayPress }: BarProps) {
-  const [selectedSlice, setSelectedSlice] = useState(selectedDate || null);
+  const selectedDateAsShortDayOfTheWeek = dayjs(selectedDate).format("ddd");
+  const [selectedSlice, setSelectedSlice] = useState(selectedDateAsShortDayOfTheWeek || null);
   const { width } = useWindowDimensions();
 
   const chartWidth = Math.min(width * 0.95, 600); // Use 95% of width or max 600
@@ -20,7 +22,12 @@ export default function Bar({ data, label, color, hideY, selectedDate, onDayPres
     <>
       <Text className="text-center text-xl font-bold text-foreground">{label}</Text>
 
-      <VictoryChart theme={VictoryTheme.material} domainPadding={{ x: 50 }} width={chartWidth * (width > 700 ? 1.75 : 1)} height={chartHeight}>
+      <VictoryChart
+        theme={VictoryTheme.material}
+        domainPadding={{ x: 50 }}
+        width={chartWidth * (width > 700 ? 1.75 : 1)}
+        height={chartHeight}
+      >
         {Platform.OS === "web" ? (
           <VictoryAxis style={{ grid: { stroke: "transparent" } }} />
         ) : (
@@ -53,13 +60,16 @@ export default function Bar({ data, label, color, hideY, selectedDate, onDayPres
               target: "data",
               eventHandlers: {
                 onMouseEnter: (_, props) => {
-                  setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  if (!selectedDate) {
+                    setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
+                  }
                 },
                 onMouseLeave: (_, props) => {
-                  setSelectedSlice(null);
+                  if (!selectedDate) {
+                    setSelectedSlice(null);
+                  }
                 },
                 onPress: (_, props) => {
-                  console.log(props.datum);
                   setSelectedSlice(selectedSlice === props.datum.x ? null : props.datum.x);
                   onDayPress && onDayPress({ dateString: props.datum.item.date });
                 },

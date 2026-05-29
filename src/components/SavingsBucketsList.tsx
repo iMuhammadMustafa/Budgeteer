@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
@@ -98,17 +99,21 @@ export default function SavingsBucketsList({
               <Text className="text-xs font-medium text-foreground">{bucket.name}</Text>
               <View className="flex-row items-center gap-1">
                 <Text className="text-xs text-muted-foreground">
-                  {formatCurrency(bucket.currentamount)}
-                  {bucket.targetamount > 0 &&
-                    ` / ${formatCurrency(bucket.targetamount)}`}
+                  {formatCurrency(bucket.currentamount, false)}
+                  {bucket.targetamount > 0 && ` / ${formatCurrency(bucket.targetamount, false)}`}
                 </Text>
               </View>
               {/* Mini progress bar */}
               {bucket.targetamount > 0 && (
-                <View className="mt-0.5 h-1 bg-muted rounded-full overflow-hidden w-24">
-                  <View
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${getProgressPercent(bucket)}%` }}
+                <View className="mt-0.5 h-1 bg-muted rounded-full overflow-hidden w-28">
+                  <LinearGradient
+                    colors={["#ef4444", "#f59e0b", "#10b981"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      width: `${getProgressPercent(bucket)}%`,
+                      height: "100%",
+                    }}
                   />
                 </View>
               )}
@@ -189,9 +194,8 @@ export default function SavingsBucketsList({
           <View className="flex-1">
             <Text className="text-xs font-semibold text-warning">Over-Allocated</Text>
             <Text className="text-xs text-warning/80">
-              Bucket allocations exceed the account balance by{" "}
-              {formatCurrency(unallocated, false)}.
-              Consider reducing bucket amounts to match the current balance.
+              Bucket allocations exceed the account balance by {formatCurrency(unallocated, false)}. Consider reducing
+              bucket amounts to match the current balance.
             </Text>
           </View>
         </View>
@@ -227,8 +231,7 @@ export default function SavingsBucketsList({
                 <View className="flex-row items-center gap-1">
                   <Text className="text-xs text-muted-foreground">
                     {formatCurrency(bucket.currentamount)}
-                    {bucket.targetamount > 0 &&
-                      ` / ${formatCurrency(bucket.targetamount)}`}
+                    {bucket.targetamount > 0 && ` / ${formatCurrency(bucket.targetamount)}`}
                   </Text>
                 </View>
                 {/* Progress bar */}
