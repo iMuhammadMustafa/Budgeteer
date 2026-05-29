@@ -1,14 +1,15 @@
 import SkeletonList from "@/src/components/elements/SkeletonList";
-import ThemedText from "@/src/components/elements/ThemedText";
 import GridPattern from "@/src/components/GridPattern";
 import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
 import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
 import DaysList from "@/src/components/Transactions/Days";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
+import EmptyListComponent from "@/src/components/Transactions/EmptyListComponent";
+import ErrorStateComponent from "@/src/components/Transactions/ErrorStateComponent";
 import TransactionsPageHeader from "@/src/components/Transactions/PageHeader";
 import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
 import SplitTransactionModal from "@/src/components/Transactions/SplitTransactionModal";
-import { FlatList, View } from "react-native";
+import { FlatList } from "react-native";
 import useTransactions from "./useTransactions";
 
 export default function Transactions() {
@@ -26,7 +27,6 @@ export default function Transactions() {
     refreshTransactions,
     showSearch,
     setShowSearch,
-    setFilters,
     filters,
     accounts,
     categories,
@@ -48,14 +48,9 @@ export default function Transactions() {
     setShowSplitModal,
   } = useTransactions();
 
-  if (error)
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ThemedText variant="error" className="text-danger-500">
-          Error: {error.message}
-        </ThemedText>
-      </View>
-    );
+  if (error) {
+    return <ErrorStateComponent error={error} onRetry={refreshTransactions} />;
+  }
 
   return (
     <>
@@ -83,12 +78,8 @@ export default function Transactions() {
         onClear={handleSearchReset}
       />
 
-      {isLoading && days.length === 0 ? (
+      {isLoading ? (
         <SkeletonList length={5} customSkeleton={<DaySkeleton />} />
-      ) : days.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <ThemedText className="text-xl text-muted">No transactions found</ThemedText>
-        </View>
       ) : (
         <FlatList
           data={days}
@@ -97,6 +88,7 @@ export default function Transactions() {
           onEndReachedThreshold={0.5}
           onRefresh={refreshTransactions}
           refreshing={isLoading && days.length > 0}
+          contentContainerClassName="flex-1"
           renderItem={({ item }) => (
             <DaysList
               day={item}
@@ -107,6 +99,7 @@ export default function Transactions() {
             />
           )}
           ListFooterComponent={status === "pending" ? <DaySkeleton /> : null}
+          ListEmptyComponent={<EmptyListComponent />}
         />
       )}
 
