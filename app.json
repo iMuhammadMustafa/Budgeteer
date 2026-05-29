@@ -59,7 +59,8 @@
           "buildReactNativeFromSource": true,
           "useHermesV1": true
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
