@@ -1,4 +1,4 @@
-import { useRoute } from "@react-navigation/native";
+import { useRoute } from "expo-router/react-navigation";
 import { ActivityIndicator } from "react-native";
 import DashboardSkeleton from "../components/Charts/DashboardSkeleton";
 import { useAuth } from "./AuthProvider";
@@ -12,10 +12,8 @@ export default function AppInitializer({ children }: { children: React.ReactNode
   const isOnDashboardPage = useRoute().name === "(drawer)/dashboard";
 
   if (isLoading) {
-    if (isOnDashboardPage)
-      return <DashboardSkeleton />;
-    else
-      return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: "center", alignItems: "center" }} />;
+    if (isOnDashboardPage) return <DashboardSkeleton />;
+    else return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: "center", alignItems: "center" }} />;
   }
   return <>{children}</>;
 }

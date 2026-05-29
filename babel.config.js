@@ -10,6 +10,7 @@ module.exports = function (api) {
       ["@babel/plugin-transform-typescript", { isTSX: true }],
       ["@babel/plugin-proposal-decorators", { legacy: true }],
       ["@babel/plugin-transform-class-properties", { loose: true, legacy: true }],
+      ["@babel/plugin-transform-private-methods", { loose: true }],
       ["@babel/plugin-transform-runtime", { helpers: true, regenerator: true }],
     ],
   };

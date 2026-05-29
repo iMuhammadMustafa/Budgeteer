@@ -9,7 +9,7 @@ export default function TabsLayout() {
         options={{
           title: "Dashboard",
           tabBarButtonTestID: "tab-dashboard",
-          tabBarIcon: ({ color }) => <MyIcon name="House" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <MyIcon name="House" color={color as string} size={24} />,
         }}
       />
 
@@ -18,7 +18,7 @@ export default function TabsLayout() {
         options={{
           title: "Transactions",
           tabBarButtonTestID: "tab-transactions",
-          tabBarIcon: ({ color }) => <MyIcon name="ArrowRightLeft" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <MyIcon name="ArrowRightLeft" color={color as string} size={24} />,
         }}
       />
 
@@ -27,7 +27,7 @@ export default function TabsLayout() {
         options={{
           title: "New Transaction",
           tabBarButtonTestID: "tab-add-transaction",
-          tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color as string} size={24} />,
         }}
       />
 
@@ -36,7 +36,7 @@ export default function TabsLayout() {
         options={{
           title: "Recurrings",
           tabBarButtonTestID: "tab-recurrings",
-          tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <MyIcon name="Clock10" color={color as string} size={24} />,
         }}
       />
 
@@ -45,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: "Summary",
           tabBarButtonTestID: "tab-summary",
-          tabBarIcon: ({ color }) => <MyIcon name="Group" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <MyIcon name="Group" color={color as string} size={24} />,
         }}
       />
     </Tabs>

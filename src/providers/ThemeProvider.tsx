@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ThemeProvider as ReactThemeProvider } from "@react-navigation/native";
+import { ThemeProvider as ReactThemeProvider } from "expo-router/react-navigation";
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Platform, StatusBar, View } from "react-native";
 

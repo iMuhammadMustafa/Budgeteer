@@ -6,7 +6,7 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
+import { DrawerContentScrollView, DrawerItemList } from "expo-router/build/react-navigation/drawer";
 import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
@@ -39,7 +39,7 @@ export default function DrawerLayout() {
       }}
       drawerContent={props => (
         <DrawerContentScrollView {...props} className="flex-1">
-          <DrawerItemList {...props} />
+          <DrawerItemList {...(props as any)} />
           <Footer />
         </DrawerContentScrollView>
       )}

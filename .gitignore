@@ -10,6 +10,7 @@ web-build/
 expo-env.d.ts
 .agents
 Claude.md
+CLAUDE.md
 .claude/
 
 # Native

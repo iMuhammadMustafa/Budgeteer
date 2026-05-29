@@ -10,7 +10,7 @@ import { IRepository } from "./interfaces/IRepository";
 export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
     implements IRepository<TModel, TTable> {
     protected abstract tableName: TableNames;
-    protected abstract orderByFieldsDesc?: string[];
+    protected orderByFieldsDesc?: string[];
 
     /**
      * Map a database row to the model type

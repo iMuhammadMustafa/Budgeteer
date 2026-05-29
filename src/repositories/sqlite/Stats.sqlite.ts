@@ -20,7 +20,7 @@ export class StatsSqliteRepository implements IStatsRepository {
         const db = await getSqliteDB();
 
         let query = `SELECT * FROM ${ViewNames.StatsDailyTransactions} WHERE tenantid = ?`;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         if (startDate) {
             query += ` AND date >= ?`;
@@ -49,7 +49,7 @@ export class StatsSqliteRepository implements IStatsRepository {
         const db = await getSqliteDB();
 
         let query = `SELECT * FROM ${ViewNames.StatsMonthlyTransactionsTypes} WHERE tenantid = ?`;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         if (startDate) {
             query += ` AND date >= ?`;
@@ -74,7 +74,7 @@ export class StatsSqliteRepository implements IStatsRepository {
         const db = await getSqliteDB();
 
         let query = `SELECT * FROM ${ViewNames.StatsMonthlyCategoriesTransactions} WHERE tenantid = ?`;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         if (startDate) {
             query += ` AND date >= ?`;
@@ -99,7 +99,7 @@ export class StatsSqliteRepository implements IStatsRepository {
         const db = await getSqliteDB();
 
         let query = `SELECT * FROM ${ViewNames.StatsMonthlyAccountsTransactions} WHERE tenantid = ?`;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         if (startDate) {
             query += ` AND date >= ?`;
@@ -124,7 +124,7 @@ export class StatsSqliteRepository implements IStatsRepository {
         const db = await getSqliteDB();
 
         let query = `SELECT * FROM ${ViewNames.StatsNetWorthGrowth} WHERE tenantid = ?`;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         if (startDate) {
             query += ` AND month >= ?`;

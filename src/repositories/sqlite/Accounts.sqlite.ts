@@ -30,7 +30,7 @@ export class AccountSqliteRepository
       LEFT JOIN ${TableNames.AccountCategories} ac ON a.categoryid = ac.id
       WHERE a.tenantid = ?
     `;
-        const params: unknown[] = [tenantId];
+        const params: any[] = [tenantId];
 
         // isDeleted filter
         if (filters?.isDeleted === null) {
