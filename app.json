@@ -43,9 +43,7 @@
             "useSQLCipher": false
           },
           "ios": {
-            "customBuildFlags": [
-              "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"
-            ]
+            "customBuildFlags": ["-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"]
           }
         }
       ],
@@ -60,7 +58,8 @@
           "useHermesV1": true
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      ["expo-build-properties", { "android": { "usePrecompiledHeaders": true } }]
     ],
     "experiments": {
       "typedRoutes": true

@@ -194,7 +194,7 @@ const AccountTransferModal = ({
             testID="transfer-amount-input"
             placeholder="Amount"
             amount={amount}
-            mode="minus"
+            mode="plus"
             allowNegativeFlip={false}
             onChange={setAmount}
             className="flex-1"
@@ -251,7 +251,7 @@ const useAccountsViewModel = () => {
     setSourceAccountId(null);
   };
 
-  const detailsContent = (item: any) => `Balance: ${formatCurrency(item.balance)}`;
+  const detailsContent = (item: any) => `Balance: ${formatCurrency(item.balance, false)}`;
 
   const handleTransfer = () => {
     if (!modalState.account || !sourceAccountId || !amount || isNaN(Number(amount))) return;

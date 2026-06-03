@@ -142,6 +142,8 @@ export default function SearchableDropdown({
       setIgnoreFetch(true);
       setInputText(item.label);
       onSelectItem(item);
+      setIsFocused(false);
+      setSuggestions([]);
     },
     [onSelectItem],
   );
@@ -274,6 +276,8 @@ export default function SearchableDropdown({
                   width: textLayout.width,
                   zIndex: 99999,
                 }}
+                // @ts-ignore
+                dataSet={{ dropdownId: dropdownIdRef.current }}
               >
                 <FlatList
                   data={suggestions}

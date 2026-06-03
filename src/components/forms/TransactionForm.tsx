@@ -776,13 +776,14 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
       // `original_amount * exchange_rate ≈ amount` holds when signs are preserved.
       const originalSigned = calculateFinalAmount({ ...data, amount: userTypedAbs }, mode);
 
+      const { mode: _mode, last_used: _last_used, ...restData } = data as any;
+
       const submissionData = {
-        ...data,
+        ...restData,
         amount: finalAmount,
         original_amount: originalSigned,
         original_currency: transactionCurrency,
         exchange_rate: rateForSubmit,
-        mode: undefined,
         payee: data.type === "Transfer" ? null : data.payee,
       };
 
@@ -851,7 +852,9 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const onSubmit = useCallback(() => {
     if (validateForm()) {
-      submit(formState.data);
+      const { mode: _mode, last_used: _last_used, ...restData } = formState.data as any;
+
+      submit(restData);
       resetForm();
       router.navigate("/Transactions");
     }
@@ -859,15 +862,16 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const handleOnMoreSubmit = useCallback(() => {
     if (validateForm()) {
+      const { mode: _mode, last_used: _last_used, ...restData } = formState.data as any;
       setIsOneMoreSubmitting(true);
       const updatedDate = dayjs(formState.data.date).local().add(1, "second").format("YYYY-MM-DDTHH:mm:ss");
 
       const newTransactionData: TransactionFormType = {
-        ...formState.data,
+        ...restData,
         date: updatedDate,
       };
 
-      submit(formState.data).then(() => {
+      submit(restData).then(() => {
         setFormData(newTransactionData);
         setIsOneMoreSubmitting(false);
       });
