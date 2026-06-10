@@ -8,7 +8,8 @@
     "scheme": "budgeteer",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.imuhammadmustafa.Budgeteer"
     },
     "android": {
       "adaptiveIcon": {
@@ -55,11 +56,13 @@
         "expo-build-properties",
         {
           "buildReactNativeFromSource": true,
-          "useHermesV1": true
+          "useHermesV1": true,
+          "android": {
+            "usePrecompiledHeaders": true
+          }
         }
       ],
-      "expo-status-bar",
-      ["expo-build-properties", { "android": { "usePrecompiledHeaders": true } }]
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
