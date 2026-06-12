@@ -61,8 +61,8 @@ CREATE OR REPLACE VIEW Stats_MonthlyCategoriesTransactions WITH (security_invoke
   FROM transactions t
   INNER JOIN transactioncategories tc ON tc.id = t.categoryid AND tc.isdeleted = false
   INNER JOIN transactiongroups tg ON tg.id = tc.groupid AND tg.isdeleted = false
-  WHERE t.isdeleted = false
-  AND t.isvoid = false
+  WHERE t.isdeleted = false AND t.isvoid = false
+  AND t.type NOT IN ('Transfer')
   GROUP BY
   tg.id, tc.id, tg.name, t.type,
   tg.budgetamount, tg.budgetfrequency, tg.icon, tg.color, tg.displayorder,
@@ -82,8 +82,7 @@ CREATE OR REPLACE VIEW Stats_DailyTransactions WITH (security_invoker)
   sum(t.amount) AS sum,
   t.tenantid
   FROM transactions t
-  WHERE t.isdeleted = false
-  AND t.isvoid = false
+  WHERE t.isdeleted = false AND t.isvoid = false
   GROUP BY 
   t.type, 
   t.tenantid,
@@ -202,6 +201,7 @@ CREATE OR REPLACE VIEW Stats_NetWorthGrowth WITH (security_invoker) AS
     FROM calendar c
     JOIN TransactionsView t
       ON t.date <= c.month + INTERVAL '1 month - 1 day'
+    WHERE t.isvoid = false
   )
   SELECT
     month,

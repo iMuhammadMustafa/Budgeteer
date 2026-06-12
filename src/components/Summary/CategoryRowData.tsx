@@ -57,15 +57,16 @@ export default function CategoryRowData({
               <View className="items-center justify-center h-full">
                 <View className="flex-row items-center justify-center mb-1.5" style={{ gap: 4 }}>
                   <Text
-                    className={`text-[13px] text-center ${
-                      hasIncrease
-                        ? "text-status-danger font-medium"
-                        : hasDecrease
-                          ? "text-status-success font-medium"
-                          : "text-foreground font-medium"
-                    }`}
+                    className={`text-[13px] text-center text-foreground`}
+                    //   ${
+                    //   hasIncrease
+                    //     ? "text-status-danger font-medium"
+                    //     : hasDecrease
+                    //       ? "text-status-success font-medium"
+                    //       : "text-foreground font-medium"
+                    // }
                   >
-                    {formatCurrency(amount)}
+                    {formatCurrency(amount, false)}
                   </Text>
                   {hasBudget ? (
                     <Text className="text-[11px] text-muted-foreground/70 font-medium">/ {formatCurrency(budget)}</Text>

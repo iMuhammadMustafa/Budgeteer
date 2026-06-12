@@ -122,7 +122,10 @@ function DropdownField({
     onClear?.();
   }, [onSelect, onClear]);
 
-  const handleAddNew = useCallback(() => setIsAddNewOpen(true), []);
+  const handleAddNew = useCallback(() => {
+    setIsAddNewOpen(true);
+    setIsOpen(false);
+  }, []);
 
   const handleAddNewSuccess = useCallback(
     (newItem: any) => {
@@ -317,9 +320,8 @@ function DropdownList({
             placeholder="Search..."
             value={searchQuery}
             onChangeText={onSearchChange}
-            autoFocus={isModal}
+            autoFocus={false}
             placeholderTextColor="#9CA3AF"
-            onFocus={e => e.stopPropagation?.()}
           />
         </View>
       )}

@@ -40,11 +40,10 @@ export default function SummaryGroupData({
               style={{ gap: 4 }}
             >
               <Text
-                className={`font-semibold text-sm text-center ${
-                  hasIncrease ? "text-status-danger" : hasDecrease ? "text-status-success" : "text-foreground"
-                }`}
+                className={`font-semibold text-sm text-center text-foreground`}
+                //${hasIncrease ? "text-status-danger" : hasDecrease ? "text-status-success" : "text-foreground"}
               >
-                {formatCurrency(groupTotal)}
+                {formatCurrency(groupTotal, false)}
               </Text>
               {hasIncrease && <ArrowUp size={14} color="#ef4444" />}
               {hasDecrease && <ArrowDown size={14} color="#10b981" />}

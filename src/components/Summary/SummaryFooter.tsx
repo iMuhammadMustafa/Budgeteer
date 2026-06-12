@@ -40,7 +40,7 @@ export default function SummaryFooter({
               }}
             >
               <Text className="font-bold text-[15px] text-foreground text-center tracking-tight">
-                {formatCurrency(periodData.totalExpenses)}
+                {formatCurrency(periodData.totalExpenses, false)}
               </Text>
               {hasIncrease && <ArrowUp size={14} color="#ef4444" />}
               {hasDecrease && <ArrowDown size={14} color="#10b981" />}

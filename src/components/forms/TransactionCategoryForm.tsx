@@ -53,16 +53,13 @@ const validationSchema: ValidationSchema<TransactionCategoryFormData> = {
     commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
   budgetfrequency: [
-    commonValidationRules.custom(
-      (value, formData) => {
-        // Budget frequency is only required when budget amount is greater than 0
-        if (formData?.budgetamount && formData.budgetamount > 0) {
-          return !!value && value.trim().length > 0;
-        }
-        return true;
-      },
-      "Budget frequency is required when budget amount is greater than 0",
-    ),
+    commonValidationRules.custom((value, formData) => {
+      // Budget frequency is only required when budget amount is greater than 0
+      if (formData?.budgetamount && formData.budgetamount > 0) {
+        return !!value && value.trim().length > 0;
+      }
+      return true;
+    }, "Budget frequency is required when budget amount is greater than 0"),
   ],
   description: createDescriptionValidation(false),
   displayorder: [
@@ -271,7 +268,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1" nestedScrollEnabled={true} >
+      <ScrollView className="flex-1" nestedScrollEnabled={true}>
         <FormContainer
           onSubmit={handleFormSubmit}
           isValid={isValid && !isSubmitting}
@@ -280,10 +277,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
           showReset={isDirty}
           onReset={handleReset}
         >
-          <FormSection
-            title="Category Details"
-            description="Basic information about the transaction category"
-          >
+          <FormSection title="Category Details" description="Basic information about the transaction category">
             {/* Name field */}
             <FormField
               config={formFields[0]}

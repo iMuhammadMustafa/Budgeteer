@@ -138,7 +138,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Create validation schema
   const validationSchema: ValidationSchema<MultipleTransactionsFormData> = useMemo(
     () => ({
-      payee: [commonValidationRules.required("Payee is required")],
       date: createDateValidation(),
       accountid: [commonValidationRules.required("Account is required")],
       type: [commonValidationRules.required("Transaction type is required")],
@@ -250,7 +249,19 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         });
       }
     },
-    [submitAllMutation, splitMutation, transaction?.id, transaction?.accountid, transaction?.amount, mode, currentAmount, isSplitMode, effectiveRate, isForeignCurrency, transactionCurrency],
+    [
+      submitAllMutation,
+      splitMutation,
+      transaction?.id,
+      transaction?.accountid,
+      transaction?.amount,
+      mode,
+      currentAmount,
+      isSplitMode,
+      effectiveRate,
+      isForeignCurrency,
+      transactionCurrency,
+    ],
   );
 
   // Form submission hook
