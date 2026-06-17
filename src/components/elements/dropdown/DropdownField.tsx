@@ -537,6 +537,8 @@ export function MyTransactionTypesDropdown({
   isAdjustmentHidden = true,
   isInitialHidden = true,
   isRefundHidden = true,
+  showClear,
+  onClear,
 }: {
   selectedValue: any;
   onSelect: (value: any) => any;
@@ -548,6 +550,8 @@ export function MyTransactionTypesDropdown({
   isAdjustmentHidden?: boolean;
   isInitialHidden?: boolean;
   isRefundHidden?: boolean;
+  showClear?: boolean;
+  onClear?: () => void;
 }) {
   return (
     <DropdownField
@@ -563,6 +567,8 @@ export function MyTransactionTypesDropdown({
       ]}
       selectedValue={selectedValue}
       onSelect={onSelect}
+      showClear={showClear}
+      onClear={onClear}
     />
   );
 }
@@ -597,6 +603,8 @@ export const AccountSelecterDropdown = ({
   accounts,
   isModal,
   groupBy,
+  showClear,
+  onClear,
 }: {
   label?: string;
   selectedValue: any;
@@ -604,6 +612,8 @@ export const AccountSelecterDropdown = ({
   accounts: any;
   isModal: boolean;
   groupBy?: string;
+  showClear?: boolean;
+  onClear?: () => void;
 }) => {
   const { primaryCurrency } = usePrimaryCurrency();
   return (
@@ -624,6 +634,8 @@ export const AccountSelecterDropdown = ({
       }
       groupBy={groupBy ? "group" : undefined}
       onSelect={onSelect}
+      showClear={showClear}
+      onClear={onClear}
     />
   );
 };

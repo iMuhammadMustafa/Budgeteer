@@ -26,6 +26,15 @@ export default function TransactionSearchForm({
     setSearchParams(prevFormData => ({ ...prevFormData, [name]: text }));
   };
 
+  const clearField = (name: keyof TransactionFilters) => {
+    setSearchParams(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev };
+      delete updated[name];
+      return updated;
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -45,28 +54,36 @@ export default function TransactionSearchForm({
           <MyCategoriesDropdown
             selectedValue={searchParams?.categoryid}
             categories={categories}
-            onSelect={value => handleTextChange("categoryid", value!.id)}
+            onSelect={value => {
+              if (value) handleTextChange("categoryid", value.id);
+            }}
             isModal={Platform.OS !== "web"}
+            showClearButton={true}
+            onClear={() => clearField("categoryid")}
           />
         </View>
         <AccountSelecterDropdown
           label="Account"
           selectedValue={searchParams?.accountid}
           onSelect={(value: any) => {
-            handleTextChange("accountid", value.id);
+            if (value) handleTextChange("accountid", value.id);
           }}
           isModal={Platform.OS !== "web"}
           accounts={accounts}
           groupBy="group"
+          showClear={true}
+          onClear={() => clearField("accountid")}
         />
 
         <MyTransactionTypesDropdown
           selectedValue={searchParams?.type}
           onSelect={value => {
-            handleTextChange("type", value.value);
+            if (value) handleTextChange("type", value.value);
           }}
           isModal={Platform.OS !== "web"}
           isEdit={false}
+          showClear={true}
+          onClear={() => clearField("type")}
         />
 
         <View className="flex flex-row justify-center items-center gap-4 mt-4">
