@@ -1,5 +1,6 @@
 import SkeletonList from "@/src/components/elements/SkeletonList";
 import GridPattern from "@/src/components/GridPattern";
+import ActiveFilters from "@/src/components/Transactions/ActiveFilters";
 import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
 import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
 import DaysList from "@/src/components/Transactions/Days";
@@ -35,6 +36,7 @@ export default function Transactions() {
     loadMore,
     handleSearchSubmit,
     handleSearchReset,
+    handleRemoveFilter,
     // Modal states and handlers
     confirmAction,
     openConfirmModal,
@@ -76,6 +78,14 @@ export default function Transactions() {
         categories={categories ?? []}
         onSubmit={handleSearchSubmit}
         onClear={handleSearchReset}
+      />
+
+      <ActiveFilters
+        filters={params || filters}
+        accounts={accounts ?? []}
+        categories={categories ?? []}
+        onRemoveFilter={handleRemoveFilter}
+        onClearAll={handleSearchReset}
       />
 
       {isLoading ? (

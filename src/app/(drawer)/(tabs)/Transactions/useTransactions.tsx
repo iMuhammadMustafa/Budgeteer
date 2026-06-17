@@ -253,6 +253,27 @@ export default function useTransactions() {
     refreshTransactions();
   };
 
+  // Handle removing a single filter
+  const handleRemoveFilter = (key: keyof TransactionFilters) => {
+    const updatedFilters = { ...filters };
+    delete updatedFilters[key];
+    setFilters(updatedFilters);
+
+    // Always use replace so the removed key is actually dropped from the URL
+    // (router.setParams only merges — it never deletes keys)
+    const visibleKeys = Object.keys(updatedFilters).filter(
+      k => !["offset", "limit", "raw", "isDeleted"].includes(k) && updatedFilters[k as keyof TransactionFilters] !== undefined,
+    );
+
+    if (visibleKeys.length === 0) {
+      router.replace({ pathname: "/Transactions" });
+    } else {
+      router.replace({ pathname: "/Transactions", params: updatedFilters as any });
+    }
+
+    refreshTransactions();
+  };
+
   const [showSplitModal, setShowSplitModal] = useState(false);
 
   const isAnyModalOpen = showSplitModal || showBatchUpdate || confirmAction !== null || showSearch;
@@ -298,6 +319,7 @@ export default function useTransactions() {
     loadMore,
     handleSearchSubmit,
     handleSearchReset,
+    handleRemoveFilter,
     // Modal states and handlers
     confirmAction,
     openConfirmModal,
