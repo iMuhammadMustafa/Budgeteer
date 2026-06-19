@@ -128,6 +128,11 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const filteredTransactions = fetchTransactions ? transactionsQuery?.data : undefined;
   const isFiltersLoading = fetchTransactions ? (transactionsQuery?.isLoading ?? false) : false;
 
+  // Always fetch the 5 most recent transactions for the dashboard overview
+  const recentTransactionsQuery = transactionService.useFindAllView({ limit: 5 });
+  const recentTransactions = recentTransactionsQuery.data;
+  const isRecentLoading = recentTransactionsQuery.isLoading;
+
   // Derived weekly bars and calendar data from raw daily
   const { weeklyTransactionTypesData, dailyTransactionTypesData } = useMemo(() => {
     const derived = getStatsDailyTransactionsHelper(dailyTransactionsRaw, true, weekBaseDate);
@@ -147,6 +152,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       yearlyTransactionsTypes,
       netWorthGrowth,
       filteredTransactions,
+      recentTransactions,
     }),
     [
       weeklyTransactionTypesData,
@@ -156,13 +162,14 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       yearlyTransactionsTypes,
       netWorthGrowth,
       filteredTransactions,
+      recentTransactions,
     ],
   );
 
   const [isLocalLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isLoading =
-    isDailyLoading || isCategoriesLoading || isGroupsLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isLocalLoading;
+    isDailyLoading || isCategoriesLoading || isGroupsLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isRecentLoading || isLocalLoading;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

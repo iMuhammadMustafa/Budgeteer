@@ -1,9 +1,20 @@
 import MyIcon from "@/src/components/elements/MyIcon";
 import { Tabs } from "expo-router";
+import { useWindowDimensions } from "react-native";
+
+const LARGE_SCREEN_BREAKPOINT = 1024;
 
 export default function TabsLayout() {
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= LARGE_SCREEN_BREAKPOINT;
+
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: isLargeScreen ? { display: "none" } : undefined,
+      }}
+    >
       <Tabs.Screen
         name="Dashboard"
         options={{
