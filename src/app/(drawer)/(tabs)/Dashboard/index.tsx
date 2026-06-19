@@ -14,6 +14,7 @@ export default function DashboardIndex() {
     yearlyTransactionsTypes,
     monthlyCategories,
     monthlyGroups,
+    recentTransactions,
     netWorthGrowth,
     isLoading,
     refreshing,
@@ -21,6 +22,7 @@ export default function DashboardIndex() {
     handleDayPress,
     handlePiePress,
     handleBarPress,
+    handleTransactionPress,
     periodControls,
   } = useDashboard();
 
@@ -66,9 +68,11 @@ export default function DashboardIndex() {
           netWorthGrowth={netWorthGrowth}
           monthlyCategories={monthlyCategories}
           monthlyGroups={monthlyGroups}
+          recentTransactions={recentTransactions}
           handleDayPress={handleDayPress}
           handlePiePress={handlePiePress}
           handleBarPress={handleBarPress}
+          handleTransactionPress={handleTransactionPress}
           periodControls={periodControls}
         />
       </ScrollView>
