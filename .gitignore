@@ -12,6 +12,10 @@ expo-env.d.ts
 Claude.md
 CLAUDE.md
 .claude/
+.pi/
+
+
+design-system/
 
 # Native
 .kotlin/
