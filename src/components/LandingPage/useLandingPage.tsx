@@ -5,7 +5,7 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
-import { WATERMELONDB_DEFAULTS, WATERMELONDB_DEMO } from "@/src/types/database/watermelon/constants";
+import { SQLITE_DEFAULTS, SQLITE_DEMO } from "@/src/types/database/watermelon/constants";
 import { router } from "expo-router";
 
 const WEB_DESKTOP_BREAKPOINT = 860;
@@ -63,9 +63,9 @@ export default function useLandingPage() {
         await setSession(
           {
             user: {
-              id: WATERMELONDB_DEFAULTS.userId,
-              email: WATERMELONDB_DEFAULTS.email,
-              user_metadata: { tenantid: WATERMELONDB_DEFAULTS.tenantId, full_name: WATERMELONDB_DEFAULTS.name },
+              id: SQLITE_DEFAULTS.userId,
+              email: SQLITE_DEFAULTS.email,
+              user_metadata: { tenantid: SQLITE_DEFAULTS.tenantId, full_name: SQLITE_DEFAULTS.name },
               app_metadata: {},
               aud: "authenticated",
               created_at: new Date().toISOString(),
@@ -82,9 +82,9 @@ export default function useLandingPage() {
         await setSession(
           {
             user: {
-              id: WATERMELONDB_DEMO.userId,
-              email: WATERMELONDB_DEMO.email,
-              user_metadata: { tenantid: WATERMELONDB_DEMO.tenantId, full_name: WATERMELONDB_DEMO.name },
+              id: SQLITE_DEMO.userId,
+              email: SQLITE_DEMO.email,
+              user_metadata: { tenantid: SQLITE_DEMO.tenantId, full_name: SQLITE_DEMO.name },
               app_metadata: {},
               aud: "authenticated",
               created_at: new Date().toISOString(),
