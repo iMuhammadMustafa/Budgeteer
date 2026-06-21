@@ -1,7 +1,9 @@
 "use client";
 import { vars } from "nativewind";
 
-export const lightVars = {
+import { themeVars } from "@/src/components/ui/theme/tokens";
+
+const lightVarsBase = {
   "--background": "250 249 246",
   "--foreground": "2 9 9",
   "--muted": "229 235 235",
@@ -248,7 +250,7 @@ export const lightVars = {
   "--status-info": "37 99 235",
   "--status-info-subtle": "239 246 255",
 };
-export const darkVars = {
+const darkVarsBase = {
   "--background": "24 24 28" /* #18181c */,
   "--foreground": "255 255 255" /* HSL(0 0% 100%) */,
   "--muted": "34 38 43" /* HSL(210 12% 15%) */,
@@ -495,6 +497,15 @@ export const darkVars = {
   "--status-info-subtle": "26 40 46",
 };
 
+/**
+ * Merge the new Sage Paper design-system tokens (single source:
+ * src/components/ui/theme/tokens.ts) onto the legacy vars. Shared names
+ * (--primary, --surface, --border, --border-strong) take the new values
+ * during coexistence; everything else is additive. Legacy tokens stay intact.
+ */
+export const lightVars = { ...lightVarsBase, ...themeVars("light") };
+export const darkVars = { ...darkVarsBase, ...themeVars("dark") };
+
 export const nativewindConfig = {
   light: vars(lightVars),
   dark: vars(darkVars),
@@ -545,12 +556,11 @@ export const convertThemeToRgb = mode => {
 };
 
 export const applyRootVariables = mode => {
-  const themeVars = mode === "dark" ? darkVars : lightVars;
-  // const themeVars = convertThemeToRgb(mode);
+  const styleVars = mode === "dark" ? darkVars : lightVars;
 
   if (typeof document !== "undefined") {
-    Object.keys(themeVars).forEach(key => {
-      document.documentElement.style.setProperty(key, themeVars[key]);
+    Object.keys(styleVars).forEach(key => {
+      document.documentElement.style.setProperty(key, styleVars[key]);
     });
   }
 };

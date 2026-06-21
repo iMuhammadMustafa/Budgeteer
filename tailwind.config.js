@@ -15,7 +15,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        border: "rgb(var(--border))",
+        border: "rgb(var(--border) / <alpha-value>)",
         input: "rgb(var(--input))",
         ring: "rgb(var(--ring))",
         background: "rgb(var(--background))",
@@ -43,7 +43,9 @@ module.exports = {
         // },
 
         primary: {
-          DEFAULT: "rgb(var(--primary))",
+          DEFAULT: "rgb(var(--primary) / <alpha-value>)",
+          deep: "rgb(var(--primary-deep) / <alpha-value>)",
+          soft: "rgb(var(--primary-soft) / <alpha-value>)",
           foreground: "rgb(var(--primary-foreground))",
           0: "rgb(var(--color-primary-0)/<alpha-value>)",
           50: "rgb(var(--color-primary-50)/<alpha-value>)",
@@ -93,7 +95,8 @@ module.exports = {
           950: "rgb(var(--color-tertiary-950)/<alpha-value>)",
         },
         danger: {
-          DEFAULT: "rgb(var(--color-danger-500))",
+          DEFAULT: "rgb(var(--danger) / <alpha-value>)",
+          soft: "rgb(var(--danger-soft) / <alpha-value>)",
           0: "rgb(var(--color-danger-0)/<alpha-value>)",
           50: "rgb(var(--color-danger-50)/<alpha-value>)",
           100: "rgb(var(--color-danger-100)/<alpha-value>)",
@@ -108,7 +111,8 @@ module.exports = {
           950: "rgb(var(--color-danger-950)/<alpha-value>)",
         },
         success: {
-          DEFAULT: "rgb(var(--color-success-500))",
+          DEFAULT: "rgb(var(--success) / <alpha-value>)",
+          soft: "rgb(var(--success-soft) / <alpha-value>)",
           0: "rgb(var(--color-success-0)/<alpha-value>)",
           50: "rgb(var(--color-success-50)/<alpha-value>)",
           100: "rgb(var(--color-success-100)/<alpha-value>)",
@@ -123,7 +127,8 @@ module.exports = {
           950: "rgb(var(--color-success-950)/<alpha-value>)",
         },
         warning: {
-          DEFAULT: "rgb(var(--color-warning-500))",
+          DEFAULT: "rgb(var(--warning) / <alpha-value>)",
+          soft: "rgb(var(--warning-soft) / <alpha-value>)",
           0: "rgb(var(--color-warning-0)/<alpha-value>)",
           50: "rgb(var(--color-warning-50)/<alpha-value>)",
           100: "rgb(var(--color-warning-100)/<alpha-value>)",
@@ -138,7 +143,8 @@ module.exports = {
           950: "rgb(var(--color-warning-950)/<alpha-value>)",
         },
         info: {
-          DEFAULT: "rgb(var(--color-info-500))",
+          DEFAULT: "rgb(var(--info) / <alpha-value>)",
+          soft: "rgb(var(--info-soft) / <alpha-value>)",
           0: "rgb(var(--color-info-0)/<alpha-value>)",
           50: "rgb(var(--color-info-50)/<alpha-value>)",
           100: "rgb(var(--color-info-100)/<alpha-value>)",
@@ -252,9 +258,33 @@ module.exports = {
 
         /* ── Surfaces ── */
         surface: {
-          DEFAULT: "rgb(var(--surface))",
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
           elevated: "rgb(var(--surface-elevated))",
           overlay: "rgb(var(--surface-overlay))",
+          alt: "rgb(var(--surface-alt) / <alpha-value>)",
+        },
+
+        /* ── Design System (Sage Paper) — finance-semantic tokens ──
+           Additive. Shared names (primary, surface, border, border-strong)
+           take the new values during coexistence; everything below is new. */
+        bg: "rgb(var(--bg) / <alpha-value>)",
+        grid: "rgb(var(--grid) / <alpha-value>)",
+        ink: {
+          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
+          mute: "rgb(var(--ink-mute) / <alpha-value>)",
+          faint: "rgb(var(--ink-faint) / <alpha-value>)",
+        },
+        income: {
+          DEFAULT: "rgb(var(--income) / <alpha-value>)",
+          soft: "rgb(var(--income-soft) / <alpha-value>)",
+        },
+        expense: {
+          DEFAULT: "rgb(var(--expense) / <alpha-value>)",
+          soft: "rgb(var(--expense-soft) / <alpha-value>)",
+        },
+        transfer: {
+          DEFAULT: "rgb(var(--transfer) / <alpha-value>)",
+          soft: "rgb(var(--transfer-soft) / <alpha-value>)",
         },
 
         /* ── Text Hierarchy ── */
@@ -266,7 +296,7 @@ module.exports = {
         /* ── Borders ── */
         "border-default": "rgb(var(--border-default))",
         "border-subtle": "rgb(var(--border-subtle))",
-        "border-strong": "rgb(var(--border-strong))",
+        "border-strong": "rgb(var(--border-strong) / <alpha-value>)",
 
         /* ── Inputs ── */
         "input-bg": "rgb(var(--input-bg))",
@@ -284,9 +314,18 @@ module.exports = {
         "status-info-subtle": "rgb(var(--status-info-subtle))",
       },
       fontFamily: {
-        heading: undefined,
-        body: undefined,
-        mono: undefined,
+        // Sage Paper families (loaded via @expo-google-fonts — see src/components/ui/theme)
+        serif: ["Newsreader_600SemiBold"],
+        "serif-regular": ["Newsreader_400Regular"],
+        sans: ["HankenGrotesk_400Regular"],
+        "sans-medium": ["HankenGrotesk_500Medium"],
+        "sans-semibold": ["HankenGrotesk_600SemiBold"],
+        "sans-bold": ["HankenGrotesk_700Bold"],
+        mono: ["JetBrainsMono_500Medium"],
+        "mono-semibold": ["JetBrainsMono_600SemiBold"],
+        // legacy aliases now mapped to the new families
+        heading: ["Newsreader_600SemiBold"],
+        body: ["HankenGrotesk_400Regular"],
         roboto: ["Roboto", "sans-serif"],
       },
       fontWeight: {
@@ -301,12 +340,26 @@ module.exports = {
         xl:    ["20px", { lineHeight: "28px" }],
         "2xl": ["24px", { lineHeight: "32px" }],
         "3xl": ["30px", { lineHeight: "36px" }],
+        // Sage Paper type scale (additive — legacy sm/xs intentionally untouched)
+        display: ["46px", { lineHeight: "48px", letterSpacing: "-1px" }],
+        h1: ["30px", { lineHeight: "34px", letterSpacing: "-0.3px" }],
+        h2: ["23px", { lineHeight: "28px", letterSpacing: "-0.2px" }],
+        h3: ["19px", { lineHeight: "24px" }],
+        "body-lg": ["16px", { lineHeight: "24px" }],
+        body: ["14px", { lineHeight: "21px" }],
+        overline: ["11px", { lineHeight: "14px", letterSpacing: "0.8px" }],
       },
       borderRadius: {
-        sm: "0.375rem",
-        DEFAULT: "0.5rem",
-        lg: "0.75rem",
-        xl: "1rem",
+        // Standard scale (Tailwind v4 values). Semantic radii dropped — use these.
+        none: "0px",
+        xs: "2px",
+        sm: "4px",
+        DEFAULT: "4px",
+        md: "6px",
+        lg: "8px",
+        xl: "12px",
+        "2xl": "16px",
+        "3xl": "24px",
         full: "9999px",
       },
       boxShadow: {

@@ -8,31 +8,31 @@
  * This is the primary tenant identifier used when operating in local storage mode
  * All local data will be associated with this tenant
  */
-export const WATERMELONDB_DEFAULT_TENANT_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
-export const WATERMELONDB_DEMO_TENANT_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
+export const SQLITE_DEFAULT_TENANT_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
+export const SQLITE_DEMO_TENANT_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
 
 /**
  * Default user ID for WatermelonDB operations
  * This is the primary user identifier used when operating in local storage mode
  * All local data will be created/updated by this user
  */
-export const WATERMELONDB_DEFAULT_USER_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
-export const WATERMELONDB_DEMO_USER_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
+export const SQLITE_DEFAULT_USER_ID = "d8d5efae-da25-4b50-870f-8774b83d73e9";
+export const SQLITE_DEMO_USER_ID = "ffffffff-da25-4b50-870f-ffffffffffff";
 
 /**
  * Default currency code for WatermelonDB operations
  */
-export const WATERMELONDB_DEFAULT_CURRENCY = "USD";
+export const SQLITE_DEFAULT_CURRENCY = "USD";
 
 /**
  * Default budget frequency for categories and groups
  */
-export const WATERMELONDB_DEFAULT_BUDGET_FREQUENCY = "monthly";
+export const SQLITE_DEFAULT_BUDGET_FREQUENCY = "monthly";
 
 /**
  * Default color scheme for new items
  */
-export const WATERMELONDB_DEFAULT_COLOR = "error-100";
+export const SQLITE_DEFAULT_COLOR = "error-100";
 
 /**
  * Utility function to get current timestamp for WatermelonDB records
@@ -44,7 +44,7 @@ export const getCurrentTimestamp = (): Date => new Date();
  * This function can be extended in the future to support multiple tenants
  */
 export const getDefaultTenantId = (): string => {
-  return WATERMELONDB_DEFAULT_TENANT_ID;
+  return SQLITE_DEFAULT_TENANT_ID;
 };
 
 /**
@@ -52,18 +52,18 @@ export const getDefaultTenantId = (): string => {
  * This function can be extended in the future to support current user context
  */
 export const getDefaultUserId = (): string => {
-  return WATERMELONDB_DEFAULT_USER_ID;
+  return SQLITE_DEFAULT_USER_ID;
 };
 
 /**
  * Common default values for new WatermelonDB records
  */
-export const WATERMELONDB_DEFAULTS = {
-  tenantId: WATERMELONDB_DEFAULT_TENANT_ID,
-  userId: WATERMELONDB_DEFAULT_USER_ID,
-  currency: WATERMELONDB_DEFAULT_CURRENCY,
-  budgetFrequency: WATERMELONDB_DEFAULT_BUDGET_FREQUENCY,
-  color: WATERMELONDB_DEFAULT_COLOR,
+export const SQLITE_DEFAULTS = {
+  tenantId: SQLITE_DEFAULT_TENANT_ID,
+  userId: SQLITE_DEFAULT_USER_ID,
+  currency: SQLITE_DEFAULT_CURRENCY,
+  budgetFrequency: SQLITE_DEFAULT_BUDGET_FREQUENCY,
+  color: SQLITE_DEFAULT_COLOR,
   budgetAmount: 0,
   displayOrder: 0,
   isDeleted: false,
@@ -71,12 +71,12 @@ export const WATERMELONDB_DEFAULTS = {
   name: "Local User",
 } as const;
 
-export const WATERMELONDB_DEMO = {
-  tenantId: WATERMELONDB_DEMO_TENANT_ID,
-  userId: WATERMELONDB_DEMO_USER_ID,
-  currency: WATERMELONDB_DEFAULT_CURRENCY,
-  budgetFrequency: WATERMELONDB_DEFAULT_BUDGET_FREQUENCY,
-  color: WATERMELONDB_DEFAULT_COLOR,
+export const SQLITE_DEMO = {
+  tenantId: SQLITE_DEMO_TENANT_ID,
+  userId: SQLITE_DEMO_USER_ID,
+  currency: SQLITE_DEFAULT_CURRENCY,
+  budgetFrequency: SQLITE_DEFAULT_BUDGET_FREQUENCY,
+  color: SQLITE_DEFAULT_COLOR,
   budgetAmount: 0,
   displayOrder: 0,
   isDeleted: false,
@@ -85,12 +85,12 @@ export const WATERMELONDB_DEMO = {
 } as const;
 
 export default {
-  WATERMELONDB_DEFAULT_TENANT_ID,
-  WATERMELONDB_DEFAULT_USER_ID,
-  WATERMELONDB_DEFAULT_CURRENCY,
-  WATERMELONDB_DEFAULT_BUDGET_FREQUENCY,
-  WATERMELONDB_DEFAULT_COLOR,
-  WATERMELONDB_DEFAULTS,
+  SQLITE_DEFAULT_TENANT_ID,
+  SQLITE_DEFAULT_USER_ID,
+  SQLITE_DEFAULT_CURRENCY,
+  SQLITE_DEFAULT_BUDGET_FREQUENCY,
+  SQLITE_DEFAULT_COLOR,
+  SQLITE_DEFAULTS,
   getCurrentTimestamp,
   getDefaultTenantId,
   getDefaultUserId,
