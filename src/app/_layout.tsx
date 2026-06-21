@@ -5,12 +5,15 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Stack } from "expo-router";
-import { Suspense } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { Suspense, useEffect } from "react";
 import { ActivityIndicator, LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { BrandSplash, useBudgeteerFonts } from "@/src/components/ui";
 import AppInitializer from "@/src/providers/AppInitalizer";
 import AuthProvider from "@/src/providers/AuthProvider";
+import HeaderActionsProvider from "@/src/providers/HeaderActionsProvider";
 import QueryProvider from "@/src/providers/QueryProvider";
 import StorageModeProvider from "@/src/providers/StorageModeProvider";
 import ThemeProvider from "@/src/providers/ThemeProvider";
@@ -19,6 +22,9 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(relativeTime);
 dayjs.extend(quarterOfYear);
+
+// Keep the native splash up until the design-system fonts have loaded.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Suppress known third-party library warnings for web platform
 if (Platform.OS === "web") {
@@ -53,24 +59,38 @@ if (Platform.OS === "web") {
 }
 
 export default function RootLayout() {
+  const fontsLoaded = useBudgeteerFonts();
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded]);
+
   return (
     <Suspense fallback={<ActivityIndicator />}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
           {/* <NotificationsProvider> */}
-          <StorageModeProvider>
-            <AuthProvider>
-              <AppInitializer>
-                <QueryProvider>
-                  <Stack>
-                    <Stack.Screen name="index" options={{ headerShown: false }} />
-                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                  </Stack>
-                </QueryProvider>
-              </AppInitializer>
-            </AuthProvider>
-          </StorageModeProvider>
+          {fontsLoaded ? (
+            <HeaderActionsProvider>
+              <StorageModeProvider>
+                <AuthProvider>
+                  <AppInitializer>
+                    <QueryProvider>
+                      <Stack>
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                        <Stack.Screen name="design" options={{ headerShown: false }} />
+                      <Stack.Screen name="components" options={{ headerShown: false }} />
+                      </Stack>
+                    </QueryProvider>
+                  </AppInitializer>
+                </AuthProvider>
+              </StorageModeProvider>
+            </HeaderActionsProvider>
+          ) : (
+            <BrandSplash />
+          )}
           {/* </NotificationsProvider> */}
         </ThemeProvider>
       </GestureHandlerRootView>
