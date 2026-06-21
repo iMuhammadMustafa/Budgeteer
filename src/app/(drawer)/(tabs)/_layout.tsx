@@ -1,18 +1,35 @@
 import MyIcon from "@/src/components/elements/MyIcon";
+import { BREAKPOINT_DESKTOP } from "@/src/constants/layout";
+import { useTheme } from "@/src/providers/ThemeProvider";
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-
-const LARGE_SCREEN_BREAKPOINT = 1024;
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions();
-  const isLargeScreen = width >= LARGE_SCREEN_BREAKPOINT;
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isLargeScreen = width >= BREAKPOINT_DESKTOP;
+  const bottomInset = insets.bottom;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: isLargeScreen ? { display: "none" } : undefined,
+        tabBarShowLabel: true,
+        tabBarLabelPosition: "below-icon",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.inkFaint,
+        tabBarLabelStyle: { fontFamily: "HankenGrotesk_600SemiBold", fontSize: 11, lineHeight: 14 },
+        tabBarStyle: isLargeScreen
+          ? { display: "none" }
+          : {
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
+              borderTopWidth: 1,
+              height: 64 + bottomInset,
+              paddingTop: 5,
+            },
       }}
     >
       <Tabs.Screen
@@ -37,6 +54,7 @@ export default function TabsLayout() {
         name="AddTransaction"
         options={{
           title: "New Transaction",
+          tabBarLabel: "New",
           tabBarButtonTestID: "tab-add-transaction",
           tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color as string} size={24} />,
         }}

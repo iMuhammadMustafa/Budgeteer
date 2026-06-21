@@ -2,151 +2,155 @@ import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedText from "@/src/components/elements/ThemedText";
+import Topbar from "@/src/components/ui/Topbar";
+import { BREAKPOINT_DESKTOP, DRAWER_WIDTH_MOBILE, SIDEBAR_WIDTH } from "@/src/constants/layout";
+import { NAV_SECTIONS } from "@/src/constants/navigation";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { DrawerContentScrollView, DrawerItemList } from "expo-router/build/react-navigation/drawer";
+import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
 import { router, useSegments } from "expo-router";
+import { DrawerContentScrollView } from "expo-router/build/react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
 import * as Updates from "expo-updates";
 import { useEffect } from "react";
-import { ActivityIndicator, Platform, Pressable, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, useWindowDimensions, View } from "react-native";
 
-const LARGE_SCREEN_BREAKPOINT = 1024;
+const STORAGE_META: Record<StorageMode, { icon: string; sub: string }> = {
+  [StorageMode.Cloud]: { icon: "Cloud", sub: "All devices synced" },
+  [StorageMode.Local]: { icon: "Smartphone", sub: "Private on this device" },
+  [StorageMode.Demo]: { icon: "Gamepad2", sub: "Sample data" },
+};
 
-const SIDEBAR_SECTIONS = [
-  {
-    title: "MAIN",
-    items: [
-      { label: "Dashboard", icon: "House", path: "/Dashboard", matchSegment: "Dashboard", isTabItem: true },
-      { label: "Transactions", icon: "ArrowRightLeft", path: "/Transactions", matchSegment: "Transactions", isTabItem: true },
-      { label: "New Transaction", icon: "ListPlus", path: "/AddTransaction", matchSegment: "AddTransaction", isTabItem: true },
-      { label: "Recurrings", icon: "Clock10", path: "/Recurrings", matchSegment: "Recurrings", isTabItem: true },
-      { label: "Summary", icon: "Group", path: "/Summary", matchSegment: "Summary", isTabItem: true },
-    ],
-  },
-  {
-    title: "FINANCES",
-    items: [
-      { label: "Accounts", icon: "Landmark", path: "/Accounts", matchSegment: "Accounts", isTabItem: false },
-      { label: "Categories", icon: "ChartBarStacked", path: "/Categories", matchSegment: "Categories", isTabItem: false },
-    ],
-  },
-  {
-    title: "SYSTEM",
-    items: [
-      { label: "Settings", icon: "Settings", path: "/Settings", matchSegment: "Settings", isTabItem: false },
-      { label: "Restore", icon: "History", path: "/Restore", matchSegment: "Restore", isTabItem: false },
-    ],
-  },
-];
-
-function SidebarItem({ label, icon, isActive, onPress }: { label: string; icon: string; isActive: boolean; onPress: () => void }) {
+function SidebarItem({
+  item,
+  isActive,
+  onPress,
+}: {
+  item: { label: string; icon: string };
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-center px-4 py-3 mx-3 my-0.5 rounded-xl ${isActive ? "bg-primary" : ""}`}
-      style={({ pressed }) => [{ opacity: pressed && !isActive ? 0.7 : 1 }]}
+      className={`mx-2 my-0.5 flex-row items-center gap-3 rounded-[8px] px-3 py-2.5 ${isActive ? "bg-primary-soft" : "active:bg-surface-alt"}`}
     >
-      <MyIcon
-        name={icon}
-        size={20}
-        className={isActive ? "text-primary-foreground" : "text-text-secondary"}
-      />
-      <ThemedText
-        className={`ml-3 text-sm ${isActive ? "text-primary-foreground font-medium" : "text-foreground"}`}
-      >
-        {label}
-      </ThemedText>
+      <MyIcon name={item.icon} size={20} color={isActive ? colors.primaryDeep : colors.inkMute} />
+      <Text className={`text-body ${isActive ? "font-sans-bold text-primary-deep" : "font-sans-medium text-ink-mute"}`}>
+        {item.label}
+      </Text>
     </Pressable>
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <ThemedText className="text-xs font-semibold tracking-wider text-text-tertiary px-6 pt-5 pb-2">
-      {title}
-    </ThemedText>
-  );
-}
-
-function SidebarBranding() {
-  return (
-    <View className="px-5 pt-6 pb-4 flex-row items-center">
-      <View className="w-10 h-10 rounded-full bg-primary items-center justify-center mr-3">
-        <ThemedText className="text-primary-foreground font-bold text-base">B</ThemedText>
-      </View>
-      <View>
-        <ThemedText className="text-base font-bold text-foreground">Budgeteer</ThemedText>
-        <ThemedText className="text-xs text-text-secondary">Personal Finance</ThemedText>
-      </View>
-    </View>
-  );
-}
-
-function DesktopDrawerContent(props: any) {
+function SidebarBody({ navigation }: { navigation: any }) {
   const segments = useSegments();
+  const { isDark, toggleTheme, colors } = useTheme();
+  const { storageMode } = useStorageMode();
 
   const isItemActive = (matchSegment: string, isTabItem: boolean) => {
-    if (isTabItem) {
-      // Tab items: match when we're inside (tabs) group AND on this specific tab
-      return segments.includes("(tabs)" as never) && segments.includes(matchSegment as never);
-    }
-    // Drawer items: match the direct child of (drawer) group
+    if (isTabItem) return segments.includes("(tabs)" as never) && segments.includes(matchSegment as never);
     return segments[1] === matchSegment;
   };
 
-  return (
-    <DrawerContentScrollView
-      {...props}
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <SidebarBranding />
+  const go = (path: string) => {
+    router.navigate(path as any);
+    navigation?.closeDrawer?.();
+  };
 
-      {SIDEBAR_SECTIONS.map((section, sectionIndex) => (
-        <View key={section.title}>
-          {sectionIndex > 0 && <View className="h-px bg-border-subtle mx-5 my-1" />}
-          <SectionHeader title={section.title} />
+  const meta = storageMode ? STORAGE_META[storageMode] : null;
+
+  return (
+    <>
+      {/* Brand */}
+      <View className="flex-row items-center gap-3 px-4 pb-3 pt-3">
+        <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary">
+          <Text className="font-serif text-h3 text-white">B</Text>
+        </View>
+        <View>
+          <Text className="font-serif text-h3 text-ink">Budgeteer</Text>
+          <Text className="font-sans-semibold text-overline uppercase text-ink-faint">Personal Finance</Text>
+        </View>
+      </View>
+
+      {/* New Transaction */}
+      <Pressable
+        onPress={() => go("/AddTransaction")}
+        className="mx-2 mb-1 flex-row items-center justify-center gap-2 rounded-[8px] bg-primary py-3 active:opacity-90"
+      >
+        <MyIcon name="Plus" size={18} color="#FFFFFF" />
+        <Text className="font-sans-bold text-body text-white">New Transaction</Text>
+      </Pressable>
+
+      {/* Nav sections */}
+      {NAV_SECTIONS.map((section, i) => (
+        <View key={section.title} className="mt-3">
+          {i > 0 && <View className="mx-4 my-1 h-px bg-border" />}
+          <Text className="px-4 pb-1 pt-2 font-sans-semibold text-overline uppercase text-ink-faint">
+            {section.title}
+          </Text>
           {section.items.map(item => (
             <SidebarItem
               key={item.path}
-              label={item.label}
-              icon={item.icon}
+              item={item}
               isActive={isItemActive(item.matchSegment, item.isTabItem)}
-              onPress={() => router.navigate(item.path as any)}
+              onPress={() => go(item.path)}
             />
           ))}
         </View>
       ))}
 
       <View style={{ flex: 1 }} />
+      <View className="mx-4 my-1 h-px bg-border" />
+      {/* Storage mode status (plain row, not a card) */}
+      {meta && storageMode ? (
+        <View className="mx-2 mb-0.5 mt-2 flex-row items-center gap-3 px-3 py-2">
+          <MyIcon name={meta.icon} size={18} color={colors.primary} />
+          <View className="flex-1">
+            <Text className="font-sans-semibold text-sm text-ink">{StorageModeConfig[storageMode].title}</Text>
+            <Text className="font-sans text-xs text-ink-faint">{meta.sub}</Text>
+          </View>
+        </View>
+      ) : null}
 
-      <View className="pb-2">
-        <View className="h-px bg-border-subtle mx-5 my-2" />
-        <Footer />
-      </View>
-    </DrawerContentScrollView>
+      {/* Theme toggle (plain row) */}
+      <Pressable
+        onPress={toggleTheme}
+        className="mx-2 mb-1 flex-row items-center gap-3 rounded-[8px] px-3 py-2 active:bg-surface-alt"
+      >
+        <MyIcon name={isDark ? "Sun" : "Moon"} size={18} color={colors.inkMute} />
+        <Text className="font-sans-medium text-sm text-ink-mute">{isDark ? "Light mode" : "Dark mode"}</Text>
+      </Pressable>
+
+      <View className="mx-4 my-2 h-px bg-border" />
+      <Footer />
+    </>
   );
 }
 
-function MobileDrawerContent(props: any) {
+function SidebarContent(props: any) {
   return (
-    <DrawerContentScrollView {...props} className="flex-1">
-      <DrawerItemList {...(props as any)} />
-      <Footer />
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+      className="bg-surface"
+    >
+      <SidebarBody navigation={props.navigation} />
     </DrawerContentScrollView>
   );
 }
 
 export default function DrawerLayout() {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const { isLoading: isAuthLoading, session } = useAuth();
   const { isLoading: isStorageLoading } = useStorageMode();
   const { width } = useWindowDimensions();
 
-  const isLargeScreen = width >= LARGE_SCREEN_BREAKPOINT;
+  const isLargeScreen = width >= BREAKPOINT_DESKTOP;
   const isLoading = isAuthLoading || isStorageLoading;
 
   useEffect(() => {
@@ -160,58 +164,25 @@ export default function DrawerLayout() {
   return (
     <Drawer
       screenOptions={{
+        header: () => <Topbar isLargeScreen={isLargeScreen} />,
         drawerType: isLargeScreen ? "permanent" : "slide",
-        drawerStyle: isLargeScreen ? { width: 280 } : undefined,
-        headerTintColor: isDarkMode ? "white" : "black",
-        headerLeft: isLargeScreen ? () => null : undefined,
-        headerRight: () => (
-          <Button onPress={toggleTheme} rightIcon={isDarkMode ? "Sun" : "Moon"} variant="ghost" iconSize={24} />
-        ),
+        drawerStyle: isLargeScreen
+          ? {
+              width: SIDEBAR_WIDTH,
+              borderRightColor: colors.border,
+              borderRightWidth: 1,
+              backgroundColor: colors.surface,
+            }
+          : { width: DRAWER_WIDTH_MOBILE, backgroundColor: colors.surface },
+        overlayColor: "rgba(10,10,12,0.45)",
       }}
-      drawerContent={props =>
-        isLargeScreen ? <DesktopDrawerContent {...props} /> : <MobileDrawerContent {...props} />
-      }
+      drawerContent={props => <SidebarContent {...props} />}
     >
-      <Drawer.Screen
-        name="(tabs)"
-        options={{
-          drawerLabel: "Dashboard",
-          title: "Main",
-          drawerIcon: ({ color }: any) => <MyIcon name="House" color={color} size={24} />,
-        }}
-      />
-      <Drawer.Screen
-        name="Accounts"
-        options={{
-          drawerLabel: "Accounts",
-          title: "Accounts",
-          drawerIcon: ({ color }: any) => <MyIcon name="Landmark" color={color} size={24} />,
-        }}
-      />
-      <Drawer.Screen
-        name="Categories"
-        options={{
-          drawerLabel: "Categories",
-          title: "Categories",
-          drawerIcon: ({ color }: any) => <MyIcon name="ChartBarStacked" color={color} size={24} />,
-        }}
-      />
-      <Drawer.Screen
-        name="Restore"
-        options={{
-          drawerLabel: "Restore",
-          title: "Restore",
-          drawerIcon: ({ color }: any) => <MyIcon name="History" color={color} size={24} />,
-        }}
-      />
-      <Drawer.Screen
-        name="Settings"
-        options={{
-          drawerLabel: "Settings",
-          title: "Settings",
-          drawerIcon: ({ color }: any) => <MyIcon name="Settings" color={color} size={24} />,
-        }}
-      />
+      <Drawer.Screen name="(tabs)" options={{ drawerLabel: "Dashboard", title: "Main" }} />
+      <Drawer.Screen name="Accounts" options={{ drawerLabel: "Accounts", title: "Accounts" }} />
+      <Drawer.Screen name="Categories" options={{ drawerLabel: "Categories", title: "Categories" }} />
+      <Drawer.Screen name="Restore" options={{ drawerLabel: "Restore", title: "Restore" }} />
+      <Drawer.Screen name="Settings" options={{ drawerLabel: "Settings", title: "Settings" }} />
     </Drawer>
   );
 }
