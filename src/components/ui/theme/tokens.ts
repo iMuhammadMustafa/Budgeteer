@@ -95,6 +95,24 @@ export const categoryColors = {
   Other: { fg: "#9B85D6", softLight: "#E7E0F6", softDark: "#241E3A" },
 } as const;
 
+/** Multi-series chart palette (theme-independent; distinct hues readable on paper + charcoal). */
+export const chartPalette = [
+  "#1F9E84", "#DD6B5E", "#3B9DD6", "#E4A24A", "#9B85D6",
+  "#2E9E6B", "#E8857B", "#4FB0A0", "#C89A52", "#7C8CD9",
+] as const;
+
+/** Look up a default color by category label (the legacy chart dictionary fallback). */
+export const categoryColorFor = (label?: string): string | undefined =>
+  label ? (categoryColors as Record<string, { fg: string }>)[label]?.fg : undefined;
+
+/**
+ * Resolve a chart series color, in priority order:
+ *   explicit datum color → category-label dictionary → palette cycled by index.
+ * So charts always get distinct colors even when the data carries none.
+ */
+export const seriesColor = (index: number, explicit?: string | null, label?: string): string =>
+  explicit ?? categoryColorFor(label) ?? chartPalette[index % chartPalette.length];
+
 export const radii = {
   chip: 999,
   control: 11,
