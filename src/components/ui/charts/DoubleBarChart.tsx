@@ -6,7 +6,7 @@
  *
  *   <DoubleBarChart data={months} onBarPress={(d, i) => drill(d)} loading={busy} />
  */
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Pressable, View } from "react-native";
 
 import MyIcon from "@/src/components/elements/MyIcon";
@@ -29,10 +29,10 @@ export interface DoubleBarDatum {
 export interface DoubleBarChartProps {
   data: DoubleBarDatum[];
   height?: number;
-  incomeColor?: string;
-  expenseColor?: string;
-  incomeLabel?: string;
-  expenseLabel?: string;
+  bar1Color?: string;
+  bar2Color?: string;
+  bar1Label?: string;
+  bar2Label?: string;
   showAxis?: boolean;
   /** Draw the vertical y-axis line (default true). */
   showYAxis?: boolean;
@@ -53,10 +53,10 @@ export interface DoubleBarChartProps {
 export function DoubleBarChart({
   data,
   height = 160,
-  incomeColor,
-  expenseColor,
-  incomeLabel = "Income",
-  expenseLabel = "Expense",
+  bar1Color,
+  bar2Color,
+  bar1Label = "Bar 1",
+  bar2Label = "Bar 2",
   showAxis = true,
   showYAxis = true,
   selectedIndex,
@@ -81,8 +81,8 @@ export function DoubleBarChart({
     if (animated) Animated.timing(grow, { toValue: 1, duration: 480, useNativeDriver: false }).start();
   }, [animated, grow]);
 
-  const inc = incomeColor ?? colors.income;
-  const exp = expenseColor ?? colors.expense;
+  const inc = bar1Color ?? colors.income;
+  const exp = bar2Color ?? colors.expense;
   const max = Math.max(0, ...data.flatMap(d => [d.income, d.expense]));
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
 
@@ -91,8 +91,8 @@ export function DoubleBarChart({
       horizontal
       className="mb-3"
       items={[
-        { label: incomeLabel, color: inc },
-        { label: expenseLabel, color: exp },
+        { label: bar1Label, color: inc },
+        { label: bar2Label, color: exp },
       ]}
     />
   );

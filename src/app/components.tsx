@@ -10,33 +10,58 @@ import { Moon, Sun } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
+import MyIcon from "@/src/components/elements/MyIcon";
+// Legacy charts (victory-native) — kept only for the before/after comparison below.
+import LegacyBar from "@/src/components/Charts/Bar";
+import LegacyDoubleBar from "@/src/components/Charts/DoubleBar";
+import LegacyLine from "@/src/components/Charts/Line";
+import LegacyMyCalendar from "@/src/components/Charts/MyCalendar";
+import LegacyMyPie from "@/src/components/Charts/MyPie";
+
 import {
   Avatar,
   Badge,
+  BarChart,
   Button,
+  CalendarHeatmap,
   Card,
   categoryColors,
   Checkbox,
   Chip,
+  ColorPicker,
+  DatePicker,
+  Dialog,
   Divider,
+  DonutChart,
+  DoubleBarChart,
   EmptyState,
   ErrorState,
   ExpandableRow,
   IconButton,
+  IconPicker,
   Input,
+  LineChart,
   ListRow,
   Loader,
+  MiniBarChart,
   Pager,
   ProgressBar,
   Pulse,
   Radio,
+  SearchableSelect,
   SectionHeader,
   SegmentedControl,
+  Select,
+  Sheet,
   SkeletonBlock,
   SkeletonGroup,
   Switch,
   Text,
+  useAlert,
+  useConfirm,
+  type SearchableSelectOption,
   type Segment,
+  type SelectOption,
 } from "@/src/components/ui";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
@@ -51,12 +76,87 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// TODO: Add class flex-1 To Children
 function Row({ children }: { children: React.ReactNode }) {
   return <View className="flex-row flex-wrap items-center gap-3">{children}</View>;
 }
 
 const BUTTON_VARIANTS = ["primary", "secondary", "outline", "ghost", "destructive"] as const;
 const BADGE_TONES = ["primary", "success", "danger", "info", "neutral"] as const;
+
+const ACCOUNTS: SelectOption[] = [
+  { id: "acc-1", label: "Checking", detail: "$4,820.55", icon: "Wallet" },
+  { id: "acc-2", label: "Savings", detail: "$40,675.77", icon: "PiggyBank" },
+  { id: "acc-3", label: "Rewards Credit Card", detail: "−$1,204.18", icon: "CreditCard" },
+];
+const SELECT_CATEGORIES: SelectOption[] = [
+  { id: "groceries", label: "Groceries", icon: "ShoppingCart", group: "Spending" },
+  { id: "dining", label: "Dining", icon: "Utensils", group: "Spending" },
+  { id: "rent", label: "Rent", icon: "House", group: "Bills" },
+  { id: "utilities", label: "Utilities", icon: "Plug", group: "Bills" },
+  { id: "salary", label: "Salary", icon: "Banknote", group: "Income" },
+];
+const SELECT_TYPES: SelectOption[] = [
+  { id: "expense", label: "Expense" },
+  { id: "income", label: "Income" },
+  { id: "transfer", label: "Transfer" },
+];
+
+const fmtMoney = (n: number) => "$" + n.toLocaleString();
+const DONUT_DATA = [
+  { label: "Rent", value: 1200, color: categoryColors.Rent.fg },
+  { label: "Groceries", value: 420, color: categoryColors.Groceries.fg },
+  { label: "Bills", value: 260, color: categoryColors.Bills.fg },
+  { label: "Car", value: 180, color: categoryColors.Car.fg },
+  { label: "Entertainment", value: 140, color: categoryColors.Entertainment.fg },
+  { label: "Dining Out", value: 95, color: categoryColors["Dining Out"].fg },
+  { label: "Bills", value: 260, color: categoryColors.Bills.fg },
+  { label: "Car", value: 180, color: categoryColors.Car.fg },
+  { label: "Entertainment", value: 140, color: categoryColors.Entertainment.fg },
+  { label: "Dining Out", value: 95, color: categoryColors["Dining Out"].fg },
+];
+const WEEK_BARS = [
+  { label: "Sun", value: 40 },
+  { label: "Mon", value: 120 },
+  { label: "Tue", value: 75 },
+  { label: "Wed", value: 200 },
+  { label: "Thu", value: 60 },
+  { label: "Fri", value: 180 },
+  { label: "Sat", value: 95 },
+];
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOUBLE_DATA = MONTH_LABELS.map((m, i) => ({
+  label: m,
+  income: 3200 + ((i * 7) % 5) * 420 + 800,
+  expense: 1800 + ((i * 3) % 4) * 360,
+}));
+const LINE_DATA = MONTH_LABELS.map((m, i) => ({ label: m, value: 8000 + i * 1100 + ((i * 5) % 3) * 600 }));
+
+// Legacy-shaped mock data (for the before/after comparison only).
+const INCOME_HEX = "#2E9E6B";
+const EXPENSE_HEX = "#DD6B5E";
+const TRANSFER_HEX = "#4D8EF7";
+const LEGACY_PIE = DONUT_DATA.slice(0, 6).map((d, i) => ({ id: String(i), x: d.label, y: d.value }));
+const LEGACY_BAR = WEEK_BARS.map(b => ({ x: b.label, y: b.value }));
+const LEGACY_DOUBLE = DOUBLE_DATA.map(d => ({
+  x: d.label,
+  barOne: { label: "Income", value: d.income, color: INCOME_HEX },
+  barTwo: { label: "Expense", value: d.expense, color: EXPENSE_HEX },
+}));
+const LEGACY_LINE = LINE_DATA.map(p => ({ x: p.label, y: p.value }));
+const CAL_DATA = {
+  "2026-06-03": { dots: [{ key: "e", color: EXPENSE_HEX }] },
+  "2026-06-08": {
+    dots: [
+      { key: "e", color: EXPENSE_HEX },
+      { key: "i", color: INCOME_HEX },
+      { key: "t", color: TRANSFER_HEX },
+    ],
+  },
+  "2026-06-15": { dots: [{ key: "i", color: INCOME_HEX }] },
+  "2026-06-21": { dots: [{ key: "e", color: EXPENSE_HEX }] },
+};
+const MINI_BARS = [3, 5, 2, 8, 4, 6, 5, 7];
 
 export default function ComponentsPreview() {
   const { isDark, toggleTheme, colors } = useTheme();
@@ -86,6 +186,41 @@ export default function ComponentsPreview() {
     "December",
   ];
   const [radio, setRadio] = useState("monthly");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selAccount, setSelAccount] = useState<string | null>("acc-1");
+  const [selType, setSelType] = useState<string | null>("expense");
+  const [selCats, setSelCats] = useState<string[]>(["groceries"]);
+  const [selSearch, setSelSearch] = useState<string | null>(null);
+  const [nestDialog, setNestDialog] = useState(false);
+  const [nestSheet, setNestSheet] = useState(false);
+  const [nestSelect, setNestSelect] = useState<string | null>("acc-2");
+  const [catIcon, setCatIcon] = useState<string | null>("ShoppingCart");
+  const [catColor, setCatColor] = useState<string | null>("#DD6B5E");
+  const [payee, setPayee] = useState<{ id: string; label: string } | null>(null);
+  const [date, setDate] = useState<string | null>("2026-06-21");
+  const [donutSel, setDonutSel] = useState<number | null>(null);
+  const [barSel, setBarSel] = useState<number | null>(null);
+  const [chartsLoading, setChartsLoading] = useState(false);
+  const confirm = useConfirm();
+  const alert = useAlert();
+
+  // Demo-only async search over the accounts list (simulates a service call).
+  const searchPayees = (q: string) =>
+    new Promise<SearchableSelectOption[]>(resolve => {
+      setTimeout(
+        () =>
+          resolve(
+            ACCOUNTS.filter(a => a.label.toLowerCase().includes(q.toLowerCase())).map(a => ({
+              id: a.id,
+              label: a.label,
+              detail: a.detail,
+              icon: a.icon,
+            })),
+          ),
+        350,
+      );
+    });
 
   const tile = (name: keyof typeof categoryColors) => {
     const c = categoryColors[name];
@@ -517,6 +652,366 @@ export default function ComponentsPreview() {
         <View className="h-64 overflow-hidden rounded-xl border border-border bg-surface">
           <ErrorState message="We couldn't load your data. Check your connection and try again." onRefresh={noop} />
         </View>
+      </Section>
+
+      {/* Select */}
+      <Section title="Select · single / multi / grouped">
+        <Select
+          label="Account — present=auto (popover on web, sheet on mobile)"
+          options={ACCOUNTS}
+          value={selAccount}
+          onChange={v => setSelAccount(v as string | null)}
+          clearable
+          placeholder="Choose an account"
+        />
+        <Select
+          label="Type — forced popover, no search"
+          present="popover"
+          options={SELECT_TYPES}
+          value={selType}
+          onChange={v => setSelType(v as string | null)}
+          searchable={false}
+        />
+        <Select
+          label="Categories — multi · grouped · searchable · add-new"
+          multiple
+          searchable
+          values={selCats}
+          onChange={v => setSelCats(v as string[])}
+          options={SELECT_CATEGORIES}
+          groupBy={o => o.group ?? "Other"}
+          addNew={{ label: "Add category", onPress: noop }}
+          placeholder="Pick categories"
+        />
+        <Select
+          label="Searchable flag — forced on a short list (3 options)"
+          searchable
+          options={ACCOUNTS}
+          value={selSearch}
+          onChange={v => setSelSearch(v as string | null)}
+          clearable
+          placeholder="Search accounts…"
+        />
+        <Select
+          label="Forced sheet"
+          present="sheet"
+          options={ACCOUNTS}
+          value={selAccount}
+          onChange={v => setSelAccount(v as string | null)}
+        />
+        <Select label="Disabled" options={ACCOUNTS} value={selAccount} onChange={noop} disabled />
+      </Section>
+
+      {/* Overlays */}
+      <Section title="Overlays · Dialog / Sheet / Confirm">
+        <Row>
+          <Button label="Open dialog" leadingIcon="SquareStack" onPress={() => setDialogOpen(true)} />
+          <Button label="Open sheet" variant="secondary" leadingIcon="PanelBottom" onPress={() => setSheetOpen(true)} />
+          <Button
+            label="Confirm…"
+            variant="outline"
+            leadingIcon="TriangleAlert"
+            onPress={async () => {
+              const ok = await confirm({
+                title: "Delete account?",
+                message: "This permanently removes the account and its transactions.",
+                confirmLabel: "Delete",
+                tone: "danger",
+              });
+              await alert({
+                title: ok ? "Deleted" : "Cancelled",
+                message: ok ? "The account was deleted." : "Nothing was changed.",
+              });
+            }}
+          />
+        </Row>
+        <Dialog visible={dialogOpen} onClose={() => setDialogOpen(false)} title="Edit note">
+          <Input label="Note" placeholder="Add a note…" value={note} onChangeText={setNote} />
+          <Button label="Save" className="mt-4" onPress={() => setDialogOpen(false)} />
+        </Dialog>
+        <Sheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title="Quick actions">
+          <View className="gap-2">
+            <ListRow
+              iconName="Pencil"
+              iconShape="circle"
+              title="Edit"
+              subtitle="Modify this item"
+              onPress={() => setSheetOpen(false)}
+              bare
+            />
+            <ListRow
+              iconName="Copy"
+              iconShape="circle"
+              title="Duplicate"
+              subtitle="Create a copy"
+              onPress={() => setSheetOpen(false)}
+              bare
+            />
+            <ListRow
+              iconName="Trash2"
+              iconShape="circle"
+              title="Delete"
+              subtitle="Remove permanently"
+              onPress={() => setSheetOpen(false)}
+              bare
+            />
+          </View>
+        </Sheet>
+      </Section>
+
+      {/* Overlays · nesting */}
+      <Section title="Overlays · nesting (stacked layers)">
+        <Text variant="caption">
+          Open the dialog, then stack a Select popover, a Sheet, and a confirm on top. Esc / Android-back dismisses the
+          top layer first; each backdrop dims the layer beneath it.
+        </Text>
+        <Button label="Open nested dialog" leadingIcon="Layers" onPress={() => setNestDialog(true)} />
+
+        <Dialog visible={nestDialog} onClose={() => setNestDialog(false)} title="Layer 1 · Dialog">
+          <Text variant="body" className="mb-3 text-ink-mute">
+            The Select below opens layer 2 on top of this dialog (a popover on web, a sheet on mobile).
+          </Text>
+          <Select
+            label="Account — opens over the dialog"
+            options={ACCOUNTS}
+            value={nestSelect}
+            onChange={v => setNestSelect(v as string | null)}
+          />
+          <Button
+            label="Open sheet — layer 2"
+            variant="secondary"
+            leadingIcon="PanelBottom"
+            className="mt-4"
+            onPress={() => setNestSheet(true)}
+          />
+        </Dialog>
+
+        <Sheet visible={nestSheet} onClose={() => setNestSheet(false)} title="Layer 2 · Sheet">
+          <Text variant="body" className="mb-3 text-ink-mute">
+            Confirm from here opens layer 3 — three overlays deep.
+          </Text>
+          <Button
+            label="Confirm something — layer 3"
+            variant="outline"
+            leadingIcon="TriangleAlert"
+            onPress={async () => {
+              await confirm({
+                title: "Nested confirm",
+                message: "This confirm sits on top of the sheet, which sits on top of the dialog.",
+                confirmLabel: "Got it",
+              });
+              // Layer 3 (the confirm) always closes itself; layer 2 (this sheet) stays open.
+            }}
+          />
+        </Sheet>
+      </Section>
+
+      {/* Pickers · icon + color */}
+      <Section title="Pickers · icon + color (category appearance)">
+        <Card className="gap-4">
+          <View className="flex-row items-center gap-3">
+            <View
+              className="h-12 w-12 items-center justify-center rounded-xl"
+              style={{ backgroundColor: (catColor ?? colors.inkMute) + "22" }}
+            >
+              <MyIcon name={catIcon || "Image"} size={24} color={catColor ?? colors.inkMute} />
+            </View>
+            <View>
+              <Text variant="body" className="font-sans-semibold">
+                Live preview
+              </Text>
+              <Text variant="caption">
+                {catIcon ?? "—"} · {catColor ?? "—"}
+              </Text>
+            </View>
+          </View>
+          <IconPicker label="Icon" value={catIcon} onChange={setCatIcon} color={catColor ?? undefined} />
+          <ColorPicker label="Color" value={catColor} onChange={setCatColor} />
+        </Card>
+      </Section>
+
+      {/* Pickers · searchable (async) + date */}
+      <Section title="Pickers · searchable (async) + date">
+        <SearchableSelect
+          label="Payee — async search (debounced, ~350ms)"
+          selectedLabel={payee?.label}
+          searchAction={searchPayees}
+          onSelect={p => setPayee({ id: p.id, label: p.label })}
+          onClear={() => setPayee(null)}
+          clearable
+          placeholder="Search accounts…"
+        />
+        <DatePicker label="Date" value={date} onChange={setDate} />
+      </Section>
+
+      {/* Charts */}
+      <Section title="Charts · donut + bar">
+        <Row>
+          <Button
+            label={chartsLoading ? "Show data" : "Show loading"}
+            variant="secondary"
+            size="sm"
+            leadingIcon={chartsLoading ? "Eye" : "Loader"}
+            onPress={() => setChartsLoading(v => !v)}
+          />
+          <Text variant="caption">Tap a slice / bar to select (emits an event + highlights).</Text>
+        </Row>
+        <Row>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Spending by category
+            </Text>
+            <DonutChart
+              data={DONUT_DATA}
+              loading={chartsLoading}
+              centerLabel="Spent"
+              centerValue={fmtMoney(DONUT_DATA.reduce((s, d) => s + d.value, 0))}
+              formatValue={fmtMoney}
+              selectedIndex={donutSel}
+              onSlicePress={(_, i) => setDonutSel(prev => (prev === i ? null : i))}
+            />
+          </Card>
+
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Donut · empty
+            </Text>
+            <DonutChart
+              data={[]}
+              emptyTitle="No categories found"
+              emptySubtitle="Add categories to see your breakdown"
+            />
+          </Card>
+        </Row>
+        <Row>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              This week
+            </Text>
+            <BarChart
+              data={WEEK_BARS}
+              loading={chartsLoading}
+              color={colors.expense}
+              formatValue={fmtMoney}
+              showValues
+              onBarPress={(_, i) => setBarSel(prev => (prev === i ? null : i))}
+            />
+          </Card>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Bar · empty
+            </Text>
+            <BarChart data={[]} emptyTitle="Nothing logged this week" emptySubtitle="Log an expense to get started" />
+          </Card>
+        </Row>
+        <Row>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Income vs expense
+            </Text>
+            <DoubleBarChart
+              data={DOUBLE_DATA.slice(0, 6)}
+              loading={chartsLoading}
+              formatValue={fmtMoney}
+              showValues
+              bar1Label="Income"
+              bar2Label="Expense"
+            />
+          </Card>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Empty Double Bar
+            </Text>
+            <DoubleBarChart data={[]} loading={chartsLoading} formatValue={fmtMoney} />
+          </Card>
+        </Row>
+        <Row>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Net worth
+            </Text>
+            <LineChart
+              data={LINE_DATA.slice(0, 5)}
+              loading={chartsLoading}
+              seriesLabel="Net worth"
+              showLegend
+              formatValue={fmtMoney}
+            />
+          </Card>
+          <Card className="flex-1">
+            <Text variant="h3" className="mb-3">
+              Empty Line Chart
+            </Text>
+            <LineChart data={[]} loading={chartsLoading} seriesLabel="Net worth" showLegend formatValue={fmtMoney} />
+          </Card>
+        </Row>
+        <Card>
+          <Text variant="h3" className="mb-3">
+            Activity calendar
+          </Text>
+          <CalendarHeatmap markedDates={CAL_DATA} currentDate="2026-06-21" loading={chartsLoading} onDayPress={noop} />
+        </Card>
+        <Card>
+          <Text variant="h3" className="mb-3">
+            Mini bars (landing preview)
+          </Text>
+          <MiniBarChart values={MINI_BARS} />
+        </Card>
+      </Section>
+
+      {/* Before / after comparison */}
+      <Section title="Charts · before (legacy) / after (new)">
+        <Text variant="caption" className="mb-1">
+          Legacy victory-native charts on the left, the new Sage Paper charts on the right — for comparison.
+        </Text>
+        {(
+          [
+            {
+              title: "Donut / Pie",
+              before: <LegacyMyPie data={LEGACY_PIE} label="Spending" />,
+              after: (
+                <DonutChart
+                  data={DONUT_DATA}
+                  centerLabel="Spent"
+                  centerValue={fmtMoney(DONUT_DATA.reduce((s, d) => s + d.value, 0))}
+                  formatValue={fmtMoney}
+                  legendPosition="bottom"
+                />
+              ),
+            },
+            {
+              title: "Weekly bars",
+              before: <LegacyBar data={LEGACY_BAR} label="This week" />,
+              after: <BarChart data={WEEK_BARS} color={colors.expense} formatValue={fmtMoney} showValues />,
+            },
+            {
+              title: "Income vs expense",
+              before: <LegacyDoubleBar data={LEGACY_DOUBLE} label="Net earnings" />,
+              after: <DoubleBarChart data={DOUBLE_DATA} formatValue={fmtMoney} />,
+            },
+            {
+              title: "Net worth line",
+              before: <LegacyLine data={LEGACY_LINE} label="Net worth" />,
+              after: <LineChart data={LINE_DATA} seriesLabel="Net worth" formatValue={fmtMoney} />,
+            },
+            {
+              title: "Activity calendar",
+              before: <LegacyMyCalendar data={CAL_DATA} label="Activity" currentDate="2026-06-21" />,
+              after: <CalendarHeatmap markedDates={CAL_DATA} currentDate="2026-06-21" />,
+            },
+          ] as const
+        ).map(row => (
+          <View key={row.title} className="gap-3 md:flex-row">
+            <Card className="flex-1">
+              <Badge tone="neutral" label="Before" className="mb-3 self-start" />
+              {row.before}
+            </Card>
+            <Card className="flex-1">
+              <Badge tone="primary" label="After" className="mb-3 self-start" />
+              {row.after}
+            </Card>
+          </View>
+        ))}
       </Section>
     </ScrollView>
   );
