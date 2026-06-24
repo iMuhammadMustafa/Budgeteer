@@ -40,3 +40,25 @@ export { Loader, type LoaderProps, type LoaderTone } from "./Loader";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { ErrorState, type ErrorStateProps } from "./ErrorState";
 export { triggerHaptic, type HapticType } from "./utils/haptic";
+
+// overlay core (Step 3 — Select + Modal): provider lives at src/providers/OverlayProvider
+export { Dialog, type DialogProps } from "./overlay/Dialog";
+export { Sheet, type SheetProps } from "./overlay/Sheet";
+export { Popover, type PopoverProps } from "./overlay/Popover";
+export { useConfirm, useAlert, type ConfirmOptions, type AlertOptions } from "./overlay/useConfirm";
+export { useOverlayApi, type OverlayApi } from "./overlay/context";
+export { type Anchor } from "./overlay/panels";
+export { Select, type SelectProps, type SelectOption, type SelectPresent } from "./Select";
+export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
+export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
+export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
+export { DatePicker, type DatePickerProps } from "./DatePicker";
+
+// charts (Step 3 — custom SVG/Views, themed; Donut + Bar first)
+export { DonutChart, type DonutChartProps, type DonutDatum } from "./charts/DonutChart";
+export { BarChart, type BarChartProps, type BarDatum } from "./charts/BarChart";
+export { DoubleBarChart, type DoubleBarChartProps, type DoubleBarDatum } from "./charts/DoubleBarChart";
+export { LineChart, type LineChartProps, type LineDatum } from "./charts/LineChart";
+export { CalendarHeatmap, type CalendarHeatmapProps } from "./charts/CalendarHeatmap";
+export { MiniBarChart, type MiniBarChartProps } from "./charts/MiniBarChart";
+export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from "./charts/ChartLegend";
