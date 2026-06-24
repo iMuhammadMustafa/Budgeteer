@@ -34,9 +34,13 @@ export function Loader({
   const spinnerSize = size === "sm" ? "small" : "large";
   const spinnerColor =
     color ??
-    { primary: colors.primary, success: colors.success, danger: colors.danger, info: colors.info, neutral: colors.inkMute }[
-      tone
-    ];
+    {
+      primary: colors.primary,
+      success: colors.success,
+      danger: colors.danger,
+      info: colors.info,
+      neutral: colors.inkMute,
+    }[tone];
 
   const content = (
     <View className="items-center justify-center gap-3">
@@ -60,6 +64,13 @@ export function Loader({
   if (size === "full") {
     return (
       <View testID={testID} className={cn("flex-1 items-center justify-center bg-bg", className)}>
+        {content}
+      </View>
+    );
+  }
+  if (size === "sm") {
+    return (
+      <View testID={testID} className={cn("py-0", className)}>
         {content}
       </View>
     );
