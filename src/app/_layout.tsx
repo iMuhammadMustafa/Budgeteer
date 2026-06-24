@@ -14,6 +14,7 @@ import { BrandSplash, useBudgeteerFonts } from "@/src/components/ui";
 import AppInitializer from "@/src/providers/AppInitalizer";
 import AuthProvider from "@/src/providers/AuthProvider";
 import HeaderActionsProvider from "@/src/providers/HeaderActionsProvider";
+import OverlayProvider from "@/src/providers/OverlayProvider";
 import QueryProvider from "@/src/providers/QueryProvider";
 import StorageModeProvider from "@/src/providers/StorageModeProvider";
 import ThemeProvider from "@/src/providers/ThemeProvider";
@@ -76,13 +77,15 @@ export default function RootLayout() {
                 <AuthProvider>
                   <AppInitializer>
                     <QueryProvider>
-                      <Stack>
-                        <Stack.Screen name="index" options={{ headerShown: false }} />
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                        <Stack.Screen name="design" options={{ headerShown: false }} />
-                      <Stack.Screen name="components" options={{ headerShown: false }} />
-                      </Stack>
+                      <OverlayProvider>
+                        <Stack>
+                          <Stack.Screen name="index" options={{ headerShown: false }} />
+                          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                          <Stack.Screen name="design" options={{ headerShown: false }} />
+                          <Stack.Screen name="components" options={{ headerShown: false }} />
+                        </Stack>
+                      </OverlayProvider>
                     </QueryProvider>
                   </AppInitializer>
                 </AuthProvider>
