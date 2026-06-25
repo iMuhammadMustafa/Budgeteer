@@ -11,7 +11,7 @@ import { Briefcase, Car, Droplet, Film, Home, Moon, ShoppingCart, Sun, Zap } fro
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import { categoryColors, useBudgeteerFonts } from "@/src/components/ui";
+import { accentFor, useBudgeteerFonts } from "@/src/components/ui";
 import { useTheme } from "../providers/ThemeProvider";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -174,8 +174,8 @@ export default function DesignShowcase() {
       <Section title="Category tiles">
         <View className="flex-row flex-wrap gap-4">
           {CATEGORIES.map(({ name, Icon }) => {
-            const c = categoryColors[name];
-            const bg = isDark ? c.softDark : c.softLight;
+            const c = accentFor(name, isDark ? "dark" : "light");
+            const bg = c.soft;
             return (
               <View key={name} className="items-center w-[72px]">
                 <View

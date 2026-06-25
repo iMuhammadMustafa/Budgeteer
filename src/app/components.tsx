@@ -19,13 +19,13 @@ import LegacyMyCalendar from "@/src/components/Charts/MyCalendar";
 import LegacyMyPie from "@/src/components/Charts/MyPie";
 
 import {
+  accentFor,
   Avatar,
   Badge,
   BarChart,
   Button,
   CalendarHeatmap,
   Card,
-  categoryColors,
   Checkbox,
   Chip,
   ColorPicker,
@@ -104,16 +104,14 @@ const SELECT_TYPES: SelectOption[] = [
 
 const fmtMoney = (n: number) => "$" + n.toLocaleString();
 const DONUT_DATA = [
-  { label: "Rent", value: 1200, color: categoryColors.Rent.fg },
-  { label: "Groceries", value: 420, color: categoryColors.Groceries.fg },
-  { label: "Bills", value: 260, color: categoryColors.Bills.fg },
-  { label: "Car", value: 180, color: categoryColors.Car.fg },
-  { label: "Entertainment", value: 140, color: categoryColors.Entertainment.fg },
-  { label: "Dining Out", value: 95, color: categoryColors["Dining Out"].fg },
-  { label: "Bills", value: 260, color: categoryColors.Bills.fg },
-  { label: "Car", value: 180, color: categoryColors.Car.fg },
-  { label: "Entertainment", value: 140, color: categoryColors.Entertainment.fg },
-  { label: "Dining Out", value: 95, color: categoryColors["Dining Out"].fg },
+  { label: "Rent", value: 1200 },
+  { label: "Groceries", value: 420 },
+  { label: "Bills", value: 260 },
+  { label: "Car", value: 180 },
+  { label: "Entertainment", value: 140 },
+  { label: "Dining Out", value: 95 },
+  { label: "Fuel", value: 80 },
+  { label: "Hobbies", value: 60 },
 ];
 const WEEK_BARS = [
   { label: "Sun", value: 40 },
@@ -222,9 +220,9 @@ export default function ComponentsPreview() {
       );
     });
 
-  const tile = (name: keyof typeof categoryColors) => {
-    const c = categoryColors[name];
-    return { iconColor: c.fg, iconBg: isDark ? c.softDark : c.softLight };
+  const tile = (name: string) => {
+    const c = accentFor(name, isDark ? "dark" : "light");
+    return { iconColor: c.fg, iconBg: c.soft };
   };
 
   const TYPE_SEGS: Segment[] = [
@@ -931,7 +929,7 @@ export default function ComponentsPreview() {
               Net worth
             </Text>
             <LineChart
-              data={LINE_DATA.slice(0, 5)}
+              data={LINE_DATA.slice(0, 9)}
               loading={chartsLoading}
               seriesLabel="Net worth"
               showLegend
