@@ -1,15 +1,17 @@
 /**
  * LineChart — a value series over time (e.g. net worth). SVG polyline + optional
  * area fill + pressable dots that toggle selection (others dim) and emit
- * onPointPress; the selected dot shows a value tooltip. Light y-axis (gridlines +
- * value labels), optional legend, angled x-labels when crowded. Width measured
- * from the container; pulsing ghost loading + empty states; fade-in animation.
+ * onPointPress; the selected dot shows a value tooltip. Points are band-centered
+ * (same model as the bar charts) so the first dot clears the y-axis and the
+ * x-labels sit exactly under their dots. Dashed x/y gridlines (each toggleable),
+ * "nice" or per-point y-ticks, angled x-labels when crowded. Width measured from
+ * the container; pulsing ghost loading + empty states; fade-in animation.
  *
  *   <LineChart data={netWorth} seriesLabel="Net worth" fillArea formatValue={fmtMoney} />
  */
 import { useEffect, useState } from "react";
 import { Animated, View } from "react-native";
-import Svg, { Circle, Path, Line as SvgLine, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Line as SvgLine, Path, Text as SvgText } from "react-native-svg";
 
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -18,10 +20,10 @@ import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
 import { ChartLegend } from "./ChartLegend";
-import { XLabels, compactTick } from "./axis";
+import { XLabels, X_LABEL_ANGLE_THRESHOLD, Y_AXIS_PAD, buildScale, compactTick, type YTickMode } from "./axis";
 
 const GHOST_PATTERN = [0.45, 0.6, 0.4, 0.7, 0.5, 0.8, 0.62, 0.85];
-const LEFT_PAD = 34;
+const LEFT_PAD = Y_AXIS_PAD;
 const RIGHT_PAD = 8;
 const PAD_Y = 14;
 
@@ -38,8 +40,18 @@ export interface LineChartProps {
   seriesLabel?: string;
   /** Per-point legend (label + value) below the chart. */
   showLegend?: boolean;
+  /** Fixed height for the per-point legend (scrolls past it); keeps empty/loading matching. */
+  legendHeight?: number;
   /** Draw the vertical y-axis line (default true). */
   showYAxis?: boolean;
+  /** Horizontal (y) dashed gridlines (default true). */
+  showYGrid?: boolean;
+  /** Vertical (x) dashed gridlines, one per point (default true). */
+  showXGrid?: boolean;
+  /** Approx. number of y-ticks in "nice" mode (default 4). */
+  yTicks?: number;
+  /** "nice" → rounded values; "count" → one tick per data point. */
+  yTickMode?: YTickMode;
   showDots?: boolean;
   fillArea?: boolean;
   selectedIndex?: number | null;
@@ -60,7 +72,12 @@ export function LineChart({
   color,
   seriesLabel,
   showLegend = false,
+  legendHeight,
   showYAxis = true,
+  showYGrid = true,
+  showXGrid = true,
+  yTicks = 4,
+  yTickMode = "nice",
   showDots = true,
   fillArea = true,
   selectedIndex,
@@ -87,7 +104,6 @@ export function LineChart({
   const fmt = formatValue ?? ((n: number) => String(n));
   const plotH = height - PAD_Y * 2;
   const innerW = Math.max(0, w - LEFT_PAD - RIGHT_PAD);
-  const xAt = (i: number, n: number) => LEFT_PAD + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const isEmpty = data.length === 0 || data.every(d => d.value === 0);
 
   if (loading || isEmpty) {
@@ -104,6 +120,8 @@ export function LineChart({
           length={data.length}
           height={height}
           color={stroke}
+          showLegend={showLegend}
+          legendHeight={legendHeight}
         />
       </View>
     );
@@ -116,18 +134,25 @@ export function LineChart({
   };
 
   const n = data.length;
+  // Band-centered x (matches the bar charts): point i sits in the middle of band i,
+  // so the first dot clears the axis and labels line up under their dots.
+  const bandW = n > 0 ? innerW / n : innerW;
+  const xAt = (i: number) => LEFT_PAD + (i + 0.5) * bandW;
+
   const vals = data.map(d => d.value);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const span = max - min || 1;
-  const yAt = (v: number) => PAD_Y + (1 - (v - min) / span) * plotH;
-  const pts = data.map((d, i) => ({ x: xAt(i, n), y: yAt(d.value) }));
+  const scale = buildScale(Math.min(...vals), Math.max(...vals), yTickMode, yTickMode === "count" ? n : yTicks);
+  const span = scale.max - scale.min || 1;
+  const yAt = (v: number) => PAD_Y + (1 - (v - scale.min) / span) * plotH;
+  const baseValue = Math.min(...scale.ticks);
+
+  const pts = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
+  const xs = pts.map(p => p.x);
   const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
   const areaPath =
     n > 1
       ? `${linePath} L ${pts[n - 1].x.toFixed(1)} ${height - PAD_Y} L ${pts[0].x.toFixed(1)} ${height - PAD_Y} Z`
       : "";
-  const ticks = [max, (max + min) / 2, min];
+  const angled = n > X_LABEL_ANGLE_THRESHOLD;
 
   return (
     <View testID={testID} className={cn("w-full", className)} onLayout={e => setW(e.nativeEvent.layout.width)}>
@@ -135,41 +160,47 @@ export function LineChart({
       <Animated.View style={{ height, opacity: grow }}>
         {w > 0 ? (
           <Svg width={w} height={height}>
-            {ticks.map((t, i) => {
+            {/* vertical (x) gridlines, one per point */}
+            {showXGrid
+              ? xs.map((x, i) => (
+                  <SvgLine
+                    key={`xg${i}`}
+                    x1={x}
+                    y1={PAD_Y}
+                    x2={x}
+                    y2={height - PAD_Y}
+                    stroke={colors.border}
+                    strokeWidth={1}
+                    strokeDasharray="3 4"
+                  />
+                ))
+              : null}
+            {/* horizontal (y) gridlines — baseline solid, others dashed when showYGrid */}
+            {scale.ticks.map((t, i) => {
               const y = yAt(t);
+              const isBase = t === baseValue;
+              if (!isBase && !showYGrid) return null;
               return (
                 <SvgLine
-                  key={i}
+                  key={`yg${i}`}
                   x1={LEFT_PAD}
                   y1={y}
                   x2={w - RIGHT_PAD}
                   y2={y}
                   stroke={colors.border}
-                  strokeWidth={1}
+                  strokeWidth={isBase ? 1.5 : 1}
+                  strokeDasharray={isBase ? undefined : "3 4"}
                 />
               );
             })}
-            {ticks.map((t, i) => (
-              <SvgText
-                key={`l${i}`}
-                x={LEFT_PAD - 5}
-                y={yAt(t) + 3}
-                fontSize={10}
-                fill={colors.inkFaint}
-                textAnchor="end"
-              >
+            {/* y-axis value labels */}
+            {scale.ticks.map((t, i) => (
+              <SvgText key={`l${i}`} x={LEFT_PAD - 5} y={yAt(t) + 3} fontSize={10} fill={colors.inkFaint} textAnchor="end">
                 {compactTick(t)}
               </SvgText>
             ))}
             {showYAxis ? (
-              <SvgLine
-                x1={LEFT_PAD}
-                y1={PAD_Y}
-                x2={LEFT_PAD}
-                y2={height - PAD_Y}
-                stroke={colors.borderStrong}
-                strokeWidth={1}
-              />
+              <SvgLine x1={LEFT_PAD} y1={PAD_Y} x2={LEFT_PAD} y2={height - PAD_Y} stroke={colors.borderStrong} strokeWidth={1} />
             ) : null}
             {fillArea && n > 1 ? <Path d={areaPath} fill={stroke} opacity={0.12} /> : null}
             <Path d={linePath} fill="none" stroke={stroke} strokeWidth={2.5} />
@@ -206,11 +237,14 @@ export function LineChart({
           </Svg>
         ) : null}
       </Animated.View>
-      <XLabels labels={data.map(d => d.label)} selectedIndex={selected} leftPad={LEFT_PAD} />
+      {w > 0 ? (
+        <XLabels labels={data.map(d => d.label)} selectedIndex={selected} xPositions={xs} width={w} angled={angled} />
+      ) : null}
       {showLegend ? (
         <ChartLegend
           className="mt-3"
           horizontal
+          height={legendHeight}
           items={data.map(d => ({ label: d.label, color: stroke, value: fmt(d.value) }))}
         />
       ) : null}
@@ -226,6 +260,8 @@ export function LineChartSkeleton({
   emptyTitle = "No growth data yet",
   emptySubtitle,
   emptyIcon = "ChartSpline",
+  showLegend = false,
+  legendHeight,
   className,
   testID = "line-chart-skeleton",
 }: {
@@ -236,6 +272,8 @@ export function LineChartSkeleton({
   emptyTitle?: string;
   emptySubtitle?: string;
   emptyIcon?: string;
+  showLegend?: boolean;
+  legendHeight?: number;
   className?: string;
   testID?: string;
 }) {
@@ -246,13 +284,16 @@ export function LineChartSkeleton({
   const n = Math.max(GHOST_PATTERN.length, length || GHOST_PATTERN.length);
   const plotH = height - PAD_Y * 2;
   const innerW = Math.max(0, w - LEFT_PAD - RIGHT_PAD);
-  const xAt = (i: number, len: number) => LEFT_PAD + (len <= 1 ? innerW / 2 : (i / (len - 1)) * innerW);
+  const bandW = n > 0 ? innerW / n : innerW;
+  const xAt = (i: number) => LEFT_PAD + (i + 0.5) * bandW;
 
   const pts = Array.from({ length: n }).map((_, i) => ({
-    x: xAt(i, n),
+    x: xAt(i),
     y: PAD_Y + (1 - GHOST_PATTERN[i % GHOST_PATTERN.length]) * plotH,
   }));
   const dPath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  // Reserve the same legend slot the loaded chart uses, so heights match.
+  const legendSpace = showLegend ? (legendHeight ?? 28) + 12 : 0;
 
   return (
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
@@ -267,7 +308,13 @@ export function LineChartSkeleton({
             </Svg>
           ) : null}
         </View>
-        <XLabels labels={Array.from({ length: n }).map((_, i) => String(i))} selectedIndex={null} leftPad={LEFT_PAD} />
+        <XLabels
+          labels={Array.from({ length: n }).map((_, i) => String(i))}
+          selectedIndex={null}
+          xPositions={pts.map(p => p.x)}
+          width={w}
+        />
+        {legendSpace ? <View style={{ height: legendSpace }} /> : null}
       </View>
       {isEmpty && (
         <View className="absolute inset-0 items-center justify-center">

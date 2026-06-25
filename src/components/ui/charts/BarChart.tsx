@@ -17,7 +17,7 @@ import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { seriesColor } from "../theme/tokens";
 import { cn } from "../utils/cn";
-import { XLabels, YGrid, Y_AXIS_PAD } from "./axis";
+import { XLabels, YGrid, Y_AXIS_PAD, buildScale, type YTickMode } from "./axis";
 
 const SKELETON_HEIGHTS = [0.5, 0.78, 0.42, 0.92, 0.6, 0.82, 0.55];
 const BAR_WIDTH = "56%";
@@ -37,6 +37,14 @@ export interface BarChartProps {
   showAxis?: boolean;
   /** Draw the vertical y-axis line (default true). */
   showYAxis?: boolean;
+  /** Horizontal (y) dashed gridlines (default true). */
+  showYGrid?: boolean;
+  /** Vertical (x) dashed gridlines, one per bar (default false — they bisect bars). */
+  showXGrid?: boolean;
+  /** Approx. number of y-ticks in "nice" mode (default 4). */
+  yTicks?: number;
+  /** "nice" → rounded values; "count" → one tick per bar. */
+  yTickMode?: YTickMode;
   selectedIndex?: number | null;
   onBarPress?: (d: BarDatum, i: number) => void;
   formatValue?: (n: number) => string;
@@ -57,6 +65,10 @@ export function BarChart({
   showValues = false,
   showAxis = true,
   showYAxis = true,
+  showYGrid = true,
+  showXGrid = false,
+  yTicks = 4,
+  yTickMode = "nice",
   selectedIndex,
   onBarPress,
   formatValue,
@@ -80,6 +92,9 @@ export function BarChart({
   const max = Math.max(0, ...data.map(d => d.value));
   const fmt = formatValue ?? ((n: number) => String(n));
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
+  const scale = buildScale(0, max, yTickMode, yTickMode === "count" ? data.length : yTicks);
+  // Bars scale to the top gridline so they sit flush under it; raw max when there's no axis.
+  const scaleMax = showAxis ? scale.max : max;
 
   if (loading || data.length === 0 || max <= 0) {
     return (
@@ -107,10 +122,20 @@ export function BarChart({
   return (
     <View testID={testID} className={cn("w-full", className)}>
       <View style={{ height }}>
-        {showAxis ? <YGrid max={max} height={height} axisLine={showYAxis} /> : null}
+        {showAxis ? (
+          <YGrid
+            scale={scale}
+            height={height}
+            n={data.length}
+            leftPad={leftPad}
+            axisLine={showYAxis}
+            showYGrid={showYGrid}
+            showXGrid={showXGrid}
+          />
+        ) : null}
         <View className="flex-row items-end gap-2" style={{ height, paddingLeft: leftPad }}>
           {data.map((d, i) => {
-            const h = Math.max(2, (d.value / max) * plot);
+            const h = Math.max(2, (d.value / scaleMax) * plot);
             const barHeight = animated ? grow.interpolate({ inputRange: [0, 1], outputRange: [2, h] }) : h;
             return (
               <BarGroup
@@ -171,7 +196,13 @@ export function BarChartSkeleton({
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
       <View testID={testID} className={cn("w-full", className)}>
         <View className="flex-row items-end gap-2" style={{ height, paddingLeft: leftPad }}>
-          <YGrid max={n} height={height} axisLine={showAxis} showMiddleDashes={false} />
+          <YGrid
+            scale={buildScale(0, n, "nice", 2)}
+            height={height}
+            axisLine={showAxis}
+            showYGrid={false}
+            showLabels={false}
+          />
           {Array.from({ length: n }).map((_, i) => (
             <View key={i} className="flex-1 items-center justify-end" style={{ height }}>
               <View

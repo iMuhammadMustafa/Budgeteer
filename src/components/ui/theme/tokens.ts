@@ -77,37 +77,96 @@ export const palette = {
 export type ThemeName = keyof typeof palette;
 export type ColorToken = keyof typeof palette.light;
 
-/** Category accent colors (theme-independent fg + per-theme soft bg). */
-export const categoryColors = {
-  Groceries: { fg: "#E8857B", softLight: "#F6DAD5", softDark: "#3A211E" },
-  Clothing: { fg: "#4FA3D9", softLight: "#DCEDF7", softDark: "#12283A" },
-  Salary: { fg: "#2E9E6B", softLight: "#D7EEDD", softDark: "#14301F" },
-  Income: { fg: "#2E9E6B", softLight: "#D7EEDD", softDark: "#14301F" },
-  Rent: { fg: "#E8857B", softLight: "#F6DAD5", softDark: "#3A211E" },
-  Bills: { fg: "#E4A24A", softLight: "#F6E7CC", softDark: "#33291A" },
-  Water: { fg: "#4FB07A", softLight: "#D7EEDD", softDark: "#14301F" },
-  Fuel: { fg: "#C89A52", softLight: "#F3E7CF", softDark: "#33291A" },
-  Car: { fg: "#3B9DD6", softLight: "#DCEDF7", softDark: "#12283A" },
-  Electricity: { fg: "#E4A24A", softLight: "#F6E7CC", softDark: "#33291A" },
-  Entertainment: { fg: "#9B85D6", softLight: "#E7E0F6", softDark: "#241E3A" },
-  Hobbies: { fg: "#E4A24A", softLight: "#F6E7CC", softDark: "#33291A" },
-  "Dining Out": { fg: "#9B85D6", softLight: "#E7E0F6", softDark: "#241E3A" },
-  Other: { fg: "#9B85D6", softLight: "#E7E0F6", softDark: "#241E3A" },
+/**
+ * Categorical accent palette — the "proper palette" for charts, category chips,
+ * and account/category color pickers. Ten distinct hues, each tuned per theme
+ * with a foreground (`fg`: fills/icons/text) and a soft background (`soft`).
+ * Replaces the old hardcoded `categoryColors` name→color dictionary.
+ *
+ * A label is mapped to a swatch in priority order (see `accentFor`):
+ *   1. a semantic pin (income→green, expense→coral, …) so meaningful categories
+ *      stay on-message, else
+ *   2. a stable hash of the label, so any arbitrary category gets a consistent
+ *      (if arbitrary) color — no dictionary upkeep.
+ */
+export const accentPalette = {
+  light: [
+    { fg: "#1F9E84", soft: "#DCEFE9" }, // 0 teal (primary)
+    { fg: "#DD6B5E", soft: "#F6DAD5" }, // 1 coral (expense / danger)
+    { fg: "#3B9DD6", soft: "#DCEDF7" }, // 2 blue (transfer / info)
+    { fg: "#E4A24A", soft: "#F6E7CC" }, // 3 amber (bills / warning)
+    { fg: "#9B85D6", soft: "#E7E0F6" }, // 4 violet (entertainment)
+    { fg: "#2E9E6B", soft: "#D7EEDD" }, // 5 green (income / success)
+    { fg: "#E8857B", soft: "#F6DAD5" }, // 6 salmon
+    { fg: "#4FB0A0", soft: "#D9EEEA" }, // 7 seafoam
+    { fg: "#C89A52", soft: "#F3E7CF" }, // 8 ochre
+    { fg: "#7C8CD9", soft: "#E0E4F7" }, // 9 periwinkle
+  ],
+  dark: [
+    { fg: "#2FBCA1", soft: "#15302B" },
+    { fg: "#E87E70", soft: "#371F1C" },
+    { fg: "#57AEE5", soft: "#13293A" },
+    { fg: "#E6B450", soft: "#33291A" },
+    { fg: "#A896E0", soft: "#241E3A" },
+    { fg: "#36BB7F", soft: "#14301F" },
+    { fg: "#EC9488", soft: "#3A211E" },
+    { fg: "#5FC0B0", soft: "#163530" },
+    { fg: "#D4AA66", soft: "#33291A" },
+    { fg: "#90A0E6", soft: "#222742" },
+  ],
 } as const;
 
-/** Multi-series chart palette (theme-independent; distinct hues readable on paper + charcoal). */
-export const chartPalette = [
-  "#1F9E84", "#DD6B5E", "#3B9DD6", "#E4A24A", "#9B85D6",
-  "#2E9E6B", "#E8857B", "#4FB0A0", "#C89A52", "#7C8CD9",
-] as const;
+export type AccentSwatch = { fg: string; soft: string };
 
-/** Look up a default color by category label (the legacy chart dictionary fallback). */
-export const categoryColorFor = (label?: string): string | undefined =>
-  label ? (categoryColors as Record<string, { fg: string }>)[label]?.fg : undefined;
+/** Semantic pins: well-known category labels → accent-palette index (kept on-message). */
+const ACCENT_SEMANTIC: Record<string, number> = {
+  income: 5, salary: 5, wage: 5, savings: 5, water: 5,
+  expense: 1, rent: 1, groceries: 1, mortgage: 1,
+  transfer: 2, car: 2, clothing: 2, transport: 2,
+  bills: 3, electricity: 3, gas: 3, utilities: 3, hobbies: 3,
+  entertainment: 4, dining: 4, "dining out": 4, subscriptions: 4,
+  fuel: 8,
+  other: 9,
+};
+
+/** Stable, order-independent FNV-1a hash of a label → palette index. */
+const hashIndex = (label: string, len: number): number => {
+  let h = 2166136261;
+  for (let i = 0; i < label.length; i++) {
+    h ^= label.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % len;
+};
+
+/** Accent-palette index for a label: semantic pin → stable hash (always resolves). */
+const accentIndexFor = (label: string): number => {
+  const key = label.trim().toLowerCase();
+  const pinned = ACCENT_SEMANTIC[key];
+  return pinned ?? hashIndex(key, accentPalette.light.length);
+};
+
+/** Resolve a label's accent swatch (fg + soft) for a theme — for chips/tiles/pickers. */
+export const accentFor = (label: string, theme: ThemeName): AccentSwatch =>
+  accentPalette[theme][accentIndexFor(label)];
+
+/** Multi-series chart palette (theme-independent fg hues) — the accent fg ramp. */
+export const chartPalette = accentPalette.light.map(s => s.fg);
+
+/**
+ * Default fg color for a *semantically-pinned* category label (theme-independent),
+ * else undefined — so unpinned labels fall through to index cycling in `seriesColor`,
+ * keeping in-chart colors distinct. (Use `accentFor` for an always-resolved swatch.)
+ */
+export const categoryColorFor = (label?: string): string | undefined => {
+  if (!label) return undefined;
+  const idx = ACCENT_SEMANTIC[label.trim().toLowerCase()];
+  return idx === undefined ? undefined : accentPalette.light[idx].fg;
+};
 
 /**
  * Resolve a chart series color, in priority order:
- *   explicit datum color → category-label dictionary → palette cycled by index.
+ *   explicit datum color → semantic category color → palette cycled by index.
  * So charts always get distinct colors even when the data carries none.
  */
 export const seriesColor = (index: number, explicit?: string | null, label?: string): string =>

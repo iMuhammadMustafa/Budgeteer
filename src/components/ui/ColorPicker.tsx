@@ -12,11 +12,11 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { usePresentedOverlay, type OverlayPresent } from "./overlay/usePresentedOverlay";
 import { Text } from "./Text";
-import { categoryColors } from "./theme/tokens";
+import { accentPalette } from "./theme/tokens";
 import { cn } from "./utils/cn";
 
-/** Default palette = the design system's category accent colors (deduped). */
-const DEFAULT_PALETTE = Array.from(new Set(Object.values(categoryColors).map(c => c.fg)));
+/** Default palette = the design system's accent palette fg hues (deduped). */
+const DEFAULT_PALETTE = Array.from(new Set(accentPalette.light.map(c => c.fg)));
 
 /** Pick a check-mark color that stays legible on the swatch (WCAG-ish luminance). */
 function checkColorOn(hex: string): string {

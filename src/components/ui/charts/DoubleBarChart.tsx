@@ -16,7 +16,7 @@ import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
 import { ChartLegend } from "./ChartLegend";
-import { XLabels, YGrid, Y_AXIS_PAD, compactTick } from "./axis";
+import { XLabels, YGrid, Y_AXIS_PAD, buildScale, compactTick, type YTickMode } from "./axis";
 
 const SKELETON = [0.6, 0.4, 0.85, 0.5, 0.7, 0.45, 0.9, 0.55, 0.65, 0.5, 0.8, 0.6];
 
@@ -36,6 +36,14 @@ export interface DoubleBarChartProps {
   showAxis?: boolean;
   /** Draw the vertical y-axis line (default true). */
   showYAxis?: boolean;
+  /** Horizontal (y) dashed gridlines (default true). */
+  showYGrid?: boolean;
+  /** Vertical (x) dashed gridlines, one per group (default false — they bisect bars). */
+  showXGrid?: boolean;
+  /** Approx. number of y-ticks in "nice" mode (default 4). */
+  yTicks?: number;
+  /** "nice" → rounded values; "count" → one tick per group. */
+  yTickMode?: YTickMode;
   selectedIndex?: number | null;
   onBarPress?: (d: DoubleBarDatum, i: number) => void;
   formatValue?: (n: number) => string;
@@ -59,6 +67,10 @@ export function DoubleBarChart({
   bar2Label = "Bar 2",
   showAxis = true,
   showYAxis = true,
+  showYGrid = true,
+  showXGrid = false,
+  yTicks = 4,
+  yTickMode = "nice",
   selectedIndex,
   formatValue = compactTick,
   onBarPress,
@@ -85,6 +97,8 @@ export function DoubleBarChart({
   const exp = bar2Color ?? colors.expense;
   const max = Math.max(0, ...data.flatMap(d => [d.income, d.expense]));
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
+  const scale = buildScale(0, max, yTickMode, yTickMode === "count" ? data.length : yTicks);
+  const scaleMax = showAxis ? scale.max : max;
 
   const legend = (
     <ChartLegend
@@ -125,7 +139,7 @@ export function DoubleBarChart({
   const plot = showValues ? height - 18 : height;
 
   const barH = (v: number) => {
-    const h = Math.max(2, (v / max) * plot);
+    const h = Math.max(2, (v / scaleMax) * plot);
     return animated ? grow.interpolate({ inputRange: [0, 1], outputRange: [2, h] }) : h;
   };
 
@@ -133,7 +147,17 @@ export function DoubleBarChart({
     <View testID={testID} className={cn("w-full", className)}>
       {legend}
       <View style={{ height }}>
-        {showAxis ? <YGrid max={max} height={height} axisLine={showYAxis} /> : null}
+        {showAxis ? (
+          <YGrid
+            scale={scale}
+            height={height}
+            n={data.length}
+            leftPad={leftPad}
+            axisLine={showYAxis}
+            showYGrid={showYGrid}
+            showXGrid={showXGrid}
+          />
+        ) : null}
         <View className="flex-row items-end gap-0.5" style={{ height, paddingLeft: leftPad }}>
           {data.map((d, i) => (
             <BarGroup
@@ -198,7 +222,13 @@ export function DoubleBarChartSkeleton({
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
       <View testID={testID} className={cn("w-full", className)}>
         <View className="flex-row items-end gap-0.5" style={{ height, paddingLeft: leftPad }}>
-          <YGrid max={n} height={height} axisLine={showAxis} showMiddleDashes={false} />
+          <YGrid
+            scale={buildScale(0, n, "nice", 2)}
+            height={height}
+            axisLine={showAxis}
+            showYGrid={false}
+            showLabels={false}
+          />
           {Array.from({ length: n }).map((_, i) => (
             <View key={i} className="flex-1 flex-row items-end justify-center gap-0.5" style={{ height }}>
               <View

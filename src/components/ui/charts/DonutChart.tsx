@@ -43,6 +43,8 @@ export interface DonutChartProps {
   showLegend?: boolean;
   /** "auto" puts the legend beside the donut on wide screens, below on narrow. */
   legendPosition?: "auto" | "right" | "bottom";
+  /** Cap the legend height; it scrolls past this so a long category list doesn't run away. */
+  legendMaxHeight?: number;
   /** Controlled selected slice; omit for uncontrolled internal selection. */
   selectedIndex?: number | null;
   onSlicePress?: (datum: DonutDatum, index: number) => void;
@@ -73,6 +75,7 @@ export function DonutChart({
   centerValue,
   showLegend = true,
   legendPosition = "auto",
+  legendMaxHeight,
   selectedIndex,
   onSlicePress,
   formatValue,
@@ -114,6 +117,7 @@ export function DonutChart({
         maxSlices={maxSlices}
         showLegend={showLegend}
         legendPosition={legendPosition}
+        legendMaxHeight={legendMaxHeight}
         isEmpty={!loading && total <= 0}
         emptyTitle={emptyTitle}
         emptySubtitle={emptySubtitle}
@@ -216,6 +220,7 @@ export function DonutChart({
       {showLegend ? (
         <ChartLegend
           className={legendSlotCls}
+          maxHeight={legendMaxHeight}
           items={segs.map(s => ({ label: s.label, color: s.color, value: fmt(s.value), percent: s.pct }))}
           selectedIndex={selected}
           onItemPress={i => select(i)}
@@ -231,6 +236,7 @@ export function DonutChartSkeleton({
   maxSlices = 8,
   showLegend = true,
   legendPosition = "auto",
+  legendMaxHeight,
   isEmpty = false,
   emptyTitle = "No data for this period",
   emptySubtitle,
@@ -243,6 +249,7 @@ export function DonutChartSkeleton({
   maxSlices?: number;
   showLegend?: boolean;
   legendPosition?: "auto" | "right" | "bottom";
+  legendMaxHeight?: number;
   isEmpty?: boolean;
   emptyTitle?: string;
   emptySubtitle?: string;
@@ -300,7 +307,7 @@ export function DonutChartSkeleton({
             {emptySubtitle ? <Badge className="rounded-xl" label={emptySubtitle} tone="neutral" /> : null}
           </View>
         ) : showLegend ? (
-          <View className={legendSlotCls}>
+          <View className={legendSlotCls} style={{ maxHeight: legendMaxHeight, overflow: "hidden" }}>
             {Array.from({ length: maxSlices }).map((_, i) => (
               <View key={i} className="flex-row items-center gap-2 px-1.5 py-1">
                 <View
