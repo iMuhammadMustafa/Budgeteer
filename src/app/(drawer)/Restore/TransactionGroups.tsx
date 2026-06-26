@@ -1,4 +1,4 @@
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 

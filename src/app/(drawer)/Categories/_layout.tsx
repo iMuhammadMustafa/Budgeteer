@@ -1,16 +1,13 @@
-import TabNavigation from "@/src/components/TabNavigation";
-import { useSegments } from "expo-router";
+import { SecondaryTabBar } from "@/src/components/ui";
 
 export default function CategoriesLayout() {
-  const segments = useSegments();
-
   return (
-    <TabNavigation
+    <SecondaryTabBar
+      mode="router"
       routes={[
         { name: "Categories", path: "/Categories" },
         { name: "Groups", path: "/Categories/Groups" },
       ]}
-      currentRoute={segments[2] === "Groups" ? "/Categories/Groups" : "/Categories"}
     />
   );
 }

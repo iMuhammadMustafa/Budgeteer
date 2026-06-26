@@ -1,4 +1,4 @@
-import TabNavigation from "@/src/components/TabNavigation";
+import { SecondaryTabBar } from "@/src/components/ui";
 import { router, usePathname } from "expo-router";
 import { useEffect } from "react";
 
@@ -20,5 +20,5 @@ export default function RestoreLayout() {
     }
   }, [pathname]);
 
-  return <TabNavigation routes={routes} currentRoute={pathname} />;
+  return <SecondaryTabBar mode="router" routes={routes} variant="underline" />;
 }

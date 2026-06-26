@@ -1,5 +1,5 @@
 import AccountCategoryForm, { initialState } from "@/src/components/forms/AccountCategoryForm";
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { TableNames } from "@/src/types/database/TableNames";
