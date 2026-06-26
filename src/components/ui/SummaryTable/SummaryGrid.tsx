@@ -94,7 +94,8 @@ export function SummaryGrid({
   }, []);
 
   const dataCell = (height: number, child: React.ReactNode, key: string | number) => (
-    <View key={key} style={{ width: columnWidth, height }} className="items-start justify-center border-b border-border px-3">
+    <View key={key} style={{ width: columnWidth, height }} className="justify-center border-b border-border px-3">
+      {/* <View key={key} style={{ width: columnWidth, height }} className="items-start justify-center border-b border-border px-3"> */}
       {child}
     </View>
   );
