@@ -65,11 +65,21 @@ export function useEntityList<TModel, TTable extends TableNames>({
   // ---- delete modal ----
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const openDelete = useCallback((item: TModel) => {
+    setItemToDelete(item);
+    setDeleteOpen(true);
+  }, []);
+  const closeDelete = useCallback(() => setDeleteOpen(false), []);
 
   // ---- restore modal ----
   const { mutate: restoreMutate, isPending: isRestorePending } = service.useRestore();
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [itemToRestore, setItemToRestore] = useState<any>(null);
+  const openRestore = useCallback((item: TModel) => {
+    setItemToRestore(item);
+    setRestoreOpen(true);
+  }, []);
+  const closeRestore = useCallback(() => setRestoreOpen(false), []);
 
   const handleRestoreConfirm = useCallback(() => {
     if (!itemToRestore) return;
@@ -203,11 +213,8 @@ export function useEntityList<TModel, TTable extends TableNames>({
     deleteModal: {
       isOpen: deleteOpen,
       itemToDelete,
-      open: (item: TModel) => {
-        setItemToDelete(item);
-        setDeleteOpen(true);
-      },
-      close: () => setDeleteOpen(false),
+      open: openDelete,
+      close: closeDelete,
       handleConfirm: handleDeleteConfirm,
       dependencyCount,
       replacementItems,
@@ -215,11 +222,8 @@ export function useEntityList<TModel, TTable extends TableNames>({
     restoreModal: {
       isOpen: restoreOpen,
       itemToRestore,
-      open: (item: TModel) => {
-        setItemToRestore(item);
-        setRestoreOpen(true);
-      },
-      close: () => setRestoreOpen(false),
+      open: openRestore,
+      close: closeRestore,
       handleConfirm: handleRestoreConfirm,
       isPending: isRestorePending,
     },

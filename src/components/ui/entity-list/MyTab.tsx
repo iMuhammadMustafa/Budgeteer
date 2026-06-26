@@ -53,6 +53,12 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
    * grouped (> 1 group), else single. Default "auto".
    */
   columns?: 1 | 2 | "auto";
+  /**
+   * How a group renders: "card" wraps it in a padded Card with an overline
+   * header (rows are cards-inside-a-card); "plain" uses a bare overline header
+   * above the row-cards. Default "card". Ignored for ungrouped lists.
+   */
+  groupStyle?: "card" | "plain";
 }
 
 export function MyTab<TModel, TTable extends TableNames>({
@@ -75,6 +81,7 @@ export function MyTab<TModel, TTable extends TableNames>({
   itemChildren,
   isPageLoading,
   columns = "auto",
+  groupStyle = "card",
 }: MyTabProps<TModel, TTable>) {
   const state = useEntityList<TModel, TTable>({
     service,
@@ -102,6 +109,7 @@ export function MyTab<TModel, TTable extends TableNames>({
       onBulkDelete={state.handleBulkDelete}
       Footer={Footer}
       columns={columns}
+      groupStyle={groupStyle}
       upsertOpen={state.upsertModal.isOpen}
       upsertTitle={editing ? `Edit ${singular}` : `Add ${singular}`}
       upsertContent={UpsertModal && state.upsertModal.isOpen ? UpsertModal(state.upsertModal.currentItem) : undefined}
@@ -109,12 +117,12 @@ export function MyTab<TModel, TTable extends TableNames>({
       renderItem={item => (
         <EntityListItem
           item={item}
-          isSelected={state.isSelected(item as TModel)}
-          onPress={() => state.handlePress(item as TModel)}
-          onLongPress={() => state.handleLongPress(item as TModel)}
-          onEdit={UpsertModal ? () => state.upsertModal.open(item as TModel) : undefined}
-          onDelete={() => state.deleteModal.open(item as TModel)}
-          onRestore={showRestore ? () => state.restoreModal.open(item as TModel) : undefined}
+          selected={state.isSelected(item as TModel)}
+          onPress={state.handlePress as (i: Renderable) => void}
+          onLongPress={state.handleLongPress as (i: Renderable) => void}
+          onEdit={UpsertModal ? (state.upsertModal.open as (i: Renderable) => void) : undefined}
+          onDelete={state.deleteModal.open as (i: Renderable) => void}
+          onRestore={showRestore ? (state.restoreModal.open as (i: Renderable) => void) : undefined}
           icons={icons}
           detailsUrl={detailsUrl}
           detailsContent={detailsContent as ((item: Renderable) => string) | undefined}

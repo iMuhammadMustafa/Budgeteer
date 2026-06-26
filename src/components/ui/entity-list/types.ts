@@ -87,18 +87,25 @@ export interface EntityListState<TModel> {
 
 export interface EntityListItemProps<TModel extends EntityLike> {
   item: TModel;
-  isSelected: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
-  onEdit?: () => void;
-  onDelete: () => void;
-  onRestore?: () => void;
+  selected: boolean;
+  /**
+   * Handlers are item-aware (receive the row's item) so the parent can pass a
+   * single STABLE callback to every row. EntityListItem is `React.memo`-wrapped;
+   * stable handler identity is what lets an unaffected row skip re-rendering when
+   * another row's selection toggles.
+   */
+  onPress: (item: TModel) => void;
+  onLongPress: (item: TModel) => void;
+  onEdit?: (item: TModel) => void;
+  onDelete: (item: TModel) => void;
+  onRestore?: (item: TModel) => void;
   /** Show the leading colored icon tile (default true). */
   icons?: boolean;
   /** Used to build the `<Link>` href so the row is a real, openable link on web. */
   detailsUrl?: string;
   detailsContent?: (item: TModel) => string;
   customAction?: ReactNode | ((item: TModel) => ReactNode);
+  /** Nested content (e.g. savings buckets). When set, the row gets a chevron and collapses these by default. */
   itemChildren?: (item: TModel) => ReactNode;
   customRenderItem?: (item: TModel, isSelected: boolean, onLongPress: () => void, onPress: () => void) => ReactNode;
   testID?: string;

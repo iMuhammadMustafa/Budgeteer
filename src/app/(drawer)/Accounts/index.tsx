@@ -135,25 +135,15 @@ const FooterContent = ({
   formatCurrency: (amount: number) => string;
 }) => {
   if (isLoadingTotalBalance) {
-    return <ActivityIndicator animating={true} className="my-1" />;
+    return <ActivityIndicator animating={true} />;
   }
   if (totalBalanceData) {
     return (
-      <View className="bg-surface border-t border-border items-center rounded-b-lg shadow-md">
-        <Text className="font-md font-psemibold text-primary">Total Account Balance:</Text>
-        <Text className="font-md font-pbold text-primary-focus text-foreground">
+      <View className="items-center">
+        <Text className="font-sans-semibold text-sm text-primary-deep">Total Account Balance:</Text>
+        <Text className="font-mono-semibold text-2xl text-primary mt-[3px]">
           {formatCurrency(totalBalanceData.totalbalance)}
         </Text>
-        {/* Show Buckets Toggle */}
-        {/* <View className="flex-row items-center justify-between px-2 py-1 border-b border-border">
-          <Text className="text-sm text-foreground">Show Buckets</Text>
-          <Switch
-            testID="show-buckets-toggle"
-            value={showBuckets}
-            onValueChange={setShowBuckets}
-            trackColor={{ false: "#767577", true: "rgb(var(--primary))" }}
-          />
-        </View> */}
       </View>
     );
   }
