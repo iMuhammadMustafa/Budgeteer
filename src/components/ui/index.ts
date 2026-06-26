@@ -54,6 +54,49 @@ export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
 export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
 export { DatePicker, type DatePickerProps } from "./DatePicker";
 
+// secondary tabs + entity list (Step 3 — §9, replaces legacy MyTab/TabNavigation/TabRouting)
+export {
+  SecondaryTabBar,
+  type SecondaryTabBarProps,
+  type SecondaryTabVariant,
+  type RouterTab,
+  type InlineTab,
+} from "./SecondaryTabBar";
+export {
+  useEntityList,
+  EntityListItem,
+  EntityListScreen,
+  MyTab,
+  type EntityListScreenProps,
+  type MyTabProps,
+  type EntityLike,
+  type DependencyConfig,
+  type EntityListState,
+  type EntityListItemProps,
+  type UseEntityListConfig,
+} from "./entity-list";
+
+// summary table (Step 3 — §10, rebuilt frozen-corner comparison matrix)
+export {
+  SummaryGrid,
+  SummaryPeriodBar,
+  type SummaryGridProps,
+  type SummaryPeriodBarProps,
+  type PeriodMeta,
+  type SummaryRow,
+  type TimePeriod,
+} from "./SummaryTable";
+
+// calculator (Step 3 — §10, safe-parser hook + combined component)
+export {
+  useCalculator,
+  evaluateExpression,
+  BUTTON_ROWS,
+  Calculator,
+  type UseCalculatorReturn,
+  type CalculatorProps,
+} from "./Calculator";
+
 // charts (Step 3 — custom SVG/Views, themed; Donut + Bar first)
 export { DonutChart, type DonutChartProps, type DonutDatum } from "./charts/DonutChart";
 export { BarChart, type BarChartProps, type BarDatum } from "./charts/BarChart";
