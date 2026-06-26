@@ -68,6 +68,7 @@ export {
   EntityListScreen,
   MyTab,
   type EntityListScreenProps,
+  useEntityListLayout,
   type MyTabProps,
   type EntityLike,
   type DependencyConfig,

@@ -40,6 +40,7 @@ export interface ListRowProps {
   subAmount?: string;
   tone?: AmountTone;
   onPress?: () => void;
+  onLongPress?: () => void;
   right?: ReactNode;
   /** Drop the card chrome (border/bg/radius) so the row can sit inside another container. */
   bare?: boolean;
@@ -59,6 +60,7 @@ export function ListRow({
   subAmount,
   tone = "auto",
   onPress,
+  onLongPress,
   right,
   bare = false,
   className,
@@ -107,6 +109,7 @@ export function ListRow({
     return (
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
         testID={testID}
         className={cn(
           "flex-row items-center px-[15px] py-[13px]",
