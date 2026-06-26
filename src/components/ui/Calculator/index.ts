@@ -1,4 +1,4 @@
-/** Calculator — safe-parser hook + split trigger/modal (Step 3 §10). */
-export { useCalculator, evaluateExpression, BUTTON_ROWS, type UseCalculatorReturn } from "./useCalculator";
-export { CalculatorModal, type CalculatorModalProps } from "./CalculatorModal";
-export { CalculatorTrigger, type CalculatorTriggerProps } from "./CalculatorTrigger";
+/** Calculator — safe-parser hook + combined component (Step 3 §10). */
+export { Calculator, type CalculatorProps } from "./Calculator";
+export { BUTTON_ROWS, evaluateExpression, useCalculator, type UseCalculatorReturn } from "./useCalculator";
+
