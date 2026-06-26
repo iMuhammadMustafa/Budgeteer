@@ -1,4 +1,4 @@
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 

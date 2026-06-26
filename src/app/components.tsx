@@ -24,6 +24,7 @@ import {
   Badge,
   BarChart,
   Button,
+  Calculator,
   CalendarHeatmap,
   Card,
   Checkbox,
@@ -1010,6 +1011,9 @@ export default function ComponentsPreview() {
             </Card>
           </View>
         ))}
+      </Section>
+      <Section title="Calculator · amount entry">
+        <Calculator onSubmit={noop} />
       </Section>
     </ScrollView>
   );

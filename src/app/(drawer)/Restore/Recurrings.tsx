@@ -1,4 +1,4 @@
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 

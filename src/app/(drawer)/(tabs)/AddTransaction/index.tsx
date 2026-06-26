@@ -1,7 +1,7 @@
 import TransactionFormSkeleton from "@/src/components/elements/TransactionFormSkeleton";
 import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
-import MyTabsRouter from "@/src/components/TabRouting";
+import { SecondaryTabBar } from "@/src/components/ui";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { useLocalSearchParams } from "expo-router";
 
@@ -32,5 +32,5 @@ export default function AddTransaction() {
     },
   ];
 
-  return <MyTabsRouter tabs={routes} />;
+  return <SecondaryTabBar mode="inline" tabs={routes} />;
 }

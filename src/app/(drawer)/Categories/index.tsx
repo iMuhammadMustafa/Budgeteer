@@ -1,5 +1,5 @@
 import TransactionCategoryForm, { initialState } from "@/src/components/forms/TransactionCategoryForm";
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TableNames } from "@/src/types/database/TableNames";

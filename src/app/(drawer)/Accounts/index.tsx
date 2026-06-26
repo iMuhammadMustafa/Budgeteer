@@ -3,7 +3,7 @@ import Button from "@/src/components/elements/Button";
 import { AccountSelecterDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import MyModal from "@/src/components/elements/MyModal";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";

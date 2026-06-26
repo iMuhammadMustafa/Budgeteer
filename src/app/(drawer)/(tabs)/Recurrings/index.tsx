@@ -4,7 +4,7 @@ import MyModal from "@/src/components/elements/MyModal";
 import { RecurringDetails } from "@/src/components/elements/RecurringStatusBadges";
 import ThemedText from "@/src/components/elements/ThemedText";
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
-import MyTab from "@/src/components/MyTab";
+import { MyTab } from "@/src/components/ui";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
