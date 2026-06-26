@@ -21,6 +21,14 @@ import { useEntityList } from "./useEntityList";
 // shape at the render boundary.
 type Renderable = EntityLike & Record<string, any>;
 
+/** Derive a singular noun from a plural title, handling common English patterns. */
+const singularize = (title: string): string => {
+  const words = title.split(" ");
+  const last = words.pop()!;
+  const singularLast = last.replace(/ies$/i, "y").replace(/s$/i, "");
+  return [...words, singularLast].join(" ");
+};
+
 export interface MyTabProps<TModel, TTable extends TableNames> {
   title: string;
   service: IService<TModel, TTable>;
@@ -40,6 +48,11 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
   customFindAll?: () => ReturnType<IService<TModel, TTable>["useFindAll"]>;
   itemChildren?: (item: TModel) => ReactNode;
   isPageLoading?: boolean;
+  /**
+   * Column layout: 1 = always single, 2 = always two, "auto" = two when
+   * grouped (> 1 group), else single. Default "auto".
+   */
+  columns?: 1 | 2 | "auto";
 }
 
 export function MyTab<TModel, TTable extends TableNames>({
@@ -61,6 +74,7 @@ export function MyTab<TModel, TTable extends TableNames>({
   customFindAll,
   itemChildren,
   isPageLoading,
+  columns = "auto",
 }: MyTabProps<TModel, TTable>) {
   const state = useEntityList<TModel, TTable>({
     service,
@@ -71,7 +85,7 @@ export function MyTab<TModel, TTable extends TableNames>({
     customFindAll,
   });
 
-  const singular = title.endsWith("s") ? title.slice(0, -1) : title;
+  const singular = singularize(title);
   const editing = !!(state.upsertModal.currentItem as any)?.id;
 
   return (
@@ -81,10 +95,13 @@ export function MyTab<TModel, TTable extends TableNames>({
       isLoading={state.isLoading}
       isPageLoading={isPageLoading}
       isSelectionMode={state.isSelectionMode}
+      selectedCount={state.selectedItems.length}
       onRefresh={state.handleRefresh}
       onAdd={UpsertModal ? () => state.upsertModal.open(initialState) : undefined}
+      addLabel={`Add ${singular}`}
       onBulkDelete={state.handleBulkDelete}
       Footer={Footer}
+      columns={columns}
       upsertOpen={state.upsertModal.isOpen}
       upsertTitle={editing ? `Edit ${singular}` : `Add ${singular}`}
       upsertContent={UpsertModal && state.upsertModal.isOpen ? UpsertModal(state.upsertModal.currentItem) : undefined}

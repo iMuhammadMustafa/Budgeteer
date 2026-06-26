@@ -150,6 +150,22 @@ const accentIndexFor = (label: string): number => {
 export const accentFor = (label: string, theme: ThemeName): AccentSwatch =>
   accentPalette[theme][accentIndexFor(label)];
 
+/**
+ * Find the accent swatch matching a hex color stored in the DB (picked via ColorPicker,
+ * which defaults to `accentPalette.light.map(c => c.fg)`). Checks both light & dark fg
+ * values so a color saved under one theme resolves under either. Returns `undefined` when
+ * the hex doesn't match any palette entry — callers should fall back to `accentFor(name)`.
+ */
+export const swatchForHex = (hex: string, theme: ThemeName): AccentSwatch | undefined => {
+  const n = hex.toLowerCase();
+  for (let i = 0; i < accentPalette.light.length; i++) {
+    if (accentPalette.light[i].fg.toLowerCase() === n || accentPalette.dark[i].fg.toLowerCase() === n) {
+      return accentPalette[theme][i];
+    }
+  }
+  return undefined;
+};
+
 /** Multi-series chart palette (theme-independent fg hues) — the accent fg ramp. */
 export const chartPalette = accentPalette.light.map(s => s.fg);
 

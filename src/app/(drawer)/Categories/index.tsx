@@ -24,6 +24,7 @@ export default function TransactionGroupsTab() {
         dependencyType: "Transactions",
         allowDeleteDependencies: true,
       }}
+      columns={1}
     />
   );
 }
