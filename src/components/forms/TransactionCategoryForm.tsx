@@ -1,5 +1,4 @@
-import DropdownField, { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
-import IconPicker from "@/src/components/elements/IconPicker";
+import { ColorsPickerDropdown, Dialog, IconPicker, Select, type SelectOption } from "@/src/components/ui";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
 import FormSection from "@/src/components/form-builder/FormSection";
@@ -16,7 +15,7 @@ import {
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
 import { router } from "expo-router";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionGroupForm, { initialState as transactionGroupInitialState } from "./TransactionGroupForm";
@@ -255,6 +254,28 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
   // Form fields configuration
   const formFields = useMemo(() => createFormFields(groupOptions), [groupOptions]);
 
+  // Map group options → ui Select options (id is the stable key; value carries the payload).
+  const groupSelectOptions: SelectOption[] = useMemo(
+    () =>
+      groupOptions.map(opt => ({
+        id: String(opt.id),
+        label: opt.label,
+        value: opt.value,
+        icon: opt.icon,
+        group: opt.group,
+      })),
+    [groupOptions],
+  );
+
+  // The Select `value` is an option id; find the option whose stored value matches groupid.
+  const groupSelectedId = useMemo(() => {
+    const match = groupOptions.find(o => o.value === formState.data.groupid);
+    return match ? String(match.id) : null;
+  }, [groupOptions, formState.data.groupid]);
+
+  // "Add New Group" dialog state (mirrors FormField's addNew → Dialog bridge).
+  const [addingGroup, setAddingGroup] = useState(false);
+
   // Show loading state while groups are loading
   if (isGroupsLoading) {
     return (
@@ -293,28 +314,33 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
               <Text className="text-foreground mb-1 font-medium">
                 Transaction Group <Text className="text-status-danger ml-1">*</Text>
               </Text>
-              <DropdownField
-                isModal={Platform.OS !== "web"}
+              <Select
+                present={Platform.OS !== "web" ? "sheet" : undefined}
                 label=""
-                options={groupOptions}
-                selectedValue={formState.data.groupid}
-                groupBy="type"
-                onSelect={value => {
-                  handleFieldChange("groupid", value?.value);
+                options={groupSelectOptions}
+                value={groupSelectedId}
+                groupBy={o => o.group ?? ""}
+                onChange={next => {
+                  const id = Array.isArray(next) ? next[0] : next;
+                  const option = id ? groupOptions.find(o => String(o.id) === id) ?? null : null;
+                  handleFieldChange("groupid", option?.value);
                   handleFieldBlur("groupid");
                 }}
-                addNew={{
-                  entityType: "TransactionGroup",
-                  label: "Add New Group",
-                  renderForm: ({ onSuccess, onCancel }) => (
-                    <TransactionGroupForm
-                      group={transactionGroupInitialState}
-                      onSuccess={onSuccess}
-                      onCancel={onCancel}
-                    />
-                  ),
-                }}
+                addNew={{ label: "Add New Group", onPress: () => setAddingGroup(true) }}
               />
+              <Dialog visible={addingGroup} onClose={() => setAddingGroup(false)} title="Add TransactionGroup">
+                <TransactionGroupForm
+                  group={transactionGroupInitialState}
+                  onSuccess={(item: any) => {
+                    if (item && item.id !== undefined) {
+                      handleFieldChange("groupid", item.id);
+                      handleFieldBlur("groupid");
+                    }
+                    setAddingGroup(false);
+                  }}
+                  onCancel={() => setAddingGroup(false)}
+                />
+              </Dialog>
               {formState.touched.groupid && formState.errors.groupid && (
                 <Text className="text-status-danger text-sm mt-1">{formState.errors.groupid}</Text>
               )}
@@ -378,7 +404,7 @@ function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: Tra
             {/* Icon and Color Selection in responsive layout */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
-                <IconPicker onSelect={handleIconSelect} initialIcon={formState.data.icon ?? "CircleHelp"} />
+                <IconPicker onChange={handleIconSelect} value={formState.data.icon ?? "CircleHelp"} />
                 {formState.touched.icon && formState.errors.icon && (
                   <Text className="text-status-danger text-sm mt-1">{formState.errors.icon}</Text>
                 )}

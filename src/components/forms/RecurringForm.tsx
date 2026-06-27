@@ -1,4 +1,3 @@
-import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import {
   parseRecurrenceRule,
@@ -16,12 +15,19 @@ import dayjs from "dayjs";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
-import Button from "../elements/Button";
-import DropdownField, { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
-import MyDateTimePicker from "../elements/MyDateTimePicker";
-import MyIcon from "../elements/MyIcon";
-import SearchableDropdown from "../elements/SearchableDropdown";
-import TextInputField from "../elements/TextInputField";
+import {
+  AccountSelecterDropdown,
+  Button,
+  DateTimePicker,
+  GroupedInput,
+  Input,
+  MyCategoriesDropdown,
+  type SearchableSelectOption,
+  SearchableSelect,
+  Select,
+  type SelectOption,
+  Switch,
+} from "@/src/components/ui";
 
 type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
@@ -53,6 +59,31 @@ const recurringCategoryOptions: OptionItem[] = [
   { id: RecurringType.Transfer, label: "Account Transfer", value: RecurringType.Transfer },
   // { id: RecurringType.CreditCardPayment, label: "Credit Card Payment", value: RecurringType.CreditCardPayment },
 ];
+
+// DropdownField → ui Select bridges: legacy options carry the stored value on
+// `.value` and key on `.id`; Select keys/values on a string id and reports back
+// that id, so these map between the two shapes (preserving the original
+// `onSelect(item)` handlers, which still receive the legacy OptionItem).
+const toSelectOptions = (options: OptionItem[]): SelectOption[] =>
+  options.map(o => ({
+    id: String(o.id),
+    label: o.label,
+    value: o.value,
+    icon: o.icon,
+    iconColor: o.color,
+    group: (o as { group?: string }).group,
+  }));
+
+const selectIdForValue = (options: OptionItem[], selectedValue: unknown): string | null => {
+  const match = options.find(o => o.value === selectedValue);
+  return match ? String(match.id) : null;
+};
+
+const optionForId = (options: OptionItem[], id: string | string[] | null): OptionItem | null => {
+  if (id == null) return null;
+  const key = Array.isArray(id) ? id[0] : id;
+  return options.find(o => String(o.id) === key) ?? null;
+};
 
 export const initialRecurringState: RecurringFormType = {
   name: "",
@@ -97,6 +128,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
     isSubmitting,
     categories,
     accounts,
+    blueprintLabel,
     handleTextChange,
     handleDateChange,
     handleSwitchChange,
@@ -108,65 +140,80 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
 
   const transactionService = useTransactionService();
 
+  // SearchableDropdown → SearchableSelect: the legacy searchAction received
+  // (text, tenantId); useFindByName already captures tenantId in its service
+  // closure and ignores the second arg, so the new (query)-only signature wraps
+  // it directly. Results ({label, item}) map to SearchableSelectOption; on
+  // select we reconstruct the legacy {label, item} shape for the handler.
+  const blueprintSearch = async (query: string): Promise<SearchableSelectOption[]> => {
+    const results = await transactionService.useFindByName(query);
+    return results.map((r, i) => ({
+      id: `${r.label}-${i}`,
+      label: r.label,
+      value: r.item,
+    }));
+  };
+
   if (isLoading) return <ActivityIndicator className="flex-1 justify-center items-center" />;
 
   return (
     <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
       {!isEdit && (
-        <SearchableDropdown
+        <SearchableSelect
           label="Blueprint Transaction (Optional)"
           placeholder="Search transaction by name..."
-          searchAction={transactionService.useFindByName}
-          onSelectItem={handleBlueprintTransactionSelect}
-          onChange={() => {}}
+          searchAction={blueprintSearch}
+          onSelect={option => handleBlueprintTransactionSelect({ label: option.label, item: option.value })}
+          selectedLabel={blueprintLabel}
+          present={Platform.OS !== "web" ? "sheet" : undefined}
           className="my-1"
         />
       )}
 
-      <TextInputField
+      <Input
         label="Name"
         value={formData.name}
-        onChange={text => handleTextChange("name", text)}
+        onChangeText={text => handleTextChange("name", text)}
         placeholder="e.g., Rent Payment"
-        className=""
       />
-      <TextInputField
+      <Input
         label="Description"
         value={formData.description ?? ""}
-        onChange={text => handleTextChange("description", text)}
+        onChangeText={text => handleTextChange("description", text)}
         placeholder="e.g., Monthly apartment rent"
         multiline
-        className=""
       />
-      <DropdownField
+      <Select
         label="Recurring Category"
-        options={recurringCategoryOptions}
-        selectedValue={formData.recurringType}
-        onSelect={(item: OptionItem | null) => {
+        options={toSelectOptions(recurringCategoryOptions)}
+        value={selectIdForValue(recurringCategoryOptions, formData.recurringType)}
+        onChange={id => {
+          const item = optionForId(recurringCategoryOptions, id);
           if (item) {
             handleTextChange("recurringType", item.id as RecurringType);
           }
         }}
-        isModal={Platform.OS !== "web"}
+        present={Platform.OS !== "web" ? "sheet" : undefined}
       />
 
       {formData.recurringType === RecurringType.Standard && (
-        <DropdownField
+        <Select
           label="Transaction Type"
-          options={recurringTypeOptions}
-          selectedValue={formData.type}
-          onSelect={(item: OptionItem | null) => {
+          options={toSelectOptions(recurringTypeOptions)}
+          value={selectIdForValue(recurringTypeOptions, formData.type)}
+          onChange={id => {
+            const item = optionForId(recurringTypeOptions, id);
             if (item) {
               handleTextChange("type", item.id as TransactionType);
             }
           }}
-          isModal={Platform.OS !== "web"}
+          present={Platform.OS !== "web" ? "sheet" : undefined}
         />
       )}
 
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
-        <ThemedSwitch
+        <Switch
           value={!!formData.isDateFlexible}
           onValueChange={value => handleSwitchChange("isDateFlexible", value)}
           testID="switch-flexible-date"
@@ -175,27 +222,29 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
 
       {!formData.isDateFlexible && (
         <>
-          <MyDateTimePicker
+          <DateTimePicker
             label="Next Occurrence Date"
-            date={dayjs(formData.nextoccurrencedate)}
+            value={formData.nextoccurrencedate ? dayjs(formData.nextoccurrencedate).toISOString() : null}
             onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
+            present={Platform.OS !== "web" ? "sheet" : undefined}
           />
-          <DropdownField
+          <Select
             label="Frequency"
-            options={recurrenceFrequencyOptions}
-            selectedValue={formData.frequency}
-            onSelect={(item: OptionItem | null) => {
+            options={toSelectOptions(recurrenceFrequencyOptions)}
+            value={selectIdForValue(recurrenceFrequencyOptions, formData.frequency)}
+            onChange={id => {
+              const item = optionForId(recurrenceFrequencyOptions, id);
               // Handle null item
               if (item) {
                 handleTextChange("frequency", item.id as RecurrenceFrequency);
               }
             }}
-            isModal={Platform.OS !== "web"}
+            present={Platform.OS !== "web" ? "sheet" : undefined}
           />
-          <TextInputField
+          <Input
             label="Interval"
             value={formData.interval.toString()}
-            onChange={text => handleTextChange("interval", parseInt(text, 10) || 1)}
+            onChangeText={text => handleTextChange("interval", parseInt(text, 10) || 1)}
             keyboardType="numeric"
             placeholder="e.g., 1"
           />
@@ -203,7 +252,7 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       )}
       <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
         <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
-        <ThemedSwitch
+        <Switch
           value={!!formData.isAmountFlexible}
           onValueChange={value => handleSwitchChange("isAmountFlexible", value)}
           testID="switch-flexible-amount"
@@ -211,34 +260,19 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
       </View>
 
       {!formData.isAmountFlexible && (
-        <View className="flex-row justify-center items-center mb-4">
-          <View className="me-2 mt-5 justify-center items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              hapticFeedback="selection"
-              className={`${
-                formData.type === "Transfer" ? "bg-info-400" : mode === "plus" ? "bg-success-400" : "bg-danger-400"
-              } border border-muted rounded-lg p-1.5`}
-              onPress={handleModeToggle}
-              testID="btn-recurring-mode-toggle"
-              accessibilityLabel={`Toggle amount sign, currently ${mode}`}
-            >
-              {mode === "minus" ? (
-                <MyIcon name="Minus" size={24} className="text-gray-100" />
-              ) : (
-                <MyIcon name="Plus" size={24} className="text-gray-100" />
-              )}
-            </Button>
-          </View>
-
-          <TextInputField
+        <View className="mb-4">
+          <GroupedInput
             label="Amount"
-            value={(formData.amount ?? 0).toString()} // Default to 0 if undefined
-            onChange={text => handleTextChange("amount", parseFloat(text) || 0)}
-            keyboardType="numeric"
+            amount={formData.type === "Transfer" ? formData.amount ?? 0 : mode === "minus" ? -(formData.amount ?? 0) : formData.amount ?? 0}
+            mode={formData.type === "Transfer" ? "transfer" : mode}
+            onChange={value => handleTextChange("amount", Math.abs(value) || 0)}
+            onModeChange={newMode => {
+              if (newMode === "plus" || newMode === "minus") {
+                setMode(newMode);
+              }
+            }}
             placeholder="e.g., 1200.50"
-            className="flex-1"
+            inputTestID="amount-input"
           />
         </View>
       )}
@@ -298,17 +332,16 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
         onClear={() => handleTextChange("categoryid", null)}
       />
-      <TextInputField
+      <Input
         label="Payee Name (Optional)"
         value={formData.payeename ?? ""}
-        onChange={text => handleTextChange("payeename", text)}
+        onChangeText={text => handleTextChange("payeename", text)}
         placeholder="e.g., Landlord Name"
-        className=""
       />
-      <TextInputField
+      <Input
         label="Notes (Optional)"
         value={formData.notes ?? ""}
-        onChange={text => handleTextChange("notes", text)}
+        onChangeText={text => handleTextChange("notes", text)}
         placeholder="Any additional notes"
         multiline
       />
@@ -326,20 +359,14 @@ export default function RecurringForm({ recurring }: { recurring: any }) {
         <Button
           variant="primary"
           size="lg"
-          hapticFeedback="success"
-          className="bg-primary px-8 py-3 rounded-md"
+          haptic="success"
+          className="px-8 py-3"
           disabled={isSubmitting}
+          loading={isSubmitting}
           onPress={handleSubmit}
+          label={isEdit ? "Update" : "Save"}
           testID="btn-recurring-submit"
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-medium text-lg" selectable={false}>
-              {isEdit ? "Update" : "Save"}
-            </Text>
-          )}
-        </Button>
+        />
       </View>
     </ScrollView>
   );
@@ -349,6 +376,8 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
   const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mode, setMode] = useState<"plus" | "minus">("minus");
+  // SearchableSelect is caller-owned for its display label (async results).
+  const [blueprintLabel, setBlueprintLabel] = useState<string | null>(null);
 
   const recurringService = useRecurringService();
   const transactionCategoriesService = useTransactionCategoryService();
@@ -474,6 +503,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
       try {
         setIsSubmitting(true); // Use submitting state for loading indicator
         const blueprintTransaction = selected.item;
+        setBlueprintLabel(selected.label);
         // console.log("Blueprint Transaction:", blueprintTransaction);
         let amount = blueprintTransaction.amount;
         if (amount) {
@@ -567,6 +597,7 @@ const useRecurringForm = (recurringToEdit: Recurring | null) => {
     isSubmitting,
     categories,
     accounts,
+    blueprintLabel,
     handleTextChange,
     handleDateChange,
     handleSwitchChange,

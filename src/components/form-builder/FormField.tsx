@@ -1,181 +1,194 @@
-import { FormFieldProps, OptionItem } from "@/src/types/components/forms.types";
-import dayjs from "dayjs";
-import { memo, useCallback, useMemo } from "react";
-import { Text, TextInput, View } from "react-native";
-import ThemedText from "../elements/ThemedText";
-import ThemedSwitch from "../elements/ThemedSwitch";
-import DropdownField from "../elements/dropdown/DropdownField";
-import MyDateTimePicker from "../elements/MyDateTimePicker";
-
 /**
- * FormField component provides a consistent wrapper for different field types
- * with error display, validation states, and accessibility support.
- * Supports: text, number, select, date, textarea, switch field types.
+ * FormField — consistent wrapper for the form-builder field types, rendering the
+ * new `ui/` inputs (Step 4 straight swap). The ui inputs own their label + error
+ * display; this wrapper adds the optional description line and the inline switch
+ * label, and bridges the legacy `addNew.renderForm` onto `Select`'s addNew via a
+ * Dialog. The `FormFieldProps`/`FormFieldConfig` API is unchanged.
+ *
+ * Supports: text, number, select, date, textarea, switch, multiselect.
  */
+import { FormFieldProps } from "@/src/types/components/forms.types";
+import { memo, useCallback, useMemo, useState } from "react";
+import { View } from "react-native";
+
+import {
+  DateTimePicker,
+  Dialog,
+  Input,
+  Select,
+  Switch,
+  Text,
+  type SelectOption,
+} from "@/src/components/ui";
+
 function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur, className = "" }: FormFieldProps<T>) {
   const { name, label, type, required = false, placeholder, options = [], disabled = false, description } = config;
 
-  const hasError = touched && error;
+  const hasError = Boolean(touched && error);
+  const errorText = hasError ? error : undefined;
+  const fieldTestID = `field-${String(name)}`;
 
-  // Memoize computed values to prevent unnecessary recalculations
-  const fieldId = useMemo(() => `field-${String(name)}`, [name]);
-  const errorId = useMemo(() => `${fieldId}-error`, [fieldId]);
-  const descriptionId = useMemo(() => `${fieldId}-description`, [fieldId]);
+  const handleChange = useCallback((newValue: any) => onChange(newValue), [onChange]);
+  const handleBlur = useCallback(() => onBlur?.(), [onBlur]);
 
-  // Enhanced accessibility attributes
-  const accessibilityDescribedBy = useMemo(() => {
-    const describedByIds = [];
-    if (description) describedByIds.push(descriptionId);
-    if (hasError) describedByIds.push(errorId);
-    return describedByIds.length > 0 ? describedByIds.join(" ") : undefined;
-  }, [description, hasError, descriptionId, errorId]);
-
-  const handleChange = useCallback(
-    (newValue: any) => {
-      onChange(newValue);
-    },
-    [onChange],
+  // Map form OptionItem[] → ui SelectOption[] (id is the stable key; value carries the payload).
+  const selectOptions: SelectOption[] = useMemo(
+    () =>
+      options.map(opt => ({
+        id: String(opt.id),
+        label: opt.label,
+        value: opt.value,
+        icon: opt.icon,
+        iconColor: opt.color,
+        // Forms attach a `.group` string to options when grouping is enabled.
+        group: (opt as { group?: string }).group,
+        disabled: opt.disabled,
+      })),
+    [options],
   );
 
-  const handleBlur = useCallback(() => {
-    if (onBlur) {
-      onBlur();
-    }
-  }, [onBlur]);
+  const optionById = useMemo(() => new Map(selectOptions.map((o, i) => [o.id, options[i]])), [selectOptions, options]);
+  const idForValue = useMemo(() => {
+    const match = options.find(o => o.value === value);
+    return match ? String(match.id) : null;
+  }, [options, value]);
+
+  // Inline "Add New" entity creation (legacy addNew.renderForm) hosted in a Dialog.
+  const [addingNew, setAddingNew] = useState(false);
+  const addNew = config.addNew;
+
+  const labelNode = (
+    <Text variant="label" className="mb-[7px]">
+      {label}
+      {required ? <Text className="text-danger"> *</Text> : null}
+    </Text>
+  );
 
   const renderField = () => {
-    const baseAccessibilityProps = {
-      accessible: true,
-      accessibilityLabel: label + (required ? " (required)" : ""),
-      accessibilityRequired: required,
-      accessibilityInvalid: Boolean(hasError),
-      accessibilityDescribedBy: accessibilityDescribedBy,
-      accessibilityState: {
-        invalid: Boolean(hasError),
-        required: required,
-        disabled: disabled,
-      },
-      accessibilityHint: hasError ? `This field has an error: ${error}` : description ? description : undefined,
-    };
-
     switch (type) {
       case "text":
         return (
-          <TextInput
-            {...baseAccessibilityProps}
-            className={`text-foreground border rounded-md p-3 ${
-              hasError
-                ? "border-red-500 bg-red-50"
-                : disabled
-                  ? "border-border-default bg-input-bg-disabled"
-                  : "border-input-border bg-input-bg"
-            }`}
+          <Input
+            label={label}
             value={value === null || value === undefined ? "" : value.toString()}
             onChangeText={handleChange}
             onBlur={handleBlur}
-            keyboardType="default"
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
             editable={!disabled}
-            aria-disabled={disabled}
+            error={errorText}
+            testID={fieldTestID}
           />
         );
+
       case "number":
         return (
-          <TextInput
-            {...baseAccessibilityProps}
-            className={`text-foreground border rounded-md p-3 ${
-              hasError
-                ? "border-red-500 bg-red-50"
-                : disabled
-                  ? "border-border-default bg-input-bg-disabled"
-                  : "border-input-border bg-input-bg"
-            }`}
+          <Input
+            label={label}
             value={value === null || value === undefined ? "" : value.toString()}
-            onChangeText={text => handleChange(text)}
+            onChangeText={handleChange}
             onBlur={() => {
-              // Only coerce to number on blur if not empty
-              if (onBlur) {
-                if (value === "" || value === null || value === undefined) {
-                  onChange(null);
-                } else if (!isNaN(Number(value))) {
-                  onChange(Number(value));
-                }
-                onBlur();
-              }
+              if (value === "" || value === null || value === undefined) onChange(null);
+              else if (!isNaN(Number(value))) onChange(Number(value));
+              handleBlur();
             }}
             keyboardType="numeric"
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
             editable={!disabled}
-            aria-disabled={disabled}
+            error={errorText}
+            testID={fieldTestID}
           />
         );
 
       case "textarea":
         return (
-          <TextInput
-            {...baseAccessibilityProps}
-            className={`text-foreground border rounded-md p-3 h-20 ${
-              hasError
-                ? "border-red-500 bg-red-50"
-                : disabled
-                  ? "border-border-default bg-input-bg-disabled"
-                  : "border-input-border bg-input-bg"
-            }`}
+          <Input
+            label={label}
             value={value?.toString() || ""}
             onChangeText={handleChange}
             onBlur={handleBlur}
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
-            multiline={true}
+            multiline
+            numberOfLines={4}
             textAlignVertical="top"
+            containerClassName="h-24 items-start py-2"
             editable={!disabled}
-            aria-disabled={disabled}
+            error={errorText}
+            testID={fieldTestID}
           />
         );
 
       case "select":
-        // Ensure selectedValue matches the type of option values
         return (
-          <View className="relative">
-            <DropdownField
-              label={label}
-              selectedValue={options.find(opt => opt.value === value) ? value : null}
-              options={options}
-              onSelect={(item: OptionItem | null) => {
-                handleChange(item?.value ?? null);
-                handleBlur();
-              }}
-              isModal={config.popUp}
-              groupBy={config.group}
-              addNew={config.addNew}
-              showClear={config.showClear}
-              disabled={disabled}
-              error={error}
-              touched={touched}
-            />
-          </View>
+          <Select
+            label={label}
+            options={selectOptions}
+            value={idForValue}
+            onChange={next => {
+              const id = Array.isArray(next) ? next[0] : next;
+              const opt = id ? optionById.get(id) : null;
+              handleChange(opt ? opt.value : null);
+              handleBlur();
+            }}
+            groupBy={config.group ? o => o.group ?? "" : undefined}
+            clearable={config.showClear}
+            present={config.popUp ? "dialog" : undefined}
+            addNew={addNew ? { label: addNew.label ?? "Add new", onPress: () => setAddingNew(true) } : undefined}
+            disabled={disabled}
+            error={errorText}
+            placeholder={placeholder}
+            testID={fieldTestID}
+          />
         );
+
+      case "multiselect": {
+        const selectedIds = Array.isArray(value)
+          ? options.filter(o => (value as any[]).includes(o.value)).map(o => String(o.id))
+          : [];
+        return (
+          <Select
+            label={label}
+            multiple
+            options={selectOptions}
+            values={selectedIds}
+            onChange={next => {
+              const ids = Array.isArray(next) ? next : next ? [next] : [];
+              handleChange(ids.map(id => optionById.get(id)?.value).filter(v => v !== undefined));
+              handleBlur();
+            }}
+            clearable={config.showClear}
+            present={config.popUp ? "dialog" : undefined}
+            disabled={disabled}
+            error={errorText}
+            placeholder={placeholder}
+            testID={fieldTestID}
+          />
+        );
+      }
 
       case "date":
         return (
-          <MyDateTimePicker
-            label=""
-            date={value ? dayjs(value) : null}
-            onChange={(dateString: string | null) => {
-              handleChange(dateString);
+          <DateTimePicker
+            label={label}
+            value={value ? String(value) : null}
+            onChange={iso => {
+              handleChange(iso);
               handleBlur();
             }}
-            isModal={config.popUp}
+            present={config.popUp ? "dialog" : undefined}
+            disabled={disabled}
+            error={errorText}
+            testID={fieldTestID}
           />
         );
 
       case "switch":
         return (
-          <View className="flex-row items-center justify-between py-2">
-            <ThemedSwitch
-              {...baseAccessibilityProps}
+          <View className="flex-row items-center justify-between py-1">
+            <Text className={required ? "font-medium" : undefined}>
+              {label}
+              {required ? <Text className="text-danger"> *</Text> : null}
+            </Text>
+            <Switch
               value={Boolean(value)}
               onValueChange={(newValue: boolean) => {
                 handleChange(newValue);
@@ -187,99 +200,45 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
           </View>
         );
 
-      case "multiselect":
-        // For now, render as text input - can be enhanced later
-        return (
-          <TextInput
-            {...baseAccessibilityProps}
-            className={`text-foreground border rounded-md p-3 ${
-              hasError
-                ? "border-red-500 bg-red-50"
-                : disabled
-                  ? "border-border-default bg-input-bg-disabled"
-                  : "border-input-border bg-input-bg"
-            }`}
-            value={Array.isArray(value) ? value.join(", ") : value?.toString() || ""}
-            onChangeText={text => handleChange(text.split(", ").filter(Boolean))}
-            onBlur={handleBlur}
-            placeholder={placeholder || "Enter values separated by commas"}
-            placeholderTextColor="#9ca3af"
-            editable={!disabled}
-            aria-disabled={disabled}
-          />
-        );
-
       default:
         return (
-          <Text className="text-status-danger p-3 border border-status-danger/30 rounded-md bg-status-danger-subtle">
-            Unsupported field type: {type}
-          </Text>
+          <>
+            {labelNode}
+            <Text className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-danger">
+              Unsupported field type: {type}
+            </Text>
+          </>
         );
     }
   };
 
   return (
     <View className={`my-2 ${className}`}>
-      {/* Field Label */}
-      {label && type !== "switch" && (
-        <ThemedText className={`mb-1 ${required ? "font-medium" : ""}`} accessibilityRole="text">
-          {label}
-          {required && <ThemedText variant="error" className="ml-1">*</ThemedText>}
-        </ThemedText>
-      )}
+      {renderField()}
 
-      {/* Switch fields have inline labels */}
-      {type === "switch" && (
-        <View className="flex-row items-center justify-between">
-          <ThemedText className={`${required ? "font-medium" : ""}`} accessibilityRole="text">
-            {label}
-            {required && <ThemedText variant="error" className="ml-1">*</ThemedText>}
-          </ThemedText>
-          {renderField()}
-        </View>
-      )}
-
-      {/* Non-switch fields */}
-      {type !== "switch" && renderField()}
-
-      {/* Field Description - use lower z-index to not overlap dropdowns */}
-      {description && (
-        <ThemedText variant="caption" id={descriptionId} className="text-sm mt-1" accessibilityRole="text">
+      {description ? (
+        <Text variant="caption" className="mt-1">
           {description}
-        </ThemedText>
-      )}
+        </Text>
+      ) : null}
 
-      {/* Error Message */}
-      {hasError && (
-        <ThemedText
-          variant="error"
-          id={errorId}
-          className="text-sm mt-1"
-          accessibilityRole="text"
-          accessibilityLiveRegion="polite"
-        >
-          {error}
-        </ThemedText>
-      )}
+      {addNew ? (
+        <Dialog visible={addingNew} onClose={() => setAddingNew(false)} title={addNew.entityType ? `Add ${addNew.entityType}` : "Add new"}>
+          {addNew.renderForm({
+            onSuccess: (item: any) => {
+              addNew.onCreated?.(item);
+              if (item && item.value !== undefined) handleChange(item.value);
+              else if (item && item.id !== undefined) handleChange(item.id);
+              setAddingNew(false);
+            },
+            onCancel: () => setAddingNew(false),
+          })}
+        </Dialog>
+      ) : null}
     </View>
   );
 }
 
-// Memoize the component with custom comparison function for better performance
-// const FormField = memo(FormFieldComponent, (prevProps, nextProps) => {
-//   // Custom comparison to optimize re-renders
-//   return (
-//     prevProps.value === nextProps.value &&
-//     prevProps.error === nextProps.error &&
-//     prevProps.touched === nextProps.touched &&
-//     prevProps.config === nextProps.config &&
-//     prevProps.onChange === nextProps.onChange &&
-//     prevProps.onBlur === nextProps.onBlur &&
-//     prevProps.className === nextProps.className
-//   );
-// }) as typeof FormFieldComponent;
-
-// FormField.displayName = 'FormField';
 const FormField = memo(FormFieldComponent) as typeof FormFieldComponent;
 
 export default FormField;

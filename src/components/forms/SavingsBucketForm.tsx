@@ -1,8 +1,7 @@
 import { memo, useCallback, useMemo } from "react";
 import { ScrollView } from "react-native";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
-import IconPicker from "@/src/components/elements/IconPicker";
+import { ColorsPickerDropdown, IconPicker } from "@/src/components/ui";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
 import FormSection from "@/src/components/form-builder/FormSection";
@@ -186,7 +185,7 @@ function SavingsBucketFormComponent({ bucket, accountId, onSuccess, onCancel }: 
           </FormSection>
 
           <FormSection title="Appearance">
-            <IconPicker initialIcon={formState.data.icon} onSelect={handleIconSelect} />
+            <IconPicker value={formState.data.icon} onChange={handleIconSelect} />
             <ColorsPickerDropdown
               selectedValue={formState.data.color}
               handleSelect={value => updateField("color", value?.value)}

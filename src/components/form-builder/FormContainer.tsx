@@ -1,8 +1,7 @@
-import Button from "@/src/components/elements/Button";
+import { Button, Text as ThemedText } from "@/src/components/ui";
 import { FormContainerProps } from "@/src/types/components/forms.types";
 import { memo, useCallback } from "react";
 import { View } from "react-native";
-import ThemedText from "../elements/ThemedText";
 
 /**
  * FormContainer component provides consistent layout, submission handling, and loading states
@@ -71,7 +70,6 @@ function FormContainerComponent({
             onPress={handleReset}
             disabled={isLoading}
             label="Reset"
-            accessibilityHint="Clears all form fields and resets to initial values"
             testID="btn-form-reset"
           />
         )}
@@ -79,18 +77,9 @@ function FormContainerComponent({
         <Button
           label={isLoading ? "Saving..." : submitLabel}
           onPress={handleSubmit}
-          isValid={isValid && !isLoading}
-          accessibilityHint={
-            !isValid
-              ? "Form has validation errors that need to be fixed before submission"
-              : isLoading
-                ? "Form is currently being submitted"
-                : "Submit the form with current values"
-          }
-          accessibilityState={{
-            busy: isLoading,
-            disabled: !isValid || isLoading,
-          }}
+          disabled={!isValid || isLoading}
+          loading={isLoading}
+          testID="btn-form-submit"
         />
       </View>
 

@@ -228,7 +228,15 @@ export function YGrid({
           <View
             key={`g${t}`}
             className="absolute"
-            style={{ left: leftPad, right: rightPad, top, height: 0, borderTopWidth: 1, borderTopColor: colors.border, borderStyle: "dashed" }}
+            style={{
+              left: leftPad,
+              right: rightPad,
+              top,
+              height: 0,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+              borderStyle: "dashed",
+            }}
           />
         );
       })}
@@ -240,7 +248,12 @@ export function YGrid({
               key={`l${t}`}
               className="absolute text-[10px] text-ink-faint"
               numberOfLines={1}
-              style={{ left: 0, width: leftPad - 4, textAlign: "right", top: Math.min(Math.max(yOf(t) - 7, 0), height - 14) }}
+              style={{
+                left: 0,
+                width: leftPad - 4,
+                textAlign: "right",
+                top: Math.min(Math.max(yOf(t) - 7, 0), height - 14),
+              }}
             >
               {format(t)}
             </Text>

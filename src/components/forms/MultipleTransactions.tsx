@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Button from "../elements/Button";
+import { GroupedInput, IconButton } from "@/src/components/ui";
 
 import {
   MultipleTransactionItemData,
@@ -24,7 +24,6 @@ import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/ut
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { router } from "expo-router";
-import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
 import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
@@ -327,11 +326,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     { id: "expense", label: "Expense", value: "Expense" },
   ];
 
-  // Handle mode toggle
-  const handleModeToggle = useCallback(() => {
-    setMode(prevMode => (prevMode === "plus" ? "minus" : "plus"));
-  }, []);
-
   // Handle max amount change
   const handleMaxAmountChange = useCallback((value: string) => {
     let cleanValue = value
@@ -419,25 +413,18 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
               <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
                 {/* Total Amount with Mode Toggle */}
-                <View className="flex-1 flex-row items-center">
-                  <View className="me-2 mt-5 justify-center items-center">
-                    <ModeIcon onPress={handleModeToggle} mode={mode} />
-                  </View>
-
-                  <View className="flex-1">
-                    <FormField
-                      config={{
-                        name: "totalAmount",
-                        label: "Total Amount",
-                        type: "number",
-                        required: true,
-                        placeholder: "0.00",
-                      }}
-                      value={maxAmount.toString()}
-                      onChange={handleMaxAmountChange}
-                      className="flex-1"
-                    />
-                  </View>
+                <View className="flex-1">
+                  <GroupedInput
+                    label="Total Amount"
+                    amount={mode === "minus" ? -maxAmount : maxAmount}
+                    onChange={value => {
+                      setMode(value < 0 || Object.is(value, -0) ? "minus" : "plus");
+                      handleMaxAmountChange(Math.abs(value).toString());
+                    }}
+                    mode={mode}
+                    onModeChange={nextMode => setMode(nextMode === "minus" ? "minus" : "plus")}
+                    inputTestID="input-totalAmount"
+                  />
                 </View>
 
                 <FormField
@@ -624,10 +611,7 @@ const TransactionsCreationList = ({
   return (
     <View className="space-y-4">
       {/* Add New Transaction Button */}
-      <Button
-        variant="primary"
-        size="md"
-        hapticFeedback="light"
+      <Pressable
         className="p-3 bg-primary-500 rounded-md flex-row items-center justify-center"
         onPress={addNewTransaction}
         accessibilityLabel="Add new transaction"
@@ -635,7 +619,7 @@ const TransactionsCreationList = ({
       >
         <MyIcon name="Plus" size={20} className="text-white mr-2" />
         <Text className="text-white font-medium">Add Transaction</Text>
-      </Button>
+      </Pressable>
 
       {/* Transactions List */}
       <ScrollView
@@ -700,32 +684,6 @@ const TransactionCard = ({
     [formState.data.transactions, id, updateField],
   );
 
-  // Handle amount change with validation
-  const handleAmountChange = useCallback(
-    (value: string) => {
-      let cleanValue = value
-        .replace(/[^0-9.]/g, "")
-        .replace(/\.{2,}/g, ".")
-        .replace(/^0+(?=\d)/, "");
-
-      if (cleanValue.includes(".")) {
-        const parts = cleanValue.split(".");
-        if (parts[1] && parts[1].length > 2) {
-          cleanValue = parts[0] + "." + parts[1].substring(0, 2);
-        }
-      }
-
-      const numericAmount = parseFloat(cleanValue) || 0;
-
-      // Keep the current sign
-      const isNegative = (transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0);
-      const finalAmount = isNegative ? -numericAmount : numericAmount;
-
-      updateTransactionField("amount", finalAmount);
-    },
-    [transaction.amount, updateTransactionField],
-  );
-
   // Handle transaction deletion
   const handleDelete = useCallback(() => {
     if (!canDelete) return;
@@ -739,24 +697,14 @@ const TransactionCard = ({
       className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}
     >
       {/* Amount Field */}
-      <View className={Platform.OS === "web" ? "flex-1 flex-row gap-2 items-center" : "flex-row gap-2 items-center"}>
-        <View className="mt-5 justify-center">
-          <ModeIcon
-            onPress={() => updateTransactionField("amount", -(transaction.amount ?? 0))}
-            mode={(transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0) ? "minus" : "plus"}
-          />
-        </View>
-        <FormField
-          config={{
-            name: "amount",
-            label: "Amount",
-            type: "number",
-            required: true,
-            placeholder: "0.00",
-          }}
-          value={Math.abs(transaction.amount ?? 0).toString() || "0"}
-          onChange={handleAmountChange}
-          className="flex-1"
+      <View className={Platform.OS === "web" ? "flex-1" : ""}>
+        <GroupedInput
+          label="Amount"
+          amount={transaction.amount ?? 0}
+          onChange={value => updateTransactionField("amount", value)}
+          mode={(transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0) ? "minus" : "plus"}
+          showCalculator={false}
+          inputTestID="input-amount"
         />
       </View>
 
@@ -822,17 +770,15 @@ const TransactionCard = ({
 
       {/* Delete Button */}
       {canDelete && (
-        <Button
+        <IconButton
+          icon="Trash"
           variant="destructive"
-          size="icon"
-          hapticFeedback="medium"
+          haptic="medium"
           className="bg-red-500 hover:bg-red-600 rounded-md p-2 mt-2 self-start"
           onPress={handleDelete}
           accessibilityLabel="Delete transaction"
           testID="btn-delete-transaction"
-        >
-          <MyIcon name="Trash" size={20} className="text-white" />
-        </Button>
+        />
       )}
     </View>
   );

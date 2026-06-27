@@ -42,6 +42,10 @@ export interface SearchableSelectProps {
   disabled?: boolean;
   clearable?: boolean;
   onClear?: () => void;
+  /** Allow committing the typed query as a free-text value (e.g. a new payee name). */
+  allowFreeText?: boolean;
+  /** Called when the typed text is committed (only when `allowFreeText`). */
+  onCommitText?: (text: string) => void;
   className?: string;
   testID?: string;
 }
@@ -60,6 +64,8 @@ export function SearchableSelect({
   disabled = false,
   clearable = false,
   onClear,
+  allowFreeText = false,
+  onCommitText,
   className,
   testID = "searchable-select",
 }: SearchableSelectProps) {
@@ -138,6 +144,14 @@ export function SearchableSelect({
             placeholderTextColor={colors.inkFaint}
             selectionColor={colors.primary}
             autoFocus
+            onSubmitEditing={() => {
+              const t = query.trim();
+              if (allowFreeText && t) {
+                onCommitText?.(t);
+                close();
+              }
+            }}
+            returnKeyType={allowFreeText ? "done" : "search"}
             className="flex-1 p-0 font-sans text-body text-ink"
             style={Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : undefined}
             testID={`${testID}-search`}
@@ -149,6 +163,21 @@ export function SearchableSelect({
           showsVerticalScrollIndicator
           style={{ maxHeight: contentMaxHeight - 45 }}
         >
+          {allowFreeText && query.trim().length > 0 ? (
+            <Pressable
+              onPress={() => {
+                onCommitText?.(query.trim());
+                close();
+              }}
+              testID={`${testID}-commit-text`}
+              className="flex-row items-center gap-3 border-b border-border px-4 py-2.5 active:opacity-80"
+            >
+              <MyIcon name="Plus" size={18} color={colors.primary} />
+              <Text className="min-w-0 flex-1 text-body text-ink" numberOfLines={1}>
+                Use “{query.trim()}”
+              </Text>
+            </Pressable>
+          ) : null}
           {query.trim().length < minChars ? (
             <Text className="px-4 py-6 text-center text-sm text-ink-mute">Type to search</Text>
           ) : loading && results.length === 0 ? (

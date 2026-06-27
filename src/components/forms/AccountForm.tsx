@@ -4,8 +4,7 @@ import { Platform, ScrollView, Text, View } from "react-native";
 
 import { queryClient } from "@/src/providers/QueryProvider";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
-import IconPicker from "@/src/components/elements/IconPicker";
+import { ColorsPickerDropdown, IconPicker } from "@/src/components/ui";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
 import FormSection from "@/src/components/form-builder/FormSection";
@@ -311,8 +310,8 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
                 <IconPicker
-                  onSelect={(icon: any) => handleIconSelect(icon)}
-                  initialIcon={formState.data.icon ?? "BadgeInfo"}
+                  onChange={(icon: string) => handleIconSelect(icon)}
+                  value={formState.data.icon ?? "BadgeInfo"}
                 />
               </View>
               <ColorsPickerDropdown
