@@ -1,6 +1,5 @@
-import { triggerHaptic } from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText, triggerHaptic } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { formatMoney } from "@/src/utils/currency";

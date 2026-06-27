@@ -1,4 +1,4 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 import {
   AccountSelecterDropdown,
   MyCategoriesDropdown,
@@ -90,7 +90,7 @@ export default function TransactionSearchForm({
           <Button
             variant="destructive"
             size="md"
-            hapticFeedback="medium"
+            haptic="medium"
             className="flex-1"
             onPress={() => {
               setSearchParams(null);

@@ -1,10 +1,13 @@
-import DashboardCharts from "@/src/components/Charts/DashboardCharts";
-import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
-import Button from "@/src/components/elements/Button";
-import ThemedText from "@/src/components/elements/ThemedText";
 import GridPattern from "@/src/components/GridPattern";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import dayjs from "dayjs";
+import { useMemo } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DashboardCharts from "@/src/components/dashboard/DashboardCharts";
+import DashboardOverview from "@/src/components/dashboard/DashboardOverview";
+import RecentTransactions from "@/src/components/dashboard/RecentTransactions";
+import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
 import useDashboard from "./useDashboardViewModel";
 
 export default function DashboardIndex() {
@@ -14,8 +17,8 @@ export default function DashboardIndex() {
     yearlyTransactionsTypes,
     monthlyCategories,
     monthlyGroups,
-    recentTransactions,
     netWorthGrowth,
+    recentTransactions,
     isLoading,
     refreshing,
     onRefresh,
@@ -26,55 +29,55 @@ export default function DashboardIndex() {
     periodControls,
   } = useDashboard();
 
+  const accountService = useAccountService();
+  const { data: totalBalanceData } = accountService.useGetTotalAccountsBalance();
+  const { data: accounts } = accountService.useFindAllWithCategory();
+
+  const { income, spending, sparkline } = useMemo(() => {
+    const thisMonth = (yearlyTransactionsTypes ?? []).find(d => d.x === dayjs().format("MMM"));
+    return {
+      income: Math.abs(thisMonth?.barOne.value ?? 0),
+      spending: Math.abs(thisMonth?.barTwo.value ?? 0),
+      sparkline: (netWorthGrowth ?? []).map(p => p.y).slice(-9),
+    };
+  }, [yearlyTransactionsTypes, netWorthGrowth]);
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <SafeAreaView className="w-full h-full m-auto flex-1">
+    <SafeAreaView className="flex-1">
       <GridPattern />
-      <View className="flex-row items-center justify-between px-4 py-2 bg-background">
-        <ThemedText variant="heading" className="text-xl">
-          Dashboard
-        </ThemedText>
-        <Button
-          variant="ghost"
-          size="icon"
-          onPress={onRefresh}
-          accessibilityLabel="Refresh dashboard"
-          testID="btn-refresh-dashboard"
-          rightIcon="RefreshCcw"
-          iconColor="#4CAF50"
-          iconSize={24}
-        />
-      </View>
       <ScrollView
-        className="flex-1 h-full"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4CAF50"]}
-            tintColor="#4CAF50"
-            title="Pull to refresh"
-            titleColor="#4CAF50"
-          />
-        }
+        className="flex-1"
+        contentContainerClassName="p-4 gap-4 w-full self-center"
+        contentContainerStyle={{ maxWidth: 1180 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <DashboardCharts
-          weeklyTransactionTypesData={weeklyTransactionTypesData}
-          dailyTransactionTypesData={dailyTransactionTypesData}
-          yearlyTransactionsTypes={yearlyTransactionsTypes}
-          netWorthGrowth={netWorthGrowth}
-          monthlyCategories={monthlyCategories}
-          monthlyGroups={monthlyGroups}
-          recentTransactions={recentTransactions}
-          handleDayPress={handleDayPress}
-          handlePiePress={handlePiePress}
-          handleBarPress={handleBarPress}
-          handleTransactionPress={handleTransactionPress}
-          periodControls={periodControls}
+        <DashboardOverview
+          totalBalance={totalBalanceData?.totalbalance ?? 0}
+          accountsCount={accounts?.length ?? 0}
+          income={income}
+          spending={spending}
+          sparkline={sparkline}
+          onRefresh={onRefresh}
         />
+        <View className="flex-row flex-wrap gap-4">
+          <DashboardCharts
+            weeklyTransactionTypesData={weeklyTransactionTypesData}
+            dailyTransactionTypesData={dailyTransactionTypesData}
+            yearlyTransactionsTypes={yearlyTransactionsTypes}
+            netWorthGrowth={netWorthGrowth}
+            monthlyCategories={monthlyCategories}
+            monthlyGroups={monthlyGroups}
+            handleDayPress={handleDayPress}
+            handlePiePress={handlePiePress}
+            handleBarPress={handleBarPress}
+            periodControls={periodControls}
+          />
+        </View>
+        <RecentTransactions transactions={recentTransactions} onPress={handleTransactionPress} />
       </ScrollView>
     </SafeAreaView>
   );

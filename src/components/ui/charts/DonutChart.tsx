@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from "react";
 import { Animated, useWindowDimensions, View } from "react-native";
-import Svg, { Circle, G, Path } from "react-native-svg";
+import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -40,6 +40,8 @@ export interface DonutChartProps {
   maxSlices?: number;
   centerLabel?: string;
   centerValue?: string;
+  /** Draw leader-line labels (name + %) around the ring for the larger slices. */
+  externalLabels?: boolean;
   showLegend?: boolean;
   /** "auto" puts the legend beside the donut on wide screens, below on narrow. */
   legendPosition?: "auto" | "right" | "bottom";
@@ -73,6 +75,7 @@ export function DonutChart({
   maxSlices = 8,
   centerLabel,
   centerValue,
+  externalLabels = false,
   showLegend = true,
   legendPosition = "auto",
   legendMaxHeight,
@@ -97,7 +100,10 @@ export function DonutChart({
   }, [animated, grow]);
 
   const beside = legendPosition === "right" || (legendPosition === "auto" && winW >= 600);
-  const cx = size / 2;
+  // External labels need horizontal room on both sides; the ring stays `size`, the canvas widens.
+  const labelPad = externalLabels ? 112 : 0;
+  const canvasW = size + labelPad * 2;
+  const cx = canvasW / 2;
   const cy = size / 2;
   const rOuter = size / 2 - 1;
   const rInner = rOuter - thickness;
@@ -166,16 +172,46 @@ export function DonutChart({
   const centerMain = selected != null ? fmt(colored[selected].value) : centerValue;
   const centerSub = selected != null ? colored[selected].label : centerLabel;
 
+  // External leader-line labels for the larger slices (skip tiny ones + "Other" to avoid collisions).
+  const LABEL_MIN_PCT = 4;
+  const labelEls =
+    externalLabels && !single
+      ? segs
+          .filter(s => s.pct >= LABEL_MIN_PCT && s.label !== "Other")
+          .map((s, i) => {
+            const mid = (s.start + s.end) / 2;
+            const cos = Math.cos(mid);
+            const sin = Math.sin(mid);
+            const right = cos >= 0;
+            const x0 = cx + rOuter * cos;
+            const y0 = cy + rOuter * sin;
+            const x1 = cx + (rOuter + 12) * cos;
+            const y1 = cy + (rOuter + 12) * sin;
+            // Elbow just outside the ring; the text then grows outward into the (wide) label pad.
+            const x2 = right ? cx + rOuter + 16 : cx - rOuter - 16;
+            const ty = Math.min(Math.max(y1, 12), size - 8);
+            return {
+              key: `${s.label}-${i}`,
+              leader: `M ${x0.toFixed(1)} ${y0.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${ty.toFixed(1)}`,
+              tx: right ? x2 + 4 : x2 - 4,
+              ty,
+              anchor: right ? ("start" as const) : ("end" as const),
+              text: `${s.label} ${Math.round(s.pct)}%`,
+              color: s.color,
+            };
+          })
+      : [];
+
   return (
     <View testID={testID} className={frameCls}>
-      <View style={{ width: size, height: size }} className={donutSlotCls}>
+      <View style={{ width: canvasW, height: size }} className={donutSlotCls}>
         <Animated.View
           style={{
             opacity: grow,
             transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}
         >
-          <Svg width={size} height={size}>
+          <Svg width={canvasW} height={size}>
             {single ? (
               <Circle
                 cx={cx}
@@ -200,6 +236,14 @@ export function DonutChart({
                 ))}
               </G>
             )}
+            {labelEls.map(l => (
+              <G key={l.key}>
+                <Path d={l.leader} fill="none" stroke={l.color} strokeWidth={1} opacity={0.7} />
+                <SvgText x={l.tx} y={l.ty + 3} fontSize={10} fontWeight="600" fill={colors.ink} textAnchor={l.anchor}>
+                  {l.text}
+                </SvgText>
+              </G>
+            ))}
           </Svg>
         </Animated.View>
         {centerMain || centerSub ? (

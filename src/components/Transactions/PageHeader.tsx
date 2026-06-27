@@ -1,6 +1,5 @@
-import Button from "@/src/components/elements/Button";
+import { IconButton , Text as ThemedText } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
@@ -36,80 +35,72 @@ export default function TransactionsPageHeader({
       <View className="flex-row justify-between items-center gap-3">
         {isSelection ? (
           <>
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
-              hapticFeedback="medium"
+              size="md"
+              haptic="medium"
               onPress={openDeleteConfirm}
               accessibilityLabel="Delete selected transactions"
               testID="btn-delete-selected"
-              className="m-0 p-0"
-              leftIcon="Trash"
+              icon="Trash"
               disabled={isActionLoading}
             />
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
+              size="md"
               onPress={openDuplicateConfirm}
               accessibilityLabel="Duplicate selected transactions"
               testID="btn-duplicate-selected"
-              className="m-0 p-0"
-              leftIcon="Copy"
+              icon="Copy"
               disabled={isActionLoading}
             />
             {isSingleNonVoidTransfer && (
-              <Button
+              <IconButton
                 variant="ghost"
-                size="icon"
+                size="md"
                 onPress={onSplit}
                 accessibilityLabel="Split transaction"
                 testID="btn-split-transaction"
-                className="m-0 p-0"
-                leftIcon="Scissors"
-                iconSize={20}
+                icon="Scissors"
                 disabled={isActionLoading}
               />
             )}
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
+              size="md"
               onPress={openBatchUpdate}
               accessibilityLabel="Batch update selected transactions"
               testID="btn-batch-update"
-              className="m-0 p-0"
-              leftIcon="Pencil"
+              icon="Pencil"
               disabled={isActionLoading}
             />
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
+              size="md"
               onPress={clearSelection}
               accessibilityLabel="Clear selection"
               testID="btn-clear-selection"
-              className="m-0 p-0"
-              leftIcon="X"
+              icon="X"
               disabled={isActionLoading}
             />
           </>
         ) : (
           <>
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
+              size="md"
               onPress={() => setShowSearch(true)}
               accessibilityLabel="Search transactions"
               testID="btn-search-transactions"
-              className="m-0 p-0"
-              leftIcon="Search"
+              icon="Search"
             />
-            <Button
+            <IconButton
               variant="ghost"
-              size="icon"
+              size="md"
               onPress={refreshTransactions}
               accessibilityLabel="Refresh transactions"
               testID="btn-refresh-transactions"
-              className="m-0 p-0"
-              leftIcon="RefreshCw"
+              icon="RefreshCw"
             />
             <Link href="/AddTransaction" className="items-center justify-center">
               <MyIcon name="Plus" className="text-foreground" size={20} />

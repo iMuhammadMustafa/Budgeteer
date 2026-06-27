@@ -1,4 +1,5 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
+import LegacyButton from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -6,7 +7,7 @@ import ExportService from "@/src/services/Export.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
 import MyModal from "@/src/components/elements/MyModal";
 
@@ -130,7 +131,7 @@ export default function ExportModal({ visible, onClose }: {
                             <View className="mb-4">
                                 <Text className="text-sm font-medium text-foreground mb-2">Export Format</Text>
                                 <View className="flex-row gap-2">
-                                    <Button
+                                    <LegacyButton
                                         variant={exportFormat === "json" ? "primary" : "ghost"}
                                         size="md"
                                         hapticFeedback="selection"
@@ -147,8 +148,8 @@ export default function ExportModal({ visible, onClose }: {
                                                 <Text className="text-xs text-text-tertiary">Full backup</Text>
                                             </View>
                                         </View>
-                                    </Button>
-                                    <Button
+                                    </LegacyButton>
+                                    <LegacyButton
                                         variant={exportFormat === "csv" ? "primary" : "ghost"}
                                         size="md"
                                         hapticFeedback="selection"
@@ -165,7 +166,7 @@ export default function ExportModal({ visible, onClose }: {
                                                 <Text className="text-xs text-text-tertiary">Single table</Text>
                                             </View>
                                         </View>
-                                    </Button>
+                                    </LegacyButton>
                                 </View>
                             </View>
                         )}
@@ -175,19 +176,19 @@ export default function ExportModal({ visible, onClose }: {
                             <View className="flex-row items-center justify-between mb-2">
                                 <Text className="text-sm font-medium text-foreground">Tables</Text>
                                 <View className="flex-row gap-2">
-                                    <Button variant="ghost" size="sm" onPress={selectAllTables} testID="btn-export-select-all">
+                                    <LegacyButton variant="ghost" size="sm" onPress={selectAllTables} testID="btn-export-select-all">
                                         <Text className="text-xs text-primary">Select All</Text>
-                                    </Button>
+                                    </LegacyButton>
                                     <Text className="text-border-default">|</Text>
-                                    <Button variant="ghost" size="sm" onPress={deselectAllTables} testID="btn-export-clear">
+                                    <LegacyButton variant="ghost" size="sm" onPress={deselectAllTables} testID="btn-export-clear">
                                         <Text className="text-xs text-text-secondary">Clear</Text>
-                                    </Button>
+                                    </LegacyButton>
                                 </View>
                             </View>
 
                             <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_TABLES.map(table => (
-                                    <Button
+                                    <LegacyButton
                                         key={table}
                                         variant="ghost"
                                         size="md"
@@ -215,7 +216,7 @@ export default function ExportModal({ visible, onClose }: {
                                             }}
                                             testID={`switch-export-table-${table}`}
                                         />
-                                    </Button>
+                                    </LegacyButton>
                                 ))}
                             </View>
                         </View>
@@ -225,7 +226,7 @@ export default function ExportModal({ visible, onClose }: {
                             <Text className="text-sm font-medium text-foreground mb-2">Views (CSV only)</Text>
                             <View className="bg-surface-elevated rounded-lg p-2">
                                 {EXPORTABLE_VIEWS.map(view => (
-                                    <Button
+                                    <LegacyButton
                                         key={view}
                                         variant="ghost"
                                         size="md"
@@ -244,7 +245,7 @@ export default function ExportModal({ visible, onClose }: {
                                         </View>
                                         <MyIcon name="Eye" size={16} className="text-text-secondary mr-2" />
                                         <Text className="text-sm text-foreground">{formatViewName(view)}</Text>
-                                    </Button>
+                                    </LegacyButton>
                                 ))}
                             </View>
                         </View>
@@ -282,15 +283,14 @@ export default function ExportModal({ visible, onClose }: {
                                 className="flex-1"
                             />
                             <Button
-                                label={isExporting ? "Exporting..." : "Export"}
+                                label="Export"
                                 onPress={handleExport}
                                 variant="primary"
                                 className="flex-1"
                                 disabled={!canExport || isExporting}
-                                leftIcon={isExporting ? undefined : "Download"}
-                            >
-                                {isExporting && <ActivityIndicator size="small" color="white" />}
-                            </Button>
+                                leadingIcon={isExporting ? undefined : "Download"}
+                                loading={isExporting}
+                            />
                         </View>
                     </View>
         </MyModal>

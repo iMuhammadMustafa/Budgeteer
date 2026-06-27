@@ -1,7 +1,6 @@
-import Button from "@/src/components/elements/Button";
+import { Button , Text as ThemedText } from "@/src/components/ui";
 import Divider from "@/src/components/elements/Divider";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
 import { Linking, Text, View } from "react-native";
 
 export default function ErrorStateComponent({ error, onRetry }: { error: Error; onRetry: () => void }) {
@@ -14,7 +13,7 @@ export default function ErrorStateComponent({ error, onRetry }: { error: Error; 
         <MyIcon name="CloudOff" size={45} className="text-danger-700" />
       </View>
 
-      <ThemedText variant="heading" className="text-xl font-semibold text-center">
+      <ThemedText variant="h3" className="text-xl font-semibold text-center">
         Couldn't load transactions
       </ThemedText>
 
@@ -27,11 +26,11 @@ export default function ErrorStateComponent({ error, onRetry }: { error: Error; 
       </View>
 
       <View className="flex-row gap-3 mt-2">
-        <Button variant="outline" label="Try again" leftIcon="RotateCcw" iconSize={16} onPress={onRetry} />
+        <Button variant="outline" label="Try again" leadingIcon="RotateCcw" iconSize={16} onPress={onRetry} />
         <Button
           variant="outline"
           label="Get help"
-          rightIcon="ArrowUpRight"
+          trailingIcon="ArrowUpRight"
           iconSize={16}
           onPress={() => {
             Linking.openURL("mailto:support@budgeteer.com");

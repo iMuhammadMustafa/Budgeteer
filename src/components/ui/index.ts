@@ -105,3 +105,4 @@ export { LineChart, type LineChartProps, type LineDatum } from "./charts/LineCha
 export { CalendarHeatmap, type CalendarHeatmapProps } from "./charts/CalendarHeatmap";
 export { MiniBarChart, type MiniBarChartProps } from "./charts/MiniBarChart";
 export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from "./charts/ChartLegend";
+export { ChartCard, type ChartCardProps, type ChartCardPeriod } from "./charts/ChartCard";

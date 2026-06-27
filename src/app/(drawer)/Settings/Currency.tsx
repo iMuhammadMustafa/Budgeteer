@@ -1,6 +1,6 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { CURRENCIES } from "@/src/utils/currency";
 import { useState } from "react";

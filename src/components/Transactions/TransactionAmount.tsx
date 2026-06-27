@@ -1,4 +1,4 @@
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 export default function TransactionAmount({

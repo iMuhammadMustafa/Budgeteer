@@ -1,10 +1,8 @@
 import AmountInput from "@/src/components/elements/AmountInput";
-import Button from "@/src/components/elements/Button";
+import { Button, IconButton , Text as ThemedText , MyTab } from "@/src/components/ui";
 import MyModal from "@/src/components/elements/MyModal";
 import { RecurringDetails } from "@/src/components/elements/RecurringStatusBadges";
-import ThemedText from "@/src/components/elements/ThemedText";
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
-import { MyTab } from "@/src/components/ui";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
@@ -47,11 +45,11 @@ export default function RecurringsScreen() {
           const canSkip = !item.isdateflexible && !!item.nextoccurrencedate && !!item.recurrencerule;
           return (
             <View className="flex-row items-center gap-1">
-              <Button
-                rightIcon="Check"
+              <IconButton
+                icon="Check"
                 variant="ghost"
-                size="icon"
-                hapticFeedback="light"
+                size="md"
+                haptic="light"
                 onPress={() => {
                   if (
                     !item.amount ||
@@ -66,22 +64,18 @@ export default function RecurringsScreen() {
                   }
                 }}
                 disabled={isLoading}
+                accessibilityLabel="Execute recurring"
                 testID={`btn-execute-recurring-${item.id}`}
-                iconSize={20}
-                className="p-0 m-0"
               />
-              <Button
-                rightIcon="SkipForward"
+              <IconButton
+                icon="SkipForward"
                 variant="ghost"
-                size="icon"
-                hapticFeedback="warning"
+                size="md"
+                haptic="warning"
                 onPress={() => handleSkipRecurring(item)}
                 disabled={!canSkip || isLoading}
                 accessibilityLabel="Skip this occurrence"
-                accessibilityHint="Advances the next date without creating a transaction"
                 testID={`btn-skip-recurring-${item.id}`}
-                iconSize={20}
-                className="p-0 m-0"
               />
             </View>
           );
@@ -184,7 +178,7 @@ const RecurringModal = ({
   return (
     <MyModal isOpen={modalVisible} setIsOpen={setModalVisible} onClose={handleClose}>
       <View className="bg-card rounded-xl p-6 items-center">
-        <ThemedText variant="heading" className="mb-2">
+        <ThemedText variant="h3" className="mb-2">
           Enter Amount
         </ThemedText>
         <View className="flex-row justify-between w-full gap-2">
@@ -197,7 +191,7 @@ const RecurringModal = ({
           <Button
             variant="primary"
             size="md"
-            hapticFeedback="success"
+            haptic="success"
             onPress={() => {
               if (pendingRecurring) {
                 handleExecuteRecurring(pendingRecurring, amount);

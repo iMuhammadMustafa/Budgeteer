@@ -1,8 +1,7 @@
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { ActivityIndicator, View } from "react-native";
-import Button from "../elements/Button";
+import { Button , Text as ThemedText } from "@/src/components/ui";
 import MyModal from "../elements/MyModal";
-import ThemedText from "../elements/ThemedText";
 
 export type BatchActionType = "delete" | "duplicate" | "update";
 
@@ -73,12 +72,8 @@ export default function BatchActionConfirmModal({
 
                 {/* Action Buttons */}
                 <View className="flex-row justify-end gap-2">
-                    <Button variant="outline" onPress={handleClose} disabled={isLoading}>
-                        Cancel
-                    </Button>
-                    <Button variant={actionType === "delete" ? "destructive" : "primary"} onPress={onConfirm} disabled={isLoading} loading={isLoading}>
-                        {isLoading ? "Loading..." : actionType.charAt(0).toUpperCase() + actionType.slice(1)}
-                    </Button>
+                    <Button variant="outline" onPress={handleClose} disabled={isLoading} label="Cancel" />
+                    <Button variant={actionType === "delete" ? "destructive" : "primary"} onPress={onConfirm} disabled={isLoading} loading={isLoading} label={isLoading ? "Loading..." : actionType.charAt(0).toUpperCase() + actionType.slice(1)} />
                 </View>
             </View>
         </MyModal>

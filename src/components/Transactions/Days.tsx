@@ -1,4 +1,4 @@
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FlatList, View } from "react-native";

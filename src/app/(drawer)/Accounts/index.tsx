@@ -1,5 +1,5 @@
 import AmountInput from "@/src/components/elements/AmountInput";
-import Button from "@/src/components/elements/Button";
+import { Button, IconButton } from "@/src/components/ui";
 import { AccountSelecterDropdown } from "@/src/components/elements/dropdown/DropdownField";
 import MyModal from "@/src/components/elements/MyModal";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
@@ -59,21 +59,21 @@ export default function AccountsIndex() {
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
           <View className="flex-row items-center gap-2">
-            <Button
+            <IconButton
               testID={`transfer-btn-${item.id}`}
-              rightIcon="ArrowLeftRight"
-              className="py-0 px-0"
-              iconSize={20}
+              icon="ArrowLeftRight"
+              size="md"
               variant="ghost"
               onPress={() => openTransferModal(item)}
+              accessibilityLabel="Transfer"
             />
-            <Button
+            <IconButton
               testID={`buckets-btn-${item.id}`}
-              rightIcon="PiggyBank"
-              className="py-0 px-0"
-              iconSize={20}
+              icon="PiggyBank"
+              size="md"
               variant="ghost"
               onPress={() => setBucketsModal({ open: true, account: item })}
+              accessibilityLabel="Savings Buckets"
             />
           </View>
         )}
@@ -204,7 +204,7 @@ const AccountTransferModal = ({
             testID="transfer-submit-btn"
             label={isCreating ? "Transferring..." : "Submit Transfer"}
             onPress={handleTransfer}
-            isValid={!!sourceAccountId && !!amount && !isNaN(Number(amount))}
+            disabled={!(!!sourceAccountId && !!amount && !isNaN(Number(amount)))}
             className="flex-1"
           />
         </View>
