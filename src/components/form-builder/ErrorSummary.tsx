@@ -1,9 +1,7 @@
-import React from 'react';
 import { View, ScrollView } from 'react-native';
-import ThemedText from '../elements/ThemedText';
+import { Button, IconButton, Text as ThemedText } from '@/src/components/ui';
 import { FormError } from '@/src/types/components/forms.types';
 import { formatErrorMessage, groupErrorsByType, getMostCriticalError } from '@/src/utils/form-errors';
-import Button from '@/src/components/elements/Button';
 import ErrorMessage from './ErrorMessage';
 
 interface ErrorSummaryProps {
@@ -78,24 +76,22 @@ export default function ErrorSummary({
     >
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <ThemedText variant="subheading" className="text-red-800">
-          {hasMultipleErrors 
-            ? `${errors.length} Errors Found` 
+        <ThemedText variant="h3" className="text-red-800">
+          {hasMultipleErrors
+            ? `${errors.length} Errors Found`
             : 'Error Found'
           }
         </ThemedText>
-        
+
         {onDismiss && (
-          <Button
+          <IconButton
+            icon="X"
             variant="ghost"
-            size="icon"
+            size="md"
             onPress={handleDismiss}
             accessibilityLabel="Dismiss errors"
-            accessibilityHint="Closes the error summary"
             testID="btn-dismiss-errors"
-          >
-            <ThemedText variant="heading" className="text-red-600">×</ThemedText>
-          </Button>
+          />
         )}
       </View>
 
@@ -128,11 +124,10 @@ export default function ErrorSummary({
           <Button
             variant="destructive"
             size="sm"
-            hapticFeedback="error"
+            haptic="error"
             onPress={handleRetry}
             label="Try Again"
             accessibilityLabel="Retry operation"
-            accessibilityHint="Attempts to retry the failed operation"
             testID="btn-retry-errors"
           />
         </View>

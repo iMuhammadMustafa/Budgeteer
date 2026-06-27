@@ -1,5 +1,5 @@
 import { ErrorMessageProps } from "@/src/types/components/forms.types";
-import ThemedText from "../elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 
 /**
  * ErrorMessage component displays individual error messages with consistent styling
@@ -27,7 +27,6 @@ export default function ErrorMessage({ error, type = "field", className = "" }: 
 
   return (
     <ThemedText
-      variant="error"
       className={`${getErrorStyles()} ${className}`}
       accessibilityRole={getAccessibilityRole()}
       accessibilityLiveRegion="polite"

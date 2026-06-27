@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from "react";
 import { Animated, View } from "react-native";
-import Svg, { Circle, Line as SvgLine, Path, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Path, Line as SvgLine, Text as SvgText } from "react-native-svg";
 
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -137,7 +137,7 @@ export function LineChart({
   // Band-centered x (matches the bar charts): point i sits in the middle of band i,
   // so the first dot clears the axis and labels line up under their dots.
   const bandW = n > 0 ? innerW / n : innerW;
-  const xAt = (i: number) => LEFT_PAD + (i + 0.5) * bandW;
+  const xAt = (i: number) => LEFT_PAD + (i + 0.3) * bandW;
 
   const vals = data.map(d => d.value);
   const scale = buildScale(Math.min(...vals), Math.max(...vals), yTickMode, yTickMode === "count" ? n : yTicks);
@@ -195,12 +195,26 @@ export function LineChart({
             })}
             {/* y-axis value labels */}
             {scale.ticks.map((t, i) => (
-              <SvgText key={`l${i}`} x={LEFT_PAD - 5} y={yAt(t) + 3} fontSize={10} fill={colors.inkFaint} textAnchor="end">
+              <SvgText
+                key={`l${i}`}
+                x={LEFT_PAD - 5}
+                y={yAt(t) + 3}
+                fontSize={10}
+                fill={colors.inkFaint}
+                textAnchor="end"
+              >
                 {compactTick(t)}
               </SvgText>
             ))}
             {showYAxis ? (
-              <SvgLine x1={LEFT_PAD} y1={PAD_Y} x2={LEFT_PAD} y2={height - PAD_Y} stroke={colors.borderStrong} strokeWidth={1} />
+              <SvgLine
+                x1={LEFT_PAD}
+                y1={PAD_Y}
+                x2={LEFT_PAD}
+                y2={height - PAD_Y}
+                stroke={colors.borderStrong}
+                strokeWidth={1}
+              />
             ) : null}
             {fillArea && n > 1 ? <Path d={areaPath} fill={stroke} opacity={0.12} /> : null}
             <Path d={linePath} fill="none" stroke={stroke} strokeWidth={2.5} />

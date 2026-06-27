@@ -53,6 +53,16 @@ export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
 export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
 export { DatePicker, type DatePickerProps } from "./DatePicker";
+export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
+export { GroupedInput, type GroupedInputProps } from "./GroupedInput";
+export {
+  MyCategoriesDropdown,
+  AccountSelecterDropdown,
+  ColorsPickerDropdown,
+  type MyCategoriesDropdownProps,
+  type AccountSelecterDropdownProps,
+  type ColorsPickerDropdownProps,
+} from "./DomainSelects";
 
 // secondary tabs + entity list (Step 3 — §9, replaces legacy MyTab/TabNavigation/TabRouting)
 export {

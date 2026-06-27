@@ -2,8 +2,7 @@ import { router } from "expo-router";
 import { memo, useCallback, useMemo } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 
-import { ColorsPickerDropdown } from "@/src/components/elements/dropdown/DropdownField";
-import IconPicker from "@/src/components/elements/IconPicker";
+import { ColorsPickerDropdown, IconPicker } from "@/src/components/ui";
 import FormContainer from "@/src/components/form-builder/FormContainer";
 import FormField from "@/src/components/form-builder/FormField";
 import FormSection from "@/src/components/form-builder/FormSection";
@@ -233,7 +232,7 @@ function AccountCategoryFormComponent({ category, onSuccess, onCancel }: Account
             {/* Icon and Color Selection */}
             <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
               <View className="flex-1">
-                <IconPicker onSelect={handleIconSelect} label="Icon" initialIcon={formState.data.icon ?? "BadgeInfo"} />
+                <IconPicker onChange={handleIconSelect} label="Icon" value={formState.data.icon ?? "BadgeInfo"} />
               </View>
               <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
             </View>

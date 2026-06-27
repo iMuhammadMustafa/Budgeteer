@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useExchangeRate } from "@/src/services/Fx.Service";
@@ -23,12 +23,15 @@ import { commonValidationRules, createDateValidation, createDescriptionValidatio
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import CalculatorComponent from "../Calculator";
-import Button from "../elements/Button";
-import ModeIcon from "../elements/ModeIcon";
 import MyIcon from "../elements/MyIcon";
-import SearchableDropdown from "../elements/SearchableDropdown";
-import ThemedText from "../elements/ThemedText";
+import {
+  Button,
+  GroupedInput,
+  IconButton,
+  SearchableSelect,
+  type SearchableSelectOption,
+  Text as ThemedText,
+} from "@/src/components/ui";
 import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
@@ -130,17 +133,14 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     isDirty,
     resetForm,
     handleOnMoreSubmit,
-    findByName,
+    nameSearchAction,
     onSelectItem,
     updateField,
     formState,
     setFieldTouched,
     mode,
-    handleModeToggle,
     handleTypeChange,
     handleSwitchAccounts,
-    handleAmountChange,
-    handleCalculatorResult,
     categoryOptions,
     accountOptions,
     transferAccountOptions,
@@ -184,7 +184,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               className="bg-red-500 rounded-md"
               disabled={isLoading}
               onPress={() => router.replace("/AddTransaction")}
-              leftIcon="Trash"
+              leadingIcon="Trash"
               size="sm"
             />
             <View className="relative">
@@ -194,7 +194,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 className="bg-primary-300 rounded-md"
                 disabled={isLoading || showOneMoreSuccess}
                 onPress={handleOnMoreSubmit}
-                leftIcon="Plus"
+                leadingIcon="Plus"
                 size="sm"
                 loading={isOneMoreSubmitting}
               />
@@ -206,12 +206,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             </View>
           </View>
 
-          <SearchableDropdown
+          <SearchableSelect
             label="Name"
-            searchAction={findByName}
-            initalValue={transaction.name}
-            onSelectItem={onSelectItem}
-            onChange={val => updateField("name", val)}
+            selectedLabel={formState.data.name}
+            searchAction={nameSearchAction}
+            onSelect={option => onSelectItem({ id: option.id, label: option.label, item: option.value })}
+            allowFreeText
+            onCommitText={val => updateField("name", val)}
             className="mb-1"
           />
 
@@ -256,27 +257,22 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             onBlur={() => setFieldTouched("date")}
           />
 
-          <View className="flex-row justify-center items-center mb-4">
-            <View className="me-2 mt-5 justify-center items-center">
-              <ModeIcon onPress={handleModeToggle} mode={mode} />
-            </View>
-            <View className="flex-1">
-              <FormField
-                config={{
-                  name: "amount",
-                  label: `Amount`,
-                  type: "number",
-                  required: true,
-                  placeholder: "0.00",
-                }}
-                value={formState.data.amount?.toString()}
-                error={formState.errors.amount}
-                touched={formState.touched.amount}
-                onChange={handleAmountChange}
-              />
-            </View>
-
-            <CalculatorComponent onSubmit={handleCalculatorResult} currentValue={formState.data.amount} />
+          <View className="mb-4">
+            <GroupedInput
+              label="Amount"
+              amount={mode === "minus" ? -Math.abs(Number(formState.data.amount) || 0) : Math.abs(Number(formState.data.amount) || 0)}
+              mode={mode}
+              allowNegativeFlip={formState.data.type !== "Income" && formState.data.type !== "Transfer"}
+              onChange={value => {
+                const abs = Math.abs(value);
+                // Preserve legacy max-amount guard from handleAmountChange.
+                if (abs > 999999999.99) return;
+                updateField("amount", abs);
+              }}
+              onModeChange={nextMode => updateField("mode", nextMode)}
+              error={formState.touched.amount ? formState.errors.amount : undefined}
+              inputTestID="field-amount"
+            />
           </View>
 
           <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
@@ -399,17 +395,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
               {formState.data.type === "Transfer" && (
                 <>
-                  <Button
+                  <IconButton
                     variant="ghost"
-                    size="icon"
-                    hapticFeedback="selection"
+                    icon="ArrowUpDown"
+                    haptic="selection"
                     onPress={handleSwitchAccounts}
                     className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
                     accessibilityLabel="Switch source and destination accounts"
                     testID="btn-switch-accounts"
-                  >
-                    <MyIcon name="ArrowUpDown" size={24} className="text-foreground" />
-                  </Button>
+                  />
 
                   <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
                     <FormField
@@ -445,11 +439,11 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             title="Line Items"
             description="Optional breakdown of this transaction into individual items"
             actionBtn={
-              <Button
+              <IconButton
                 variant="outline"
-                size="icon"
+                icon="Plus"
                 onPress={() => addSubItem(formState.data.amount)}
-                leftIcon="Plus"
+                accessibilityLabel="Add line item"
                 testID="btn-add-subitem"
                 className="mt-1"
               />
@@ -471,17 +465,15 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 {subItems.map((item, index) => (
                   <View key={item.id || index} className="border border-border rounded-lg p-3 mb-2 bg-card">
                     <View className="flex-row items-center justify-end mb-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <Pressable
                         onPress={() => removeSubItem(index)}
+                        accessibilityRole="button"
                         accessibilityLabel={`Remove item ${index + 1}`}
                         testID={`btn-remove-subitem-${index}`}
-                        className="m-0 p-0"
-                        hapticFeedback="light"
+                        className="m-0 p-0 active:opacity-60"
                       >
                         <MyIcon name="X" size={16} className="text-danger-500" />
-                      </Button>
+                      </Pressable>
                     </View>
                     <View className={`${Platform.OS === "web" ? "flex flex-row gap-2" : "gap-2"}`}>
                       <View className="flex-[2]">
@@ -494,10 +486,20 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                         />
                       </View>
                       <View className="justify-center">
-                        <ModeIcon
-                          onPress={() => updateSubItem(index, "amount", -(item.amount ?? 0))}
-                          mode={(item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus"}
-                        />
+                        {(() => {
+                          const subItemMode = (item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus";
+                          return (
+                            <IconButton
+                              icon={subItemMode === "minus" ? "Minus" : "Plus"}
+                              variant="ghost"
+                              haptic="selection"
+                              onPress={() => updateSubItem(index, "amount", -(item.amount ?? 0))}
+                              accessibilityLabel={`Toggle amount sign, currently ${subItemMode}`}
+                              testID={`btn-subitem-mode-${index}`}
+                              className={`${subItemMode === "plus" ? "bg-success-400" : "bg-danger-400"} border border-muted rounded-lg p-1.5`}
+                            />
+                          );
+                        })()}
                       </View>
                       <View className="flex-1">
                         <TextInput
@@ -884,16 +886,6 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     setMode(currentMode);
   }, [formState.data.mode, transaction.amount]);
 
-  // Handle mode changes
-  const handleModeToggle = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.selectionAsync();
-    }
-    const newMode = mode === "plus" ? "minus" : "plus";
-    setMode(newMode);
-    updateField("mode", newMode);
-  }, [mode, updateField]);
-
   // Enhanced transaction type change handling
   const handleTypeChange = useCallback(
     (type: string) => {
@@ -996,89 +988,6 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     [setFormData, transaction.id, formState.data.date],
   );
 
-  // Enhanced amount change handling with better validation
-  const handleAmountChange = useCallback(
-    (value: string) => {
-      // Allow user to type a trailing decimal (e.g., "3.")
-      let cleanValue = value
-        .replace(/[^0-9.-]/g, "")
-        .replace(/(?!^)-/g, "")
-        .replace(/\.{2,}/g, ".")
-        .replace(/^0+(?=\d)/, "");
-
-      if (cleanValue.startsWith("-")) {
-        if (formState.data.type !== "Transfer" && formState.data.type !== "Income") {
-          setMode("minus");
-          updateField("mode", "minus");
-        }
-        cleanValue = cleanValue.replace("-", "");
-      }
-
-      // Only allow one decimal point
-      const decimalIndex = cleanValue.indexOf(".");
-      if (decimalIndex !== -1) {
-        const beforeDecimal = cleanValue.substring(0, decimalIndex);
-        const afterDecimal = cleanValue.substring(decimalIndex + 1).replace(/\./g, "");
-        cleanValue = beforeDecimal + "." + afterDecimal;
-      }
-
-      // Limit decimal places to 2, but allow trailing decimal
-      if (cleanValue.includes(".")) {
-        const parts = cleanValue.split(".");
-        if (parts[1] && parts[1].length > 2) {
-          cleanValue = parts[0] + "." + parts[1].substring(0, 2);
-        }
-      }
-
-      // Allow empty or just "." input
-      if (cleanValue === "" || cleanValue === ".") {
-        updateField("amount", cleanValue);
-        return;
-      }
-
-      // Allow trailing decimal (e.g., "3.")
-      if (/^\d+\.$/.test(cleanValue)) {
-        updateField("amount", cleanValue);
-        return;
-      }
-
-      // Validate maximum amount
-      const numericAmount = parseFloat(cleanValue);
-      if (!isNaN(numericAmount) && numericAmount > 999999999.99) {
-        return;
-      }
-
-      // If valid number or decimal, update as string to preserve input
-      updateField("amount", cleanValue);
-    },
-    [updateField, formState.data.type, setMode],
-  );
-
-  // Enhanced calculator result handling
-  const handleCalculatorResult = useCallback(
-    (result: string) => {
-      const numericResult = parseFloat(result);
-
-      if (isNaN(numericResult) || !isFinite(numericResult)) {
-        console.warn("Invalid calculator result:", result);
-        return;
-      }
-
-      const amount = Math.abs(numericResult);
-
-      // Validate maximum amount
-      if (amount > 999999999.99) {
-        console.warn("Calculator result exceeds maximum amount");
-        return;
-      }
-
-      // Round to 2 decimal places
-      const roundedAmount = Math.round(amount * 100) / 100;
-      updateField("amount", roundedAmount);
-    },
-    [updateField],
-  );
-
   // Enhanced dropdown options with better filtering and sorting
   const categoryOptions = useMemo(() => {
     if (!categories) return [];
@@ -1133,6 +1042,22 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     [],
   );
 
+  // SearchableSelect adapter for the transaction name/payee lookup. tenantId is captured
+  // via closure (the underlying findByName ignores it, but we honor the legacy signature)
+  // and results are mapped to the ui SearchableSelectOption shape. The label doubles as the
+  // option id (the search view groups by name, so names are unique per result set).
+  const nameSearchAction = useCallback(
+    async (query: string): Promise<SearchableSelectOption[]> => {
+      const results = await findByNameStable(query, transaction.tenantid);
+      return results.map((r, i) => ({
+        id: `${r.label}-${i}`,
+        label: r.label,
+        value: r.item,
+      }));
+    },
+    [findByNameStable, transaction.tenantid],
+  );
+
   return {
     formState,
     updateField,
@@ -1146,19 +1071,16 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     resetForm,
     handleOnMoreSubmit,
     mode,
-    handleModeToggle,
     handleTypeChange,
     handleSwitchAccounts,
     onSelectItem,
-    handleAmountChange,
-    handleCalculatorResult,
     categoryOptions,
     accountOptions,
     transferAccountOptions,
     error,
     isEdit,
     isLoading,
-    findByName: findByNameStable,
+    nameSearchAction,
     showOneMoreSuccess,
     isOneMoreSubmitting,
     subItems,

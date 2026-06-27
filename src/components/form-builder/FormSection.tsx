@@ -1,8 +1,7 @@
-import Button from "@/src/components/elements/Button";
+import { Text as ThemedText, triggerHaptic } from "@/src/components/ui";
 import { FormSectionProps } from "@/src/types/components/forms.types";
 import { memo, useCallback, useMemo, useState } from "react";
-import { View } from "react-native";
-import ThemedText from "../elements/ThemedText";
+import { Pressable, View } from "react-native";
 
 /**
  * FormSection component provides a way to group related form fields
@@ -35,36 +34,27 @@ function FormSectionComponent({
       {title && (
         <View className="mb-3">
           {collapsible ? (
-            <Button
-              variant="ghost"
-              size="md"
-              hapticFeedback="selection"
-              onPress={toggleExpanded}
-              className="flex-row items-center justify-between p-2 rounded-md bg-surface-elevated border border-border-default"
+            <Pressable
+              onPress={() => {
+                triggerHaptic("selection");
+                toggleExpanded();
+              }}
+              className="flex-row items-center justify-between rounded-lg border border-border bg-surface-alt p-2 active:opacity-80"
+              accessibilityRole="button"
               accessibilityLabel={`${title} section, ${isExpanded ? "expanded" : "collapsed"}`}
               accessibilityHint={`Tap to ${isExpanded ? "collapse" : "expand"} this section`}
-              accessibilityState={{ expanded: isExpanded ? "true" : "false" }}
+              accessibilityState={{ expanded: isExpanded }}
               testID={`btn-section-${title?.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <ThemedText
-                variant="subheading"
-                className="text-lg"
-                accessibilityRole="header"
-              >
+              <ThemedText variant="h3" accessibilityRole="header">
                 {title}
               </ThemedText>
               <ThemedText variant="caption" className="text-lg" aria-hidden={true}>
                 {isExpanded ? "−" : "+"}
               </ThemedText>
-            </Button>
+            </Pressable>
           ) : (
-            <ThemedText
-              variant="subheading"
-              className="text-lg mb-2"
-              accessibilityRole="header"
-              // @ts-expect-error accessibilityLevel is web/aria only
-              accessibilityLevel={2}
-            >
+            <ThemedText variant="h3" className="mb-2" accessibilityRole="header">
               {title}
             </ThemedText>
           )}
