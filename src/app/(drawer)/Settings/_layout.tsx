@@ -1,5 +1,5 @@
-import Button from "@/src/components/elements/Button";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Button } from "@/src/components/ui";
+import { Text as ThemedText } from "@/src/components/ui";
 import { router, Stack } from "expo-router";
 import { View } from "react-native";
 
@@ -15,12 +15,10 @@ export default function SettingsLayout() {
             <View className="px-4">
               <Button
                 variant="ghost"
-                size="icon"
                 onPress={() => router.replace("/Settings")}
-                leftIcon="ArrowLeft"
+                leadingIcon="ArrowLeft"
                 label="Import / Export"
                 className="self-start"
-                textClasses="text-lg"
               />
               <ThemedText variant="caption" className="text-sm text-muted-foreground m-2">
                 Transfer your data between devices or storage modes, or export for backup and analysis.
@@ -37,12 +35,10 @@ export default function SettingsLayout() {
             <View className="px-4">
               <Button
                 variant="ghost"
-                size="icon"
                 onPress={() => router.replace("/Settings")}
-                leftIcon="ArrowLeft"
+                leadingIcon="ArrowLeft"
                 label="Appearance"
                 className="self-start"
-                textClasses="text-lg"
               />
               <ThemedText variant="caption" className="text-sm text-muted-foreground m-2">
                 Customize how Budgeteer looks and feels
@@ -59,12 +55,10 @@ export default function SettingsLayout() {
             <View className="px-4">
               <Button
                 variant="ghost"
-                size="icon"
                 onPress={() => router.replace("/Settings")}
-                leftIcon="ArrowLeft"
+                leadingIcon="ArrowLeft"
                 label="Currency"
                 className="self-start"
-                textClasses="text-lg"
               />
               <ThemedText variant="caption" className="text-sm text-muted-foreground m-2">
                 Set your primary currency for all transactions

@@ -1,7 +1,7 @@
 import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
-import Button from "@/src/components/elements/Button";
+import { Button, IconButton } from "@/src/components/ui";
+import { Text as ThemedText } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
 import Topbar from "@/src/components/ui/Topbar";
 import { BREAKPOINT_DESKTOP, DRAWER_WIDTH_MOBILE, SIDEBAR_WIDTH } from "@/src/constants/layout";
 import { NAV_SECTIONS } from "@/src/constants/navigation";
@@ -204,15 +204,16 @@ const Footer = () => {
           Version 0.16.11
         </ThemedText>
         {isUpdatePending && !isDownloading && (
-          <Button onPress={async () => await Updates.reloadAsync()} variant="outline" rightIcon="Power" size="sm" />
+          <IconButton onPress={async () => await Updates.reloadAsync()} variant="outline" icon="Power" size="md" accessibilityLabel="Reload app" />
         )}
         {isDownloading && <ActivityIndicator size="small" color="black" />}
         {isUpdateAvailable && !isUpdatePending && !isDownloading && (
-          <Button
+          <IconButton
             onPress={async () => await Updates.fetchUpdateAsync()}
             variant="outline"
-            rightIcon="CloudDownload"
-            size="sm"
+            icon="CloudDownload"
+            size="md"
+            accessibilityLabel="Download update"
           />
         )}
       </View>
@@ -223,7 +224,7 @@ const Footer = () => {
           setStorageMode(null);
         }}
         variant="destructive"
-        rightIcon="LogOut"
+        trailingIcon="LogOut"
         size="sm"
       />
       <Button
@@ -234,7 +235,7 @@ const Footer = () => {
         }}
         variant="ghost"
         size="sm"
-        rightIcon="Trash"
+        trailingIcon="Trash"
       />
     </>
   );

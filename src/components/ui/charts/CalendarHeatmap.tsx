@@ -25,6 +25,8 @@ export interface CalendarHeatmapProps {
   currentDate?: string;
   selectedDate?: string | null;
   onDayPress?: (dateString: string) => void;
+  /** Fires when the visible month changes (the calendar's own arrows/swipe). */
+  onMonthChange?: (dateString: string) => void;
   minDate?: string;
   maxDate?: string;
   loading?: boolean;
@@ -37,6 +39,7 @@ export function CalendarHeatmap({
   currentDate,
   selectedDate,
   onDayPress,
+  onMonthChange,
   minDate,
   maxDate,
   loading = false,
@@ -77,6 +80,7 @@ export function CalendarHeatmap({
         markingType="multi-dot"
         markedDates={marked as never}
         onDayPress={d => onDayPress?.(d.dateString)}
+        onMonthChange={m => onMonthChange?.(m.dateString)}
         enableSwipeMonths
         theme={{
           calendarBackground: colors.surface,

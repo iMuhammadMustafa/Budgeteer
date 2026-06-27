@@ -1,4 +1,4 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -139,7 +139,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                 label="Select File"
                 onPress={handleSelectFile}
                 variant="primary"
-                leftIcon="FolderOpen"
+                leadingIcon="FolderOpen"
                 className="w-full"
             />
 
@@ -306,7 +306,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
                             variant="primary"
                             className="flex-1"
                             disabled={hasErrors}
-                            leftIcon="Download"
+                            leadingIcon="Download"
                         />
                     </View>
                 </View>

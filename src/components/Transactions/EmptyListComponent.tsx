@@ -1,7 +1,6 @@
-import Button from "@/src/components/elements/Button";
+import { Button , Text as ThemedText } from "@/src/components/ui";
 import Divider from "@/src/components/elements/Divider";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
 import { router } from "expo-router";
 import { View } from "react-native";
 
@@ -14,7 +13,7 @@ export default function EmptyListComponent() {
           <MyIcon name="Plus" size={14} className="text-foreground" />
         </View>
       </View>
-      <ThemedText variant="heading" className="text-lg">
+      <ThemedText variant="h3" className="text-lg">
         No transactions yet
       </ThemedText>
       <ThemedText variant="caption" className="text-center px-10">
@@ -25,15 +24,13 @@ export default function EmptyListComponent() {
         <Button
           variant="outline"
           label="Add transaction"
-          leftIcon="Plus"
-          iconSize={16}
+          leadingIcon="Plus"
           onPress={() => router.push("/AddTransaction")}
         />
         <Button
           variant="outline"
           label="Import"
-          leftIcon="Upload"
-          iconSize={16}
+          leadingIcon="Upload"
           onPress={() => router.push("/Settings/ImportExport")}
         />
       </View>
@@ -45,18 +42,14 @@ export default function EmptyListComponent() {
           variant="ghost"
           className="bg-surface rounded-full px-4 border border-outline-200"
           label="Set up recurrings"
-          leftIcon="Repeat"
-          textClasses="text-xs"
-          iconSize={14}
+          leadingIcon="Repeat"
           onPress={() => router.push("/Recurrings")}
         />
         <Button
           variant="ghost"
           className="bg-surface rounded-full px-4 border border-outline-200"
           label="View summary"
-          leftIcon="Presentation"
-          textClasses="text-xs"
-          iconSize={14}
+          leadingIcon="Presentation"
           onPress={() => router.push("/Summary")}
         />
       </View>

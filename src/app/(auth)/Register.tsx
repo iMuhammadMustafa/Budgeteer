@@ -1,6 +1,6 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 import ThemedInput from "@/src/components/elements/ThemedInput";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import DropdownField from "@/src/components/elements/dropdown/DropdownField";
 import supabase from "@/src/providers/Supabase";
 import { CURRENCIES, DEFAULT_CURRENCY } from "@/src/utils/currency";
@@ -69,10 +69,10 @@ export default function Register() {
         variant="ghost"
         label="Back"
         onPress={() => router.navigate("/")}
-        leftIcon="ArrowLeft"
+        leadingIcon="ArrowLeft"
         className="self-start text-blue-600 text-center"
       />
-      <ThemedText variant="heading" className="text-2xl mb-10 text-center">Register</ThemedText>
+      <ThemedText variant="h3" className="text-2xl mb-10 text-center">Register</ThemedText>
       <ThemedInput
         className="my-2 p-4 text-lg"
         placeholder="Email"
@@ -107,7 +107,7 @@ export default function Register() {
       <Button
         variant="primary"
         size="lg"
-        hapticFeedback="success"
+        haptic="success"
         className="p-4 mt-4 mb-4 bg-primary rounded-lg items-center"
         onPress={signUpWithEmail}
         disabled={!isValid}

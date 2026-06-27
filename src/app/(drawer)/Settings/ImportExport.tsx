@@ -1,4 +1,4 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { ExportModal, ImportModal } from "@/src/components/ImportExport";
 import { queryClient } from "@/src/providers/QueryProvider";
@@ -67,7 +67,7 @@ export default function ImportExportScreen() {
             label="Export Data"
             onPress={() => setShowExportModal(true)}
             variant="outline"
-            leftIcon="Download"
+            leadingIcon="Download"
             className="w-full"
           />
         </View>
@@ -112,7 +112,7 @@ export default function ImportExportScreen() {
             label="Import Data"
             onPress={() => setShowImportModal(true)}
             variant="primary"
-            leftIcon="Upload"
+            leadingIcon="Upload"
             className="w-full"
           />
         </View>

@@ -7,11 +7,9 @@ import GenerateUuid from "@/src/utils/uuid.Helper";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, TextInput, View } from "react-native";
 import AmountInput from "../elements/AmountInput";
-import Button from "../elements/Button";
+import { Button, IconButton , Text as ThemedText } from "@/src/components/ui";
 import { MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
-import MyIcon from "../elements/MyIcon";
 import MyModal from "../elements/MyModal";
-import ThemedText from "../elements/ThemedText";
 
 type SplitChildInsert = Inserts<TableNames.Transactions>;
 
@@ -160,13 +158,13 @@ export default function SplitTransactionModal({
             <ThemedText variant="label" className="font-bold">
               Original Amount:
             </ThemedText>
-            <ThemedText className="font-bold text-lg">${Math.abs(originalAmount).toFixed(2)}</ThemedText>
+            <ThemedText variant="body" className="font-bold text-lg">${Math.abs(originalAmount).toFixed(2)}</ThemedText>
           </View>
           <View className="flex-row justify-between items-center">
             <ThemedText variant="label" className="font-bold">
               Split Amount:
             </ThemedText>
-            <ThemedText className="font-bold text-lg">${Math.abs(splitsTotal).toFixed(2)}</ThemedText>
+            <ThemedText variant="body" className="font-bold text-lg">${Math.abs(splitsTotal).toFixed(2)}</ThemedText>
           </View>
         </View>
 
@@ -183,9 +181,7 @@ export default function SplitTransactionModal({
             <View key={item.id ?? index} className="border border-border rounded-lg p-3 mb-2 bg-card">
               <View className="flex-row items-center justify-between mb-2">
                 <ThemedText className="text-sm font-medium">Transaction {index + 1}</ThemedText>
-                <Button variant="ghost" size="icon" onPress={() => removeSplit(index)} className="m-0 p-0 h-6 w-6">
-                  <MyIcon name="X" size={14} className="text-danger-500" />
-                </Button>
+                <IconButton variant="ghost" size="md" icon="X" onPress={() => removeSplit(index)} accessibilityLabel="Remove split" className="h-6 w-6" />
               </View>
               <View className="flex-row items-center gap-2 mb-2">
                 <TextInput
@@ -213,24 +209,21 @@ export default function SplitTransactionModal({
             variant="secondary"
             size="sm"
             onPress={addSplit}
-            leftIcon="Plus"
+            leadingIcon="Plus"
             label="Add Split"
             className="mt-1 mb-4"
           />
         </ScrollView>
 
         <View className="flex-row justify-end gap-2 mt-4 z-0">
-          <Button variant="outline" onPress={onClose}>
-            Cancel
-          </Button>
+          <Button variant="outline" onPress={onClose} label="Cancel" />
           <Button
             variant="primary"
             onPress={handleSubmit}
             disabled={!isBalanced || splitMutation.isPending}
             loading={splitMutation.isPending}
-          >
-            Apply Split
-          </Button>
+            label="Apply Split"
+          />
         </View>
       </View>
     </MyModal>

@@ -4,7 +4,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
-import Button from "./elements/Button";
+import { IconButton } from "@/src/components/ui";
 import MyIcon from "./elements/MyIcon";
 import MyModal from "./elements/MyModal";
 import SavingsBucketForm, { initialBucketState } from "./forms/SavingsBucketForm";
@@ -120,12 +120,12 @@ export default function SavingsBucketsList({
             </View>
 
             {/* Inline allocate toggle */}
-            <Button
+            <IconButton
               testID={`allocate-btn-compact-${bucket.id}`}
-              rightIcon="ArrowUpDown"
+              icon="ArrowUpDown"
               variant="ghost"
-              className="py-0 px-1"
-              iconSize={14}
+              size="xs"
+              accessibilityLabel="Allocate"
               onPress={() => {
                 setAllocatingBucketId(allocatingBucketId === bucket.id ? null : bucket.id);
                 setAllocateAmount(String(bucket.currentamount));
@@ -146,19 +146,21 @@ export default function SavingsBucketsList({
               placeholderTextColor="#999"
               autoFocus
             />
-            <Button
+            <IconButton
               testID={`save-allocate-compact-${allocatingBucketId}`}
-              rightIcon="Check"
+              icon="Check"
               variant="ghost"
-              className="py-0 px-1"
+              size="xs"
+              accessibilityLabel="Save allocation"
               onPress={() => handleAllocate(allocatingBucketId)}
               disabled={isAllocating}
             />
-            <Button
+            <IconButton
               testID={`cancel-allocate-compact-${allocatingBucketId}`}
-              rightIcon="X"
+              icon="X"
               variant="ghost"
-              className="py-0 px-1"
+              size="xs"
+              accessibilityLabel="Cancel allocation"
               onPress={() => {
                 setAllocatingBucketId(null);
                 setAllocateAmount("");
@@ -175,11 +177,12 @@ export default function SavingsBucketsList({
     <View className="mt-2">
       <View className="flex-row items-center justify-between px-4 py-2">
         <Text className="text-sm font-semibold text-foreground">Savings Buckets</Text>
-        <Button
+        <IconButton
           testID="add-bucket-btn"
-          rightIcon="Plus"
+          icon="Plus"
           variant="ghost"
-          className="py-0 px-1"
+          size="sm"
+          accessibilityLabel="Add bucket"
           onPress={() => {
             setEditBucket(null);
             setShowForm(true);
@@ -247,11 +250,12 @@ export default function SavingsBucketsList({
             </View>
 
             <View className="flex-row items-center gap-1">
-              <Button
+              <IconButton
                 testID={`allocate-btn-${bucket.id}`}
-                rightIcon="ArrowUpDown"
+                icon="ArrowUpDown"
                 variant="ghost"
-                className="py-0 px-1"
+                size="xs"
+                accessibilityLabel="Allocate"
                 onPress={() => {
                   setAllocatingBucketId(allocatingBucketId === bucket.id ? null : bucket.id);
                   setAllocateAmount(String(bucket.currentamount));
@@ -271,19 +275,21 @@ export default function SavingsBucketsList({
                 placeholder="Amount"
                 placeholderTextColor="#999"
               />
-              <Button
+              <IconButton
                 testID={`save-allocate-${bucket.id}`}
-                rightIcon="Check"
+                icon="Check"
                 variant="ghost"
-                className="py-0 px-1"
+                size="xs"
+                accessibilityLabel="Save allocation"
                 onPress={() => handleAllocate(bucket.id)}
                 disabled={isAllocating}
               />
-              <Button
+              <IconButton
                 testID={`cancel-allocate-${bucket.id}`}
-                rightIcon="X"
+                icon="X"
                 variant="ghost"
-                className="py-0 px-1"
+                size="xs"
+                accessibilityLabel="Cancel allocation"
                 onPress={() => {
                   setAllocatingBucketId(null);
                   setAllocateAmount("");

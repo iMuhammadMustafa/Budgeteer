@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 
 export default function ErrorLoader({
   message,
@@ -20,7 +20,7 @@ export default function ErrorLoader({
         <Button
           variant="primary"
           size="md"
-          hapticFeedback="error"
+          haptic="error"
           onPress={onRefresh}
           label="Try Again"
           testID="btn-summary-retry"

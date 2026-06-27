@@ -1,4 +1,4 @@
-import Button from "@/src/components/elements/Button";
+import { Button } from "@/src/components/ui";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import supabase from "@/src/providers/Supabase";
@@ -6,7 +6,7 @@ import { StorageMode } from "@/src/types/StorageMode";
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Alert, View } from "react-native";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import ThemedInput from "@/src/components/elements/ThemedInput";
 
 export default function Login() {
@@ -49,13 +49,13 @@ export default function Login() {
         variant="ghost"
         label="Back to mode selection"
         onPress={() => router.navigate("/")}
-        leftIcon="ArrowLeft"
+        leadingIcon="ArrowLeft"
         className="self-start text-blue-600 text-center"
       />
 
       <View className="flex-row items-center mb-6">
         <ThemedText className="text-2xl mr-3">☁️</ThemedText>
-        <ThemedText variant="heading" className="text-2xl">Cloud Login</ThemedText>
+        <ThemedText variant="h3" className="text-2xl">Cloud Login</ThemedText>
       </View>
 
       <ThemedText className="opacity-70 mb-6">Sign in to access your cloud-synced data</ThemedText>
@@ -84,7 +84,7 @@ export default function Login() {
         className="mb-4 bg"
       />
       <Link href="/Register" className="p-4 mb-4 bg-secondary rounded-lg items-center text-center">
-        <ThemedText variant="subheading" selectable={false}>
+        <ThemedText variant="h3" selectable={false}>
           Create Account
         </ThemedText>
       </Link>

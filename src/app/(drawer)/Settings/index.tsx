@@ -1,6 +1,6 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { router } from "expo-router";
 import { ScrollView, View } from "react-native";
@@ -12,7 +12,7 @@ export default function SettingsIndex() {
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">
-          <ThemedText variant="heading" className="text-2xl mb-2">Settings</ThemedText>
+          <ThemedText variant="h3" className="text-2xl mb-2">Settings</ThemedText>
           <ThemedText variant="caption" className="text-sm text-muted-foreground">
             Manage your app preferences and data
           </ThemedText>

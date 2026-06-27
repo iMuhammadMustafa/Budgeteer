@@ -1,7 +1,7 @@
-import ChartSwitcher from "@/src/components/Charts/ChartSwitcher";
-import Button from "@/src/components/elements/Button";
+import ChartSwitcher from "@/src/components/dashboard/ChartSwitcher";
+import LegacyButton from "@/src/components/elements/Button";
+import { Button, Text as ThemedText } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
-import ThemedText from "@/src/components/elements/ThemedText";
 import GridPattern from "@/src/components/GridPattern";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
@@ -19,6 +19,7 @@ export default function DetailView() {
     monthlyGroups,
     handleDayPress,
     handlePiePress,
+    handleBarPress,
     handleTransactionPress,
     params,
     filteredTransactions,
@@ -34,11 +35,10 @@ export default function DetailView() {
         <View className="flex-row justify-between items-center mb-2">
           <Button
             variant="ghost"
-            leftIcon="ArrowLeft"
+            leadingIcon="ArrowLeft"
             className="py-0 px-2"
-            textClasses="font-bold"
             iconSize={22}
-            label={params.label}
+            label={params.label ?? ""}
             size="lg"
             onPress={() => router.replace("/Dashboard")}
           />
@@ -54,6 +54,7 @@ export default function DetailView() {
           monthlyGroups={monthlyGroups}
           handleDayPress={handleDayPress}
           handlePiePress={handlePiePress}
+          handleBarPress={handleBarPress}
           params={params}
           periodControls={periodControls}
         />
@@ -63,7 +64,7 @@ export default function DetailView() {
         {isLoading ? (
           <DaySkeleton />
         ) : !filteredTransactions || filteredTransactions.length === 0 ? (
-          <ThemedText variant="subheading" className="self-center p-4">
+          <ThemedText variant="h3" className="self-center p-4">
             No transactions found
           </ThemedText>
         ) : (
@@ -94,7 +95,7 @@ function TransactionsListComponent({
         const iconColor = isExpense ? "danger" : "success";
 
         return (
-          <Button
+          <LegacyButton
             variant="ghost"
             size="md"
             onPress={() => onPress(item)}
@@ -123,7 +124,7 @@ function TransactionsListComponent({
               </ThemedText>
               <ThemedText variant="caption">{localDate.format("MMM D, YYYY")}</ThemedText>
             </View>
-          </Button>
+          </LegacyButton>
         );
       }}
     />

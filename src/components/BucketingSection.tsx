@@ -4,7 +4,7 @@ import { useAccountService } from "../services/Accounts.Service";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { Account, SavingsBucket } from "../types/database/Tables.Types";
-import Button from "./elements/Button";
+import { Button } from "@/src/components/ui";
 import MyIcon from "./elements/MyIcon";
 
 export default function BucketingSection() {

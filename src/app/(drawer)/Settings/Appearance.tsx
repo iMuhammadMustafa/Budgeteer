@@ -1,7 +1,7 @@
 import Button from "@/src/components/elements/Button";
 import MyIcon from "@/src/components/elements/MyIcon";
 import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
-import ThemedText from "@/src/components/elements/ThemedText";
+import { Text as ThemedText } from "@/src/components/ui";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";

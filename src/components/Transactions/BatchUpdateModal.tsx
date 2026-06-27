@@ -2,13 +2,13 @@ import { Account, TransactionCategory, TransactionsView } from "@/src/types/data
 import dayjs from "dayjs";
 import { useState } from "react";
 import { View } from "react-native";
-import Button from "../elements/Button";
+import { Button , Text as ThemedText } from "@/src/components/ui";
+import LegacyButton from "../elements/Button";
 import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
 import MyDateTimePicker from "../elements/MyDateTimePicker";
 import MyIcon from "../elements/MyIcon";
 import MyModal from "../elements/MyModal";
 import ThemedSwitch from "../elements/ThemedSwitch";
-import ThemedText from "../elements/ThemedText";
 
 export interface BatchUpdatePayload {
     date?: string;
@@ -200,16 +200,13 @@ export default function BatchUpdateModal({
 
                 {/* Action Buttons */}
                 <View className="flex-row justify-end gap-2 mt-4">
-                    <Button variant="outline" onPress={handleClose}>
-                        Cancel
-                    </Button>
+                    <Button variant="outline" onPress={handleClose} label="Cancel" />
                     <Button
                         variant="primary"
                         onPress={handleApply}
                         disabled={!isValid()}
-                    >
-                        Apply Updates
-                    </Button>
+                        label="Apply Updates"
+                    />
                 </View>
             </View>
         </MyModal>
@@ -227,7 +224,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
     return (
         <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
-            <Button
+            <LegacyButton
                 variant="ghost"
                 size="md"
                 hapticFeedback="selection"
@@ -243,7 +240,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
                 </View>
                 <ThemedText variant="label">{label}</ThemedText>
 
-            </Button>
+            </LegacyButton>
 
             {/* Content - only shown when enabled */}
             {enabled && (
