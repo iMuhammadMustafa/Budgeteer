@@ -1,4 +1,4 @@
-import { Button } from "@/src/components/ui";
+import { Button, Input, Text as ThemedText } from "@/src/components/ui";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import supabase from "@/src/providers/Supabase";
@@ -6,8 +6,6 @@ import { StorageMode } from "@/src/types/StorageMode";
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Alert, View } from "react-native";
-import { Text as ThemedText } from "@/src/components/ui";
-import ThemedInput from "@/src/components/elements/ThemedInput";
 
 export default function Login() {
   const [user, setUser] = useState({ email: "", password: "" });
@@ -50,30 +48,34 @@ export default function Login() {
         label="Back to mode selection"
         onPress={() => router.navigate("/")}
         leadingIcon="ArrowLeft"
-        className="self-start text-blue-600 text-center"
+        className="self-start text-blue-600 text-center px-0"
       />
 
-      <View className="flex-row items-center mb-6">
+      <View className="flex-row items-center mb-2">
         <ThemedText className="text-2xl mr-3">☁️</ThemedText>
-        <ThemedText variant="h3" className="text-2xl">Cloud Login</ThemedText>
+        <ThemedText variant="h3" className="text-2xl">
+          Cloud Login
+        </ThemedText>
       </View>
 
       <ThemedText className="opacity-70 mb-6">Sign in to access your cloud-synced data</ThemedText>
 
-      <ThemedInput
+      <Input
         placeholder="Email"
-        className="p-4 mb-4 border-primary text-lg"
+        containerClassName="mb-4"
         onChangeText={text => onTextChange("email", text)}
         value={user.email}
         keyboardType="email-address"
         autoCapitalize="none"
+        testID="input-login-email"
       />
-      <ThemedInput
+      <Input
         placeholder="Password"
         secureTextEntry
-        className="p-4 mb-4 border-primary text-lg"
+        containerClassName="mb-4"
         onChangeText={text => onTextChange("password", text)}
         value={user.password}
+        testID="input-login-password"
       />
 
       <Button
@@ -83,10 +85,9 @@ export default function Login() {
         variant="primary"
         className="mb-4 bg"
       />
-      <Link href="/Register" className="p-4 mb-4 bg-secondary rounded-lg items-center text-center">
-        <ThemedText variant="h3" selectable={false}>
-          Create Account
-        </ThemedText>
+      {/* TODO: Create a Link Button that either wraps a button or take the styles of the button is in button component */}
+      <Link className="py-2 mb-4 bg-secondary rounded-lg items-center text-center" href="/Register">
+        <ThemedText selectable={false}>Register</ThemedText>
       </Link>
 
       <ThemedText className="text-blue-500 text-center cursor-pointer" selectable={false}>
