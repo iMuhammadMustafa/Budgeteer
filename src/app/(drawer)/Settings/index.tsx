@@ -1,96 +1,74 @@
-import Button from "@/src/components/elements/Button";
-import MyIcon from "@/src/components/elements/MyIcon";
-import { Text as ThemedText } from "@/src/components/ui";
-import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+import { View } from "react-native";
 import { router } from "expo-router";
-import { ScrollView, View } from "react-native";
+
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { ListRow, Text as ThemedText } from "@/src/components/ui";
+import PageLayout from "@/src/components/ui/pages/PageLayout";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 export default function SettingsIndex() {
   const { primaryCurrency } = usePrimaryCurrency();
+  const { colors } = useTheme();
+
+  const chevron = <MyIcon name="ChevronRight" size={20} color={colors.inkFaint} />;
+
   return (
-    <ScrollView className="flex-1 bg-background">
-      <View className="p-4">
-        {/* Header */}
-        <View className="mb-6">
-          <ThemedText variant="h3" className="text-2xl mb-2">Settings</ThemedText>
-          <ThemedText variant="caption" className="text-sm text-muted-foreground">
-            Manage your app preferences and data
-          </ThemedText>
-        </View>
+    <PageLayout title="" subtitle="Manage your app preferences and data">
+      <ListRow
+        iconName="ArrowUpDown"
+        iconShape="circle"
+        iconColor={colors.primary}
+        iconBg={colors.primarySoft}
+        title="Import / Export"
+        subtitle="Transfer data between devices or storage modes"
+        right={chevron}
+        onPress={() => router.push("/Settings/ImportExport")}
+        testID="btn-settings-import-export"
+        className="cursor-pointer"
+      />
 
-        {/* Settings Options */}
-        <View className="bg-card rounded-xl border border-muted overflow-hidden">
-          {/* Import/Export */}
-          <Button
-            variant="ghost"
-            size="lg"
-            onPress={() => router.push("/Settings/ImportExport")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
-            testID="btn-settings-import-export"
-          >
-            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-              <MyIcon name="ArrowUpDown" size={20} className="text-primary" />
-            </View>
-            <View className="ml-3 flex-1">
-              <ThemedText variant="label">Import / Export</ThemedText>
-              <ThemedText variant="caption" className="text-sm text-muted-foreground">
-                Transfer data between devices or storage modes
-              </ThemedText>
-            </View>
-            <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Button>
+      <ListRow
+        iconName="Palette"
+        iconShape="circle"
+        iconColor={colors.primary}
+        iconBg={colors.primarySoft}
+        title="Appearance"
+        subtitle="Theme, grid background & more"
+        right={chevron}
+        onPress={() => router.push("/Settings/Appearance")}
+        testID="btn-settings-appearance"
+      />
 
-          {/* Appearance */}
-          <Button
-            variant="ghost"
-            size="lg"
-            onPress={() => router.push("/Settings/Appearance")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
-            testID="btn-settings-appearance"
-          >
-            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-              <MyIcon name="Palette" size={20} className="text-primary" />
-            </View>
-            <View className="ml-3 flex-1">
-              <ThemedText variant="label">Appearance</ThemedText>
-              <ThemedText variant="caption" className="text-sm text-muted-foreground">Theme, grid background & more</ThemedText>
-            </View>
-            <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Button>
-
-          {/* Currency */}
-          <Button
-            variant="ghost"
-            size="lg"
-            onPress={() => router.push("/Settings/Currency")}
-            className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
-            testID="btn-settings-currency"
-          >
-            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-              <MyIcon name="DollarSign" size={20} className="text-primary" />
-            </View>
-            <View className="ml-3 flex-1">
-              <ThemedText variant="label">Primary Currency</ThemedText>
-              <ThemedText variant="caption" className="text-sm text-muted-foreground">
-                Used for totals and as the default for new transactions
-              </ThemedText>
-            </View>
-            <ThemedText variant="caption" className="text-sm text-muted-foreground mr-2">{primaryCurrency}</ThemedText>
-            <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
-          </Button>
-
-          <View className="flex-row items-center p-4 opacity-50">
-            <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">
-              <MyIcon name="Bell" size={20} className="text-muted-foreground" />
-            </View>
-            <View className="ml-3 flex-1">
-              <ThemedText variant="label">Notifications</ThemedText>
-              <ThemedText variant="caption" className="text-sm text-muted-foreground">Coming soon</ThemedText>
-            </View>
-            <MyIcon name="ChevronRight" size={20} className="text-muted-foreground" />
+      <ListRow
+        iconName="DollarSign"
+        iconShape="circle"
+        iconColor={colors.primary}
+        iconBg={colors.primarySoft}
+        title="Primary Currency"
+        subtitle="Used for totals and as the default for new transactions"
+        right={
+          <View className="flex-row items-center gap-2">
+            <ThemedText variant="caption" className="text-ink-mute">
+              {primaryCurrency}
+            </ThemedText>
+            {chevron}
           </View>
-        </View>
-      </View>
-    </ScrollView>
+        }
+        onPress={() => router.push("/Settings/Currency")}
+        testID="btn-settings-currency"
+      />
+
+      <ListRow
+        iconName="Bell"
+        iconShape="circle"
+        iconColor={colors.inkMute}
+        iconBg={colors.surfaceAlt}
+        title="Notifications"
+        subtitle="Coming soon"
+        right={chevron}
+        className="opacity-50"
+      />
+    </PageLayout>
   );
 }

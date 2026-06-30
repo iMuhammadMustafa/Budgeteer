@@ -1,10 +1,13 @@
-import { Button } from "@/src/components/ui";
-import MyIcon from "@/src/components/elements/MyIcon";
-import { ExportModal, ImportModal } from "@/src/components/ImportExport";
+import { useState } from "react";
+import { ScrollView, View } from "react-native";
+
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Button, GridBackground, Text } from "@/src/components/ui";
+import { PageHeader } from "@/src/components/ui/pages/PageHeader";
+import PageLayout from "@/src/components/ui/pages/PageLayout";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { ExportModal, ImportModal } from "@/src/components/ImportExport";
 
 export default function ImportExportScreen() {
   const { storageMode } = useStorageMode();
@@ -16,22 +19,30 @@ export default function ImportExportScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background p-4">
+    <PageLayout
+      title="Import / Export"
+      subtitle="Transfer your data between devices or storage modes, or export for backup and analysis."
+      backHref="/Settings"
+    >
       {/* Current Storage Mode */}
-      <View className="bg-card rounded-xl p-4 mb-6 border border-muted">
-        <View className="flex-row items-center mb-2">
+      <View className="bg-surface rounded-xl p-4 mb-4 border border-muted">
+        <View className="flex-row items-center mb-3 gap-2">
           <MyIcon name="Database" size={20} className="text-primary" />
-          <Text className="ml-2 font-medium text-foreground">Current Storage</Text>
+          <Text variant="label" className="text-foreground">
+            Current Storage
+          </Text>
         </View>
         <View className="flex-row items-center">
           <View className="bg-primary/10 px-3 py-1 rounded-full">
-            <Text className="text-primary font-medium capitalize">{storageMode || "Not set"}</Text>
+            <Text variant="label" className="text-primary capitalize">
+              {storageMode || "Not set"}
+            </Text>
           </View>
         </View>
       </View>
       <View className="flex-row  items-center justify-center gap-4">
         {/* Export Section */}
-        <View className="bg-card rounded-xl p-4 mb-4 border border-muted flex-1 h-full">
+        <View className="bg-surface rounded-xl p-4 mb-4 border border-muted flex-1 h-full">
           <View className="flex-row items-center mb-3">
             <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
               <MyIcon name="Upload" size={20} className="text-green-600" />
@@ -42,7 +53,7 @@ export default function ImportExportScreen() {
             </View>
           </View>
 
-          <View className="bg-muted/30 rounded-lg p-3 mb-4">
+          <View className="bg-bg/90 rounded-lg p-3 mb-4">
             <View className="flex-row mb-2">
               <MyIcon name="FileJson2" size={16} className="text-muted-foreground" />
               <Text className="ml-2 text-sm text-foreground font-medium">JSON Format</Text>
@@ -53,7 +64,7 @@ export default function ImportExportScreen() {
             </Text>
           </View>
 
-          <View className="bg-muted/30 rounded-lg p-3 mb-4">
+          <View className="bg-bg/90 rounded-lg p-3 mb-4">
             <View className="flex-row mb-2">
               <MyIcon name="FileSpreadsheet" size={16} className="text-muted-foreground" />
               <Text className="ml-2 text-sm text-foreground font-medium">CSV Format</Text>
@@ -73,7 +84,7 @@ export default function ImportExportScreen() {
         </View>
 
         {/* Import Section */}
-        <View className="bg-card rounded-xl p-4 mb-4 border border-muted flex-1 h-full">
+        <View className="bg-surface rounded-xl p-4 mb-4 border border-muted flex-1 h-full">
           <View className="flex-row items-center mb-3">
             <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center">
               <MyIcon name="Download" size={20} className="text-blue-600" />
@@ -84,7 +95,7 @@ export default function ImportExportScreen() {
             </View>
           </View>
 
-          <View className="bg-muted/30 rounded-lg p-3 mb-4">
+          <View className="bg-bg/90 rounded-lg p-3 mb-4">
             <View className="flex-row items-start mb-2">
               <MyIcon name="Shield" size={16} className="text-muted-foreground mt-0.5" />
               <View className="ml-2 flex-1">
@@ -119,7 +130,7 @@ export default function ImportExportScreen() {
       </View>
 
       {/* Help Section */}
-      <View className="bg-card rounded-xl p-4 border border-muted">
+      <View className="bg-surface rounded-xl p-4 border border-muted">
         <View className="flex-row items-center mb-3">
           <MyIcon name="HelpCircle" size={20} className="text-muted-foreground" />
           <Text className="ml-2 font-medium text-foreground">Tips</Text>
@@ -160,6 +171,6 @@ export default function ImportExportScreen() {
         onClose={() => setShowImportModal(false)}
         onImportComplete={handleImportComplete}
       />
-    </ScrollView>
+    </PageLayout>
   );
 }
