@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useWindowDimensions, View } from "react-native";
-
 import { router } from "expo-router";
 import { DrawerContentScrollView } from "expo-router/build/react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
@@ -32,7 +31,7 @@ export default function DrawerLayout() {
   if (isLoading || !session) return <DashboardSkeleton />;
 
   return (
-    <View className="flex-1 bg-bg">
+    <>
       <GridBackground />
       <Drawer
         screenOptions={{
@@ -66,6 +65,6 @@ export default function DrawerLayout() {
         <Drawer.Screen name="Restore" options={{ drawerLabel: "Restore", title: "Restore" }} />
         <Drawer.Screen name="Settings" options={{ drawerLabel: "Settings", title: "Settings" }} />
       </Drawer>
-    </View>
+    </>
   );
 }

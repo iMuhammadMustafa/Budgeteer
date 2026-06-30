@@ -1,17 +1,20 @@
-import Button from "@/src/components/elements/Button";
-import MyIcon from "@/src/components/elements/MyIcon";
-import { Text as ThemedText } from "@/src/components/ui";
-import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { CURRENCIES } from "@/src/utils/currency";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { CURRENCIES } from "@/src/utils/currency";
+import { Input, ListRow, Text as ThemedText } from "@/src/components/ui";
+import PageLayout from "@/src/components/ui/pages/PageLayout";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 export default function CurrencySettings() {
   const { primaryCurrency, setPrimaryCurrency, isSaving } = usePrimaryCurrency();
+  const { colors } = useTheme();
   const [query, setQuery] = useState("");
   const [pendingCode, setPendingCode] = useState<string | null>(null);
 
-  const filtered = CURRENCIES.filter((c) => {
+  const filtered = CURRENCIES.filter(c => {
     if (!query) return true;
     const q = query.toLowerCase();
     return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
@@ -28,51 +31,51 @@ export default function CurrencySettings() {
   };
 
   return (
-    <View className="flex-1 bg-background">
-      <View className="p-4 border-b border-muted">
-        <TextInput
-          placeholder="Search currency…"
-          placeholderTextColor="#9ca3af"
-          value={query}
-          onChangeText={setQuery}
-          className="border border-input-border bg-input-bg rounded-md px-3 py-2 text-foreground"
-          testID="input-currency-search"
-        />
-      </View>
-      <ScrollView className="flex-1">
-        {filtered.map((c) => {
-          const isSelected = c.code === primaryCurrency;
-          const isPending = pendingCode === c.code;
-          return (
-            <Button
-              key={c.code}
-              variant="ghost"
-              size="lg"
-              onPress={() => handleSelect(c.code)}
-              className="flex-row items-center p-4 border-b border-muted active:bg-muted/50 rounded-none justify-start"
-              testID={`btn-currency-${c.code}`}
+    <PageLayout title="Currency" subtitle="Choose your primary currency" backHref="/Settings">
+      <Input
+        iconName="Search"
+        placeholder="Search currency…"
+        value={query}
+        onChangeText={setQuery}
+        testID="input-currency-search"
+      />
+      {filtered.map(c => {
+        const isSelected = c.code === primaryCurrency;
+        const isPending = pendingCode === c.code;
+        return (
+          <Pressable
+            key={c.code}
+            onPress={() => handleSelect(c.code)}
+            className="flex-row items-center rounded-xl border border-border bg-surface px-[15px] py-[13px] active:opacity-90"
+            testID={`btn-currency-${c.code}`}
+          >
+            <View
+              className="h-[42px] w-[42px] items-center justify-center rounded-full"
+              style={{ backgroundColor: colors.primarySoft }}
             >
-              <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                <ThemedText variant="label" className="text-sm">{c.symbol}</ThemedText>
-              </View>
-              <View className="ml-3 flex-1">
-                <ThemedText variant="label">{c.code}</ThemedText>
-                <ThemedText variant="caption" className="text-sm text-muted-foreground">{c.name}</ThemedText>
-              </View>
-              {isPending ? (
-                <ActivityIndicator size="small" />
-              ) : isSelected ? (
-                <MyIcon name="Check" size={20} className="text-primary" />
-              ) : null}
-            </Button>
-          );
-        })}
-        {filtered.length === 0 && (
-          <View className="p-4 items-center">
-            <ThemedText variant="caption">No matches.</ThemedText>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+              <ThemedText variant="label" style={{ color: colors.primary }}>
+                {c.symbol}
+              </ThemedText>
+            </View>
+            <View className="ml-[13px] flex-1">
+              <ThemedText variant="label">{c.code}</ThemedText>
+              <ThemedText variant="caption" className="text-ink-mute">
+                {c.name}
+              </ThemedText>
+            </View>
+            {isPending ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : isSelected ? (
+              <MyIcon name="Check" size={20} color={colors.primary} />
+            ) : null}
+          </Pressable>
+        );
+      })}
+      {filtered.length === 0 && (
+        <View className="items-center p-4">
+          <ThemedText variant="caption">No matches.</ThemedText>
+        </View>
+      )}
+    </PageLayout>
   );
 }
