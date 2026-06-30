@@ -13,7 +13,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BrandSplash, useBudgeteerFonts } from "@/src/components/ui";
 import AppInitializer from "@/src/providers/AppInitalizer";
 import AuthProvider from "@/src/providers/AuthProvider";
-import HeaderActionsProvider from "@/src/providers/HeaderActionsProvider";
 import OverlayProvider from "@/src/providers/OverlayProvider";
 import QueryProvider from "@/src/providers/QueryProvider";
 import StorageModeProvider from "@/src/providers/StorageModeProvider";
@@ -33,8 +32,10 @@ if (Platform.OS === "web") {
     "Unknown event handler property",
     "React does not recognize the `accessibilityHint` prop",
     "React does not recognize the `backgroundColor` prop",
-
-    "backgroundColor",
+    "props.pointerEvents is deprecated. Use style.pointerEvents",
+    "Image: style.tintColor is deprecated. Please use props.tintColor.",
+    "TouchableMixin is deprecated. Please use Pressable.",
+    "Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md",
   ];
 
   LogBox.ignoreLogs(suppressedPatterns);
@@ -72,25 +73,22 @@ export default function RootLayout() {
         <ThemeProvider>
           {/* <NotificationsProvider> */}
           {fontsLoaded ? (
-            <HeaderActionsProvider>
-              <StorageModeProvider>
-                <AuthProvider>
-                  <AppInitializer>
-                    <QueryProvider>
-                      <OverlayProvider>
-                        <Stack>
-                          <Stack.Screen name="index" options={{ headerShown: false }} />
-                          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                          <Stack.Screen name="design" options={{ headerShown: false }} />
-                          <Stack.Screen name="components" options={{ headerShown: false }} />
-                        </Stack>
-                      </OverlayProvider>
-                    </QueryProvider>
-                  </AppInitializer>
-                </AuthProvider>
-              </StorageModeProvider>
-            </HeaderActionsProvider>
+            <StorageModeProvider>
+              <AuthProvider>
+                <AppInitializer>
+                  <QueryProvider>
+                    <OverlayProvider>
+                      <Stack>
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(ui)" options={{ headerShown: false }} />
+                      </Stack>
+                    </OverlayProvider>
+                  </QueryProvider>
+                </AppInitializer>
+              </AuthProvider>
+            </StorageModeProvider>
           ) : (
             <BrandSplash />
           )}
