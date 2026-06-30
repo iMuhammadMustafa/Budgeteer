@@ -1,5 +1,5 @@
 {
-  "plugins": [],
+  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
   "singleQuote": false,
   "jsxSingleQuote": false,
   "tabWidth": 2,
@@ -7,5 +7,29 @@
   "printWidth": 120,
   "bracketSpacing": true,
   "bracketSameLine": false,
-  "arrowParens": "avoid"
+  "arrowParens": "avoid",
+  "importOrderSeparation": true,
+  "importOrder": [
+    "^react$",
+    "^react-native$",
+    "^expo$",
+    "^expo-",
+    "^expo/",
+    "<THIRD_PARTY_MODULES>",
+    "",
+    "^@/src/providers",
+    "^@/src/constants",
+    "^@/src/types",
+    "^@/src/utils",
+    "^@/src/components/primitives",
+    "^@/src/components/ui",
+    "^@/src/components",
+    "^@/src",
+    "",
+    "^\\.\\.(?!/?$)",
+    "^\\.\\./?$",
+    "^\\./(?=.*/)(?!/?$)",
+    "^\\.(?!/?$)",
+    "^\\./?$"
+  ]
 }
