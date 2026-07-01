@@ -2,8 +2,13 @@
  * RecentTransactions — the dashboard's latest-activity card: a titled Card with
  * bare ListRows (divider-separated). Icon tile tone follows income/expense since
  * the transactions view carries no per-category color. Pure presentation.
+ *
+ * Sits beside the Week's Expenses ChartCard in a stretched flex row (see
+ * `DashboardCharts`) — `className` lets the parent force `flex-1`/`h-full` so this
+ * card matches that sibling's height; the list scrolls internally rather than
+ * growing past it.
  */
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 
 import { Card, Divider, ListRow, Text } from "@/src/components/ui";
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -13,21 +18,23 @@ import dayjs from "dayjs";
 export default function RecentTransactions({
   transactions = [],
   onPress,
+  className,
 }: {
   transactions?: TransactionsView[];
   onPress: (t: TransactionsView) => void;
+  className?: string;
 }) {
   const { colors } = useTheme();
 
   return (
-    <Card className="gap-2" testID="recent-transactions">
+    <Card className={`h-full gap-2 ${className ?? ""}`} testID="recent-transactions">
       <Text variant="overline">Recent transactions</Text>
       {transactions.length === 0 ? (
         <Text variant="caption" className="py-6 text-center">
           No recent transactions
         </Text>
       ) : (
-        <View>
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {transactions.map((t, i) => {
             const expense = (t.amount ?? 0) < 0;
             return (
@@ -49,7 +56,7 @@ export default function RecentTransactions({
               </View>
             );
           })}
-        </View>
+        </ScrollView>
       )}
     </Card>
   );

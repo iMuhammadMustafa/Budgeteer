@@ -197,12 +197,15 @@ export const categoryColorFor = (label?: string): string | undefined => {
 };
 
 /**
- * Resolve a chart series color, in priority order:
- *   explicit datum color → semantic category color → palette cycled by index.
- * So charts always get distinct colors even when the data carries none.
+ * Resolve a chart series color: explicit datum color → palette cycled by index.
+ * Deliberately skips `categoryColorFor`/semantic pins here — those map several
+ * distinct labels to the same swatch (e.g. "Rent" and "Groceries" both pin to
+ * index 1), which is fine for a single standalone chip/icon but breaks the one
+ * guarantee a multi-slice chart needs: every slice in view gets a different
+ * color. Index-cycling is the only thing that actually guarantees that.
  */
-export const seriesColor = (index: number, explicit?: string | null, label?: string): string =>
-  explicit ?? categoryColorFor(label) ?? chartPalette[index % chartPalette.length];
+export const seriesColor = (index: number, explicit?: string | null, _label?: string): string =>
+  explicit ?? chartPalette[index % chartPalette.length];
 
 export const radii = {
   chip: 999,

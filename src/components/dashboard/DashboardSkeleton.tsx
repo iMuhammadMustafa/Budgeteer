@@ -4,15 +4,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const SKELETON_COLOR = "#e6e6e6";
 
-/** Reusable skeleton card matching ChartsContainer styling */
+/**
+ * Reusable skeleton card. Sizing matches the real `DashboardCharts` grid (see that
+ * file for why `flexBasis:0`, not `flex:1`, is required for truly equal columns).
+ */
 function SkeletonCard({ children }: { children: React.ReactNode }) {
   const { width } = useWindowDimensions();
-  const chartWidth = Math.min(width * 0.95, 600);
+  const isWide = width >= 768;
+  const cardStyle = isWide
+    ? ({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, overflow: "hidden" } as const)
+    : ({ width: "100%" } as const);
   return (
-    <View
-      className="gap-2 py-4 my-2 bg-card m-auto rounded-md border border-muted items-center"
-      style={{ width: chartWidth * (chartWidth > 700 ? 1.75 : 1) }}
-    >
+    <View className="gap-2 py-4 bg-card rounded-md border border-muted items-center" style={cardStyle}>
       {children}
     </View>
   );
@@ -195,25 +198,36 @@ function CalendarSkeleton() {
 }
 
 /**
- * Full dashboard skeleton — mirrors the real dashboard chart layout order:
- * Bar → DoubleBar → Line → Pie (Categories) → Pie (Groups) → Calendar
+ * Full dashboard skeleton — mirrors the real dashboard's 2-column chart grid
+ * (Bar+DoubleBar, then the two Pies, then Line) with the Calendar pulled out
+ * alone, full-width, at the bottom — same grid width/shape as `DashboardCharts`
+ * so the loading state doesn't flash noticeably narrower than the real page.
  */
 export default function DashboardSkeleton() {
   return (
-    <SafeAreaView className="w-full h-full m-auto flex-1">
+    <SafeAreaView className="w-full h-full flex-1">
       {/* Header placeholder */}
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <SkeletonBlock width={100} height={18} radius={6} />
         <SkeletonBlock width={24} height={24} radius={12} />
       </View>
-      <ScrollView className="flex-1 h-full">
+      <ScrollView className="flex-1 h-full" contentContainerClassName="p-4 gap-4 w-full self-center" contentContainerStyle={{ maxWidth: 1180 }}>
         <Pulse>
-          <BarSkeleton />
-          <DoubleBarSkeleton />
-          <LineSkeleton />
-          <PieSkeleton />
-          <PieSkeleton />
-          <CalendarSkeleton />
+          {/* Explicit rows of two so pairing is deterministic (mirrors DashboardCharts). */}
+          <View className="flex-row items-stretch gap-3">
+            <BarSkeleton />
+            <DoubleBarSkeleton />
+          </View>
+          <View className="mt-3 flex-row items-stretch gap-3">
+            <PieSkeleton />
+            <PieSkeleton />
+          </View>
+          <View className="mt-3 flex-row items-stretch gap-3">
+            <LineSkeleton />
+          </View>
+          <View className="mt-3">
+            <CalendarSkeleton />
+          </View>
         </Pulse>
       </ScrollView>
     </SafeAreaView>
