@@ -1,20 +1,19 @@
-import { Button, Dialog, Sheet, Switch } from "@/src/components/ui";
+import { Button, ResponsiveModal, Switch } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import ExportService from "@/src/services/Export.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/ImportExport.Types";
+import { formatTableName, formatViewName, getTableIcon } from "@/src/utils/importExport.helper";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 
 export default function ExportModal({ visible, onClose }: {
     visible: boolean;
     onClose: () => void;
 }) {
-    const { width } = useWindowDimensions();
-    const useSheet = width < 768;
     const { session } = useAuth();
     const { dbContext, storageMode } = useStorageMode();
     const tenantId = session?.user?.user_metadata?.tenantid || "";
@@ -283,43 +282,9 @@ export default function ExportModal({ visible, onClose }: {
         </>
     );
 
-    return useSheet ? (
-        <Sheet visible={visible} onClose={onClose} title="Export Data" scrollable={false}>
+    return (
+        <ResponsiveModal visible={visible} onClose={onClose} title="Export Data" size="lg" scrollable={false}>
             {body}
-        </Sheet>
-    ) : (
-        <Dialog visible={visible} onClose={onClose} title="Export Data" size="lg" scrollable={false}>
-            {body}
-        </Dialog>
+        </ResponsiveModal>
     );
-}
-
-function getTableIcon(table: TableNames): string {
-    const icons: Record<TableNames, string> = {
-        [TableNames.AccountCategories]: "FolderOpen",
-        [TableNames.Accounts]: "Landmark",
-        [TableNames.TransactionGroups]: "Layers",
-        [TableNames.TransactionCategories]: "Tag",
-        [TableNames.Configurations]: "Settings",
-        [TableNames.Recurrings]: "Repeat",
-        [TableNames.SavingsBuckets]: "PiggyBank",
-        [TableNames.Transactions]: "Receipt",
-        [TableNames.TransactionItems]: "List",
-    };
-    return icons[table] || "Database";
-}
-
-function formatTableName(table: string): string {
-    return table
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^./, str => str.toUpperCase())
-        .trim();
-}
-
-function formatViewName(view: string): string {
-    return view
-        .replace(/_/g, " ")
-        .replace(/^./, str => str.toUpperCase())
-        .replace(/stats /i, "Stats: ")
-        .replace(/view /i, "");
 }

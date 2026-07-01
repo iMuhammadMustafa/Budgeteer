@@ -119,8 +119,13 @@ export function CenteredPanel({
   size?: "sm" | "md" | "lg";
   testID?: string;
 }) {
-  const { height } = useWindowDimensions();
-  const maxWidth = size === "sm" ? 380 : size === "lg" ? 640 : 480;
+  const { height, width } = useWindowDimensions();
+  // sm/lg are deliberately close to md — most dialogs host multi-field forms, not
+  // simple confirms, so even the "small" size needs room to breathe. Capped by the
+  // viewport (92%) so these stay sane on narrow desktop windows just above the
+  // Sheet breakpoint.
+  const targetWidth = size === "sm" ? 440 : size === "lg" ? 760 : 580;
+  const maxWidth = Math.min(targetWidth, width * 0.92);
   const panelMax = height * 0.85;
   const bodyMax = panelMax - (header ? HEADER_RESERVE : 0);
   return (

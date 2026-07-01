@@ -25,8 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../Button";
 import { Card } from "../Card";
 import { IconButton } from "../IconButton";
-import { Dialog } from "../overlay/Dialog";
-import { Sheet } from "../overlay/Sheet";
+import { ResponsiveModal } from "../overlay/ResponsiveModal";
 import { useConfirm } from "../overlay/useConfirm";
 import { SkeletonGroup } from "../Skeleton";
 import { Text } from "../Text";
@@ -167,7 +166,6 @@ export function EntityListScreen<TModel extends { id: string }>({
   testID = "entity-list",
 }: EntityListScreenProps<TModel>) {
   const { width } = useWindowDimensions();
-  const useSheet = width < 768;
   const confirm = useConfirm();
 
   const groups = Object.entries(groupedData);
@@ -255,7 +253,7 @@ export function EntityListScreen<TModel extends { id: string }>({
             <SkeletonGroup count={8} />
           </View>
         ) : (
-          <ScrollView className="custom-scrollbar mt-1" contentContainerStyle={{ paddingBottom: 96 }}>
+          <ScrollView className="custom-scrollbar mt-1 flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
             {numCols === 2 ? (
               <View className="flex-row gap-4 px-4 pb-4 lg:px-6">
                 {balanceColumns(blocks, 2).map((colNodes, i) => (
@@ -279,14 +277,10 @@ export function EntityListScreen<TModel extends { id: string }>({
       </View>
 
       {/* ── Upsert modal (responsive Sheet / Dialog) ── */}
-      {upsertContent && useSheet ? (
-        <Sheet visible={!!upsertOpen} onClose={() => onUpsertClose?.()} title={upsertTitle}>
+      {upsertContent ? (
+        <ResponsiveModal visible={!!upsertOpen} onClose={() => onUpsertClose?.()} title={upsertTitle} size="lg">
           {upsertContent}
-        </Sheet>
-      ) : upsertContent ? (
-        <Dialog visible={!!upsertOpen} onClose={() => onUpsertClose?.()} title={upsertTitle}>
-          {upsertContent}
-        </Dialog>
+        </ResponsiveModal>
       ) : null}
 
       {deleteModalSlot}
