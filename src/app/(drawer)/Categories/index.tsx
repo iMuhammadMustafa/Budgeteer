@@ -11,7 +11,7 @@ export default function TransactionGroupsTab() {
   return (
     <MyTab
       title="Transaction Categories"
-      detailsUrl="/Categories/Upsert?accountId="
+      detailHref="/Categories/"
       queryKey={[TableNames.TransactionCategories]}
       service={categories}
       groupBy="group.name"

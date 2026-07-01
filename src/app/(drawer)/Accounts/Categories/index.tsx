@@ -11,7 +11,7 @@ export default function AccountCategoriesTab() {
   return (
     <MyTab
       title="Account Categories"
-      detailsUrl="/Accounts/Categories/Upsert?accountId="
+      detailHref="/Accounts/Categories/"
       queryKey={[TableNames.AccountCategories]}
       service={accountCategoryService}
       initialState={initialState}

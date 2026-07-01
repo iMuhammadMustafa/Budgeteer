@@ -1,23 +1,38 @@
-import { ColorsPickerDropdown, Dialog, IconPicker, Select, type SelectOption } from "@/src/components/ui";
-import FormContainer from "@/src/components/form-builder/FormContainer";
-import FormField from "@/src/components/form-builder/FormField";
-import FormSection from "@/src/components/form-builder/FormSection";
-import { useFormState } from "@/src/components/form-builder/hooks/useFormState";
-import { useFormSubmission } from "@/src/components/form-builder/hooks/useFormSubmission";
-import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
-import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
-import { FormFieldConfig, TransactionCategoryFormData, ValidationSchema } from "@/src/types/components/forms.types";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { TransactionCategoryFormData, ValidationSchema } from "@/src/types/components/forms.types";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, TransactionCategory, Updates } from "@/src/types/database/Tables.Types";
+import { getCurrencySymbol } from "@/src/utils/currency";
 import {
   commonValidationRules,
   createCategoryNameValidation,
   createDescriptionValidation,
 } from "@/src/utils/form-validation";
-import { router } from "expo-router";
-import { memo, useCallback, useMemo, useState } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Button,
+  ColorPicker,
+  IconPicker,
+  Input,
+  QuickPills,
+  ResponsiveModal,
+  SegmentedControl,
+  Select,
+  Text,
+} from "@/src/components/ui";
+import { accentFor, swatchForHex, type ThemeName } from "@/src/components/ui/theme/tokens";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { mergeRecents, useRecentValues } from "@/src/hooks/useRecentValues";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+
+import { useFormState } from "../form-builder/hooks/useFormState";
+import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 import TransactionGroupForm, { initialState as transactionGroupInitialState } from "./TransactionGroupForm";
 
 export type TransactionCategoryFormType =
@@ -29,7 +44,7 @@ export const initialState: TransactionCategoryFormData = {
   description: "",
   budgetamount: 0,
   budgetfrequency: "",
-  icon: "BadgeInfo",
+  icon: "Tag",
   color: "info-100",
   displayorder: 0,
   groupid: "",
@@ -40,20 +55,24 @@ export const initialState: TransactionCategoryFormData = {
   type: "Expense",
 };
 
-// Validation schema for TransactionCategoryForm
+const FREQUENCY_OPTIONS = [
+  { id: "Daily", label: "Daily", value: "Daily" },
+  { id: "Weekly", label: "Weekly", value: "Weekly" },
+  { id: "Monthly", label: "Monthly", value: "Monthly" },
+  { id: "Yearly", label: "Yearly", value: "Yearly" },
+];
+
 const validationSchema: ValidationSchema<TransactionCategoryFormData> = {
   name: createCategoryNameValidation(),
   groupid: [commonValidationRules.required("Transaction group is required")],
   icon: [commonValidationRules.required("Icon is required")],
   color: [commonValidationRules.required("Color is required")],
   budgetamount: [
-    commonValidationRules.required("Budget amount is required"),
     commonValidationRules.min(0, "Budget amount must be 0 or greater"),
     commonValidationRules.max(999999999.99, "Budget amount is too large"),
   ],
   budgetfrequency: [
     commonValidationRules.custom((value, formData) => {
-      // Budget frequency is only required when budget amount is greater than 0
       if (formData?.budgetamount && formData.budgetamount > 0) {
         return !!value && value.trim().length > 0;
       }
@@ -61,68 +80,7 @@ const validationSchema: ValidationSchema<TransactionCategoryFormData> = {
     }, "Budget frequency is required when budget amount is greater than 0"),
   ],
   description: createDescriptionValidation(false),
-  displayorder: [
-    commonValidationRules.required("Display order is required"),
-    commonValidationRules.min(0, "Display order must be 0 or greater"),
-  ],
 };
-
-// Form field configurations
-const createFormFields = (groupOptions: any[]): FormFieldConfig<TransactionCategoryFormData>[] => [
-  {
-    name: "name",
-    label: "Category Name",
-    type: "text",
-    required: true,
-    placeholder: "Enter category name",
-    description: "A descriptive name for this transaction category",
-  },
-  {
-    name: "groupid",
-    label: "Transaction Group",
-    type: "select",
-    required: true,
-    options: groupOptions,
-    description: "Select the transaction group this category belongs to",
-  },
-  {
-    name: "budgetamount",
-    label: "Budget Amount",
-    type: "number",
-    required: false,
-    placeholder: "0.00",
-    description: "The budgeted amount for this category",
-  },
-  {
-    name: "budgetfrequency",
-    label: "Budget Frequency",
-    type: "select",
-    required: false,
-    options: [
-      { id: "Daily", label: "Daily", value: "Daily" },
-      { id: "Weekly", label: "Weekly", value: "Weekly" },
-      { id: "Monthly", label: "Monthly", value: "Monthly" },
-      { id: "Yearly", label: "Yearly", value: "Yearly" },
-    ],
-    description: "How often this budget amount applies (required if budget amount > 0)",
-  },
-  {
-    name: "description",
-    label: "Description",
-    type: "textarea",
-    required: false,
-    placeholder: "Optional description",
-    description: "Additional details about this category",
-  },
-  {
-    name: "displayorder",
-    label: "Display Order",
-    type: "number",
-    required: true,
-    placeholder: "0",
-    description: "Order in which this category appears in lists (higher numbers appear first)",
-  },
-];
 
 interface TransactionCategoryFormProps {
   category: TransactionCategoryFormType;
@@ -130,322 +88,283 @@ interface TransactionCategoryFormProps {
   onCancel?: () => void;
 }
 
-function TransactionCategoryFormComponent({ category, onSuccess, onCancel }: TransactionCategoryFormProps) {
-  // Services
-  const transactionCategoryService = useTransactionCategoryService();
-  const transactionGroupService = useTransactionGroupService();
+function sanitizeNumeric(raw: string) {
+  let s = raw.replace(/[^0-9.]/g, "");
+  const dot = s.indexOf(".");
+  if (dot !== -1) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, "");
+  return s;
+}
 
-  // Load transaction groups
-  const { data: categoryGroups, isLoading: isGroupsLoading } = transactionGroupService.useFindAll();
+function TransactionCategoryFormComponent({ category, onSuccess }: TransactionCategoryFormProps) {
+  const { isDark, colors } = useTheme();
+  const theme: ThemeName = isDark ? "dark" : "light";
+  const service = useTransactionCategoryService();
+  const groupService = useTransactionGroupService();
+  const { data: allCategories } = service.useFindAll();
+  const { data: groups, isLoading: isGroupsLoading } = groupService.useFindAll();
+  const { primaryCurrency } = usePrimaryCurrency();
 
-  // Initialize form data from props
-  const initialFormData: TransactionCategoryFormData = useMemo(
-    () => ({
-      ...initialState,
-      ...category,
-    }),
-    [category],
+  const iconRecents = useRecentValues("transaction-category:icon");
+  const colorRecents = useRecentValues("transaction-category:color");
+  const groupRecents = useRecentValues("transaction-category:groupid");
+  const iconQuick = useMemo(
+    () =>
+      mergeRecents(
+        iconRecents.recent,
+        (allCategories ?? []).map(c => c.icon),
+      ),
+    [iconRecents.recent, allCategories],
+  );
+  const colorQuick = useMemo(
+    () =>
+      mergeRecents(
+        colorRecents.recent,
+        (allCategories ?? []).map(c => c.color),
+      ),
+    [colorRecents.recent, allCategories],
+  );
+  const groupQuick = useMemo(
+    () =>
+      mergeRecents(
+        groupRecents.recent,
+        (allCategories ?? []).map(c => c.groupid),
+      ),
+    [groupRecents.recent, allCategories],
   );
 
-  // Form state management
-  const { formState, updateField, setFieldTouched, validateForm, resetForm, isValid, isDirty } = useFormState(
-    initialFormData,
-    validationSchema,
-  );
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [addingGroup, setAddingGroup] = useState(false);
 
-  // Form submission handling
-  const { mutate } = transactionCategoryService.useUpsert();
+  const initialFormData: TransactionCategoryFormData = useMemo(() => ({ ...initialState, ...category }), [category]);
+  const { formState, updateField, validateForm, isValid } = useFormState(initialFormData, validationSchema);
+  const data = formState.data;
+
+  const { mutate } = service.useUpsert();
 
   const handleSubmit = useCallback(
-    async (data: TransactionCategoryFormData) => {
+    async (submitData: TransactionCategoryFormData) => {
       await new Promise<void>((resolve, reject) => {
-        data.group = undefined;
+        submitData.group = undefined;
         mutate(
-          {
-            form: data,
-            original: category as TransactionCategory,
-          },
+          { form: submitData, original: category as TransactionCategory },
           {
             onSuccess: savedData => {
-              console.log({ message: "Category Created Successfully", type: "success" });
-              if (onSuccess) {
-                onSuccess(savedData);
-              } else {
-                router.replace("/Categories");
-              }
+              iconRecents.record(submitData.icon);
+              colorRecents.record(submitData.color);
+              groupRecents.record(submitData.groupid);
+              if (onSuccess) onSuccess(savedData);
+              else router.replace("/Categories");
               resolve();
             },
-            onError: error => {
-              console.error("Failed to save category:", error);
-              reject(error);
-            },
+            onError: reject,
           },
         );
       });
     },
-    [mutate, category, onSuccess],
+    [mutate, category, onSuccess, iconRecents, colorRecents, groupRecents],
   );
 
-  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
-    onSuccess: () => {
-      console.log("Transaction category saved successfully");
-    },
-    onError: error => {
-      console.error("Form submission error:", error);
-    },
-  });
-
-  // Form submission handler
-  const handleFormSubmit = useCallback(() => {
-    if (validateForm()) {
-      submit(formState.data);
-    }
+  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit);
+  const onSubmit = useCallback(() => {
+    if (validateForm()) submit(formState.data);
   }, [validateForm, submit, formState.data]);
 
-  // Reset form handler
-  const handleReset = useCallback(() => {
-    resetForm();
-  }, [resetForm]);
-
-  // Field change handlers
-  const handleFieldChange = useCallback(
-    (field: keyof TransactionCategoryFormData, value: any) => {
-      updateField(field, value);
-    },
-    [updateField],
+  const groupOptions = useMemo(
+    () => groups?.map(g => ({ value: g.id, label: g.name, icon: g.icon, color: g.color, group: g.type })) ?? [],
+    [groups],
   );
+  const selectedGroup = useMemo(() => groups?.find(g => g.id === data.groupid), [groups, data.groupid]);
 
-  const handleFieldBlur = useCallback(
-    (field: keyof TransactionCategoryFormData) => {
-      setFieldTouched(field);
-    },
-    [setFieldTouched],
-  );
+  const swatch = data.color
+    ? (swatchForHex(data.color, theme) ?? accentFor(data.name ?? "", theme))
+    : accentFor(data.name ?? "", theme);
+  const budgetString = data.budgetamount === null || data.budgetamount === undefined ? "" : String(data.budgetamount);
 
-  // Icon selection handler
-  const handleIconSelect = useCallback(
-    (icon: string) => {
-      updateField("icon", icon);
-    },
-    [updateField],
-  );
-
-  // Color selection handler
-  const handleColorSelect = useCallback(
-    (colorOption: any) => {
-      updateField("color", colorOption?.value || "info-100");
-    },
-    [updateField],
-  );
-
-  // Prepare group options for dropdown
-  const groupOptions = useMemo(() => {
-    return (
-      categoryGroups?.map(item => ({
-        id: item.id,
-        label: item.name,
-        value: item.id,
-        icon: item.icon,
-        group: item.type,
-      })) ?? []
-    );
-  }, [categoryGroups]);
-
-  // Form fields configuration
-  const formFields = useMemo(() => createFormFields(groupOptions), [groupOptions]);
-
-  // Map group options → ui Select options (id is the stable key; value carries the payload).
-  const groupSelectOptions: SelectOption[] = useMemo(
-    () =>
-      groupOptions.map(opt => ({
-        id: String(opt.id),
-        label: opt.label,
-        value: opt.value,
-        icon: opt.icon,
-        group: opt.group,
-      })),
-    [groupOptions],
-  );
-
-  // The Select `value` is an option id; find the option whose stored value matches groupid.
-  const groupSelectedId = useMemo(() => {
-    const match = groupOptions.find(o => o.value === formState.data.groupid);
-    return match ? String(match.id) : null;
-  }, [groupOptions, formState.data.groupid]);
-
-  // "Add New Group" dialog state (mirrors FormField's addNew → Dialog bridge).
-  const [addingGroup, setAddingGroup] = useState(false);
-
-  // Show loading state while groups are loading
   if (isGroupsLoading) {
     return (
-      <SafeAreaView className="flex-1">
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-text-secondary">Loading transaction groups...</Text>
-        </View>
-      </SafeAreaView>
+      <View className="flex-1 items-center justify-center py-10">
+        <Text className="text-ink-mute">Loading…</Text>
+      </View>
     );
   }
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1" nestedScrollEnabled={true}>
-        <FormContainer
-          onSubmit={handleFormSubmit}
-          isValid={isValid && !isSubmitting}
-          isLoading={isSubmitting}
-          submitLabel="Save Category"
-          showReset={isDirty}
-          onReset={handleReset}
-        >
-          <FormSection title="Category Details" description="Basic information about the transaction category">
-            {/* Name field */}
-            <FormField
-              config={formFields[0]}
-              value={formState.data.name}
-              error={formState.errors.name}
-              touched={formState.touched.name}
-              onChange={value => handleFieldChange("name", value)}
-              onBlur={() => handleFieldBlur("name")}
-            />
-
-            {/* Group selection with custom dropdown */}
-            <View className="my-2 relative">
-              <Text className="text-foreground mb-1 font-medium">
-                Transaction Group <Text className="text-status-danger ml-1">*</Text>
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 p-1">
+        <View className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4">
+          <View className="h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: swatch.soft }}>
+            <MyIcon name={data.icon || "Tag"} size={22} color={swatch.fg} />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text variant="h3" numberOfLines={1}>
+              {data.name || "New category"}
+            </Text>
+            {selectedGroup ? (
+              <Text className="text-caption uppercase text-ink-mute" numberOfLines={1}>
+                {selectedGroup.name}
               </Text>
-              <Select
-                present={Platform.OS !== "web" ? "sheet" : undefined}
-                label=""
-                options={groupSelectOptions}
-                value={groupSelectedId}
-                groupBy={o => o.group ?? ""}
-                onChange={next => {
-                  const id = Array.isArray(next) ? next[0] : next;
-                  const option = id ? groupOptions.find(o => String(o.id) === id) ?? null : null;
-                  handleFieldChange("groupid", option?.value);
-                  handleFieldBlur("groupid");
-                }}
-                addNew={{ label: "Add New Group", onPress: () => setAddingGroup(true) }}
+            ) : null}
+          </View>
+        </View>
+
+        <Input
+          label="Category name"
+          placeholder="Enter category name"
+          value={data.name ?? ""}
+          onChangeText={value => updateField("name", value)}
+          error={formState.touched.name ? formState.errors.name : undefined}
+          testID="transactioncategory-name"
+        />
+
+        <QuickPills
+          label="Transaction group"
+          value={data.groupid || null}
+          onChange={value => updateField("groupid", value)}
+          options={groupOptions}
+          recent={groupQuick}
+          present="dialog"
+          viewAllTitle="Choose a group"
+          onAddNew={() => setAddingGroup(true)}
+          addNewLabel="Add group"
+          error={formState.touched.groupid ? formState.errors.groupid : undefined}
+          testID="transactioncategory-group"
+        />
+
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Icon
+          </Text>
+          <IconPicker
+            variant="inline"
+            value={data.icon}
+            recent={iconQuick}
+            color={swatch.fg}
+            present="dialog"
+            onChange={value => updateField("icon", value)}
+            testID="transactioncategory-icon"
+          />
+        </View>
+
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Color
+          </Text>
+          <ColorPicker
+            variant="inline"
+            value={data.color}
+            recent={colorQuick}
+            present="dialog"
+            onChange={value => updateField("color", value)}
+            testID="transactioncategory-color"
+          />
+        </View>
+
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text variant="label" className="mb-[7px]">
+              Budget
+            </Text>
+            <View className="flex-row items-center rounded-lg border border-border bg-surface px-3 py-3">
+              <Text className="mr-2 font-mono text-body text-ink-mute">{getCurrencySymbol(primaryCurrency)}</Text>
+              <TextInput
+                value={budgetString}
+                onChangeText={value => updateField("budgetamount", Number(sanitizeNumeric(value)) || 0)}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={colors.inkFaint}
+                selectionColor={colors.primary}
+                className="min-w-0 flex-1 p-0 font-mono text-body text-ink"
+                style={Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : undefined}
+                testID="transactioncategory-budget"
               />
-              <Dialog visible={addingGroup} onClose={() => setAddingGroup(false)} title="Add TransactionGroup">
-                <TransactionGroupForm
-                  group={transactionGroupInitialState}
-                  onSuccess={(item: any) => {
-                    if (item && item.id !== undefined) {
-                      handleFieldChange("groupid", item.id);
-                      handleFieldBlur("groupid");
-                    }
-                    setAddingGroup(false);
-                  }}
-                  onCancel={() => setAddingGroup(false)}
-                />
-              </Dialog>
-              {formState.touched.groupid && formState.errors.groupid && (
-                <Text className="text-status-danger text-sm mt-1">{formState.errors.groupid}</Text>
-              )}
-              <Text className="text-text-secondary text-sm mt-1">
-                Select the transaction group this category belongs to
-              </Text>
             </View>
+          </View>
+          <View className="flex-1">
+            <Select
+              label="Frequency"
+              options={FREQUENCY_OPTIONS}
+              value={data.budgetfrequency || null}
+              onChange={value => updateField("budgetfrequency", (value as string) ?? "")}
+              present="dialog"
+              error={formState.touched.budgetfrequency ? formState.errors.budgetfrequency : undefined}
+              testID="transactioncategory-frequency"
+            />
+          </View>
+        </View>
 
-            {/* Description field - lower z-index so dropdown can appear above */}
-            <View className="relative">
-              <FormField
-                config={formFields[4]}
-                value={formState.data.description}
-                error={formState.errors.description}
-                touched={formState.touched.description}
-                onChange={value => handleFieldChange("description", value)}
-                onBlur={() => handleFieldBlur("description")}
+        <View className="rounded-xl border border-border bg-surface">
+          <Pressable
+            onPress={() => setShowAdvanced(s => !s)}
+            accessibilityRole="button"
+            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-80"
+          >
+            <Text className="text-body text-ink">Advanced</Text>
+            <MyIcon name={showAdvanced ? "ChevronUp" : "ChevronDown"} size={18} color={swatch.fg} />
+          </Pressable>
+          {showAdvanced ? (
+            <View className="gap-4 px-4 pb-4">
+              <View>
+                <Text variant="label" className="mb-[7px]">
+                  Type
+                </Text>
+                <SegmentedControl
+                  options={[
+                    { key: "Income", label: "Income", tone: "success" },
+                    { key: "Expense", label: "Expense", tone: "danger" },
+                  ]}
+                  value={data.type ?? "Expense"}
+                  onChange={key => updateField("type", key)}
+                  testID="transactioncategory-txtype"
+                />
+              </View>
+              <Input
+                label="Description"
+                placeholder="Optional description"
+                multiline
+                value={data.description ?? ""}
+                onChangeText={value => updateField("description", value)}
+                testID="transactioncategory-description"
+              />
+              <Input
+                label="Display order"
+                keyboardType="number-pad"
+                value={String(data.displayorder ?? 0)}
+                onChangeText={value => updateField("displayorder", Number(value.replace(/[^0-9]/g, "")) || 0)}
+                testID="transactioncategory-order"
               />
             </View>
-          </FormSection>
+          ) : null}
+        </View>
 
-          <FormSection
-            title="Budget Settings"
-            description="Configure budget amounts and frequency"
-            className="relative"
-          >
-            {/* Budget Amount and Frequency in responsive layout */}
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-start justify-between`}>
-              <View className={Platform.OS === "web" ? "flex-1" : "w-full mb-2"}>
-                <FormField
-                  config={formFields[2]}
-                  value={formState.data.budgetamount}
-                  error={formState.errors.budgetamount}
-                  touched={formState.touched.budgetamount}
-                  onChange={value => {
-                    // Only allow numeric input
-                    const numericValue = parseFloat(value) || 0;
-                    handleFieldChange("budgetamount", numericValue);
-                  }}
-                  onBlur={() => handleFieldBlur("budgetamount")}
-                />
-              </View>
-              <View className={Platform.OS === "web" ? "flex-1" : "w-full"}>
-                <FormField
-                  config={formFields[3]}
-                  value={formState.data.budgetfrequency}
-                  error={formState.errors.budgetfrequency}
-                  touched={formState.touched.budgetfrequency}
-                  onChange={value => handleFieldChange("budgetfrequency", value)}
-                  onBlur={() => handleFieldBlur("budgetfrequency")}
-                />
-              </View>
-            </View>
-          </FormSection>
+        {error ? (
+          <View className="rounded-xl border border-danger bg-danger-soft p-3">
+            <Text className="text-caption text-danger">{error.message || "Failed to save category"}</Text>
+          </View>
+        ) : null}
 
-          <FormSection
-            title="Appearance"
-            description="Customize the visual appearance of this category"
-            className="relative"
-          >
-            {/* Icon and Color Selection in responsive layout */}
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
-              <View className="flex-1">
-                <IconPicker onChange={handleIconSelect} value={formState.data.icon ?? "CircleHelp"} />
-                {formState.touched.icon && formState.errors.icon && (
-                  <Text className="text-status-danger text-sm mt-1">{formState.errors.icon}</Text>
-                )}
-              </View>
-              <View className="flex-1">
-                <ColorsPickerDropdown selectedValue={formState.data.color} handleSelect={handleColorSelect} />
-                {formState.touched.color && formState.errors.color && (
-                  <Text className="text-status-danger text-sm mt-1">{formState.errors.color}</Text>
-                )}
-              </View>
-            </View>
-
-            {/* Display Order */}
-            <FormField
-              config={formFields[5]}
-              value={formState.data.displayorder}
-              error={formState.errors.displayorder}
-              touched={formState.touched.displayorder}
-              onChange={value => {
-                const numericValue = parseInt(value) || 0;
-                handleFieldChange("displayorder", numericValue);
-              }}
-              onBlur={() => handleFieldBlur("displayorder")}
-            />
-          </FormSection>
-
-          {/* Display submission error if any */}
-          {error && (
-            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-status-danger text-sm">
-                {error.message || "An error occurred while saving the category"}
-              </Text>
-            </View>
-          )}
-        </FormContainer>
+        <Button
+          label={data.id ? "Save Changes" : "Add Category"}
+          onPress={onSubmit}
+          disabled={!isValid || isSubmitting}
+          loading={isSubmitting}
+          leadingIcon="Check"
+          testID="transactioncategory-save"
+        />
       </ScrollView>
+
+      <ResponsiveModal visible={addingGroup} onClose={() => setAddingGroup(false)} title="Add Group" size="lg">
+        <TransactionGroupForm
+          group={transactionGroupInitialState}
+          onSuccess={(saved: any) => {
+            if (saved?.id) updateField("groupid", saved.id);
+            setAddingGroup(false);
+          }}
+          onCancel={() => setAddingGroup(false)}
+        />
+      </ResponsiveModal>
     </SafeAreaView>
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
 const TransactionCategoryForm = memo(TransactionCategoryFormComponent);
-
 export default TransactionCategoryForm;
