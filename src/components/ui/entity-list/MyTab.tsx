@@ -42,6 +42,8 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
   UpsertModal?: (item: any) => ReactNode;
   initialState?: any;
   detailsUrl?: string;
+  /** When set, tapping a row navigates to `${detailHref}${item.id}` instead of opening the upsert modal. */
+  detailHref?: string;
   icons?: boolean;
   showRestore?: boolean;
   customRenderItem?: (item: TModel, isSelected: boolean, onLongPress: () => void, onPress: () => void) => ReactNode;
@@ -75,6 +77,7 @@ export function MyTab<TModel, TTable extends TableNames>({
   UpsertModal,
   initialState,
   detailsUrl,
+  detailHref,
   icons = true,
   showRestore,
   customRenderItem,
@@ -129,6 +132,8 @@ export function MyTab<TModel, TTable extends TableNames>({
           onRestore={showRestore ? (state.restoreModal.open as (i: Renderable) => void) : undefined}
           icons={icons}
           detailsUrl={detailsUrl}
+          detailHref={detailHref}
+          selectionMode={state.isSelectionMode}
           detailsContent={detailsContent as ((item: Renderable) => string) | undefined}
           customAction={customAction}
           itemChildren={itemChildren as ((item: Renderable) => ReactNode) | undefined}

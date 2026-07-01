@@ -128,6 +128,7 @@ export function buildDashboardChartConfigs(
         <BarChart
           data={toBarData(weeklyTransactionTypesData)}
           showYAxis={false}
+          fillHeight
           selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : null}
           onBarPress={(_d, i) => {
             if (!ws) return;

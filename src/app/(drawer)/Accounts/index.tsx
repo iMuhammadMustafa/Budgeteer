@@ -39,7 +39,7 @@ export default function AccountsIndex() {
     <>
       <MyTab
         title="Accounts"
-        detailsUrl={"/Accounts/Upsert?accountId="}
+        detailHref={"/Accounts/"}
         queryKey={[TableNames.Accounts]}
         service={accountService}
         groupBy={"category.name"}

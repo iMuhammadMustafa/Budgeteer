@@ -1,22 +1,33 @@
 import { router } from "expo-router";
-import { useCallback, useMemo } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { queryClient } from "@/src/providers/QueryProvider";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
-import { ColorsPickerDropdown, IconPicker } from "@/src/components/ui";
-import FormContainer from "@/src/components/form-builder/FormContainer";
-import FormField from "@/src/components/form-builder/FormField";
-import FormSection from "@/src/components/form-builder/FormSection";
+import MyIcon from "@/src/components/elements/MyIcon";
+import {
+  Button,
+  ColorPicker,
+  IconPicker,
+  Input,
+  QuickPills,
+  ResponsiveModal,
+  Select,
+  Switch,
+  Text,
+} from "@/src/components/ui";
+import { accentFor, swatchForHex, type ThemeName } from "@/src/components/ui/theme/tokens";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account, Updates } from "@/src/types/database/Tables.Types";
-import { currencyDropdownOptions, DEFAULT_CURRENCY } from "@/src/utils/currency";
+import { currencyDropdownOptions, DEFAULT_CURRENCY, getCurrencySymbol } from "@/src/utils/currency";
 import { commonValidationRules, createAccountNameValidation } from "@/src/utils/form-validation";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { mergeRecents, useRecentValues } from "@/src/hooks/useRecentValues";
 import { useFormState } from "../form-builder/hooks/useFormState";
 import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
 import AccountCategoryForm, { initialState as accountCategoryInitialState } from "./AccountCategoryForm";
@@ -25,19 +36,45 @@ interface AccountFormProps {
   account: AccountFormData;
   onSuccess?: (savedAccount: any) => void;
   onCancel?: () => void;
+  /** When provided, renders a "Delete account" affordance (dependency-aware delete lives at the call site). */
+  onDelete?: () => void;
 }
 
-export default function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) {
+export default function AccountForm({ account, onSuccess, onDelete }: AccountFormProps) {
   const accountService = useAccountService();
   const accountCategoryService = useAccountCategoryService();
+  const { isDark, colors } = useTheme();
+  const theme: ThemeName = isDark ? "dark" : "light";
+
   const { data: accountCategories } = accountCategoryService.useFindAll();
+  const { data: allAccounts } = accountService.useFindAll();
   const { data: openTransaction } = accountService.useGetAccountOpenedTransaction(account.id);
   const { mutate: updateAccount } = accountService.useUpsert();
   const { mutate: updateOpenBalance } = accountService.useUpdateAccountOpenedTransaction();
   const { data: runningBalance, isLoading: isLoadingRunningBalance } = accountService.useGetAccountRunningBalance(
     account.id,
   );
-  const { primaryCurrency } = usePrimaryCurrency();
+  const { primaryCurrency, formatCurrency } = usePrimaryCurrency();
+
+  // Recents (persisted picks) merged with values already used by existing accounts.
+  const iconRecents = useRecentValues("account:icon");
+  const colorRecents = useRecentValues("account:color");
+  const categoryRecents = useRecentValues("account:categoryid");
+  const iconQuick = useMemo(
+    () => mergeRecents(iconRecents.recent, (allAccounts ?? []).map(a => (a as Account).icon)),
+    [iconRecents.recent, allAccounts],
+  );
+  const colorQuick = useMemo(
+    () => mergeRecents(colorRecents.recent, (allAccounts ?? []).map(a => (a as Account).color)),
+    [colorRecents.recent, allAccounts],
+  );
+  const categoryQuick = useMemo(
+    () => mergeRecents(categoryRecents.recent, (allAccounts ?? []).map(a => (a as Account).categoryid)),
+    [categoryRecents.recent, allAccounts],
+  );
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
 
   const initialFormData: AccountFormData = useMemo(
     () => ({
@@ -65,33 +102,33 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
     [],
   );
 
-  const { formState, updateField, validateForm, resetForm, setInitialFormData, isValid, isDirty } =
-    useFormState<AccountFormData>(initialFormData, validationSchema);
+  const { formState, updateField, validateForm, setInitialFormData, isValid, isDirty } = useFormState<AccountFormData>(
+    initialFormData,
+    validationSchema,
+  );
+  const data = formState.data;
 
   const handleSubmit = useCallback(
-    async (data: AccountFormData) => {
-      // Handle open balance update if needed
-      if (openTransaction && data.openBalance !== null && data.openBalance !== undefined) {
-        updateOpenBalance({
-          id: openTransaction.id,
-          amount: data.openBalance,
-        });
+    async (submitData: AccountFormData) => {
+      if (openTransaction && submitData.openBalance !== null && submitData.openBalance !== undefined) {
+        updateOpenBalance({ id: openTransaction.id, amount: submitData.openBalance });
       }
 
       await new Promise<void>((resolve, reject) => {
         updateAccount(
           {
-            form: { ...data },
+            form: { ...submitData },
             original: account as Account,
-            props: { addAdjustmentTransaction: data.addAdjustmentTransaction || false },
+            props: { addAdjustmentTransaction: submitData.addAdjustmentTransaction || false },
           },
           {
             onSuccess: savedData => {
-              if (onSuccess) {
-                onSuccess(savedData);
-              } else {
-                router.replace("/Accounts");
-              }
+              // Remember the picks for next time (local, mode-agnostic).
+              iconRecents.record(submitData.icon);
+              colorRecents.record(submitData.color);
+              categoryRecents.record(submitData.categoryid);
+              if (onSuccess) onSuccess(savedData);
+              else router.replace("/Accounts");
               resolve();
             },
             onError: error => {
@@ -102,50 +139,27 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
         );
       });
     },
-    [updateAccount, updateOpenBalance, openTransaction, account, onSuccess],
+    [updateAccount, updateOpenBalance, openTransaction, account, onSuccess, iconRecents, colorRecents, categoryRecents],
   );
 
-  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
-    onSuccess: () => {
-      console.log("Account saved successfully");
-    },
-    onError: error => {
-      console.error("Failed to save account:", error);
-    },
-  });
+  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit);
 
   const onSubmit = useCallback(() => {
-    if (validateForm()) {
-      submit(formState.data);
-    }
+    if (validateForm()) submit(formState.data);
   }, [validateForm, submit, formState.data]);
 
   const handleSyncRunningBalance = useCallback(() => {
     if (runningBalance !== null && runningBalance !== undefined && account.id) {
-      const updatedAccount: Updates<TableNames.Accounts> = {
-        id: account.id,
-        balance: runningBalance,
-      };
+      const updatedAccount: Updates<TableNames.Accounts> = { id: account.id, balance: runningBalance };
       updateAccount(
-        {
-          form: updatedAccount,
-          original: account as Account,
-          props: { addAdjustmentTransaction: false },
-        },
+        { form: updatedAccount, original: account as Account, props: { addAdjustmentTransaction: false } },
         {
           onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: [TableNames.Accounts, account.id, "RunningBalance"],
-            });
+            queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, account.id, "RunningBalance"] });
           },
         },
       );
-      // Also update form state to reflect new balance
-      // updateField("balance", runningBalance);
-      setInitialFormData({
-        ...formState.data,
-        balance: runningBalance,
-      });
+      setInitialFormData({ ...formState.data, balance: runningBalance });
     }
   }, [account, updateAccount, runningBalance, setInitialFormData, formState.data]);
 
@@ -154,12 +168,7 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
       const openBalanceValue = Number(value) || 0;
       const originalBalance = Number(account.balance) || 0;
       const originalOpenAmount = Number(openTransaction?.amount) || 0;
-
-      // Calculate new balance based on open balance change
       const newBalance = originalBalance - originalOpenAmount + openBalanceValue;
-
-      // Update open balance and related fields
-      // Note: This will affect dirty state, but open balance is treated as separate
       updateField("openBalance", openBalanceValue);
       updateField("balance", newBalance);
       updateField("addAdjustmentTransaction", false);
@@ -167,342 +176,291 @@ export default function AccountForm({ account, onSuccess, onCancel }: AccountFor
     [account.balance, openTransaction?.amount, updateField],
   );
 
-  // Reset open balance to its original value (separate from main form reset)
-  const handleResetOpenBalance = useCallback(() => {
-    const originalOpenBalance = openTransaction?.amount || null;
-    const originalBalance = Number(account.balance) || 0;
-    const currentOpenAmount = Number(formState.data.openBalance) || 0;
-
-    // Calculate the balance adjustment needed
-    const adjustedBalance = originalBalance - currentOpenAmount + (originalOpenBalance || 0);
-
-    // Reset open balance to original value
-    updateField("openBalance", originalOpenBalance);
-    updateField("balance", adjustedBalance);
-  }, [openTransaction?.amount, account.balance, formState.data.openBalance, updateField]);
-
-  const handleIconSelect = useCallback(
-    (icon: string) => {
-      updateField("icon", icon);
-    },
-    [updateField],
-  );
-  // Custom reset handler that preserves open balance field
-  const handleReset = useCallback(() => {
-    // Store the current open balance since it's managed as a separate form
-    const currentOpenBalance = formState.data.openBalance;
-    const originalOpenBalance = openTransaction?.amount || null;
-
-    // Create new initial data that preserves the open balance field
-    // The open balance is treated as a separate form, so we preserve its current state
-    const resetData = {
-      ...initialFormData,
-      openBalance: currentOpenBalance, // Preserve current open balance value
-    };
-
-    // Use setInitialFormData to reset without triggering dirty state
-    // This properly resets the form while preserving the open balance
-    setInitialFormData(resetData);
-  }, [initialFormData, formState.data.openBalance, setInitialFormData, openTransaction?.amount]);
-
-  // Prepare dropdown options for categories
+  // Category options + selected category (drives the preview + statement-date rule).
   const categoryOptions = useMemo(
     () =>
-      accountCategories?.map(item => ({
-        id: item.id,
-        label: item.name,
-        value: item.id,
-        icon: item.icon,
-        group: item.type,
+      accountCategories?.map(c => ({
+        value: c.id,
+        label: c.name,
+        icon: c.icon,
+        color: c.color,
+        group: c.type,
       })) ?? [],
     [accountCategories],
   );
-
-  // Check if running balance sync is needed
-  const needsRunningBalanceSync = useMemo(
-    () => account.id && runningBalance !== account.balance,
-    [account.id, runningBalance, account.balance],
+  const selectedCategory = useMemo(
+    () => accountCategories?.find(c => c.id === data.categoryid),
+    [accountCategories, data.categoryid],
   );
+  const isLiabilityAccount = selectedCategory?.type === "Liability";
+  const needsRunningBalanceSync = !!account.id && runningBalance !== account.balance;
 
-  // Check if selected category is a liability (for statement date field)
-  const isLiabilityAccount = useMemo(
-    () => accountCategories?.find(cat => cat.id === formState.data.categoryid)?.type === "Liability",
-    [accountCategories, formState.data.categoryid],
-  );
+  const swatch = data.color
+    ? (swatchForHex(data.color, theme) ?? accentFor(data.name ?? "", theme))
+    : accentFor(data.name ?? "", theme);
+
+  const balanceString = data.balance === null || data.balance === undefined ? "" : String(data.balance);
+  const currencySymbol = getCurrencySymbol(data.currency);
+
+  // Keep only numeric input: digits, a single leading minus, and a single dot.
+  const sanitizeNumeric = (raw: string) => {
+    let s = raw.replace(/[^0-9.-]/g, "");
+    const negative = s.startsWith("-");
+    s = s.replace(/-/g, "");
+    const firstDot = s.indexOf(".");
+    if (firstDot !== -1) s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, "");
+    return (negative ? "-" : "") + s;
+  };
+
+  const normalizeBalance = () => {
+    // balance is loosely populated (Input feeds strings); coerce to number|null.
+    const val: unknown = data.balance;
+    if (val === null || val === undefined || (typeof val === "string" && val.trim() === "")) {
+      return updateField("balance", null);
+    }
+    const num = Number(val);
+    if (!isNaN(num)) updateField("balance", num);
+  };
 
   if (isLoadingRunningBalance) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Loading...</Text>
+      <View className="flex-1 items-center justify-center py-10">
+        <Text className="text-ink-mute">Loading…</Text>
       </View>
     );
   }
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1">
-        <FormContainer
-          onSubmit={onSubmit}
-          isValid={isValid && !isSubmitting}
-          isLoading={isSubmitting}
-          submitLabel="Save Account"
-          showReset={isDirty}
-          onReset={handleReset}
-        >
-          {/* Basic Information Section */}
-          <FormSection title="Basic Information" description="Enter the account's basic details">
-            <FormField
-              config={{
-                name: "name",
-                label: "Account Name",
-                type: "text",
-                required: true,
-                placeholder: "Enter account name",
-              }}
-              value={formState.data.name}
-              error={formState.errors.name}
-              touched={formState.touched.name}
-              onChange={value => updateField("name", value)}
-              onBlur={() => updateField("name", formState.data.name)}
-            />
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 p-1">
+        {/* Preview card */}
+        <View className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4">
+          <View className="h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: swatch.soft }}>
+            <MyIcon name={data.icon || "Wallet"} size={22} color={swatch.fg} />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text variant="h3" numberOfLines={1}>
+              {data.name || "New account"}
+            </Text>
+            {selectedCategory ? (
+              <Text className="text-caption uppercase text-ink-mute" numberOfLines={1}>
+                {selectedCategory.name}
+              </Text>
+            ) : null}
+          </View>
+          <Text className="font-mono-semibold text-h3 text-ink">{formatCurrency(Number(data.balance) || 0)}</Text>
+        </View>
 
-            <FormField
-              config={{
-                name: "owner",
-                label: "Owner",
-                type: "text",
-                placeholder: "Enter account owner",
-              }}
-              value={formState.data.owner}
-              error={formState.errors.owner}
-              touched={formState.touched.owner}
-              onChange={value => updateField("owner", value)}
-            />
+        {/* Name */}
+        <Input
+          label="Account name"
+          placeholder="Enter account name"
+          value={data.name ?? ""}
+          onChangeText={value => updateField("name", value)}
+          error={formState.touched.name ? formState.errors.name : undefined}
+          testID="account-name"
+        />
 
-            <FormField
-              config={{
-                name: "categoryid",
-                label: "Category",
-                type: "select",
-                required: true,
-                options: categoryOptions,
-                addNew: {
-                  entityType: "AccountCategory",
-                  label: "Add New Category",
-                  renderForm: ({ onSuccess, onCancel }) => (
-                    <AccountCategoryForm
-                      category={accountCategoryInitialState}
-                      onSuccess={onSuccess}
-                      onCancel={onCancel}
-                    />
-                  ),
-                },
-              }}
-              value={formState.data.categoryid}
-              error={formState.errors.categoryid}
-              touched={formState.touched.categoryid}
-              onChange={value => updateField("categoryid", value)}
-            />
-          </FormSection>
+        {/* Category (the mockup "type" pills = account categories) */}
+        <QuickPills
+          label="Account type"
+          value={data.categoryid || null}
+          onChange={value => updateField("categoryid", value)}
+          options={categoryOptions}
+          recent={categoryQuick}
+          present="dialog"
+          viewAllTitle="Choose a category"
+          onAddNew={() => setAddingCategory(true)}
+          addNewLabel="Add category"
+          error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
+          testID="account-category"
+        />
 
-          {/* Appearance Section */}
-          <FormSection title="Appearance" description="Customize the account's visual appearance">
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} items-center justify-between`}>
-              <View className="flex-1">
-                <IconPicker
-                  onChange={(icon: string) => handleIconSelect(icon)}
-                  value={formState.data.icon ?? "BadgeInfo"}
-                />
-              </View>
-              <ColorsPickerDropdown
-                selectedValue={formState.data.color}
-                handleSelect={value => updateField("color", value?.value)}
-              />
-            </View>
-          </FormSection>
+        {/* Icon */}
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Icon
+          </Text>
+          <IconPicker
+            variant="inline"
+            value={data.icon}
+            recent={iconQuick}
+            color={swatch.fg}
+            present="dialog"
+            onChange={value => updateField("icon", value)}
+            testID="account-icon"
+          />
+        </View>
 
-          {/* Financial Information Section */}
-          <FormSection
-            title="Financial Information"
-            description="Set up the account's financial details"
+        {/* Color */}
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Color
+          </Text>
+          <ColorPicker
+            variant="inline"
+            value={data.color}
+            recent={colorQuick}
+            present="dialog"
+            onChange={value => updateField("color", value)}
+            testID="account-color"
+          />
+        </View>
+
+        {/* Current balance — numeric only, symbol matches the account currency */}
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Current balance
+          </Text>
+          <View
+            className={`flex-row items-center rounded-lg border bg-surface px-3 py-3 ${
+              formState.touched.balance && formState.errors.balance ? "border-danger" : "border-border"
+            }`}
           >
-            <FormField
-              config={{
-                name: "currency",
-                label: "Currency",
-                type: "select",
-                required: true,
-                options: currencyDropdownOptions,
-                popUp: Platform.OS !== "web",
-                description: "Native currency of this account",
-              }}
-              value={formState.data.currency}
-              error={formState.errors.currency}
-              touched={formState.touched.currency}
-              onChange={value => updateField("currency", value)}
+            <Text className="mr-2 font-mono text-body text-ink-mute">{currencySymbol}</Text>
+            <TextInput
+              value={balanceString}
+              onChangeText={value => updateField("balance", sanitizeNumeric(value))}
+              onBlur={normalizeBalance}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor={colors.inkFaint}
+              selectionColor={colors.primary}
+              className="min-w-0 flex-1 p-0 font-mono text-body text-ink"
+              style={Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : undefined}
+              testID="account-balance"
             />
+          </View>
+          {formState.touched.balance && formState.errors.balance ? (
+            <Text className="mt-1.5 text-caption text-danger">{formState.errors.balance}</Text>
+          ) : null}
+        </View>
 
-            <View className="flex flex-row items-center justify-between">
-              <View style={{ flex: 1 }}>
-                <FormField
-                  config={{
-                    name: "balance",
-                    label: "Balance",
-                    type: "number",
-                    required: true,
-                    placeholder: "0.00",
-                  }}
-                  value={formState.data.balance?.toFixed(2)}
-                  error={formState.errors.balance}
-                  touched={formState.touched.balance}
-                  onChange={value => updateField("balance", value)}
-                  onBlur={() => {
-                    const val = formState.data.balance;
-                    if (val === null || val === undefined) {
-                      updateField("balance", null);
-                    } else if (typeof val === "string") {
-                      const strVal: string = val;
-                      if (strVal.trim() === "") {
-                        updateField("balance", null);
-                      } else if (!isNaN(Number(strVal))) {
-                        updateField("balance", Number(strVal));
-                      }
-                    } else if (typeof val === "number") {
-                      updateField("balance", val);
-                    }
-                  }}
-                />
-              </View>
-
-              {account.id && (
-                <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 10 }}>
-                  <FormField
-                    config={{
-                      name: "addAdjustmentTransaction",
-                      label: "Add Adjustment Transaction",
-                      type: "switch",
-                    }}
-                    value={formState.data.addAdjustmentTransaction}
-                    onChange={value => updateField("addAdjustmentTransaction", value)}
-                  />
-                </View>
-              )}
+        {account.id ? (
+          <View className="flex-row items-center justify-between rounded-xl border border-border bg-surface p-4">
+            <View className="min-w-0 flex-1 pr-3">
+              <Text className="text-body text-ink">Record adjustment</Text>
+              <Text className="text-caption text-ink-mute">Log a transaction for the balance change.</Text>
             </View>
+            <Switch
+              value={!!data.addAdjustmentTransaction}
+              onValueChange={value => updateField("addAdjustmentTransaction", value)}
+              testID="account-adjustment"
+            />
+          </View>
+        ) : null}
 
-            {/* Running Balance Sync */}
-            {needsRunningBalanceSync && (
-              <View className="flex flex-row items-center justify-center gap-2">
-                <View style={{ flex: 1 }}>
-                  <FormField
-                    config={{
-                      name: "runningbalance",
-                      label: "Running Balance",
-                      type: "number",
-                      disabled: true,
-                    }}
-                    value={runningBalance}
-                    onChange={() => {}} // Read-only field
-                  />
-                </View>
-                <View className="mt-6">
-                  <Text
-                    className="text-primary underline p-2"
-                    onPress={handleSyncRunningBalance}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sync running balance with current balance"
-                  >
-                    Sync
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Statement Date (for liability accounts - credit cards) */}
-            {isLiabilityAccount && (
-              <FormField
-                config={{
-                  name: "statementdate",
-                  label: "Statement Date",
-                  type: "number",
-                  placeholder: "15",
-                  description: "Day of month (1-31) when credit card statement closes. Leave empty if not applicable.",
-                  validation: [
-                    {
-                      type: "custom",
-                      message: "Statement date must be between 1 and 31",
-                      validator: (value: any) => (value ? value >= 1 && value <= 31 : true),
-                    },
-                  ],
-                }}
-                value={formState.data.statementdate?.toString() ?? ""}
-                error={formState.errors.statementdate}
-                touched={formState.touched.statementdate}
-                onChange={value => {
-                  const numValue = value ? Number(value) : null;
-                  updateField("statementdate", numValue);
-                }}
-                onBlur={() => {
-                  const val = formState.data.statementdate;
-                  if (val === null || val === undefined || val === 0) {
-                    updateField("statementdate", null);
-                  }
-                }}
+        {/* Advanced (all remaining fields preserved) */}
+        <View className="rounded-xl border border-border bg-surface">
+          <Pressable
+            onPress={() => setShowAdvanced(s => !s)}
+            accessibilityRole="button"
+            testID="account-advanced-toggle"
+            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-80"
+          >
+            <Text className="text-body text-ink">Advanced</Text>
+            <MyIcon name={showAdvanced ? "ChevronUp" : "ChevronDown"} size={18} color={swatch.fg} />
+          </Pressable>
+          {showAdvanced ? (
+            <View className="gap-4 px-4 pb-4">
+              <Select
+                label="Currency"
+                options={currencyDropdownOptions.map(o => ({ id: o.value, label: o.label, value: o.value }))}
+                value={data.currency}
+                onChange={value => updateField("currency", value as string)}
+                testID="account-currency"
               />
-            )}
-
-            {/* Open Balance (for existing accounts with opening transaction) */}
-            {openTransaction && (
-              <View className="border border-border-default rounded-md p-3 bg-surface-elevated">
-                <View className="flex flex-row items-center justify-between mb-2">
-                  <Text className="text-sm font-medium text-text-secondary">Open Balance (Separate Form)</Text>
-                  <Text
-                    className="text-primary underline text-sm"
-                    onPress={handleResetOpenBalance}
-                    accessibilityRole="button"
-                    accessibilityLabel="Reset open balance to original value"
-                  >
-                    Reset
-                  </Text>
-                </View>
-                <FormField
-                  config={{
-                    name: "openBalance",
-                    label: "Open Balance",
-                    type: "number",
-                    description:
-                      "Adjusting this will update the account balance accordingly. This field is managed separately from the main form.",
-                  }}
-                  value={formState.data.openBalance?.toString() ?? "0"}
-                  onChange={handleOpenBalanceChange}
+              <Input
+                label="Owner"
+                placeholder="Enter account owner"
+                value={data.owner ?? ""}
+                onChangeText={value => updateField("owner", value)}
+                testID="account-owner"
+              />
+              {isLiabilityAccount ? (
+                <Input
+                  label="Statement date"
+                  keyboardType="number-pad"
+                  placeholder="15"
+                  value={data.statementdate?.toString() ?? ""}
+                  onChangeText={value => updateField("statementdate", value ? Number(value) : null)}
+                  error={formState.touched.statementdate ? formState.errors.statementdate : undefined}
+                  testID="account-statementdate"
                 />
-              </View>
-            )}
-          </FormSection>
-
-          {/* Additional Information Section */}
-          <FormSection title="Additional Information" description="Optional notes and comments">
-            <FormField
-              config={{
-                name: "notes",
-                label: "Notes",
-                type: "textarea",
-                placeholder: "Enter any additional notes about this account",
-              }}
-              value={formState.data.notes}
-              error={formState.errors.notes}
-              touched={formState.touched.notes}
-              onChange={value => updateField("notes", value)}
-            />
-          </FormSection>
-
-          {/* Display submission error if any */}
-          {error && (
-            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-status-danger text-sm">Error: {error.message}</Text>
+              ) : null}
+              {account.id && runningBalance !== null && runningBalance !== undefined ? (
+                <View className="flex-row items-end gap-2">
+                  <View className="flex-1">
+                    <Input label="Running balance" editable={false} value={String(runningBalance)} />
+                  </View>
+                  {needsRunningBalanceSync ? (
+                    <Text className="p-2 text-primary underline" onPress={handleSyncRunningBalance}>
+                      Sync
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+              {openTransaction ? (
+                <Input
+                  label="Open balance"
+                  keyboardType="decimal-pad"
+                  value={data.openBalance?.toString() ?? "0"}
+                  onChangeText={handleOpenBalanceChange}
+                  testID="account-openbalance"
+                />
+              ) : null}
+              <Input
+                label="Notes"
+                placeholder="Any additional notes"
+                multiline
+                value={data.notes ?? ""}
+                onChangeText={value => updateField("notes", value)}
+                testID="account-notes"
+              />
             </View>
-          )}
-        </FormContainer>
+          ) : null}
+        </View>
+
+        {error ? (
+          <View className="rounded-xl border border-danger bg-danger-soft p-3">
+            <Text className="text-caption text-danger">Error: {error.message}</Text>
+          </View>
+        ) : null}
+
+        <Button
+          label={account.id ? "Save Changes" : "Add Account"}
+          onPress={onSubmit}
+          disabled={!isValid || isSubmitting}
+          loading={isSubmitting}
+          leadingIcon="Check"
+          testID="account-save"
+        />
+
+        {onDelete ? (
+          <Pressable onPress={onDelete} accessibilityRole="button" className="flex-row items-center justify-center gap-2 py-2 active:opacity-70" testID="account-delete">
+            <MyIcon name="Trash2" size={16} color="#DC2626" />
+            <Text className="text-body text-danger">Delete account</Text>
+          </Pressable>
+        ) : null}
+
+        {isDirty ? <View className="h-1" /> : null}
       </ScrollView>
+
+      <ResponsiveModal
+        visible={addingCategory}
+        onClose={() => setAddingCategory(false)}
+        title="Add Category"
+        size="lg"
+      >
+        <AccountCategoryForm
+          category={accountCategoryInitialState}
+          onSuccess={(saved: any) => {
+            if (saved?.id) updateField("categoryid", saved.id);
+            setAddingCategory(false);
+          }}
+          onCancel={() => setAddingCategory(false)}
+        />
+      </ResponsiveModal>
     </SafeAreaView>
   );
 }
@@ -514,7 +472,7 @@ export const initialState: AccountFormData = {
   currency: "USD",
   description: "",
   notes: "",
-  icon: "BadgeInfo",
+  icon: "Wallet",
   color: "info-100",
   displayorder: 0,
   owner: "",

@@ -103,6 +103,14 @@ export interface EntityListItemProps<TModel extends EntityLike> {
   icons?: boolean;
   /** Used to build the `<Link>` href so the row is a real, openable link on web. */
   detailsUrl?: string;
+  /**
+   * When set, tapping the row NAVIGATES to `${detailHref}${item.id}` (a real
+   * detail page) instead of opening the upsert modal. In selection mode a tap
+   * still toggles selection. Editing stays available via the row's edit action.
+   */
+  detailHref?: string;
+  /** Whether the list is currently in multi-select mode (gates detailHref navigation). */
+  selectionMode?: boolean;
   detailsContent?: (item: TModel) => string;
   customAction?: ReactNode | ((item: TModel) => ReactNode);
   /** Nested content (e.g. savings buckets). When set, the row gets a chevron and collapses these by default. */
