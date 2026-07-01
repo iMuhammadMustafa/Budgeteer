@@ -1,5 +1,4 @@
-import { Button , Text as ThemedText } from "@/src/components/ui";
-import Divider from "@/src/components/elements/Divider";
+import { Button, Divider, Text as ThemedText } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { router } from "expo-router";
 import { View } from "react-native";

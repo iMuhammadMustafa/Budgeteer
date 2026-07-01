@@ -1,11 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ThemeProvider as ReactThemeProvider } from "expo-router/react-navigation";
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Platform, StatusBar, View } from "react-native";
-
-import { getColors, type ThemeColors } from "@/src/components/ui/theme/tokens";
-import { applyRootVariables, convertThemeToReactNativeColors, nativewindConfig } from "@/src/utils/theme.config";
+import { ThemeProvider as ReactThemeProvider } from "expo-router/react-navigation";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColorScheme } from "nativewind";
+
+import { applyRootVariables, convertThemeToReactNativeColors, nativewindConfig } from "@/src/utils/theme.config";
+import { getColors, type ThemeColors } from "@/src/components/ui/theme/tokens";
 
 export type ThemeMode = "dark" | "light";
 

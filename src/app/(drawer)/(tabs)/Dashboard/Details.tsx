@@ -1,14 +1,12 @@
 import ChartSwitcher from "@/src/components/dashboard/ChartSwitcher";
-import LegacyButton from "@/src/components/elements/Button";
 import { Button, Text as ThemedText } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
-import GridPattern from "@/src/components/GridPattern";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { router } from "expo-router";
-import { FlatList, ScrollView, View } from "react-native";
+import { FlatList, Pressable, ScrollView, View } from "react-native";
 import useDashboard from "./useDashboardViewModel";
 
 export default function DetailView() {
@@ -30,7 +28,6 @@ export default function DetailView() {
 
   return (
     <ScrollView className="flex-1">
-      <GridPattern />
       <View className="mx-4 mt-2">
         <View className="flex-row justify-between items-center mb-2">
           <Button
@@ -95,11 +92,9 @@ function TransactionsListComponent({
         const iconColor = isExpense ? "danger" : "success";
 
         return (
-          <LegacyButton
-            variant="ghost"
-            size="md"
+          <Pressable
             onPress={() => onPress(item)}
-            className="flex-row items-center justify-between p-4 bg-card rounded-lg mb-2"
+            className="flex-row items-center justify-between p-4 bg-card rounded-lg mb-2 active:opacity-70"
             testID={`detail-transaction-${item.id}`}
           >
             <View className="flex-row items-center flex-1">
@@ -124,7 +119,7 @@ function TransactionsListComponent({
               </ThemedText>
               <ThemedText variant="caption">{localDate.format("MMM D, YYYY")}</ThemedText>
             </View>
-          </LegacyButton>
+          </Pressable>
         );
       }}
     />

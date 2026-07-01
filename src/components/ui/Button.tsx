@@ -8,8 +8,9 @@
  */
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { cn } from "./utils/cn";
 import { type HapticType } from "./utils/haptic";
 import { usePressableAction } from "./utils/usePressableAction";

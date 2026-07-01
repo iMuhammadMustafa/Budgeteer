@@ -40,6 +40,8 @@ const TWO_COL_MIN_WIDTH = 1024;
  * ------------------------------------------------------------------ */
 export interface EntityListScreenProps<TModel extends { id: string }> {
   title: string;
+  /** Hide the in-page toolbar heading (e.g. on Restore tabs where the SecondaryTabBar already names it). Default true. */
+  showTitle?: boolean;
   groupedData: Record<string, TModel[]>;
   renderItem: (item: TModel) => ReactNode;
   isLoading?: boolean;
@@ -142,6 +144,7 @@ function balanceColumns(blocks: { weight: number; node: ReactNode }[], cols: num
  * ------------------------------------------------------------------ */
 export function EntityListScreen<TModel extends { id: string }>({
   title,
+  showTitle = true,
   groupedData,
   renderItem,
   isLoading,
@@ -202,11 +205,11 @@ export function EntityListScreen<TModel extends { id: string }>({
       }));
 
   return (
-    <SafeAreaView className="flex-1 bg-bg" edges={["top", "left", "right"]} testID={testID}>
+    <SafeAreaView className="flex-1" edges={["top", "left", "right"]} testID={testID}>
       <View className={cn("w-full flex-1", Platform.OS === "web" && "mx-auto max-w-5xl")}>
         {/* ── Toolbar (fixed height so entering selection mode doesn't shift the list) ── */}
         <View className="flex-row items-center justify-between px-4 py-2" style={{ minHeight: 52 }}>
-          <Text variant="h3">{title}</Text>
+          {showTitle ? <Text variant="h3">{title}</Text> : <View />}
           <View className="flex-row items-center gap-2">
             {isSelectionMode ? (
               <>

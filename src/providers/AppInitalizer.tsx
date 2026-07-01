@@ -1,6 +1,6 @@
 import { useRoute } from "expo-router/react-navigation";
 import { ActivityIndicator } from "react-native";
-import DashboardSkeleton from "../components/Charts/DashboardSkeleton";
+import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import { useAuth } from "./AuthProvider";
 import { useStorageMode } from "./StorageModeProvider";
 

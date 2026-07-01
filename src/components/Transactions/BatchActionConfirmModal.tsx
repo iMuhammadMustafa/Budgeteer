@@ -1,7 +1,6 @@
 import { TransactionsView } from "@/src/types/database/Tables.Types";
-import { ActivityIndicator, View } from "react-native";
-import { Button , Text as ThemedText } from "@/src/components/ui";
-import MyModal from "../elements/MyModal";
+import { ActivityIndicator, useWindowDimensions, View } from "react-native";
+import { Button, Dialog, Sheet, Text as ThemedText } from "@/src/components/ui";
 
 export type BatchActionType = "delete" | "duplicate" | "update";
 
@@ -24,6 +23,9 @@ export default function BatchActionConfirmModal({
     onConfirm,
     updateSummary,
 }: BatchActionConfirmModalProps) {
+    const { width } = useWindowDimensions();
+    const useSheet = width < 768;
+
     const totalAmount = selectedTransactions.reduce((sum, tx) => sum + (tx.amount ?? 0), 0);
     const currency = selectedTransactions[0]?.currency ?? "";
 
@@ -33,49 +35,57 @@ export default function BatchActionConfirmModal({
         }
     };
 
-    return (
-        <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleClose} title="Confirm">
-            <View className="p-4">
-                <ThemedText className="text-base mb-4">
-                    Are you sure you want to {actionType} {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""}?
-                </ThemedText>
+    const content = (
+        <View className="p-4">
+            <ThemedText className="text-base mb-4">
+                Are you sure you want to {actionType} {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""}?
+            </ThemedText>
 
-                {/* Transaction Summary */}
-                <View className="bg-card rounded-md p-3 mb-4">
-                    <View className="flex-row justify-between mb-2">
-                        <ThemedText variant="label">Selected:</ThemedText>
-                        <ThemedText variant="label" className="text-base">{selectedTransactions.length} transactions</ThemedText>
-                    </View>
-                    <View className="flex-row justify-between">
-                        <ThemedText variant="label">Total Amount:</ThemedText>
-                        <ThemedText variant="label" className="text-base">
-                            {totalAmount.toFixed(2)} {currency}
-                        </ThemedText>
-                    </View>
+            {/* Transaction Summary */}
+            <View className="bg-card rounded-md p-3 mb-4">
+                <View className="flex-row justify-between mb-2">
+                    <ThemedText variant="label">Selected:</ThemedText>
+                    <ThemedText variant="label" className="text-base">{selectedTransactions.length} transactions</ThemedText>
                 </View>
-
-                {/* Update Summary - only shown for update actions */}
-                {actionType === "update" && updateSummary && (
-                    <View className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                        <ThemedText variant="label" className="text-blue-800 mb-1">Changes to apply:</ThemedText>
-                        <ThemedText className="text-blue-700">{updateSummary}</ThemedText>
-                    </View>
-                )}
-
-                {/* Loading Indicator */}
-                {isLoading && (
-                    <View className="flex-row items-center justify-center mb-4">
-                        <ActivityIndicator size="small" color="#3b82f6" />
-                        <ThemedText variant="caption" className="text-muted ml-2">Processing...</ThemedText>
-                    </View>
-                )}
-
-                {/* Action Buttons */}
-                <View className="flex-row justify-end gap-2">
-                    <Button variant="outline" onPress={handleClose} disabled={isLoading} label="Cancel" />
-                    <Button variant={actionType === "delete" ? "destructive" : "primary"} onPress={onConfirm} disabled={isLoading} loading={isLoading} label={isLoading ? "Loading..." : actionType.charAt(0).toUpperCase() + actionType.slice(1)} />
+                <View className="flex-row justify-between">
+                    <ThemedText variant="label">Total Amount:</ThemedText>
+                    <ThemedText variant="label" className="text-base">
+                        {totalAmount.toFixed(2)} {currency}
+                    </ThemedText>
                 </View>
             </View>
-        </MyModal>
+
+            {/* Update Summary - only shown for update actions */}
+            {actionType === "update" && updateSummary && (
+                <View className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                    <ThemedText variant="label" className="text-blue-800 mb-1">Changes to apply:</ThemedText>
+                    <ThemedText className="text-blue-700">{updateSummary}</ThemedText>
+                </View>
+            )}
+
+            {/* Loading Indicator */}
+            {isLoading && (
+                <View className="flex-row items-center justify-center mb-4">
+                    <ActivityIndicator size="small" color="#3b82f6" />
+                    <ThemedText variant="caption" className="text-muted ml-2">Processing...</ThemedText>
+                </View>
+            )}
+
+            {/* Action Buttons */}
+            <View className="flex-row justify-end gap-2">
+                <Button variant="outline" onPress={handleClose} disabled={isLoading} label="Cancel" />
+                <Button variant={actionType === "delete" ? "destructive" : "primary"} onPress={onConfirm} disabled={isLoading} loading={isLoading} label={isLoading ? "Loading..." : actionType.charAt(0).toUpperCase() + actionType.slice(1)} />
+            </View>
+        </View>
+    );
+
+    return useSheet ? (
+        <Sheet visible={isOpen} onClose={handleClose} title="Confirm">
+            {content}
+        </Sheet>
+    ) : (
+        <Dialog visible={isOpen} onClose={handleClose} title="Confirm" size="lg">
+            {content}
+        </Dialog>
     );
 }

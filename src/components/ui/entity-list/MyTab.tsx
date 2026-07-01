@@ -8,7 +8,7 @@
 import { type ReactNode } from "react";
 
 import ConfirmRestoreModal from "@/src/components/ConfirmRestoreModal";
-import DeleteConfirmModal from "@/src/components/elements/DeleteConfirmModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 import { IService } from "@/src/services/IService";
 import { TableNames } from "@/src/types/database/TableNames";
 import { EntityListItem } from "./EntityListItem";
@@ -31,6 +31,8 @@ const singularize = (title: string): string => {
 
 export interface MyTabProps<TModel, TTable extends TableNames> {
   title: string;
+  /** Hide the in-page toolbar heading (the SecondaryTabBar already names Restore tabs). Default true. */
+  showTitle?: boolean;
   service: IService<TModel, TTable>;
   queryKey: string[];
   groupBy?: string;
@@ -63,6 +65,7 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
 
 export function MyTab<TModel, TTable extends TableNames>({
   title,
+  showTitle = true,
   service,
   queryKey,
   groupBy,
@@ -98,6 +101,7 @@ export function MyTab<TModel, TTable extends TableNames>({
   return (
     <EntityListScreen<Renderable>
       title={title}
+      showTitle={showTitle}
       groupedData={state.groupedData as unknown as Record<string, Renderable[]>}
       isLoading={state.isLoading}
       isPageLoading={isPageLoading}

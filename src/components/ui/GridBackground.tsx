@@ -10,8 +10,8 @@
 import { Platform, View } from "react-native";
 import Svg, { Line } from "react-native-svg";
 
-import { GRID_SIZE } from "@/src/constants/layout";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import { GRID_SIZE } from "@/src/constants/layout";
 
 export default function GridBackground({
   width: gridWidth,
@@ -58,7 +58,7 @@ export default function GridBackground({
   }
 
   return (
-    <View className="absolute" style={{ ...edges, opacity }} pointerEvents="none">
+    <View className="absolute" style={{ ...edges, opacity }} pointerEvents="none" testID="grid-background">
       <Svg width={w} height={h}>
         {lines}
       </Svg>

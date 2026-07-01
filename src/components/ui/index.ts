@@ -59,9 +59,11 @@ export {
   MyCategoriesDropdown,
   AccountSelecterDropdown,
   ColorsPickerDropdown,
+  MyTransactionTypesDropdown,
   type MyCategoriesDropdownProps,
   type AccountSelecterDropdownProps,
   type ColorsPickerDropdownProps,
+  type MyTransactionTypesDropdownProps,
 } from "./DomainSelects";
 
 // secondary tabs + entity list (Step 3 — §9, replaces legacy MyTab/TabNavigation/TabRouting)

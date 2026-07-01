@@ -1,12 +1,11 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
-import { IconButton } from "@/src/components/ui";
+import { Dialog, IconButton, Sheet } from "@/src/components/ui";
 import MyIcon from "./elements/MyIcon";
-import MyModal from "./elements/MyModal";
 import SavingsBucketForm, { initialBucketState } from "./forms/SavingsBucketForm";
 
 interface SavingsBucketsListProps {
@@ -22,6 +21,8 @@ export default function SavingsBucketsList({
   compact = false,
   buckets: prefetchedBuckets,
 }: SavingsBucketsListProps) {
+  const { width } = useWindowDimensions();
+  const useSheet = width < 768;
   const bucketService = useSavingsBucketService();
 
   const { data: fetchedBuckets, isLoading } = bucketService.useFindByAccountId(
@@ -301,33 +302,40 @@ export default function SavingsBucketsList({
       ))}
 
       {/* Add/Edit Bucket Modal */}
-      {showForm && (
-        <MyModal
-          isOpen={showForm}
-          setIsOpen={(open: boolean) => {
-            setShowForm(open);
-            if (!open) setEditBucket(null);
-          }}
-          onClose={() => {
-            setShowForm(false);
-            setEditBucket(null);
-          }}
-          title={editBucket ? "Edit Bucket" : "New Bucket"}
-        >
+      {(() => {
+        const handleClose = () => {
+          setShowForm(false);
+          setEditBucket(null);
+        };
+        const formContent = (
           <SavingsBucketForm
             bucket={editBucket ?? { ...initialBucketState, accountid: accountId }}
             accountId={accountId}
-            onSuccess={() => {
-              setShowForm(false);
-              setEditBucket(null);
-            }}
-            onCancel={() => {
-              setShowForm(false);
-              setEditBucket(null);
-            }}
+            onSuccess={handleClose}
+            onCancel={handleClose}
           />
-        </MyModal>
-      )}
+        );
+        return useSheet ? (
+          <Sheet
+            visible={showForm}
+            onClose={handleClose}
+            title={editBucket ? "Edit Bucket" : "New Bucket"}
+            scrollable={false}
+          >
+            {formContent}
+          </Sheet>
+        ) : (
+          <Dialog
+            visible={showForm}
+            onClose={handleClose}
+            title={editBucket ? "Edit Bucket" : "New Bucket"}
+            size="lg"
+            scrollable={false}
+          >
+            {formContent}
+          </Dialog>
+        );
+      })()}
     </View>
   );
 }

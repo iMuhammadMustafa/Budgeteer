@@ -170,6 +170,77 @@ export const AccountSelecterDropdown = ({
   );
 };
 
+export interface MyTransactionTypesDropdownProps {
+  selectedValue: any;
+  onSelect: (value: OptionItem | null) => any;
+  isModal: boolean;
+  isEdit: boolean;
+  isAdjustmentDisabled?: boolean;
+  isInitialDisabled?: boolean;
+  isRefundDisabled?: boolean;
+  isAdjustmentHidden?: boolean;
+  isInitialHidden?: boolean;
+  isRefundHidden?: boolean;
+  showClear?: boolean;
+  onClear?: () => void;
+}
+
+export const MyTransactionTypesDropdown = ({
+  selectedValue,
+  onSelect,
+  isModal,
+  isEdit,
+  isAdjustmentDisabled = true,
+  isInitialDisabled = true,
+  isRefundDisabled = true,
+  isAdjustmentHidden = true,
+  isInitialHidden = true,
+  isRefundHidden = true,
+  showClear,
+  onClear,
+}: MyTransactionTypesDropdownProps) => {
+  const items: OptionItem[] = [
+    { id: "Income", label: "Income", value: "Income", disabled: isEdit },
+    { id: "Expense", label: "Expense", value: "Expense", disabled: isEdit },
+    { id: "Transfer", label: "Transfer", value: "Transfer", disabled: isEdit },
+    ...(isAdjustmentHidden
+      ? []
+      : [{ id: "Adjustment", label: "Adjustment", value: "Adjustment", disabled: isEdit && isAdjustmentDisabled }]),
+    ...(isInitialHidden
+      ? []
+      : [{ id: "Initial", label: "Initial", value: "Initial", disabled: isEdit && isInitialDisabled }]),
+    ...(isRefundHidden
+      ? []
+      : [{ id: "Refund", label: "Refund", value: "Refund", disabled: isEdit && isRefundDisabled }]),
+  ];
+
+  const options: SelectOption[] = items.map(o => ({
+    id: String(o.id),
+    label: o.label,
+    value: o.value,
+    disabled: o.disabled,
+  }));
+
+  return (
+    <Select
+      label="Type"
+      options={options}
+      value={selectedValue ?? null}
+      onChange={next => {
+        if (next == null) {
+          onClear?.();
+          onSelect(null);
+          return;
+        }
+        onSelect(toOptionItem(items, Array.isArray(next) ? next[0] : next));
+      }}
+      clearable={showClear}
+      present={presentFor(isModal)}
+      testID="dropdown-type"
+    />
+  );
+};
+
 const COLOR_OPTIONS: OptionItem[] = [
   { id: "info-100", label: "Info", value: "info-100", color: "info" },
   { id: "success-100", label: "Success", value: "success-100", color: "success" },

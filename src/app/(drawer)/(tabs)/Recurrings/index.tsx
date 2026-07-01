@@ -1,14 +1,12 @@
-import AmountInput from "@/src/components/elements/AmountInput";
-import { Button, IconButton , Text as ThemedText , MyTab } from "@/src/components/ui";
-import MyModal from "@/src/components/elements/MyModal";
-import { RecurringDetails } from "@/src/components/elements/RecurringStatusBadges";
+import { Button, Dialog, GroupedInput, IconButton, Sheet, Text as ThemedText, MyTab } from "@/src/components/ui";
+import { RecurringDetails } from "@/src/components/recurrings/RecurringStatusBadges";
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 
 export default function RecurringsScreen() {
   const {
@@ -161,7 +159,6 @@ const useRecurringsViewModel = () => {
 
 const RecurringModal = ({
   modalVisible,
-  setModalVisible,
   pendingRecurring,
   handleExecuteRecurring,
   handleClose,
@@ -175,34 +172,42 @@ const RecurringModal = ({
   isLoading: boolean;
 }) => {
   const [amount, setAmount] = useState<number>(0);
-  return (
-    <MyModal isOpen={modalVisible} setIsOpen={setModalVisible} onClose={handleClose}>
-      <View className="bg-card rounded-xl p-6 items-center">
-        <ThemedText variant="h3" className="mb-2">
-          Enter Amount
-        </ThemedText>
-        <View className="flex-row justify-between w-full gap-2">
-          <AmountInput
-            mode={pendingRecurring?.type === "Income" ? "plus" : "minus"}
-            amount={amount}
-            onChange={setAmount}
-            className="flex-1"
-          />
-          <Button
-            variant="primary"
-            size="md"
-            haptic="success"
-            onPress={() => {
-              if (pendingRecurring) {
-                handleExecuteRecurring(pendingRecurring, amount);
-              }
-            }}
-            disabled={isLoading}
-            label="Apply"
-            testID="btn-recurring-apply"
-          />
-        </View>
+  const { width } = useWindowDimensions();
+  const useSheet = width < 768;
+
+  const content = (
+    <View className="p-6 items-center">
+      <View className="flex-row justify-between w-full gap-2">
+        <GroupedInput
+          mode={pendingRecurring?.type === "Income" ? "plus" : "minus"}
+          amount={amount}
+          onChange={setAmount}
+          className="flex-1"
+        />
+        <Button
+          variant="primary"
+          size="md"
+          haptic="success"
+          onPress={() => {
+            if (pendingRecurring) {
+              handleExecuteRecurring(pendingRecurring, amount);
+            }
+          }}
+          disabled={isLoading}
+          label="Apply"
+          testID="btn-recurring-apply"
+        />
       </View>
-    </MyModal>
+    </View>
+  );
+
+  return useSheet ? (
+    <Sheet visible={modalVisible} onClose={handleClose} title="Enter Amount" scrollable={false}>
+      {content}
+    </Sheet>
+  ) : (
+    <Dialog visible={modalVisible} onClose={handleClose} title="Enter Amount" size="lg" scrollable={false}>
+      {content}
+    </Dialog>
   );
 };
