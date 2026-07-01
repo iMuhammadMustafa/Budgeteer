@@ -1,10 +1,11 @@
-import { getStatsDailyTransactionsHelper, useStatsService } from "@/src/services/Stats.Service";
-import { useTransactionService } from "@/src/services/Transactions.Service";
+import { useCallback, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import dayjs from "dayjs";
+
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
-import dayjs from "dayjs";
-import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { getStatsDailyTransactionsHelper, useStatsService } from "@/src/services/Stats.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
 
 export enum DashboardViewSelectionType {
   CALENDAR = "calendar",
@@ -57,7 +58,9 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   // Period cursors (independent per-chart)
   const [weekBaseDate, setWeekBaseDate] = useState<string>(params.startDate ?? dayjs().toISOString());
   const [dailyMonthCursor, setDailyMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
-  const [categoriesMonthCursor, setCategoriesMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
+  const [categoriesMonthCursor, setCategoriesMonthCursor] = useState<{ start: string; end: string }>(
+    initialMonthFromParams,
+  );
   const [groupsMonthCursor, setGroupsMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
   const [earningsYearCursor, setEarningsYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
   const [netWorthYearCursor, setNetWorthYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
@@ -105,7 +108,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       baseFilters.startDate = params.startDate;
       baseFilters.endDate = params.endDate;
       if (params.transactionType) {
-         baseFilters.type = params.transactionType as any;
+        baseFilters.type = params.transactionType as any;
       }
     } else {
       if (params.startDate) baseFilters.startDate = params.startDate;
@@ -128,7 +131,8 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const filteredTransactions = fetchTransactions ? transactionsQuery?.data : undefined;
   const isFiltersLoading = fetchTransactions ? (transactionsQuery?.isLoading ?? false) : false;
 
-  // Always fetch the 5 most recent transactions for the dashboard overview
+  // Fetch a generous batch for the dashboard overview card - it's height-matched to the
+  // Week's Expenses chart card and scrolls internally, so it can afford more than it usually shows.
   const recentTransactionsQuery = transactionService.useFindAllView({ limit: 5 });
   const recentTransactions = recentTransactionsQuery.data;
   const isRecentLoading = recentTransactionsQuery.isLoading;
@@ -169,7 +173,14 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const [isLocalLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isLoading =
-    isDailyLoading || isCategoriesLoading || isGroupsLoading || isYearlyLoading || isNetWorthLoading || isFiltersLoading || isRecentLoading || isLocalLoading;
+    isDailyLoading ||
+    isCategoriesLoading ||
+    isGroupsLoading ||
+    isYearlyLoading ||
+    isNetWorthLoading ||
+    isFiltersLoading ||
+    isRecentLoading ||
+    isLocalLoading;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -220,13 +231,19 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const handleBarPress = useCallback(
     (item: DoubleBarPoint, barKey?: "barOne" | "barTwo") => {
       const baseYear = dayjs(earningsYearCursor.start);
-      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(item.x);
+      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(
+        item.x,
+      );
 
-      const monthStart = baseYear.month(monthIndex >= 0 ? monthIndex : 0).utc().startOf("month");
+      const monthStart = baseYear
+        .month(monthIndex >= 0 ? monthIndex : 0)
+        .utc()
+        .startOf("month");
       const startOfMonth = monthStart.toISOString();
       const endOfMonth = monthStart.endOf("month").toISOString();
-      
-      const transactionTypeStr = barKey === "barOne" ? item.barOne.label : barKey === "barTwo" ? item.barTwo.label : undefined;
+
+      const transactionTypeStr =
+        barKey === "barOne" ? item.barOne.label : barKey === "barTwo" ? item.barTwo.label : undefined;
 
       router.push({
         pathname: "/Dashboard/Details",
@@ -264,7 +281,10 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     } else if (params.type === DashboardViewSelectionType.PIE) {
       const key = params.pieType === "category" ? "categoryid" : "groupid";
       navigationParams[key] = params.itemId;
-    } else if (params.type === DashboardViewSelectionType.BAR || params.type === DashboardViewSelectionType.DOUBLE_BAR) {
+    } else if (
+      params.type === DashboardViewSelectionType.BAR ||
+      params.type === DashboardViewSelectionType.DOUBLE_BAR
+    ) {
       navigationParams.startDate = params.startDate;
       navigationParams.endDate = params.endDate;
       if (params.transactionType) {
@@ -288,7 +308,10 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     return `Week: ${startFmt} – ${endFmt}`;
   }, [weekBaseDate]);
 
-  const categoriesMonthLabel = useMemo(() => dayjs(categoriesMonthCursor.start).format("MMM YYYY"), [categoriesMonthCursor]);
+  const categoriesMonthLabel = useMemo(
+    () => dayjs(categoriesMonthCursor.start).format("MMM YYYY"),
+    [categoriesMonthCursor],
+  );
   const groupsMonthLabel = useMemo(() => dayjs(groupsMonthCursor.start).format("MMM YYYY"), [groupsMonthCursor]);
   const calendarLabel = useMemo(() => dayjs(dailyMonthCursor.start).format("MMM YYYY"), [dailyMonthCursor]);
   const earningsYearLabel = useMemo(() => earningsYearCursor.start.substring(0, 4), [earningsYearCursor]);
@@ -408,7 +431,12 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek },
     categoriesMonth: { label: categoriesMonthLabel, prev: onPrevCategoriesMonth, next: onNextCategoriesMonth },
     groupsMonth: { label: groupsMonthLabel, prev: onPrevGroupsMonth, next: onNextGroupsMonth },
-    calendar: { label: calendarLabel, prev: onPrevCalendarMonth, next: onNextCalendarMonth, currentDate: dailyMonthCursor.start },
+    calendar: {
+      label: calendarLabel,
+      prev: onPrevCalendarMonth,
+      next: onNextCalendarMonth,
+      currentDate: dailyMonthCursor.start,
+    },
     earningsYear: { label: earningsYearLabel, prev: onPrevEarningsYear, next: onNextEarningsYear },
     netWorthYear: { label: netWorthYearLabel, prev: onPrevNetWorthYear, next: onNextNetWorthYear },
   };

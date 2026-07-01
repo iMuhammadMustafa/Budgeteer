@@ -1,12 +1,12 @@
 import { useAccountService } from "@/src/services/Accounts.Service";
 import dayjs from "dayjs";
 import { useMemo } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DashboardCharts from "@/src/components/dashboard/DashboardCharts";
 import DashboardOverview from "@/src/components/dashboard/DashboardOverview";
 import RecentTransactions from "@/src/components/dashboard/RecentTransactions";
-import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
+import DashboardSkeleton from "@/src/components/dashboard/DashboardSkeleton";
 import useDashboard from "./useDashboardViewModel";
 
 export default function DashboardIndex() {
@@ -61,21 +61,19 @@ export default function DashboardIndex() {
           sparkline={sparkline}
           onRefresh={onRefresh}
         />
-        <View className="flex-row flex-wrap gap-4">
-          <DashboardCharts
-            weeklyTransactionTypesData={weeklyTransactionTypesData}
-            dailyTransactionTypesData={dailyTransactionTypesData}
-            yearlyTransactionsTypes={yearlyTransactionsTypes}
-            netWorthGrowth={netWorthGrowth}
-            monthlyCategories={monthlyCategories}
-            monthlyGroups={monthlyGroups}
-            handleDayPress={handleDayPress}
-            handlePiePress={handlePiePress}
-            handleBarPress={handleBarPress}
-            periodControls={periodControls}
-          />
-        </View>
-        <RecentTransactions transactions={recentTransactions} onPress={handleTransactionPress} />
+        <DashboardCharts
+          weeklyTransactionTypesData={weeklyTransactionTypesData}
+          dailyTransactionTypesData={dailyTransactionTypesData}
+          yearlyTransactionsTypes={yearlyTransactionsTypes}
+          netWorthGrowth={netWorthGrowth}
+          monthlyCategories={monthlyCategories}
+          monthlyGroups={monthlyGroups}
+          handleDayPress={handleDayPress}
+          handlePiePress={handlePiePress}
+          handleBarPress={handleBarPress}
+          periodControls={periodControls}
+          recentTransactionsSlot={<RecentTransactions transactions={recentTransactions} onPress={handleTransactionPress} />}
+        />
       </ScrollView>
     </SafeAreaView>
   );
