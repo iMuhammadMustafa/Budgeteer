@@ -1,6 +1,6 @@
+import { TableNames } from "@/src/types/database/TableNames";
 import { MyTab } from "@/src/components/ui";
 import { useAccountService } from "@/src/services/Accounts.Service";
-import { TableNames } from "@/src/types/database/TableNames";
 
 export default function RestoreAccounts() {
   const service = useAccountService();
@@ -8,6 +8,7 @@ export default function RestoreAccounts() {
   return (
     <MyTab
       title="Deleted Accounts"
+      showTitle={false}
       service={service}
       queryKey={[TableNames.Accounts]}
       detailsUrl={"/Accounts/Upsert?accountId=" as any}

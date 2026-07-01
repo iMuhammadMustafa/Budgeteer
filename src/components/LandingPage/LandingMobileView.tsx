@@ -121,7 +121,7 @@ export default function MobileView({
 
           {/* Hint */}
           <Animated.View entering={FadeInDown.delay(850).duration(480)} className="mt-6">
-            <Text className="text-center text-[13px] text-feature-text">You can switch modes any time in Settings</Text>
+            <Text className="text-center text-[10px] text-feature-text">You can switch modes any time in Settings</Text>
           </Animated.View>
         </View>
       </ScrollView>

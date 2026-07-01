@@ -1,5 +1,4 @@
-import { Button } from "@/src/components/ui";
-import LegacyButton from "@/src/components/elements/Button";
+import { Button, Dialog, Sheet, Switch } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -7,15 +6,15 @@ import ExportService from "@/src/services/Export.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
-import ThemedSwitch from "@/src/components/elements/ThemedSwitch";
-import MyModal from "@/src/components/elements/MyModal";
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 
 
 export default function ExportModal({ visible, onClose }: {
     visible: boolean;
     onClose: () => void;
 }) {
+    const { width } = useWindowDimensions();
+    const useSheet = width < 768;
     const { session } = useAuth();
     const { dbContext, storageMode } = useStorageMode();
     const tenantId = session?.user?.user_metadata?.tenantid || "";
@@ -123,177 +122,175 @@ export default function ExportModal({ visible, onClose }: {
 
     const canExport = selectedTables.size > 0 || selectedView !== null;
 
-    return (
-        <MyModal isOpen={visible} setIsOpen={open => { if (!open) onClose(); }} onClose={onClose} title="Export Data">
-                    <ScrollView className="flex-1 p-4">
-                        {/* Export Format Selection (for tables) */}
-                        {!selectedView && (
-                            <View className="mb-4">
-                                <Text className="text-sm font-medium text-foreground mb-2">Export Format</Text>
-                                <View className="flex-row gap-2">
-                                    <LegacyButton
-                                        variant={exportFormat === "json" ? "primary" : "ghost"}
-                                        size="md"
-                                        hapticFeedback="selection"
-                                        onPress={() => setExportFormat("json")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-border-default"}`}
-                                        testID="btn-export-json"
-                                    >
-                                        <View className="flex-row items-center">
-                                            <MyIcon name="FileJson2" size={20} className={exportFormat === "json" ? "text-primary" : "text-text-secondary"} />
-                                            <View className="ml-2">
-                                                <Text className={`font-medium ${exportFormat === "json" ? "text-primary" : "text-foreground"}`}>
-                                                    JSON
-                                                </Text>
-                                                <Text className="text-xs text-text-tertiary">Full backup</Text>
-                                            </View>
-                                        </View>
-                                    </LegacyButton>
-                                    <LegacyButton
-                                        variant={exportFormat === "csv" ? "primary" : "ghost"}
-                                        size="md"
-                                        hapticFeedback="selection"
-                                        onPress={() => setExportFormat("csv")}
-                                        className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-border-default"}`}
-                                        testID="btn-export-csv"
-                                    >
-                                        <View className="flex-row items-center">
-                                            <MyIcon name="FileSpreadsheet" size={20} className={exportFormat === "csv" ? "text-primary" : "text-text-secondary"} />
-                                            <View className="ml-2">
-                                                <Text className={`font-medium ${exportFormat === "csv" ? "text-primary" : "text-foreground"}`}>
-                                                    CSV
-                                                </Text>
-                                                <Text className="text-xs text-text-tertiary">Single table</Text>
-                                            </View>
-                                        </View>
-                                    </LegacyButton>
+    const body = (
+        <>
+            <ScrollView className="flex-1 p-4">
+                {/* Export Format Selection (for tables) */}
+                {!selectedView && (
+                    <View className="mb-4">
+                        <Text className="text-sm font-medium text-foreground mb-2">Export Format</Text>
+                        <View className="flex-row gap-2">
+                            <Pressable
+                                onPress={() => setExportFormat("json")}
+                                className={`flex-1 p-3 rounded-lg border ${exportFormat === "json" ? "border-primary bg-primary/10" : "border-border-default"}`}
+                                testID="btn-export-json"
+                            >
+                                <View className="flex-row items-center">
+                                    <MyIcon name="FileJson2" size={20} className={exportFormat === "json" ? "text-primary" : "text-text-secondary"} />
+                                    <View className="ml-2">
+                                        <Text className={`font-medium ${exportFormat === "json" ? "text-primary" : "text-foreground"}`}>
+                                            JSON
+                                        </Text>
+                                        <Text className="text-xs text-text-tertiary">Full backup</Text>
+                                    </View>
                                 </View>
-                            </View>
-                        )}
-
-                        {/* Tables Selection */}
-                        <View className="mb-4">
-                            <View className="flex-row items-center justify-between mb-2">
-                                <Text className="text-sm font-medium text-foreground">Tables</Text>
-                                <View className="flex-row gap-2">
-                                    <LegacyButton variant="ghost" size="sm" onPress={selectAllTables} testID="btn-export-select-all">
-                                        <Text className="text-xs text-primary">Select All</Text>
-                                    </LegacyButton>
-                                    <Text className="text-border-default">|</Text>
-                                    <LegacyButton variant="ghost" size="sm" onPress={deselectAllTables} testID="btn-export-clear">
-                                        <Text className="text-xs text-text-secondary">Clear</Text>
-                                    </LegacyButton>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setExportFormat("csv")}
+                                className={`flex-1 p-3 rounded-lg border ${exportFormat === "csv" ? "border-primary bg-primary/10" : "border-border-default"}`}
+                                testID="btn-export-csv"
+                            >
+                                <View className="flex-row items-center">
+                                    <MyIcon name="FileSpreadsheet" size={20} className={exportFormat === "csv" ? "text-primary" : "text-text-secondary"} />
+                                    <View className="ml-2">
+                                        <Text className={`font-medium ${exportFormat === "csv" ? "text-primary" : "text-foreground"}`}>
+                                            CSV
+                                        </Text>
+                                        <Text className="text-xs text-text-tertiary">Single table</Text>
+                                    </View>
                                 </View>
-                            </View>
-
-                            <View className="bg-surface-elevated rounded-lg p-2">
-                                {EXPORTABLE_TABLES.map(table => (
-                                    <LegacyButton
-                                        key={table}
-                                        variant="ghost"
-                                        size="md"
-                                        hapticFeedback="selection"
-                                        onPress={() => {
-                                            setSelectedView(null);
-                                            toggleTable(table as TableNames);
-                                        }}
-                                        className="flex-row items-center justify-between py-2 px-2 rounded-none"
-                                        testID={`btn-export-table-${table}`}
-                                    >
-                                        <View className="flex-row items-center">
-                                            <MyIcon
-                                                name={getTableIcon(table as TableNames)}
-                                                size={16}
-                                                className="text-text-secondary mr-2"
-                                            />
-                                            <Text className="text-sm text-foreground">{formatTableName(table)}</Text>
-                                        </View>
-                                        <ThemedSwitch
-                                            value={selectedTables.has(table as TableNames) && !selectedView}
-                                            onValueChange={() => {
-                                                setSelectedView(null);
-                                                toggleTable(table as TableNames);
-                                            }}
-                                            testID={`switch-export-table-${table}`}
-                                        />
-                                    </LegacyButton>
-                                ))}
-                            </View>
+                            </Pressable>
                         </View>
+                    </View>
+                )}
 
-                        {/* Views Selection (CSV only) */}
-                        <View className="mb-4">
-                            <Text className="text-sm font-medium text-foreground mb-2">Views (CSV only)</Text>
-                            <View className="bg-surface-elevated rounded-lg p-2">
-                                {EXPORTABLE_VIEWS.map(view => (
-                                    <LegacyButton
-                                        key={view}
-                                        variant="ghost"
-                                        size="md"
-                                        hapticFeedback="selection"
-                                        onPress={() => selectView(view as ViewNames)}
-                                        className={`flex-row items-center py-2 px-2 rounded-none justify-start ${selectedView === view ? "bg-primary/10" : ""}`}
-                                        testID={`btn-export-view-${view}`}
-                                    >
-                                        <View
-                                            className={`w-4 h-4 rounded-full border mr-2 items-center justify-center ${selectedView === view ? "border-primary bg-primary" : "border-border-default"
-                                                }`}
-                                        >
-                                            {selectedView === view && (
-                                                <MyIcon name="Check" size={10} className="text-white" />
-                                            )}
-                                        </View>
-                                        <MyIcon name="Eye" size={16} className="text-text-secondary mr-2" />
-                                        <Text className="text-sm text-foreground">{formatViewName(view)}</Text>
-                                    </LegacyButton>
-                                ))}
-                            </View>
+                {/* Tables Selection */}
+                <View className="mb-4">
+                    <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-sm font-medium text-foreground">Tables</Text>
+                        <View className="flex-row gap-2">
+                            <Pressable onPress={selectAllTables} testID="btn-export-select-all">
+                                <Text className="text-xs text-primary">Select All</Text>
+                            </Pressable>
+                            <Text className="text-border-default">|</Text>
+                            <Pressable onPress={deselectAllTables} testID="btn-export-clear">
+                                <Text className="text-xs text-text-secondary">Clear</Text>
+                            </Pressable>
                         </View>
+                    </View>
 
-                        {/* Export Result */}
-                        {exportResult && (
-                            <View
-                                className={`p-3 rounded-lg mb-4 ${exportResult.success ? "bg-green-50" : "bg-red-50"
-                                    }`}
+                    <View className="bg-surface-elevated rounded-lg p-2">
+                        {EXPORTABLE_TABLES.map(table => (
+                            <Pressable
+                                key={table}
+                                onPress={() => {
+                                    setSelectedView(null);
+                                    toggleTable(table as TableNames);
+                                }}
+                                className="flex-row items-center justify-between py-2 px-2"
+                                testID={`btn-export-table-${table}`}
                             >
                                 <View className="flex-row items-center">
                                     <MyIcon
-                                        name={exportResult.success ? "CheckCircle" : "XCircle"}
-                                        size={20}
-                                        className={exportResult.success ? "text-status-success" : "text-status-danger"}
+                                        name={getTableIcon(table as TableNames)}
+                                        size={16}
+                                        className="text-text-secondary mr-2"
                                     />
-                                    <Text
-                                        className={`ml-2 text-sm ${exportResult.success ? "text-status-success" : "text-status-danger"
-                                            }`}
-                                    >
-                                        {exportResult.message}
-                                    </Text>
+                                    <Text className="text-sm text-foreground">{formatTableName(table)}</Text>
                                 </View>
-                            </View>
-                        )}
-                    </ScrollView>
+                                <Switch
+                                    value={selectedTables.has(table as TableNames) && !selectedView}
+                                    onValueChange={() => {
+                                        setSelectedView(null);
+                                        toggleTable(table as TableNames);
+                                    }}
+                                    testID={`switch-export-table-${table}`}
+                                />
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
 
-                    {/* Footer */}
-                    <View className="p-4 border-t border-border-default bg-surface-elevated">
-                        <View className="flex-row gap-2">
-                            <Button
-                                label="Cancel"
-                                onPress={onClose}
-                                variant="outline"
-                                className="flex-1"
+                {/* Views Selection (CSV only) */}
+                <View className="mb-4">
+                    <Text className="text-sm font-medium text-foreground mb-2">Views (CSV only)</Text>
+                    <View className="bg-surface-elevated rounded-lg p-2">
+                        {EXPORTABLE_VIEWS.map(view => (
+                            <Pressable
+                                key={view}
+                                onPress={() => selectView(view as ViewNames)}
+                                className={`flex-row items-center py-2 px-2 justify-start ${selectedView === view ? "bg-primary/10" : ""}`}
+                                testID={`btn-export-view-${view}`}
+                            >
+                                <View
+                                    className={`w-4 h-4 rounded-full border mr-2 items-center justify-center ${selectedView === view ? "border-primary bg-primary" : "border-border-default"
+                                        }`}
+                                >
+                                    {selectedView === view && (
+                                        <MyIcon name="Check" size={10} className="text-white" />
+                                    )}
+                                </View>
+                                <MyIcon name="Eye" size={16} className="text-text-secondary mr-2" />
+                                <Text className="text-sm text-foreground">{formatViewName(view)}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Export Result */}
+                {exportResult && (
+                    <View
+                        className={`p-3 rounded-lg mb-4 ${exportResult.success ? "bg-green-50" : "bg-red-50"
+                            }`}
+                    >
+                        <View className="flex-row items-center">
+                            <MyIcon
+                                name={exportResult.success ? "CheckCircle" : "XCircle"}
+                                size={20}
+                                className={exportResult.success ? "text-status-success" : "text-status-danger"}
                             />
-                            <Button
-                                label="Export"
-                                onPress={handleExport}
-                                variant="primary"
-                                className="flex-1"
-                                disabled={!canExport || isExporting}
-                                leadingIcon={isExporting ? undefined : "Download"}
-                                loading={isExporting}
-                            />
+                            <Text
+                                className={`ml-2 text-sm ${exportResult.success ? "text-status-success" : "text-status-danger"
+                                    }`}
+                            >
+                                {exportResult.message}
+                            </Text>
                         </View>
                     </View>
-        </MyModal>
+                )}
+            </ScrollView>
+
+            {/* Footer */}
+            <View className="p-4 border-t border-border-default bg-surface-elevated">
+                <View className="flex-row gap-2">
+                    <Button
+                        label="Cancel"
+                        onPress={onClose}
+                        variant="outline"
+                        className="flex-1"
+                    />
+                    <Button
+                        label="Export"
+                        onPress={handleExport}
+                        variant="primary"
+                        className="flex-1"
+                        disabled={!canExport || isExporting}
+                        leadingIcon={isExporting ? undefined : "Download"}
+                        loading={isExporting}
+                    />
+                </View>
+            </View>
+        </>
+    );
+
+    return useSheet ? (
+        <Sheet visible={visible} onClose={onClose} title="Export Data" scrollable={false}>
+            {body}
+        </Sheet>
+    ) : (
+        <Dialog visible={visible} onClose={onClose} title="Export Data" size="lg" scrollable={false}>
+            {body}
+        </Dialog>
     );
 }
 

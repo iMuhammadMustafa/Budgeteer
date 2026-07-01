@@ -2,13 +2,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Platform, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-import GridPattern from "@/src/components/GridPattern";
 import FloatingView from "@/src/components/LandingPage/FloatingView";
 import HeroIllustration from "@/src/components/LandingPage/Hero";
 import ModeCard from "@/src/components/LandingPage/ModeCard";
 import StatCard from "@/src/components/LandingPage/StatCard";
 import ThemeToggle from "@/src/components/LandingPage/ThemeSwitcher";
 import TrustFeature from "@/src/components/LandingPage/TrustFeature";
+import { GridBackground } from "@/src/components/ui";
 import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
 
 export default function WebSplit({
@@ -59,7 +59,7 @@ export default function WebSplit({
       {/* LEFT PANEL: BRAND STORY */}
       <View className="bg-panel-bg relative overflow-hidden justify-center items-center" style={{ flex: 52 }}>
         <View className="absolute inset-0 opacity-60">
-          <GridPattern />
+          <GridBackground />
           <FloatingView amplitude={15} duration={5000} className="absolute" style={{ top: "10%", left: "-10%" }}>
             <LinearGradient colors={orbs.orb1} style={{ width: 600, height: 600, borderRadius: 300 }} />
           </FloatingView>
@@ -142,10 +142,6 @@ export default function WebSplit({
             ))}
           </View>
 
-          <Animated.Text entering={FadeInDown.delay(700)} className="text-[13px] text-feature-text mt-[22px]">
-            You can switch modes any time in Settings
-          </Animated.Text>
-
           {/* Divider */}
           <View
             style={{
@@ -157,14 +153,9 @@ export default function WebSplit({
           />
 
           <View style={{ gap: 13 }}>
-            <TrustFeature icon="🔒" text="Bank-grade encryption keeps your data safe" delay={800} isDark={isDark} />
-            <TrustFeature icon="📊" text="Smart insights and weekly spending reports" delay={900} isDark={isDark} />
-            <TrustFeature
-              icon="🎯"
-              text="Set goals and get nudged when you're off track"
-              delay={1000}
-              isDark={isDark}
-            />
+            <TrustFeature icon="🔒" text="Local Storage keeps your data safe" delay={800} isDark={isDark} />
+            <TrustFeature icon="📊" text="Smart insights and spending reports" delay={900} isDark={isDark} />
+            <TrustFeature icon="🎯" text="Set goals and track when you're off track" delay={1000} isDark={isDark} />
           </View>
         </View>
       </View>
