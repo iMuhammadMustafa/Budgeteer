@@ -11,7 +11,7 @@ export default function TransactionGroupsTab() {
   return (
     <MyTab
       title="Groups"
-      detailsUrl="Categories/Groups/Upsert?accountId="
+      detailHref="/Categories/Groups/"
       queryKey={[TableNames.TransactionGroups]}
       service={groups}
       UpsertModal={item => <TransactionGroupForm group={item} />}

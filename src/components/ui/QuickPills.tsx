@@ -17,11 +17,12 @@
 import { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { usePresentedOverlay, type OverlayPresent } from "./overlay/usePresentedOverlay";
-import { Text } from "./Text";
 import { cn } from "./utils/cn";
+import { Text } from "./Text";
 
 export interface QuickPillOption {
   value: string;
@@ -190,7 +191,10 @@ export function QuickPills({
                       ) : (
                         <Dot color={o.color} />
                       )}
-                      <Text className={cn("min-w-0 flex-1 text-body", selected ? "text-primary" : "text-ink")} numberOfLines={1}>
+                      <Text
+                        className={cn("min-w-0 flex-1 text-body", selected ? "text-primary" : "text-ink")}
+                        numberOfLines={1}
+                      >
                         {o.label}
                       </Text>
                       {selected ? <MyIcon name="Check" size={18} color={colors.primary} /> : null}
@@ -232,7 +236,11 @@ export function QuickPills({
                 )}
               >
                 {o.icon ? (
-                  <MyIcon name={o.icon} size={15} color={hexOrUndefined(o.color) ?? (selected ? colors.primary : colors.inkMute)} />
+                  <MyIcon
+                    name={o.icon}
+                    size={15}
+                    color={hexOrUndefined(o.color) ?? (selected ? colors.primary : colors.inkMute)}
+                  />
                 ) : (
                   <Dot color={o.color} />
                 )}
@@ -243,21 +251,23 @@ export function QuickPills({
             );
           })
         )}
-        <Pressable
-          ref={triggerRef}
-          onPress={() => !disabled && openOverlay()}
-          disabled={disabled}
-          accessibilityRole="button"
-          accessibilityLabel={viewAllLabel}
-          testID={`${testID}-view-all`}
-          className={cn(
-            "flex-row items-center gap-1.5 rounded-full border border-dashed border-border bg-surface-alt px-3.5 py-2 active:opacity-80",
-            disabled && "opacity-50",
-          )}
-        >
-          <MyIcon name="Ellipsis" size={15} color={colors.inkMute} />
-          <Text className="text-sm text-ink-mute">{viewAllLabel}</Text>
-        </Pressable>
+        {options.length > quickCount && (
+          <Pressable
+            ref={triggerRef}
+            onPress={() => !disabled && openOverlay()}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel={viewAllLabel}
+            testID={`${testID}-view-all`}
+            className={cn(
+              "flex-row items-center gap-1.5 rounded-full border border-dashed border-border bg-surface-alt px-3.5 py-2 active:opacity-80",
+              disabled && "opacity-50",
+            )}
+          >
+            <MyIcon name="Ellipsis" size={15} color={colors.inkMute} />
+            <Text className="text-sm text-ink-mute">{viewAllLabel}</Text>
+          </Pressable>
+        )}
       </View>
       {error ? <Text className="mt-1.5 text-caption text-danger">{error}</Text> : null}
     </View>
