@@ -23,7 +23,7 @@
  * be stable refs (see `EntityListItemProps`), and per-row closures are built with
  * `useCallback`, so toggling one row's selection does not re-render the others.
  */
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { memo, useCallback, useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 
@@ -56,6 +56,8 @@ function EntityListItemInner<TModel extends EntityLike>({
   onRestore,
   icons = true,
   detailsUrl,
+  detailHref,
+  selectionMode = false,
   detailsContent,
   customAction,
   itemChildren,
@@ -63,6 +65,7 @@ function EntityListItemInner<TModel extends EntityLike>({
   testID,
 }: EntityListItemProps<TModel>) {
   const { isDark } = useTheme();
+  const router = useRouter();
   const theme: ThemeName = isDark ? "dark" : "light";
   const rowTestID = testID ?? `list-item-${item.id}`;
   const [expanded, setExpanded] = useState(false);
@@ -136,7 +139,36 @@ function EntityListItemInner<TModel extends EntityLike>({
   );
 
   // ── Press target (link on web for hover URL + middle-click; plain otherwise) ──
-  const pressTarget = detailsUrl ? (
+  // Two link modes:
+  //  - detailHref: a real detail-page navigation. A normal tap navigates (Link
+  //    default); only in selection mode do we intercept to toggle selection.
+  //  - detailsUrl: the legacy "row opens the upsert modal" mode — the Link exists
+  //    for hover URL / middle-click, but a normal tap is intercepted to run onPress.
+  const navHref = detailHref ? `${detailHref}${item.id}` : undefined;
+  const pressTarget = navHref ? (
+    <Link
+      href={navHref as never}
+      asChild
+      // Always intercept the click so web does a client-side navigation instead
+      // of a full-page reload (the bare <a> href would otherwise hard-navigate).
+      onPress={(e: { preventDefault?: () => void }) => {
+        e.preventDefault?.();
+        if (selectionMode) press();
+        else router.push(navHref as never);
+      }}
+      onLongPress={longPress}
+      style={{ flex: 1, minWidth: 0 }}
+    >
+      <Pressable
+        testID={`${rowTestID}-press`}
+        onLongPress={longPress}
+        className="min-w-0 flex-1 active:opacity-80"
+        accessibilityRole="button"
+      >
+        {rowInner}
+      </Pressable>
+    </Link>
+  ) : detailsUrl ? (
     <Link
       href={`${detailsUrl}${item.id}` as never}
       asChild

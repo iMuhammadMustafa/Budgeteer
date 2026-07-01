@@ -34,7 +34,10 @@ export function ChartCard({ title, children, period, className = "", style, test
   return (
     <Card className={cn("my-1.5 gap-3", className)} style={style} testID={testID}>
       <Text variant="overline">{title}</Text>
-      {children}
+      {/* flex-1 so a chart that knows how to fill its space (e.g. BarChart's `fillHeight`) has
+          real room to grow into when a sibling card (e.g. Recent Transactions) stretches this
+          card taller than the chart's own natural content height. */}
+      <View className="flex-1">{children}</View>
       {period && (
         <View className="mt-auto flex-row items-center justify-between" testID={`${testID}-period`}>
           <IconButton

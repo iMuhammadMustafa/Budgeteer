@@ -45,6 +45,16 @@ export interface ColorPickerProps {
   disabled?: boolean;
   className?: string;
   testID?: string;
+  /**
+   * "trigger" (default) = a single row that opens the full swatch overlay.
+   * "inline" = a quick row of swatches (recent-first, then palette fill) with a
+   * trailing "View all" swatch that opens the same overlay.
+   */
+  variant?: "trigger" | "inline";
+  /** Most-recently-used hex colors, shown first in the inline quick row. */
+  recent?: string[];
+  /** How many quick swatches to show in the inline variant (default 6). */
+  quickCount?: number;
 }
 
 export function ColorPicker({
@@ -57,6 +67,9 @@ export function ColorPicker({
   disabled = false,
   className,
   testID = "color-picker",
+  variant = "trigger",
+  recent = [],
+  quickCount = 6,
 }: ColorPickerProps) {
   const { colors } = useTheme();
 
@@ -94,6 +107,25 @@ export function ColorPicker({
     ),
   });
 
+  // Inline quick row: recent hexes first, then palette fill; keep the current
+  // value present so a pick made via "View all" stays visible.
+  const quick = (() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const push = (c?: string | null) => {
+      // Only render real hex swatches inline; legacy token values (e.g. "info-100")
+      // aren't valid CSS colors and would show as a broken/empty circle.
+      if (!c || !c.startsWith("#")) return;
+      const k = c.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(c);
+    };
+    recent.forEach(push);
+    palette.forEach(push);
+    return out.slice(0, quickCount);
+  })();
+
   return (
     <View className={cn("w-full", className)}>
       {label ? (
@@ -101,29 +133,66 @@ export function ColorPicker({
           {label}
         </Text>
       ) : null}
-      <Pressable
-        ref={triggerRef}
-        onPress={() => !disabled && openOverlay()}
-        disabled={disabled}
-        accessibilityRole="button"
-        testID={testID}
-        className={cn(
-          "flex-row items-center gap-3 rounded-lg border border-border bg-surface px-3 py-3 active:opacity-90",
-          disabled && "opacity-50",
-        )}
-      >
-        <View
-          className="h-6 w-6 rounded-full border border-border"
-          style={{ backgroundColor: value ?? colors.surfaceAlt }}
-        />
-        <Text
-          className={cn("min-w-0 flex-1 font-mono text-body", value ? "text-ink" : "text-ink-faint")}
-          numberOfLines={1}
+      {variant === "inline" ? (
+        <View className="flex-row flex-wrap items-center gap-2.5">
+          {quick.map(c => {
+            const selected = !!value && c.toLowerCase() === value.toLowerCase();
+            return (
+              <Pressable
+                key={c}
+                onPress={() => !disabled && onChange(c)}
+                disabled={disabled}
+                accessibilityRole="button"
+                accessibilityLabel={c}
+                accessibilityState={{ selected }}
+                testID={`${testID}-quick-${c}`}
+                className={cn("h-9 w-9 items-center justify-center rounded-full active:opacity-80", selected && "border-2 border-ink")}
+                style={{ backgroundColor: c }}
+              >
+                {selected ? <MyIcon name="Check" size={16} color={checkColorOn(c)} /> : null}
+              </Pressable>
+            );
+          })}
+          <Pressable
+            ref={triggerRef}
+            onPress={() => !disabled && openOverlay()}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel="View all colors"
+            testID={`${testID}-view-all`}
+            className={cn(
+              "h-9 w-9 items-center justify-center rounded-full border border-dashed border-border bg-surface-alt active:opacity-80",
+              disabled && "opacity-50",
+            )}
+          >
+            <MyIcon name="Plus" size={16} color={colors.inkMute} />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          ref={triggerRef}
+          onPress={() => !disabled && openOverlay()}
+          disabled={disabled}
+          accessibilityRole="button"
+          testID={testID}
+          className={cn(
+            "flex-row items-center gap-3 rounded-lg border border-border bg-surface px-3 py-3 active:opacity-90",
+            disabled && "opacity-50",
+          )}
         >
-          {value ?? placeholder}
-        </Text>
-        <MyIcon name="ChevronDown" size={18} color={colors.inkFaint} />
-      </Pressable>
+          <View
+            className="h-6 w-6 rounded-full border border-border"
+            style={{ backgroundColor: value ?? colors.surfaceAlt }}
+          />
+          <Text
+            className={cn("min-w-0 flex-1 font-mono text-body", value ? "text-ink" : "text-ink-faint")}
+            numberOfLines={1}
+          >
+            {value ?? placeholder}
+          </Text>
+          <MyIcon name="ChevronDown" size={18} color={colors.inkFaint} />
+        </Pressable>
+      )}
     </View>
   );
 }

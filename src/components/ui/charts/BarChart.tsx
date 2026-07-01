@@ -31,6 +31,10 @@ export interface BarDatum {
 export interface BarChartProps {
   data: BarDatum[];
   height?: number;
+  /** Grow to fill the available vertical space (e.g. a card stretched taller by a sibling)
+   * instead of a fixed `height`. Measures its own box via onLayout; `height` is used only as
+   * the initial value before the first measurement lands. */
+  fillHeight?: boolean;
   color?: string;
   showValues?: boolean;
   /** Show the y-axis gridlines + value labels (default true). */
@@ -61,6 +65,7 @@ export interface BarChartProps {
 export function BarChart({
   data,
   height = 160,
+  fillHeight = false,
   color,
   showValues = false,
   showAxis = true,
@@ -84,11 +89,14 @@ export function BarChart({
   const { colors } = useTheme();
   const [internalSel, setInternalSel] = useState<number | null>(null);
   const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  const [measuredHeight, setMeasuredHeight] = useState(0);
 
   useEffect(() => {
     if (animated) Animated.timing(grow, { toValue: 1, duration: 480, useNativeDriver: false }).start();
   }, [animated, grow]);
 
+  // Before the first onLayout fires (or when fillHeight is off), fall back to the fixed `height`.
+  const effectiveHeight = fillHeight ? measuredHeight || height : height;
   const max = Math.max(0, ...data.map(d => d.value));
   const fmt = formatValue ?? ((n: number) => String(n));
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
@@ -106,7 +114,8 @@ export function BarChart({
         className={className}
         testID={testID}
         skeletonBars={skeletonBars}
-        height={height}
+        height={effectiveHeight}
+        fillHeight={fillHeight}
         color={color}
       />
     );
@@ -117,15 +126,18 @@ export function BarChart({
     if (selectedIndex === undefined) setInternalSel(prev => (prev === i ? null : i));
     onBarPress?.(d, i);
   };
-  const plot = showValues ? height - 18 : height;
+  const plot = showValues ? effectiveHeight - 18 : effectiveHeight;
 
   return (
-    <View testID={testID} className={cn("w-full", className)}>
-      <View style={{ height }}>
+    <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
+      <View
+        style={fillHeight ? { flex: 1 } : { height: effectiveHeight }}
+        onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+      >
         {showAxis ? (
           <YGrid
             scale={scale}
-            height={height}
+            height={effectiveHeight}
             n={data.length}
             leftPad={leftPad}
             axisLine={showYAxis}
@@ -133,7 +145,7 @@ export function BarChart({
             showXGrid={showXGrid}
           />
         ) : null}
-        <View className="flex-row items-end gap-2" style={{ height, paddingLeft: leftPad }}>
+        <View className="flex-row items-end gap-2" style={{ height: effectiveHeight, paddingLeft: leftPad }}>
           {data.map((d, i) => {
             const h = Math.max(2, (d.value / scaleMax) * plot);
             const barHeight = animated ? grow.interpolate({ inputRange: [0, 1], outputRange: [2, h] }) : h;
@@ -152,7 +164,7 @@ export function BarChart({
                 colors={colors}
                 barHeight={barHeight}
                 testID={testID}
-                height={height}
+                height={effectiveHeight}
               />
             );
           })}
@@ -167,6 +179,7 @@ export function BarChartSkeleton({
   skeletonBars,
   length,
   height = 160,
+  fillHeight = false,
   color,
   isEmpty = false,
   emptyTitle = "No data for this period",
@@ -179,6 +192,7 @@ export function BarChartSkeleton({
   skeletonBars?: number;
   length?: number;
   height?: number;
+  fillHeight?: boolean;
   color?: string;
   isEmpty?: boolean;
   emptyTitle?: string;
@@ -189,25 +203,31 @@ export function BarChartSkeleton({
   showAxis?: boolean;
 }) {
   const { colors } = useTheme();
+  const [measuredHeight, setMeasuredHeight] = useState(0);
   const n = skeletonBars ?? (length || 7);
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
+  const effectiveHeight = fillHeight ? measuredHeight || height : height;
 
   return (
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
-      <View testID={testID} className={cn("w-full", className)}>
-        <View className="flex-row items-end gap-2" style={{ height, paddingLeft: leftPad }}>
+      <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
+        <View
+          className="flex-row items-end gap-2"
+          style={fillHeight ? { flex: 1, paddingLeft: leftPad } : { height: effectiveHeight, paddingLeft: leftPad }}
+          onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+        >
           <YGrid
             scale={buildScale(0, n, "nice", 2)}
-            height={height}
+            height={effectiveHeight}
             axisLine={showAxis}
             showYGrid={false}
             showLabels={false}
           />
           {Array.from({ length: n }).map((_, i) => (
-            <View key={i} className="flex-1 items-center justify-end" style={{ height }}>
+            <View key={i} className="flex-1 items-center justify-end" style={{ height: effectiveHeight }}>
               <View
                 style={{
-                  height: Math.max(2, SKELETON_HEIGHTS[i % SKELETON_HEIGHTS.length] * height),
+                  height: Math.max(2, SKELETON_HEIGHTS[i % SKELETON_HEIGHTS.length] * effectiveHeight),
                   width: BAR_WIDTH,
                   backgroundColor: color ?? colors.primary,
                   opacity: 0.3,

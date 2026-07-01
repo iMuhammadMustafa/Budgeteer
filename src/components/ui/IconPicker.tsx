@@ -102,6 +102,16 @@ export interface IconPickerProps {
   disabled?: boolean;
   className?: string;
   testID?: string;
+  /**
+   * "trigger" (default) = a single row that opens the full picker overlay.
+   * "inline" = a quick row of selectable tiles (recent-first, then curated fill)
+   * with a trailing "View all" tile that opens the same overlay.
+   */
+  variant?: "trigger" | "inline";
+  /** Most-recently-used icon names, shown first in the inline quick row. */
+  recent?: string[];
+  /** How many quick tiles to show in the inline variant (default 8). */
+  quickCount?: number;
 }
 
 export function IconPicker({
@@ -116,6 +126,9 @@ export function IconPicker({
   disabled = false,
   className,
   testID = "icon-picker",
+  variant = "trigger",
+  recent = [],
+  quickCount = 8,
 }: IconPickerProps) {
   const { colors } = useTheme();
   const [query, setQuery] = useState("");
@@ -189,6 +202,22 @@ export function IconPicker({
     ),
   });
 
+  // Inline quick row: recent picks first, then curated fill. The row stays STABLE
+  // as you select (the current value is only highlighted, never reordered to the
+  // front) — recents are updated on form submit, not on every tap.
+  const quick = (() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const push = (n?: string | null) => {
+      if (!n || seen.has(n)) return;
+      seen.add(n);
+      out.push(n);
+    };
+    recent.forEach(push);
+    icons.forEach(push);
+    return out.slice(0, quickCount);
+  })();
+
   return (
     <View className={cn("w-full", className)}>
       {label ? (
@@ -196,25 +225,64 @@ export function IconPicker({
           {label}
         </Text>
       ) : null}
-      <Pressable
-        ref={triggerRef}
-        onPress={() => !disabled && openOverlay()}
-        disabled={disabled}
-        accessibilityRole="button"
-        testID={testID}
-        className={cn(
-          "flex-row items-center gap-3 rounded-lg border border-border bg-surface px-3 py-3 active:opacity-90",
-          disabled && "opacity-50",
-        )}
-      >
-        <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
-          <MyIcon name={value || "Image"} size={18} color={value ? (color ?? colors.inkMute) : colors.inkFaint} />
+      {variant === "inline" ? (
+        <View className="flex-row flex-wrap gap-2">
+          {quick.map(name => {
+            const selected = name === value;
+            return (
+              <Pressable
+                key={name}
+                onPress={() => !disabled && onChange(name)}
+                disabled={disabled}
+                accessibilityRole="button"
+                accessibilityLabel={name}
+                accessibilityState={{ selected }}
+                testID={`${testID}-quick-${name}`}
+                className={cn(
+                  "h-11 w-11 items-center justify-center rounded-xl border active:opacity-80",
+                  selected ? "border-primary bg-primary-soft" : "border-border bg-surface",
+                )}
+              >
+                <MyIcon name={name} size={20} color={selected ? colors.primary : (color ?? colors.inkMute)} />
+              </Pressable>
+            );
+          })}
+          <Pressable
+            ref={triggerRef}
+            onPress={() => !disabled && openOverlay()}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel="View all icons"
+            testID={`${testID}-view-all`}
+            className={cn(
+              "h-11 items-center justify-center rounded-xl border border-dashed border-border bg-surface-alt px-3 active:opacity-80",
+              disabled && "opacity-50",
+            )}
+          >
+            <Text className="text-caption text-ink-mute">View all</Text>
+          </Pressable>
         </View>
-        <Text className={cn("min-w-0 flex-1 text-body", value ? "text-ink" : "text-ink-faint")} numberOfLines={1}>
-          {value ?? placeholder}
-        </Text>
-        <MyIcon name="ChevronDown" size={18} color={colors.inkFaint} />
-      </Pressable>
+      ) : (
+        <Pressable
+          ref={triggerRef}
+          onPress={() => !disabled && openOverlay()}
+          disabled={disabled}
+          accessibilityRole="button"
+          testID={testID}
+          className={cn(
+            "flex-row items-center gap-3 rounded-lg border border-border bg-surface px-3 py-3 active:opacity-90",
+            disabled && "opacity-50",
+          )}
+        >
+          <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
+            <MyIcon name={value || "Image"} size={18} color={value ? (color ?? colors.inkMute) : colors.inkFaint} />
+          </View>
+          <Text className={cn("min-w-0 flex-1 text-body", value ? "text-ink" : "text-ink-faint")} numberOfLines={1}>
+            {value ?? placeholder}
+          </Text>
+          <MyIcon name="ChevronDown" size={18} color={colors.inkFaint} />
+        </Pressable>
+      )}
     </View>
   );
 }
