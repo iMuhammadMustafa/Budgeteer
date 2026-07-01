@@ -1,6 +1,5 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Animated, { FadeInRight } from "react-native-reanimated";
-import Button from "../elements/Button";
 
 export default function ModeCard({
   icon,
@@ -23,13 +22,11 @@ export default function ModeCard({
 }) {
   return (
     <Animated.View entering={FadeInRight.delay(enterDelay).duration(480).springify()}>
-      <Button
-        variant="ghost"
-        size="lg"
-        hapticFeedback="light"
-        testID={testID}
+      <Pressable
         onPress={onPress}
-        className="bg-mode-card-bg/95 border border-mode-card-border/[0.08] rounded-[18px] py-[18px] px-5 flex-row items-center gap-4"
+        accessibilityRole="button"
+        testID={testID}
+        className="bg-mode-card-bg/95 border border-mode-card-border/[0.08] rounded-[18px] py-[18px] px-5 flex-row items-center gap-4 active:opacity-70"
       >
         <View
           style={{
@@ -61,7 +58,7 @@ export default function ModeCard({
         >
           <Text style={{ fontSize: 16, color: accent, fontWeight: "700" }}>›</Text>
         </View>
-      </Button>
+      </Pressable>
     </Animated.View>
   );
 }

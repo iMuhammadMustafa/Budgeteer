@@ -1,4 +1,3 @@
-import GridPattern from "@/src/components/GridPattern";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import dayjs from "dayjs";
 import { useMemo } from "react";
@@ -48,7 +47,6 @@ export default function DashboardIndex() {
 
   return (
     <SafeAreaView className="flex-1">
-      <GridPattern />
       <ScrollView
         className="flex-1"
         contentContainerClassName="p-4 gap-4 w-full self-center"

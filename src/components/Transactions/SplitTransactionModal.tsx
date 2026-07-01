@@ -5,11 +5,16 @@ import { Inserts, Transaction, TransactionCategory, TransactionsView } from "@/s
 import { getAmountMode, roundToCents } from "@/src/utils/amount.helper";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
-import AmountInput from "../elements/AmountInput";
-import { Button, IconButton , Text as ThemedText } from "@/src/components/ui";
-import { MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
-import MyModal from "../elements/MyModal";
+import { ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import {
+  Button,
+  Dialog,
+  GroupedInput,
+  IconButton,
+  MyCategoriesDropdown,
+  Sheet,
+  Text as ThemedText,
+} from "@/src/components/ui";
 
 type SplitChildInsert = Inserts<TableNames.Transactions>;
 
@@ -48,12 +53,13 @@ const buildInitialSplits = (originalAmount: number, baseName: string | null | un
 
 export default function SplitTransactionModal({
   isOpen,
-  setIsOpen,
   onClose,
   onSuccess,
   transaction,
   categories,
 }: SplitTransactionModalProps) {
+  const { width } = useWindowDimensions();
+  const useSheet = width < 768;
   const transactionService = useTransactionService();
   const splitMutation = transactionService.useSplitTransaction();
   const transactionItemService = useTransactionItemService();
@@ -150,9 +156,8 @@ export default function SplitTransactionModal({
 
   if (!transaction || !categories || !isOpen) return null;
 
-  return (
-    <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={onClose} title="Split Transaction">
-      <View className="p-4 flex-1">
+  const content = (
+    <View className="p-4">
         <View className="bg-card rounded-md p-3 mb-2 gap-2">
           <View className="flex-row justify-between items-center">
             <ThemedText variant="label" className="font-bold">
@@ -197,10 +202,11 @@ export default function SplitTransactionModal({
                   isModal
                 />
               </View>
-              <AmountInput
+              <GroupedInput
                 amount={item.amount ?? 0}
                 onChange={val => updateSplit(index, "amount", roundToCents(val))}
-                testID={`input-split-amount-${index}`}
+                showCalculator={false}
+                inputTestID={`input-split-amount-${index}`}
               />
             </View>
           ))}
@@ -226,6 +232,15 @@ export default function SplitTransactionModal({
           />
         </View>
       </View>
-    </MyModal>
+  );
+
+  return useSheet ? (
+    <Sheet visible={isOpen} onClose={onClose} title="Split Transaction" scrollable={false}>
+      {content}
+    </Sheet>
+  ) : (
+    <Dialog visible={isOpen} onClose={onClose} title="Split Transaction" size="lg" scrollable={false}>
+      {content}
+    </Dialog>
   );
 }

@@ -1,0 +1,136 @@
+import { Text as ThemedText } from "@/src/components/ui";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { Recurring } from "@/src/types/database/Tables.Types";
+import dayjs from "dayjs";
+import { View } from "react-native";
+
+interface RecurringStatusBadgesProps {
+  recurring: any;
+  className?: string;
+}
+
+export const RecurringDetails = ({ item }: { item: Recurring }) => {
+  const autoApplyEnabled = item.autoapplyenabled || false;
+  const isAmountFlexible = item.isamountflexible || false;
+  const isDateFlexible = item.isdateflexible || false;
+  const recurringType = item.recurringtype || "Standard";
+  const intervalMonths = item.intervalmonths || 1;
+
+  let details = "";
+
+  // Show next occurrence or flexible date indicator
+  if (isDateFlexible && isAmountFlexible) {
+    details += "Fully Flexible (Date & Amount)";
+  } else if (isDateFlexible) {
+    details += "Flexible Date";
+  } else {
+    details += `Next: ${dayjs(item.nextoccurrencedate).format("MMM DD, YYYY")}`;
+  }
+
+  // Show amount or flexible amount indicator (only if not already shown as fully flexible)
+  if (!isDateFlexible || !isAmountFlexible) {
+    if (isAmountFlexible) {
+      details += " | Flexible Amount";
+    } else {
+      details += ` | Amount: ${item.amount} ${item.currencycode}`;
+    }
+  }
+
+  // Show recurring type if not standard
+  if (recurringType !== "Standard") {
+    details += ` | ${recurringType}`;
+  }
+
+  // Show auto-apply status
+  if (autoApplyEnabled) {
+    details += " | Auto-Apply";
+  }
+
+  // Show custom interval if not monthly
+  if (intervalMonths > 1) {
+    details += ` | Every ${intervalMonths} months`;
+  }
+
+  return (
+    <>
+      <ThemedText variant="caption" className="mb-2">
+        {details}
+      </ThemedText>
+      <RecurringStatusBadges recurring={item} />
+    </>
+  );
+};
+
+export function RecurringStatusBadges({ recurring, className = "" }: RecurringStatusBadgesProps) {
+  const autoApplyEnabled = recurring.autoapplyenabled || false;
+  const isAmountFlexible = recurring.isamountflexible || false;
+  const isDateFlexible = recurring.isdateflexible || false;
+  const recurringType = recurring.recurringtype || "Standard";
+
+  return (
+    <View className={`flex-row flex-wrap gap-1 ${className}`}>
+      {/* Auto-Apply Badge */}
+      {autoApplyEnabled && (
+        <View className="bg-status-success-subtle px-2 py-0.5 rounded-full flex-row items-center">
+          <MyIcon name="Zap" size={12} className="text-status-success mr-1" />
+          <ThemedText variant="caption" className="text-status-success font-medium">
+            Auto
+          </ThemedText>
+        </View>
+      )}
+
+      {/* Recurring Type Badge */}
+      {recurringType !== "Standard" && (
+        <View
+          className={`px-2 py-0.5 rounded-full flex-row items-center ${
+            recurringType === "Transfer" ? "bg-status-info-subtle" : "bg-primary/10"
+          }`}
+        >
+          <MyIcon
+            name={recurringType === "Transfer" ? "ArrowLeftRight" : "CreditCard"}
+            size={12}
+            className={`mr-1 ${recurringType === "Transfer" ? "text-status-info" : "text-primary"}`}
+          />
+          <ThemedText
+            variant="caption"
+            className={`font-medium ${recurringType === "Transfer" ? "text-status-info" : "text-primary"}`}
+          >
+            {recurringType === "CreditCardPayment" ? "CC Pay" : recurringType}
+          </ThemedText>
+        </View>
+      )}
+
+      {/* Flexible Amount Badge */}
+      {isAmountFlexible && (
+        <View className="bg-status-warning-subtle px-2 py-0.5 rounded-full flex-row items-center">
+          <MyIcon name="DollarSign" size={12} className="text-status-warning mr-1" />
+          <ThemedText variant="caption" className="text-status-warning font-medium">
+            Flex $
+          </ThemedText>
+        </View>
+      )}
+
+      {/* Flexible Date Badge */}
+      {isDateFlexible && (
+        <View className="bg-status-warning-subtle px-2 py-0.5 rounded-full flex-row items-center">
+          <MyIcon name="Calendar" size={12} className="text-status-warning mr-1" />
+          <ThemedText variant="caption" className="text-status-warning font-medium">
+            Flex Date
+          </ThemedText>
+        </View>
+      )}
+
+      {/* Inactive Badge */}
+      {!recurring.isactive && (
+        <View className="bg-muted px-2 py-0.5 rounded-full flex-row items-center">
+          <MyIcon name="Pause" size={12} className="text-text-secondary mr-1" />
+          <ThemedText variant="caption" className="font-medium">
+            Inactive
+          </ThemedText>
+        </View>
+      )}
+    </View>
+  );
+}
+
+export default RecurringStatusBadges;

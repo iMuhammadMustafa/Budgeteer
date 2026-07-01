@@ -1,5 +1,4 @@
-import SkeletonList from "@/src/components/elements/SkeletonList";
-import GridPattern from "@/src/components/GridPattern";
+import { SkeletonGroup } from "@/src/components/ui";
 import ActiveFilters from "@/src/components/Transactions/ActiveFilters";
 import BatchActionConfirmModal from "@/src/components/Transactions/BatchActionConfirmModal";
 import BatchUpdateModal from "@/src/components/Transactions/BatchUpdateModal";
@@ -56,7 +55,6 @@ export default function Transactions() {
 
   return (
     <>
-      <GridPattern />
       <TransactionsPageHeader
         selectedTransactions={selectedTransactions}
         selectedSum={selectedSum}
@@ -89,7 +87,7 @@ export default function Transactions() {
       />
 
       {isLoading ? (
-        <SkeletonList length={5} customSkeleton={<DaySkeleton />} />
+        <SkeletonGroup count={5} renderRow={() => <DaySkeleton />} />
       ) : (
         <FlatList
           data={days}

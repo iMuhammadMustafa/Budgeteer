@@ -1,17 +1,38 @@
-import AmountInput from "@/src/components/elements/AmountInput";
-import { Button, IconButton } from "@/src/components/ui";
-import { AccountSelecterDropdown } from "@/src/components/elements/dropdown/DropdownField";
-import MyModal from "@/src/components/elements/MyModal";
+import { AccountSelecterDropdown, Button, Dialog, GroupedInput, IconButton, MyTab, Sheet } from "@/src/components/ui";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
-import { MyTab } from "@/src/components/ui";
 import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
-import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { type ReactNode, useState } from "react";
+import { ActivityIndicator, Text, useWindowDimensions, View } from "react-native";
+
+/** Renders Sheet on narrow screens, Dialog on wide ones. */
+function OverlayWrapper({
+  visible,
+  onClose,
+  title,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+}) {
+  const { width } = useWindowDimensions();
+  const useSheet = width < 768;
+  return useSheet ? (
+    <Sheet visible={visible} onClose={onClose} title={title} scrollable={false}>
+      {children}
+    </Sheet>
+  ) : (
+    <Dialog visible={visible} onClose={onClose} title={title} size="lg" scrollable={false}>
+      {children}
+    </Dialog>
+  );
+}
 
 export default function AccountsIndex() {
   const accountService = useAccountService();
@@ -108,19 +129,17 @@ export default function AccountsIndex() {
           isCreating={isCreating}
         />
       )}
-      {bucketsModal.open && bucketsModal.account && (
-        <MyModal
-          isOpen={bucketsModal.open}
-          setIsOpen={(open: boolean) => setBucketsModal({ open, account: open ? bucketsModal.account : null })}
-        >
+      <OverlayWrapper
+        visible={bucketsModal.open && !!bucketsModal.account}
+        onClose={() => setBucketsModal({ open: false, account: null })}
+        title={bucketsModal.account ? `${bucketsModal.account.name} - Savings Buckets` : "Savings Buckets"}
+      >
+        {bucketsModal.account && (
           <View className="p-2">
-            <Text className="text-lg font-bold px-4 pb-2 text-foreground">
-              {bucketsModal.account.name} - Savings Buckets
-            </Text>
             <SavingsBucketsList accountId={bucketsModal.account.id} accountBalance={bucketsModal.account.balance} />
           </View>
-        </MyModal>
-      )}
+        )}
+      </OverlayWrapper>
     </>
   );
 }
@@ -171,45 +190,50 @@ const AccountTransferModal = ({
   handleTransfer: () => void;
   isCreating: boolean;
 }) => {
-  return (
-    <MyModal
-      isOpen={modalState.open}
-      setIsOpen={(open: boolean) => setModalState({ open, account: open ? modalState.account : null })}
-    >
-      <View className="p-4">
-        <Text className="text-lg font-bold">Transfer to {modalState.account?.name}</Text>
+  const handleClose = () => setModalState({ open: false, account: null });
 
-        <View className="flex-row gap-2 my-2">
-          <AmountInput
-            testID="transfer-amount-input"
-            placeholder="Amount"
-            amount={amount}
-            mode="plus"
-            allowNegativeFlip={false}
-            onChange={setAmount}
-            className="flex-1"
-          />
-          <AccountSelecterDropdown
-            label="Source"
-            selectedValue={sourceAccountId}
-            onSelect={item => setSourceAccountId(item?.id ?? null)}
-            accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
-            isModal={true}
-            groupBy="group"
-          />
-        </View>
-
-        <View className="flex-row gap-4">
-          <Button
-            testID="transfer-submit-btn"
-            label={isCreating ? "Transferring..." : "Submit Transfer"}
-            onPress={handleTransfer}
-            disabled={!(!!sourceAccountId && !!amount && !isNaN(Number(amount)))}
-            className="flex-1"
-          />
-        </View>
+  const content = (
+    <View className="p-4">
+      <View className="flex-row gap-2 my-2">
+        <GroupedInput
+          inputTestID="transfer-amount-input"
+          placeholder="Amount"
+          amount={amount}
+          mode="plus"
+          allowNegativeFlip={false}
+          onChange={setAmount}
+          className="flex-1"
+        />
+        <AccountSelecterDropdown
+          label="Source"
+          selectedValue={sourceAccountId}
+          onSelect={item => setSourceAccountId(item?.id ?? null)}
+          accounts={accounts?.filter(acc => acc.id !== modalState.account?.id)}
+          isModal={true}
+          groupBy="group"
+        />
       </View>
-    </MyModal>
+
+      <View className="flex-row gap-4">
+        <Button
+          testID="transfer-submit-btn"
+          label={isCreating ? "Transferring..." : "Submit Transfer"}
+          onPress={handleTransfer}
+          disabled={!(!!sourceAccountId && !!amount && !isNaN(Number(amount)))}
+          className="flex-1"
+        />
+      </View>
+    </View>
+  );
+
+  return (
+    <OverlayWrapper
+      visible={modalState.open}
+      onClose={handleClose}
+      title={`Transfer to ${modalState.account?.name ?? ""}`}
+    >
+      {content}
+    </OverlayWrapper>
   );
 };
 

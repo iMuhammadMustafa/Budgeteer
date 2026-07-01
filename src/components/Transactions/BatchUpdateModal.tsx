@@ -1,14 +1,18 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { View } from "react-native";
-import { Button , Text as ThemedText } from "@/src/components/ui";
-import LegacyButton from "../elements/Button";
-import { AccountSelecterDropdown, MyCategoriesDropdown } from "../elements/dropdown/DropdownField";
-import MyDateTimePicker from "../elements/MyDateTimePicker";
+import { Pressable, useWindowDimensions, View } from "react-native";
+import {
+    AccountSelecterDropdown,
+    Button,
+    DateTimePicker,
+    Dialog,
+    MyCategoriesDropdown,
+    Sheet,
+    Switch,
+    Text as ThemedText,
+} from "@/src/components/ui";
 import MyIcon from "../elements/MyIcon";
-import MyModal from "../elements/MyModal";
-import ThemedSwitch from "../elements/ThemedSwitch";
 
 export interface BatchUpdatePayload {
     date?: string;
@@ -40,14 +44,17 @@ export default function BatchUpdateModal({
     categories,
     onUpdate,
 }: BatchUpdateModalProps) {
+    const { width } = useWindowDimensions();
+    const useSheet = width < 768;
+
     // Toggle states for each update option
     const [enableDate, setEnableDate] = useState(false);
     const [enableAccount, setEnableAccount] = useState(false);
     const [enableCategory, setEnableCategory] = useState(false);
     const [enableVoid, setEnableVoid] = useState(false);
 
-    // Values for each update option
-    const [newDate, setNewDate] = useState<dayjs.Dayjs | null>(dayjs());
+    // Values for each update option — date stored as ISO string for DateTimePicker
+    const [newDate, setNewDate] = useState<string | null>(dayjs().toISOString());
     const [newAccountId, setNewAccountId] = useState<string | null>(null);
     const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
     const [newVoidStatus, setNewVoidStatus] = useState(false);
@@ -57,7 +64,7 @@ export default function BatchUpdateModal({
         setEnableAccount(false);
         setEnableCategory(false);
         setEnableVoid(false);
-        setNewDate(dayjs());
+        setNewDate(dayjs().toISOString());
         setNewAccountId(null);
         setNewCategoryId(null);
         setNewVoidStatus(false);
@@ -82,7 +89,7 @@ export default function BatchUpdateModal({
         const parts: string[] = [];
 
         if (enableDate && newDate) {
-            parts.push(`Date → ${newDate.format("MMM DD, YYYY")}`);
+            parts.push(`Date → ${dayjs(newDate).format("MMM DD, YYYY")}`);
         }
 
         if (enableAccount && newAccountId) {
@@ -106,7 +113,7 @@ export default function BatchUpdateModal({
         const updates: BatchUpdatePayload = {};
 
         if (enableDate && newDate) {
-            updates.date = newDate.toISOString();
+            updates.date = newDate;
         }
 
         if (enableAccount && newAccountId) {
@@ -127,89 +134,98 @@ export default function BatchUpdateModal({
         setIsOpen(false);
     };
 
-    return (
-        <MyModal isOpen={isOpen} setIsOpen={setIsOpen} onClose={handleClose} title="Batch Update">
-            <View className="p-4">
-                {/* Header info */}
-                <View className="bg-card rounded-md p-3 mb-4">
-                    <ThemedText variant="label">
-                        {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
-                    </ThemedText>
-                </View>
-
-                {/* Date Update Option */}
-                <UpdateOptionRow
-                    label="Update Date"
-                    enabled={enableDate}
-                    onToggle={setEnableDate}
-                >
-                    <MyDateTimePicker
-                        label=""
-                        date={newDate}
-                        onChange={dateStr => setNewDate(dateStr ? dayjs(dateStr) : null)}
-                        isModal={true}
-                    />
-                </UpdateOptionRow>
-
-                {/* Account Update Option */}
-                <UpdateOptionRow
-                    label="Update Account"
-                    enabled={enableAccount}
-                    onToggle={setEnableAccount}
-                >
-                    <AccountSelecterDropdown
-                        label=""
-                        selectedValue={newAccountId}
-                        onSelect={item => setNewAccountId(item?.id ?? null)}
-                        accounts={accounts}
-                        isModal={true}
-                        groupBy="category"
-                    />
-                </UpdateOptionRow>
-
-                {/* Category Update Option */}
-                <UpdateOptionRow
-                    label="Update Category"
-                    enabled={enableCategory}
-                    onToggle={setEnableCategory}
-                >
-                    <MyCategoriesDropdown
-                        selectedValue={newCategoryId}
-                        categories={categories}
-                        onSelect={item => setNewCategoryId(item?.id ?? null)}
-                        isModal={true}
-                        label=""
-                    />
-                </UpdateOptionRow>
-
-                {/* Void Update Option */}
-                <UpdateOptionRow
-                    label="Update Void Status"
-                    enabled={enableVoid}
-                    onToggle={setEnableVoid}
-                >
-                    <View className="flex-row items-center justify-between py-2">
-                        <ThemedText>{newVoidStatus ? "Void" : "Active"}</ThemedText>
-                        <ThemedSwitch
-                            value={newVoidStatus}
-                            onValueChange={setNewVoidStatus}
-                            testID="switch-void-status"
-                        />
-                    </View>
-                </UpdateOptionRow>
-
-                {/* Action Buttons */}
-                <View className="flex-row justify-end gap-2 mt-4">
-                    <Button variant="outline" onPress={handleClose} label="Cancel" />
-                    <Button
-                        variant="primary"
-                        onPress={handleApply}
-                        disabled={!isValid()}
-                        label="Apply Updates"
-                    />
-                </View>
+    const content = (
+        <View className="p-4">
+            {/* Header info */}
+            <View className="bg-card rounded-md p-3 mb-4">
+                <ThemedText variant="label">
+                    {selectedTransactions.length} transaction{selectedTransactions.length > 1 ? "s" : ""} selected
+                </ThemedText>
             </View>
-        </MyModal>
+
+            {/* Date Update Option */}
+            <UpdateOptionRow
+                label="Update Date"
+                enabled={enableDate}
+                onToggle={setEnableDate}
+            >
+                <DateTimePicker
+                    label=""
+                    value={newDate}
+                    onChange={setNewDate}
+                    withTime={false}
+                    present="sheet"
+                />
+            </UpdateOptionRow>
+
+            {/* Account Update Option */}
+            <UpdateOptionRow
+                label="Update Account"
+                enabled={enableAccount}
+                onToggle={setEnableAccount}
+            >
+                <AccountSelecterDropdown
+                    label=""
+                    selectedValue={newAccountId}
+                    onSelect={item => setNewAccountId(item?.id ?? null)}
+                    accounts={accounts}
+                    isModal={true}
+                    groupBy="category"
+                />
+            </UpdateOptionRow>
+
+            {/* Category Update Option */}
+            <UpdateOptionRow
+                label="Update Category"
+                enabled={enableCategory}
+                onToggle={setEnableCategory}
+            >
+                <MyCategoriesDropdown
+                    selectedValue={newCategoryId}
+                    categories={categories}
+                    onSelect={item => setNewCategoryId(item?.id ?? null)}
+                    isModal={true}
+                    label=""
+                />
+            </UpdateOptionRow>
+
+            {/* Void Update Option */}
+            <UpdateOptionRow
+                label="Update Void Status"
+                enabled={enableVoid}
+                onToggle={setEnableVoid}
+            >
+                <View className="flex-row items-center justify-between py-2">
+                    <ThemedText>{newVoidStatus ? "Void" : "Active"}</ThemedText>
+                    <Switch
+                        value={newVoidStatus}
+                        onValueChange={setNewVoidStatus}
+                        testID="switch-void-status"
+                    />
+                </View>
+            </UpdateOptionRow>
+
+            {/* Action Buttons */}
+            <View className="flex-row justify-end gap-2 mt-4">
+                <Button variant="outline" onPress={handleClose} label="Cancel" />
+                <Button
+                    variant="primary"
+                    onPress={handleApply}
+                    disabled={!isValid()}
+                    label="Apply Updates"
+                />
+            </View>
+        </View>
+    );
+
+    return useSheet ? (
+        <Sheet visible={isOpen} onClose={handleClose} title="Batch Update">
+            {content}
+        </Sheet>
+    ) : (
+        <Dialog visible={isOpen} onClose={handleClose} title="Batch Update" size="lg">
+            {content}
+        </Dialog>
     );
 }
 
@@ -224,10 +240,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
     return (
         <View className="mb-4 border border-border-default rounded-md overflow-hidden">
             {/* Toggle Header */}
-            <LegacyButton
-                variant="ghost"
-                size="md"
-                hapticFeedback="selection"
+            <Pressable
                 onPress={() => onToggle(!enabled)}
                 className={`flex-row p-3 rounded-none items-center justify-start ${enabled ? "bg-surface-elevated" : "bg-card"}`}
                 testID={`btn-toggle-${label.toLowerCase().replace(/\s+/g, "-")}`}
@@ -239,8 +252,7 @@ function UpdateOptionRow({ label, enabled, onToggle, children }: UpdateOptionRow
                     {enabled && <MyIcon name="Check" size={14} className="text-white" />}
                 </View>
                 <ThemedText variant="label">{label}</ThemedText>
-
-            </LegacyButton>
+            </Pressable>
 
             {/* Content - only shown when enabled */}
             {enabled && (

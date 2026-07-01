@@ -1,4 +1,4 @@
-import TransactionFormSkeleton from "@/src/components/elements/TransactionFormSkeleton";
+import TransactionFormSkeleton from "@/src/components/forms/TransactionFormSkeleton";
 import MultipleTransactions from "@/src/components/forms/MultipleTransactions";
 import TransactionForm, { initialTransactionState, TransactionFormType } from "@/src/components/forms/TransactionForm";
 import { SecondaryTabBar } from "@/src/components/ui";

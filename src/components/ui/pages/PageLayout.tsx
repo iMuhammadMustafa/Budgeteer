@@ -13,6 +13,7 @@ interface PageLayoutProps {
   className?: string;
   backHref?: string;
   testID?: string;
+  end?: ReactNode;
 }
 
 export default function PageLayout({
@@ -24,6 +25,7 @@ export default function PageLayout({
   className,
   backHref,
   testID = "page-header",
+  end,
 }: PageLayoutProps) {
   return (
     <>
@@ -43,6 +45,7 @@ export default function PageLayout({
             className={className}
             backHref={backHref}
             testID={testID}
+            end={end}
           />
         )}
 

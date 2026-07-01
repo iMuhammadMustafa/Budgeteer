@@ -120,11 +120,28 @@ export type AccentSwatch = { fg: string; soft: string };
 
 /** Semantic pins: well-known category labels → accent-palette index (kept on-message). */
 const ACCENT_SEMANTIC: Record<string, number> = {
-  income: 5, salary: 5, wage: 5, savings: 5, water: 5,
-  expense: 1, rent: 1, groceries: 1, mortgage: 1,
-  transfer: 2, car: 2, clothing: 2, transport: 2,
-  bills: 3, electricity: 3, gas: 3, utilities: 3, hobbies: 3,
-  entertainment: 4, dining: 4, "dining out": 4, subscriptions: 4,
+  income: 5,
+  salary: 5,
+  wage: 5,
+  savings: 5,
+  water: 5,
+  expense: 1,
+  rent: 1,
+  groceries: 1,
+  mortgage: 1,
+  transfer: 2,
+  car: 2,
+  clothing: 2,
+  transport: 2,
+  bills: 3,
+  electricity: 3,
+  gas: 3,
+  utilities: 3,
+  hobbies: 3,
+  entertainment: 4,
+  dining: 4,
+  "dining out": 4,
+  subscriptions: 4,
   fuel: 8,
   other: 9,
 };
@@ -147,8 +164,7 @@ const accentIndexFor = (label: string): number => {
 };
 
 /** Resolve a label's accent swatch (fg + soft) for a theme — for chips/tiles/pickers. */
-export const accentFor = (label: string, theme: ThemeName): AccentSwatch =>
-  accentPalette[theme][accentIndexFor(label)];
+export const accentFor = (label: string, theme: ThemeName): AccentSwatch => accentPalette[theme][accentIndexFor(label)];
 
 /**
  * Find the accent swatch matching a hex color stored in the DB (picked via ColorPicker,
@@ -198,7 +214,15 @@ export const radii = {
 
 /** 4pt spacing scale (matches Tailwind's default gap / padding rhythm). */
 export const spacing = {
-  1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48,
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 20,
+  6: 24,
+  8: 32,
+  10: 40,
+  12: 48,
 } as const;
 
 export const typography = {
@@ -284,7 +308,7 @@ const VAR_NAME: Record<ColorToken, string> = {
 export const themeVars = (theme: ThemeName): Record<string, string> => {
   const colors = palette[theme];
   const out: Record<string, string> = {};
-  (Object.keys(colors) as ColorToken[]).forEach((key) => {
+  (Object.keys(colors) as ColorToken[]).forEach(key => {
     out[VAR_NAME[key]] = hexToRgbChannels(colors[key]);
   });
   return out;

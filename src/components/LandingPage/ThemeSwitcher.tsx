@@ -1,16 +1,13 @@
-import { Text, View } from "react-native";
-import Button from "../elements/Button";
+import { Pressable, Text, View } from "react-native";
 import { makeShadow } from "./Shared";
 
 export default function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      hapticFeedback="selection"
+    <Pressable
       onPress={onToggle}
       accessibilityLabel="Toggle theme"
-      className="flex-row items-center gap-[7px] bg-toggle-bg/[0.07] border border-toggle-border/[0.12] rounded-[20px] py-[5px] pl-2 pr-[10px]"
+      accessibilityRole="button"
+      className="flex-row items-center gap-[7px] bg-toggle-bg/[0.07] border border-toggle-border/[0.12] rounded-[20px] py-[5px] pl-2 pr-[10px] active:opacity-70"
       testID="btn-theme-toggle"
     >
       <Text className="text-[13px] leading-[18px]">{dark ? "🌙" : "☀️"}</Text>
@@ -29,6 +26,6 @@ export default function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggl
         />
       </View>
       <Text className="text-[11px] font-medium text-toggle-label/50">{dark ? "Dark" : "Light"}</Text>
-    </Button>
+    </Pressable>
   );
 }
