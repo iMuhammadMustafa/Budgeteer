@@ -1,5 +1,5 @@
-import { useWindowDimensions, View } from "react-native";
-import { Button, Dialog, Sheet, Text as ThemedText } from "@/src/components/ui";
+import { View } from "react-native";
+import { Button, ResponsiveModal, Text as ThemedText } from "@/src/components/ui";
 
 export default function ConfirmRestoreModal({
     name,
@@ -14,9 +14,6 @@ export default function ConfirmRestoreModal({
     isPending: boolean;
     doRestore: () => void;
 }) {
-    const { width } = useWindowDimensions();
-    const useSheet = width < 768;
-
     const handleClose = () => {
         setIsOpen(false);
     };
@@ -28,13 +25,9 @@ export default function ConfirmRestoreModal({
         </View>
     );
 
-    return useSheet ? (
-        <Sheet visible={isOpen} onClose={handleClose} title={`Restore ${name}`}>
+    return (
+        <ResponsiveModal visible={isOpen} onClose={handleClose} title={`Restore ${name}`}>
             {content}
-        </Sheet>
-    ) : (
-        <Dialog visible={isOpen} onClose={handleClose} title={`Restore ${name}`}>
-            {content}
-        </Dialog>
+        </ResponsiveModal>
     );
 }

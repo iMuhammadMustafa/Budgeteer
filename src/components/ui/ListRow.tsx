@@ -44,6 +44,8 @@ export interface ListRowProps {
   right?: ReactNode;
   /** Drop the card chrome (border/bg/radius) so the row can sit inside another container. */
   bare?: boolean;
+  /** Whether the title/subtitle text can be selected (long-press copy). Default false. */
+  selectable?: boolean;
   className?: string;
   testID?: string;
 }
@@ -63,6 +65,7 @@ export function ListRow({
   onLongPress,
   right,
   bare = false,
+  selectable = false,
   className,
   testID = "list-row",
 }: ListRowProps) {
@@ -83,11 +86,11 @@ export function ListRow({
         </View>
       ) : null}
       <View className={`min-w-0 flex-1 ${iconName ? "ml-[13px]" : ""}`}>
-        <Text className="font-sans-semibold text-body" numberOfLines={1}>
+        <Text className="font-sans-semibold text-body" numberOfLines={1} selectable={selectable}>
           {title}
         </Text>
         {typeof subtitle === "string" ? (
-          <Text className="mt-[2px] text-xs text-ink-mute" numberOfLines={1}>
+          <Text className="mt-[2px] text-xs text-ink-mute" numberOfLines={1} selectable={selectable}>
             {subtitle}
           </Text>
         ) : subtitle ? (
@@ -98,8 +101,14 @@ export function ListRow({
         <View className="ml-[10px] items-end">{right}</View>
       ) : display ? (
         <View className="ml-[10px] items-end">
-          <Text className={`font-mono-semibold text-body ${TONE_CLASS[resolvedTone]}`}>{display}</Text>
-          {subAmount ? <Text className="mt-[2px] font-mono text-xs text-ink-mute">{subAmount}</Text> : null}
+          <Text className={`font-mono-semibold text-body ${TONE_CLASS[resolvedTone]}`} selectable={selectable}>
+            {display}
+          </Text>
+          {subAmount ? (
+            <Text className="mt-[2px] font-mono text-xs text-ink-mute" selectable={selectable}>
+              {subAmount}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </>

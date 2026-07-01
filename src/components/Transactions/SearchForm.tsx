@@ -1,16 +1,15 @@
 import {
   AccountSelecterDropdown,
   Button,
-  Dialog,
   Input,
   MyCategoriesDropdown,
   MyTransactionTypesDropdown,
-  Sheet,
+  ResponsiveModal,
 } from "@/src/components/ui";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { TransactionSearchFormProps } from "@/src/types/components/Transactions.types";
 import { useState } from "react";
-import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 
 export default function TransactionSearchForm({
   filters,
@@ -21,9 +20,6 @@ export default function TransactionSearchForm({
   isOpen,
   setIsOpen,
 }: TransactionSearchFormProps) {
-  const { width } = useWindowDimensions();
-  const useSheet = width < 768;
-
   const [searchParams, setSearchParams] = useState<TransactionFilters | null>(filters ?? null);
 
   const handleTextChange = (name: keyof TransactionFilters, text: string) => {
@@ -118,13 +114,15 @@ export default function TransactionSearchForm({
     </ScrollView>
   );
 
-  return useSheet ? (
-    <Sheet visible={isOpen} onClose={handleClose} title="Search Transactions" scrollable={false}>
+  return (
+    <ResponsiveModal
+      visible={isOpen}
+      onClose={handleClose}
+      title="Search Transactions"
+      size="lg"
+      scrollable={false}
+    >
       {content}
-    </Sheet>
-  ) : (
-    <Dialog visible={isOpen} onClose={handleClose} title="Search Transactions" size="lg" scrollable={false}>
-      {content}
-    </Dialog>
+    </ResponsiveModal>
   );
 }

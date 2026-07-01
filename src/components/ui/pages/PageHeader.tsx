@@ -17,9 +17,11 @@ export interface PageHeaderProps {
   className?: string;
   backHref?: Href;
   testID?: string;
+  /** Optional right-aligned slot in the title row (e.g. an action button). */
+  end?: ReactNode;
 }
 
-export function PageHeader({ title, subtitle, caption, className, backHref, testID = "page-header" }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, caption, className, backHref, testID = "page-header", end }: PageHeaderProps) {
   return (
     <View className="mb-2">
       <View className="flex-row items-center gap-2">
@@ -36,6 +38,7 @@ export function PageHeader({ title, subtitle, caption, className, backHref, test
           </Link>
         ) : null}
         {title && <Text variant="h2">{title}</Text>}
+        {end ? <View className="ml-auto">{end}</View> : null}
       </View>
       <View>
         {subtitle ? (

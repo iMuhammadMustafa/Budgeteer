@@ -1,14 +1,13 @@
 import { Account, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Pressable, useWindowDimensions, View } from "react-native";
+import { Pressable, View } from "react-native";
 import {
     AccountSelecterDropdown,
     Button,
     DateTimePicker,
-    Dialog,
     MyCategoriesDropdown,
-    Sheet,
+    ResponsiveModal,
     Switch,
     Text as ThemedText,
 } from "@/src/components/ui";
@@ -44,9 +43,6 @@ export default function BatchUpdateModal({
     categories,
     onUpdate,
 }: BatchUpdateModalProps) {
-    const { width } = useWindowDimensions();
-    const useSheet = width < 768;
-
     // Toggle states for each update option
     const [enableDate, setEnableDate] = useState(false);
     const [enableAccount, setEnableAccount] = useState(false);
@@ -218,14 +214,10 @@ export default function BatchUpdateModal({
         </View>
     );
 
-    return useSheet ? (
-        <Sheet visible={isOpen} onClose={handleClose} title="Batch Update">
+    return (
+        <ResponsiveModal visible={isOpen} onClose={handleClose} title="Batch Update" size="lg">
             {content}
-        </Sheet>
-    ) : (
-        <Dialog visible={isOpen} onClose={handleClose} title="Batch Update" size="lg">
-            {content}
-        </Dialog>
+        </ResponsiveModal>
     );
 }
 

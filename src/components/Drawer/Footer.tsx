@@ -1,10 +1,13 @@
 import { ActivityIndicator, Platform, View } from "react-native";
+import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { Button, IconButton, Text as ThemedText } from "@/src/components/ui";
+
+const APP_VERSION = Constants.expoConfig?.version ?? "0.0.0";
 
 export default function Footer() {
   const { isUpdateAvailable, isUpdatePending, isDownloading } = Updates.useUpdates();
@@ -20,8 +23,7 @@ export default function Footer() {
             if (Platform.OS !== "web") await Updates.checkForUpdateAsync();
           }}
         >
-          {/* TODO: Better Version Handling */}
-          Version 0.16.11
+          Version {APP_VERSION}
         </ThemedText>
         {isUpdatePending && !isDownloading && (
           <IconButton

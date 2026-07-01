@@ -1,6 +1,6 @@
 import { TransactionsView } from "@/src/types/database/Tables.Types";
-import { ActivityIndicator, useWindowDimensions, View } from "react-native";
-import { Button, Dialog, Sheet, Text as ThemedText } from "@/src/components/ui";
+import { ActivityIndicator, View } from "react-native";
+import { Button, ResponsiveModal, Text as ThemedText } from "@/src/components/ui";
 
 export type BatchActionType = "delete" | "duplicate" | "update";
 
@@ -23,9 +23,6 @@ export default function BatchActionConfirmModal({
     onConfirm,
     updateSummary,
 }: BatchActionConfirmModalProps) {
-    const { width } = useWindowDimensions();
-    const useSheet = width < 768;
-
     const totalAmount = selectedTransactions.reduce((sum, tx) => sum + (tx.amount ?? 0), 0);
     const currency = selectedTransactions[0]?.currency ?? "";
 
@@ -79,13 +76,9 @@ export default function BatchActionConfirmModal({
         </View>
     );
 
-    return useSheet ? (
-        <Sheet visible={isOpen} onClose={handleClose} title="Confirm">
+    return (
+        <ResponsiveModal visible={isOpen} onClose={handleClose} title="Confirm" size="lg">
             {content}
-        </Sheet>
-    ) : (
-        <Dialog visible={isOpen} onClose={handleClose} title="Confirm" size="lg">
-            {content}
-        </Dialog>
+        </ResponsiveModal>
     );
 }

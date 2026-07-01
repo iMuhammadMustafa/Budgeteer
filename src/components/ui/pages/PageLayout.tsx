@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { ScrollView } from "react-native";
 
-import GridBackground from "../GridBackground";
 import { PageHeader } from "./PageHeader";
 
 interface PageLayoutProps {
@@ -28,29 +27,26 @@ export default function PageLayout({
   end,
 }: PageLayoutProps) {
   return (
-    <>
-      <GridBackground />
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-5 gap-2 w-full self-center"
-        contentContainerStyle={{ maxWidth: 1180 }}
-      >
-        {header ? (
-          header
-        ) : (
-          <PageHeader
-            title={title}
-            subtitle={subtitle}
-            caption={caption}
-            className={className}
-            backHref={backHref}
-            testID={testID}
-            end={end}
-          />
-        )}
+    <ScrollView
+      className="flex-1 bg-bg"
+      contentContainerClassName="p-5 gap-2 w-full self-center"
+      contentContainerStyle={{ maxWidth: 1180 }}
+    >
+      {header ? (
+        header
+      ) : (
+        <PageHeader
+          title={title}
+          subtitle={subtitle}
+          caption={caption}
+          className={className}
+          backHref={backHref}
+          testID={testID}
+          end={end}
+        />
+      )}
 
-        {children}
-      </ScrollView>
-    </>
+      {children}
+    </ScrollView>
   );
 }

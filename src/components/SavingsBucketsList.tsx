@@ -1,10 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { Pressable, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
-import { Dialog, IconButton, Sheet } from "@/src/components/ui";
+import { IconButton, ResponsiveModal } from "@/src/components/ui";
 import MyIcon from "./elements/MyIcon";
 import SavingsBucketForm, { initialBucketState } from "./forms/SavingsBucketForm";
 
@@ -21,8 +21,6 @@ export default function SavingsBucketsList({
   compact = false,
   buckets: prefetchedBuckets,
 }: SavingsBucketsListProps) {
-  const { width } = useWindowDimensions();
-  const useSheet = width < 768;
   const bucketService = useSavingsBucketService();
 
   const { data: fetchedBuckets, isLoading } = bucketService.useFindByAccountId(
@@ -315,17 +313,8 @@ export default function SavingsBucketsList({
             onCancel={handleClose}
           />
         );
-        return useSheet ? (
-          <Sheet
-            visible={showForm}
-            onClose={handleClose}
-            title={editBucket ? "Edit Bucket" : "New Bucket"}
-            scrollable={false}
-          >
-            {formContent}
-          </Sheet>
-        ) : (
-          <Dialog
+        return (
+          <ResponsiveModal
             visible={showForm}
             onClose={handleClose}
             title={editBucket ? "Edit Bucket" : "New Bucket"}
@@ -333,7 +322,7 @@ export default function SavingsBucketsList({
             scrollable={false}
           >
             {formContent}
-          </Dialog>
+          </ResponsiveModal>
         );
       })()}
     </View>
