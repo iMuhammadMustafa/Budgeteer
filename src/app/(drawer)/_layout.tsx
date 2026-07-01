@@ -10,7 +10,7 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 import { BREAKPOINT_DESKTOP, DRAWER_WIDTH_MOBILE, SIDEBAR_WIDTH } from "@/src/constants/layout";
 import { GridBackground } from "@/src/components/ui";
 import Topbar from "@/src/components/ui/Topbar";
-import DashboardSkeleton from "@/src/components/Charts/DashboardSkeleton";
+import DashboardSkeleton from "@/src/components/dashboard/DashboardSkeleton";
 import SidebarBody from "@/src/components/Drawer/SidebarBody";
 
 export default function DrawerLayout() {

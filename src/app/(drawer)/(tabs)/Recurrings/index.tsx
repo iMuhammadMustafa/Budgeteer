@@ -1,4 +1,4 @@
-import { Button, Dialog, GroupedInput, IconButton, Sheet, Text as ThemedText, MyTab } from "@/src/components/ui";
+import { Button, GroupedInput, IconButton, ResponsiveModal, Text as ThemedText, MyTab } from "@/src/components/ui";
 import { RecurringDetails } from "@/src/components/recurrings/RecurringStatusBadges";
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
@@ -6,7 +6,7 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { useWindowDimensions, View } from "react-native";
+import { View } from "react-native";
 
 export default function RecurringsScreen() {
   const {
@@ -172,8 +172,6 @@ const RecurringModal = ({
   isLoading: boolean;
 }) => {
   const [amount, setAmount] = useState<number>(0);
-  const { width } = useWindowDimensions();
-  const useSheet = width < 768;
 
   const content = (
     <View className="p-6 items-center">
@@ -201,13 +199,9 @@ const RecurringModal = ({
     </View>
   );
 
-  return useSheet ? (
-    <Sheet visible={modalVisible} onClose={handleClose} title="Enter Amount" scrollable={false}>
+  return (
+    <ResponsiveModal visible={modalVisible} onClose={handleClose} title="Enter Amount" size="lg" scrollable={false}>
       {content}
-    </Sheet>
-  ) : (
-    <Dialog visible={modalVisible} onClose={handleClose} title="Enter Amount" size="lg" scrollable={false}>
-      {content}
-    </Dialog>
+    </ResponsiveModal>
   );
 };

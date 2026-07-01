@@ -1,4 +1,4 @@
-import { AccountSelecterDropdown, Button, Dialog, GroupedInput, IconButton, MyTab, Sheet } from "@/src/components/ui";
+import { AccountSelecterDropdown, Button, GroupedInput, IconButton, MyTab, ResponsiveModal } from "@/src/components/ui";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountService } from "@/src/services/Accounts.Service";
@@ -6,33 +6,8 @@ import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
-import { type ReactNode, useState } from "react";
-import { ActivityIndicator, Text, useWindowDimensions, View } from "react-native";
-
-/** Renders Sheet on narrow screens, Dialog on wide ones. */
-function OverlayWrapper({
-  visible,
-  onClose,
-  title,
-  children,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-}) {
-  const { width } = useWindowDimensions();
-  const useSheet = width < 768;
-  return useSheet ? (
-    <Sheet visible={visible} onClose={onClose} title={title} scrollable={false}>
-      {children}
-    </Sheet>
-  ) : (
-    <Dialog visible={visible} onClose={onClose} title={title} size="lg" scrollable={false}>
-      {children}
-    </Dialog>
-  );
-}
+import { useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 
 export default function AccountsIndex() {
   const accountService = useAccountService();
@@ -129,17 +104,19 @@ export default function AccountsIndex() {
           isCreating={isCreating}
         />
       )}
-      <OverlayWrapper
+      <ResponsiveModal
         visible={bucketsModal.open && !!bucketsModal.account}
         onClose={() => setBucketsModal({ open: false, account: null })}
         title={bucketsModal.account ? `${bucketsModal.account.name} - Savings Buckets` : "Savings Buckets"}
+        size="lg"
+        scrollable={false}
       >
         {bucketsModal.account && (
           <View className="p-2">
             <SavingsBucketsList accountId={bucketsModal.account.id} accountBalance={bucketsModal.account.balance} />
           </View>
         )}
-      </OverlayWrapper>
+      </ResponsiveModal>
     </>
   );
 }
@@ -227,13 +204,15 @@ const AccountTransferModal = ({
   );
 
   return (
-    <OverlayWrapper
+    <ResponsiveModal
       visible={modalState.open}
       onClose={handleClose}
       title={`Transfer to ${modalState.account?.name ?? ""}`}
+      size="lg"
+      scrollable={false}
     >
       {content}
-    </OverlayWrapper>
+    </ResponsiveModal>
   );
 };
 
