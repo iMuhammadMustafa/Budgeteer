@@ -36,7 +36,7 @@ export function ChartCard({ title, children, period, className = "", style, test
       <Text variant="overline">{title}</Text>
       {children}
       {period && (
-        <View className="flex-row items-center justify-between" testID={`${testID}-period`}>
+        <View className="mt-auto flex-row items-center justify-between" testID={`${testID}-period`}>
           <IconButton
             icon="ChevronLeft"
             variant="ghost"

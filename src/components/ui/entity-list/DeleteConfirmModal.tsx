@@ -4,8 +4,8 @@
  * uses ui Sheet/Dialog + ui Select instead of legacy overlay/form primitives.
  */
 import { useState } from "react";
-import { useWindowDimensions, View } from "react-native";
-import { Button, Dialog, Select, Sheet, Text } from "@/src/components/ui";
+import { View } from "react-native";
+import { Button, ResponsiveModal, Select, Text } from "@/src/components/ui";
 
 interface DeleteConfirmModalProps<TModel> {
   isOpen: boolean;
@@ -32,9 +32,6 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
   onConfirm,
   allowDeleteDependencies = false,
 }: DeleteConfirmModalProps<TModel>) {
-  const { width } = useWindowDimensions();
-  const useSheet = width < 768;
-
   const [selectedReplacementId, setSelectedReplacementId] = useState<string | undefined>();
   const [deleteWithDependencies, setDeleteWithDependencies] = useState(false);
 
@@ -114,13 +111,9 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
     </View>
   );
 
-  return useSheet ? (
-    <Sheet visible={isOpen} onClose={handleClose} title="Confirm Deletion">
+  return (
+    <ResponsiveModal visible={isOpen} onClose={handleClose} title="Confirm Deletion">
       {content}
-    </Sheet>
-  ) : (
-    <Dialog visible={isOpen} onClose={handleClose} title="Confirm Deletion">
-      {content}
-    </Dialog>
+    </ResponsiveModal>
   );
 }

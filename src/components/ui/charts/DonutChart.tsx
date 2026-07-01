@@ -101,7 +101,7 @@ export function DonutChart({
 
   const beside = legendPosition === "right" || (legendPosition === "auto" && winW >= 600);
   // External labels need horizontal room on both sides; the ring stays `size`, the canvas widens.
-  const labelPad = externalLabels ? 112 : 0;
+  const labelPad = externalLabels ? 128 : 0;
   const canvasW = size + labelPad * 2;
   const cx = canvasW / 2;
   const cy = size / 2;
@@ -190,13 +190,17 @@ export function DonutChart({
             // Elbow just outside the ring; the text then grows outward into the (wide) label pad.
             const x2 = right ? cx + rOuter + 16 : cx - rOuter - 16;
             const ty = Math.min(Math.max(y1, 12), size - 8);
+            // Long category names can still outrun the label pad at any width, so clip the name
+            // itself (not just rely on padding) — this is what was getting cut off at the canvas edge.
+            const LABEL_MAX_CHARS = 11;
+            const shortLabel = s.label.length > LABEL_MAX_CHARS ? `${s.label.slice(0, LABEL_MAX_CHARS - 1)}…` : s.label;
             return {
               key: `${s.label}-${i}`,
               leader: `M ${x0.toFixed(1)} ${y0.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${ty.toFixed(1)}`,
               tx: right ? x2 + 4 : x2 - 4,
               ty,
               anchor: right ? ("start" as const) : ("end" as const),
-              text: `${s.label} ${Math.round(s.pct)}%`,
+              text: `${shortLabel} ${Math.round(s.pct)}%`,
               color: s.color,
             };
           })
