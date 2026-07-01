@@ -1,4 +1,4 @@
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useTheme } from "@/src/providers/ThemeProvider";

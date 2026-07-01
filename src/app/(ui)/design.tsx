@@ -12,7 +12,7 @@ import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { accentFor, useBudgeteerFonts } from "@/src/components/ui";
-import { useTheme } from "../providers/ThemeProvider";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

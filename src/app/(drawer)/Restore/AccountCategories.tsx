@@ -1,6 +1,6 @@
+import { TableNames } from "@/src/types/database/TableNames";
 import { MyTab } from "@/src/components/ui";
 import { useAccountCategoryService } from "@/src/services/AccountCategories.Service";
-import { TableNames } from "@/src/types/database/TableNames";
 
 export default function RestoreAccountCategories() {
   const service = useAccountCategoryService();
@@ -8,6 +8,7 @@ export default function RestoreAccountCategories() {
   return (
     <MyTab
       title="Deleted Account Categories"
+      showTitle={false}
       service={service}
       queryKey={[TableNames.AccountCategories]}
       detailsUrl={"/Categories?categoryId=" as any}

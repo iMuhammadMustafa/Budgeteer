@@ -5,19 +5,12 @@
  * /components (web) or via Settings → Appearance → Components, and cross-linked
  * from the /design token showcase.
  */
-import { useRouter } from "expo-router";
-import { Moon, Sun } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Moon, Sun } from "lucide-react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
-// Legacy charts (victory-native) — kept only for the before/after comparison below.
-import LegacyBar from "@/src/components/Charts/Bar";
-import LegacyDoubleBar from "@/src/components/Charts/DoubleBar";
-import LegacyLine from "@/src/components/Charts/Line";
-import LegacyMyCalendar from "@/src/components/Charts/MyCalendar";
-import LegacyMyPie from "@/src/components/Charts/MyPie";
-
+import { useTheme } from "@/src/providers/ThemeProvider";
 import {
   accentFor,
   Avatar,
@@ -64,7 +57,15 @@ import {
   type Segment,
   type SelectOption,
 } from "@/src/components/ui";
-import { useTheme } from "@/src/providers/ThemeProvider";
+import { PageHeader } from "@/src/components/ui/pages/PageHeader";
+import PageLayout from "@/src/components/ui/pages/PageLayout";
+// Legacy charts (victory-native) — kept only for the before/after comparison below.
+import LegacyBar from "@/src/components/Charts/Bar";
+import LegacyDoubleBar from "@/src/components/Charts/DoubleBar";
+import LegacyLine from "@/src/components/Charts/Line";
+import LegacyMyCalendar from "@/src/components/Charts/MyCalendar";
+import LegacyMyPie from "@/src/components/Charts/MyPie";
+import MyIcon from "@/src/components/elements/MyIcon";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -238,20 +239,9 @@ export default function ComponentsPreview() {
   ];
 
   return (
-    <ScrollView
-      className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 24, paddingBottom: 64, maxWidth: 920, alignSelf: "center", width: "100%" }}
-    >
+    <PageLayout title="Ui Components" subtitle="" backHref="/Settings/Appearance">
       {/* Header */}
-      <View className="mb-8 flex-row items-center justify-between">
-        <View>
-          <Text variant="h2">Components</Text>
-          <Pressable onPress={() => router.push("/design" as never)}>
-            <Text variant="caption" className="text-primary-deep">
-              ← Back to tokens (/design)
-            </Text>
-          </Pressable>
-        </View>
+      <View className="mb-8 flex-row justify-end">
         <Pressable
           onPress={toggleTheme}
           className="flex-row items-center gap-2 rounded-full border border-border bg-surface px-3 py-2"
@@ -1015,6 +1005,6 @@ export default function ComponentsPreview() {
       <Section title="Calculator · amount entry">
         <Calculator onSubmit={noop} />
       </Section>
-    </ScrollView>
+    </PageLayout>
   );
 }

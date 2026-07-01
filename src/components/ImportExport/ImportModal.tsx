@@ -1,12 +1,11 @@
-import { Button } from "@/src/components/ui";
+import { Button, Dialog, Sheet } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import ImportService from "@/src/services/Import.Service";
 import { ExportData, ImportResult, ImportValidationResult } from "@/src/types/ImportExport.Types";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import MyModal from "@/src/components/elements/MyModal";
+import { ActivityIndicator, ScrollView, Text, useWindowDimensions, View } from "react-native";
 
 type ImportStep = "select" | "validating" | "preview" | "importing" | "complete";
 
@@ -15,6 +14,8 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
     onClose: () => void;
     onImportComplete?: () => void;
 }) {
+    const { width } = useWindowDimensions();
+    const useSheet = width < 768;
     const { session } = useAuth();
     const { dbContext } = useStorageMode();
     const tenantId = session?.user?.user_metadata?.tenantid || "";
@@ -392,10 +393,14 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
         complete: "Import Complete",
     }[step];
 
-    return (
-        <MyModal isOpen={visible} setIsOpen={open => { if (!open) handleClose(); }} onClose={handleClose} title={modalTitle}>
-                    {renderContent()}
-        </MyModal>
+    return useSheet ? (
+        <Sheet visible={visible} onClose={handleClose} title={modalTitle} scrollable={false}>
+            {renderContent()}
+        </Sheet>
+    ) : (
+        <Dialog visible={visible} onClose={handleClose} title={modalTitle} size="lg" scrollable={false}>
+            {renderContent()}
+        </Dialog>
     );
 }
 
