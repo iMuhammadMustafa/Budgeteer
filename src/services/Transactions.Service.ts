@@ -14,9 +14,8 @@ import { Session } from "@supabase/supabase-js";
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useStorageMode } from "../providers/StorageModeProvider";
-import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
-import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
 import createServiceHooks from "./BaseService";
+import { createTransactionHelper, updateTransactionHelper } from "./helpers/transactions.helpers";
 import { IService } from "./IService";
 
 export interface BatchUpdateParams {
