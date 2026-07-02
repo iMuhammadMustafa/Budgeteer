@@ -13,14 +13,15 @@ import { useEffect, useState } from "react";
 import { Animated, View } from "react-native";
 import Svg, { Circle, Path, Line as SvgLine, Text as SvgText } from "react-native-svg";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { Badge } from "../Badge";
 import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
+import { buildScale, compactTick, X_LABEL_ANGLE_THRESHOLD, XLabels, Y_AXIS_PAD, type YTickMode } from "./axis";
 import { ChartLegend } from "./ChartLegend";
-import { XLabels, X_LABEL_ANGLE_THRESHOLD, Y_AXIS_PAD, buildScale, compactTick, type YTickMode } from "./axis";
 
 const GHOST_PATTERN = [0.45, 0.6, 0.4, 0.7, 0.5, 0.8, 0.62, 0.85];
 const LEFT_PAD = Y_AXIS_PAD;
@@ -137,7 +138,7 @@ export function LineChart({
   // Band-centered x (matches the bar charts): point i sits in the middle of band i,
   // so the first dot clears the axis and labels line up under their dots.
   const bandW = n > 0 ? innerW / n : innerW;
-  const xAt = (i: number) => LEFT_PAD + (i + 0.3) * bandW;
+  const xAt = (i: number) => LEFT_PAD + (i + 0.5) * bandW;
 
   const vals = data.map(d => d.value);
   const scale = buildScale(Math.min(...vals), Math.max(...vals), yTickMode, yTickMode === "count" ? n : yTicks);
@@ -156,7 +157,9 @@ export function LineChart({
 
   return (
     <View testID={testID} className={cn("w-full", className)} onLayout={e => setW(e.nativeEvent.layout.width)}>
-      {seriesLabel ? <ChartLegend horizontal className="mb-2" items={[{ label: seriesLabel, color: stroke }]} /> : null}
+      {seriesLabel ? (
+        <ChartLegend horizontal scrollable className="mb-2" items={[{ label: seriesLabel, color: stroke }]} />
+      ) : null}
       <Animated.View style={{ height, opacity: grow }}>
         {w > 0 ? (
           <Svg width={w} height={height}>
@@ -258,6 +261,7 @@ export function LineChart({
         <ChartLegend
           className="mt-3"
           horizontal
+          scrollable
           height={legendHeight}
           items={data.map(d => ({ label: d.label, color: stroke, value: fmt(d.value) }))}
         />

@@ -14,8 +14,9 @@ import { useEffect, useState } from "react";
 import { Animated, useWindowDimensions, View } from "react-native";
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { Badge } from "../Badge";
 import { Pulse } from "../Pulse";
 import { Text } from "../Text";
@@ -173,7 +174,7 @@ export function DonutChart({
   const centerSub = selected != null ? colored[selected].label : centerLabel;
 
   // External leader-line labels for the larger slices (skip tiny ones + "Other" to avoid collisions).
-  const LABEL_MIN_PCT = 4;
+  const LABEL_MIN_PCT = maxSlices;
   const labelEls =
     externalLabels && !single
       ? segs

@@ -6,7 +6,7 @@
  *   <Card padded={false} className="overflow-hidden">…rows…</Card>
  */
 import { type ReactNode } from "react";
-import { Platform, Pressable, type StyleProp, View, type ViewStyle } from "react-native";
+import { Platform, Pressable, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { cn } from "./utils/cn";
 
