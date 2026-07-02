@@ -264,14 +264,22 @@ export function useTransactionService(): ITransactionService {
         // 2. Perform the transaction updates FIRST
         await transactionRepo.updateMultiple!(updatePayloads, tenantId);
 
-        // 3. Handle account balance updates AFTER transactions are updated
+        // 3. Handle account balance updates AFTER transactions are updated.
+        // Accumulate per-account deltas and apply once per account instead of
+        // issuing one write per transaction.
+        const deltas = new Map<string, number>();
+        const addDelta = (accountId: string | undefined, amount: number) => {
+          if (!accountId || !amount) return;
+          deltas.set(accountId, (deltas.get(accountId) ?? 0) + amount);
+        };
+
         if (updates.accountid !== undefined) {
           for (const tx of transactions) {
             if (tx.accountid !== updates.accountid && tx.isvoid !== true) {
               // Revert from old account
-              await accountRepo.updateAccountBalance(tx.accountid!, -tx.amount!, tenantId);
+              addDelta(tx.accountid!, -tx.amount!);
               // Apply to new account
-              await accountRepo.updateAccountBalance(updates.accountid, tx.amount!, tenantId);
+              addDelta(updates.accountid, tx.amount!);
             }
           }
         }
@@ -281,8 +289,14 @@ export function useTransactionService(): ITransactionService {
           for (const tx of transactions) {
             if (tx.isvoid !== updates.isvoid) {
               const balanceChange = updates.isvoid ? -tx.amount! : tx.amount!;
-              await accountRepo.updateAccountBalance(tx.accountid!, balanceChange, tenantId);
+              addDelta(tx.accountid!, balanceChange);
             }
+          }
+        }
+
+        for (const [accountId, delta] of deltas) {
+          if (delta !== 0) {
+            await accountRepo.updateAccountBalance(accountId, delta, tenantId);
           }
         }
       },
@@ -316,11 +330,6 @@ export function useTransactionService(): ITransactionService {
         // 1. Void the original transaction
         await transactionRepo.update(original.id!, { isvoid: true }, tenantId);
 
-        // Reverse original balance (voiding removes balance impact)
-        if (original.isvoid !== true && original.accountid && original.amount) {
-          await accountRepo.updateAccountBalance(original.accountid, -original.amount, tenantId);
-        }
-
         // The parent's sub-items are now orphaned to a voided row. Drop them — the
         // caller is expected to have transferred their values into `children` (e.g.
         // SplitTransactionModal pre-fills children from the items).
@@ -341,10 +350,25 @@ export function useTransactionService(): ITransactionService {
 
         const created = await transactionRepo.createMultiple!(childTransactions, tenantId);
 
-        // 3. Apply balance for each child
+        // 3. Accumulate balance deltas — reversing the original (voiding removes
+        // its balance impact) and applying each child — then apply once per
+        // account instead of one write per transaction.
+        const deltas = new Map<string, number>();
+        const addDelta = (accountId: string | null | undefined, amount: number | null | undefined) => {
+          if (!accountId || !amount) return;
+          deltas.set(accountId, (deltas.get(accountId) ?? 0) + amount);
+        };
+
+        if (original.isvoid !== true && original.amount) {
+          addDelta(original.accountid, -original.amount);
+        }
         for (const child of created) {
-          if (child.accountid && child.amount) {
-            await accountRepo.updateAccountBalance(child.accountid, child.amount, tenantId);
+          addDelta(child.accountid, child.amount);
+        }
+
+        for (const [accountId, delta] of deltas) {
+          if (delta !== 0) {
+            await accountRepo.updateAccountBalance(accountId, delta, tenantId);
           }
         }
 

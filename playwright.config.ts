@@ -1,21 +1,35 @@
 import { defineConfig, devices } from "@playwright/test";
-import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, ".env.test") });
+// Load .env.test if present (optional — local/demo E2E needs no secrets; only
+// cloud journeys read credentials). Avoids a hard dependency on `dotenv`.
+const envTestPath = path.resolve(__dirname, ".env.test");
+if (fs.existsSync(envTestPath)) {
+    for (const line of fs.readFileSync(envTestPath, "utf8").split("\n")) {
+        const m = line.match(/^\s*([\w.]+)\s*=\s*(.*)\s*$/);
+        if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    }
+}
 
 // Tests run against Expo web at http://localhost:8081
 export default defineConfig({
     testDir: "./e2e/tests",
+    // Legacy specs (e2e/tests/legacy/**) target the pre-redesign UI (role=dialog
+    // forms, dropdown pickers, hamburger-menu nav) and are quarantined pending
+    // per-screen migration to the injection harness. See e2e/tests/legacy/README.md.
+    testIgnore: "**/legacy/**",
+    // Fresh browser context per test (Playwright default) gives a fresh OPFS
+    // (⇒ fresh local SQLite) and fresh localStorage (⇒ fresh AsyncStorage), so
+    // tests are isolated and can run fully parallel — no more serial describes.
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    // Provide 2 workers in CI, but allow unlimited locally (Playwright bounds automatically based on CPU)
     workers: process.env.CI ? 2 : undefined,
-    // 60s default test timeout — cloud tests need extra time for network latency
-    timeout: 60000,
+    // 30s per test — the static export + injection harness lands in <2s; only
+    // heavy data journeys approach this.
+    timeout: 30000,
 
-    // Concise terminal output + HTML for deep-diving failures
     reporter: [
         ["list", { printSteps: false }],
         ["html", { open: "never" }],
@@ -26,14 +40,35 @@ export default defineConfig({
         trace: "on-first-retry",
         screenshot: "only-on-failure",
         video: "retain-on-failure",
-        // Generous action timeout for slow SQLite init
-        actionTimeout: 15000,
+        // Tight action timeout — web-first assertions replace the old hard waits.
+        actionTimeout: 5000,
     },
 
     projects: [
+        // Local SQLite backend — runs the full journey suite. This is the
+        // default target and the only one that needs no external services.
         {
-            name: "chromium",
+            name: "chromium-local",
             use: { ...devices["Desktop Chrome"] },
+            // Cloud-only journeys don't apply to the local backend.
+            grepInvert: /@cloud-only/,
+        },
+        // Cloud (Supabase) backend — runs only auth/realtime/RLS-adjacent
+        // journeys tagged @cloud. Self-skips per-test when creds are absent.
+        {
+            name: "chromium-cloud",
+            use: { ...devices["Desktop Chrome"] },
+            grep: /@cloud/,
+        },
+        // Mobile viewport smoke — a thin, viewport-agnostic slice tagged
+        // @mobile (app entry + seeded landing). Desktop-sidebar navigation is
+        // hidden behind a drawer on this viewport; mobile-nav journeys are a
+        // documented follow-up, so the mobile slice stays entry-only for now.
+        {
+            name: "mobile-smoke",
+            use: { ...devices["Pixel 5"] },
+            grep: /@mobile/,
+            grepInvert: /@cloud-only/,
         },
     ],
 

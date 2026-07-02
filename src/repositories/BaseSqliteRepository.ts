@@ -255,50 +255,61 @@ export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
         const now = getCurrentTimestamp();
         const results: TModel[] = [];
 
-        for (const item of data) {
-            const rawRecord = this.mapToRow({
-                ...item,
-                id: (item as Record<string, unknown>).id || GenerateUuid(),
-                tenantid: tenantId,
-                isdeleted: 0,
-                createdat: (item as Record<string, unknown>).createdat || now,
-                updatedat: (item as Record<string, unknown>).updatedat || now,
-            });
+        await db.withTransactionAsync(async () => {
+            for (const item of data) {
+                const rawRecord = this.mapToRow({
+                    ...item,
+                    id: (item as Record<string, unknown>).id || GenerateUuid(),
+                    tenantid: tenantId,
+                    isdeleted: 0,
+                    createdat: (item as Record<string, unknown>).createdat || now,
+                    updatedat: (item as Record<string, unknown>).updatedat || now,
+                });
 
-            // Filter to only columns that exist in the schema
-            const record = await this.filterToSchemaColumns(rawRecord);
+                // Filter to only columns that exist in the schema
+                const record = await this.filterToSchemaColumns(rawRecord);
 
-            const columns = Object.keys(record);
-            const placeholders = columns.map(() => "?").join(", ");
-            const values = columns.map((col) => record[col]) as SQLiteBindValue[];
+                const columns = Object.keys(record);
+                const placeholders = columns.map(() => "?").join(", ");
+                const values = columns.map((col) => record[col]) as SQLiteBindValue[];
 
-            await db.runAsync(
-                `INSERT INTO ${this.tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
-                values
-            );
+                await db.runAsync(
+                    `INSERT INTO ${this.tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
+                    values
+                );
 
-            results.push(this.mapFromRow(record) as TModel);
-        }
+                results.push(this.mapFromRow(record) as TModel);
+            }
+        });
 
         return results;
     }
 
     async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
-        for (const item of data) {
-            await this.update((item as any).id!, item, tenantId);
-        }
+        const db = await getSqliteDB();
+        await db.withTransactionAsync(async () => {
+            for (const item of data) {
+                await this.update((item as any).id!, item, tenantId);
+            }
+        });
     }
 
     async deleteMultiple(ids: string[], tenantId: string): Promise<void> {
-        for (const id of ids) {
-            await this.softDelete(id, tenantId);
-        }
+        const db = await getSqliteDB();
+        await db.withTransactionAsync(async () => {
+            for (const id of ids) {
+                await this.softDelete(id, tenantId);
+            }
+        });
     }
 
     async restoreMultiple(ids: string[], tenantId: string): Promise<void> {
-        for (const id of ids) {
-            await this.restore(id, tenantId);
-        }
+        const db = await getSqliteDB();
+        await db.withTransactionAsync(async () => {
+            for (const id of ids) {
+                await this.restore(id, tenantId);
+            }
+        });
     }
 
     /**

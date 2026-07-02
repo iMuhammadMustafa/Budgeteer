@@ -127,11 +127,22 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
     if (error) throw error;
   }
 
-  // Batch Update is not supported yet in supabase, will have to do it one by one
+  // Heterogeneous per-row updates: a single PostgREST upsert (ON CONFLICT DO
+  // UPDATE) applies all rows in one network round-trip. Rows in `data` are
+  // pre-existing (matched by id), so the conflict branch always fires and no
+  // insert-path NOT NULL constraints are hit for columns omitted from `item`.
   async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
-    for (const item of data) {
-      await this.update(item.id!, item, tenantId);
-    }
+    if (data.length === 0) return;
+    const { error } = await supabase.from(this.tableName).upsert(
+      data.map(item => ({
+        ...item,
+        tenantid: tenantId,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })),
+      { onConflict: "id" },
+    );
+
+    if (error) throw error;
   }
 
   async createMultiple(data: Inserts<TTable>[], tenantId: string): Promise<TModel[]> {
@@ -144,36 +155,27 @@ export abstract class SupaRepository<TModel, TTable extends TableNames> implemen
     return result as TModel[];
   }
 
+  // Uniform update applied to every row: a single `.in("id", ids)` call
+  // instead of one soft-delete per id.
   async deleteMultiple(ids: string[], tenantId: string): Promise<void> {
-    for (const id of ids) {
-      await this.softDelete(id, tenantId);
-    }
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .from(this.tableName)
+      .update({ isdeleted: true, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
+      .in("id", ids)
+      .eq("tenantid", tenantId);
+    if (error) throw error;
   }
 
   async restoreMultiple(ids: string[], tenantId: string): Promise<void> {
-    for (const id of ids) {
-      await this.restore(id, tenantId);
-    }
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .from(this.tableName)
+      .update({ isdeleted: false, updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ") })
+      .in("id", ids)
+      .eq("tenantid", tenantId)
+      .eq("isdeleted", true);
+    if (error) throw error;
   }
-
-  // async updateMultiple(data: Updates<TTable>[], tenantId: string): Promise<void> {
-  //   // Use Supabase upsert for batch updates in a single network request
-  //   // This is much more efficient than multiple individual update calls
-  //   const { error } = await supabase.from(this.tableName).upsert(
-  //     data.map(item => ({
-  //       ...item,
-  //       tenantid: tenantId,
-  //       updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-  //     })),
-  //     {
-  //       onConflict: "id",
-  //       ignoreDuplicates: false,
-  //     },
-  //   );
-
-  //   if (error) {
-  //     throw new Error(`Failed to update multiple records: ${error.message}`);
-  //   }
-  // }
 }
 
