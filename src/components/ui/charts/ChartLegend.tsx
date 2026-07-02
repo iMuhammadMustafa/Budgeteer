@@ -7,7 +7,8 @@
  * `height` is what lets a chart's empty/loading state match its loaded height
  * (the legend stops being a variable-height slot).
  */
-import { Pressable, ScrollView, View } from "react-native";
+import { useCallback, useState, type ReactNode } from "react";
+import { Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
 
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
@@ -26,6 +27,8 @@ export interface ChartLegendProps {
   selectedIndex?: number | null;
   /** Inline wrapping row of dot+label chips (e.g. the income/expense legend). */
   horizontal?: boolean;
+  /** Whether the legend should be scrollable (e.g. when there are too many items to fit on the screen). */
+  scrollable?: boolean;
   /** Fixed legend height; scrolls internally when the rows overflow it. */
   height?: number;
   /** Cap the legend height; scrolls internally past it. */
@@ -41,6 +44,7 @@ export function ChartLegend({
   onItemPress,
   selectedIndex,
   horizontal = false,
+  scrollable = false,
   height,
   maxHeight,
   maxWidth,
@@ -52,21 +56,31 @@ export function ChartLegend({
 
   // Horizontal: inline chips that size to their text (no flex-1 — that collapses in a row).
   if (horizontal) {
-    const content = (
-      <View className={cn("flex-row flex-wrap items-center gap-x-4 gap-y-1", !capped && className)}>
-        {items.map((it, i) => (
-          <View key={`${it.label}-${i}`} className="flex-row items-center gap-2">
-            <View style={{ backgroundColor: it.color }} className="h-2.5 w-2.5 rounded-full" />
-            <Text className="text-sm text-ink" numberOfLines={1}>
-              {it.label}
-              {it.value ? <Text className="font-mono text-xs text-ink-mute"> {it.value}</Text> : null}
-            </Text>
-          </View>
-        ))}
+    const renderChip = (it: ChartLegendItem, i: number, onLayout?: (e: LayoutChangeEvent) => void) => (
+      <View
+        key={`${it.label}-${i}`}
+        className="flex-row items-center gap-2"
+        style={{ flexGrow: 1, minWidth: '30%' }}
+        onLayout={onLayout}
+      >
+        <View style={{ backgroundColor: it.color }} className="h-2.5 w-2.5 rounded-full" />
+        <Text className="flex-1 text-sm text-ink" numberOfLines={1}>
+          {it.label}
+          {it.value ? <Text className="font-mono text-xs text-ink-mute"> {it.value}</Text> : null}
+        </Text>
       </View>
     );
+
+    const chips = items.map((it, i) => renderChip(it, i));
+
+    const content = (
+      <View className={cn("flex-row flex-wrap items-center gap-x-4 gap-y-1", !capped && !scrollable && className)}>
+        {chips}
+      </View>
+    );
+
     // maxWidth → scroll sideways (single line); height/maxHeight → scroll vertically (keeps wrap).
-    if (maxWidth != null && !capped) {
+    if (maxWidth != null && !capped && !scrollable) {
       return (
         <ScrollView
           testID={testID}
@@ -77,6 +91,18 @@ export function ChartLegend({
         >
           {content}
         </ScrollView>
+      );
+    }
+    // scrollable: cap at 2 visible rows, scroll the rest.
+    if (scrollable) {
+      return (
+        <ScrollableHorizontalLegend
+          testID={testID}
+          className={className}
+          maxLines={2}
+          items={items}
+          renderChip={renderChip}
+        />
       );
     }
     if (capped) {
@@ -144,5 +170,57 @@ export function ChartLegend({
     <View testID={testID} className={cn("gap-0.5", className)} style={{ maxWidth }}>
       {rows}
     </View>
+  );
+}
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Renders horizontal chips in a flex-wrap row, measures the height of a single
+ * row on first layout, then caps the container at `maxLines` rows and scrolls
+ * vertically for overflow.
+ */
+function ScrollableHorizontalLegend({
+  items,
+  renderChip,
+  maxLines = 2,
+  testID,
+  className,
+}: {
+  items: ChartLegendItem[];
+  renderChip: (item: ChartLegendItem, index: number, onLayout?: (e: LayoutChangeEvent) => void) => ReactNode;
+  maxLines?: number;
+  testID?: string;
+  className?: string;
+}) {
+  const [rowHeight, setRowHeight] = useState<number | null>(null);
+
+  // Measure one chip to derive row height (chip height + gap-y-1 = 4px).
+  const GAP_Y = 4; // gap-y-1
+  const onFirstChipLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      if (rowHeight != null) return; // already measured
+      setRowHeight(e.nativeEvent.layout.height + GAP_Y);
+    },
+    [rowHeight],
+  );
+
+  // While we haven't measured yet, render invisibly to get the measurement.
+  const wrappedChips = items.map((it, i) =>
+    renderChip(it, i, i === 0 ? onFirstChipLayout : undefined),
+  );
+
+  const capHeight = rowHeight != null ? rowHeight * maxLines + GAP_Y : undefined;
+
+  return (
+    <ScrollView
+      testID={testID}
+      showsVerticalScrollIndicator
+      nestedScrollEnabled
+      className={`${className} custom-scrollbar`}
+      style={capHeight != null ? { maxHeight: capHeight } : undefined}
+    >
+      <View className="flex-row flex-wrap items-center gap-x-4 gap-y-1">{wrappedChips}</View>
+    </ScrollView>
   );
 }

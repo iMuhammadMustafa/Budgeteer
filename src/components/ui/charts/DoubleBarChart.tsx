@@ -9,14 +9,15 @@
 import { useEffect, useState } from "react";
 import { Animated, Pressable, View } from "react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { Badge } from "../Badge";
 import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
+import { buildScale, compactTick, XLabels, Y_AXIS_PAD, YGrid, type YTickMode } from "./axis";
 import { ChartLegend } from "./ChartLegend";
-import { XLabels, YGrid, Y_AXIS_PAD, buildScale, compactTick, type YTickMode } from "./axis";
 
 const SKELETON = [0.6, 0.4, 0.85, 0.5, 0.7, 0.45, 0.9, 0.55, 0.65, 0.5, 0.8, 0.6];
 
@@ -29,6 +30,8 @@ export interface DoubleBarDatum {
 export interface DoubleBarChartProps {
   data: DoubleBarDatum[];
   height?: number;
+  /** Grow to fill the available vertical space (like BarChart's fillHeight). */
+  fillHeight?: boolean;
   bar1Color?: string;
   bar2Color?: string;
   bar1Label?: string;
@@ -61,6 +64,7 @@ export interface DoubleBarChartProps {
 export function DoubleBarChart({
   data,
   height = 160,
+  fillHeight = false,
   bar1Color,
   bar2Color,
   bar1Label = "Bar 1",
@@ -87,12 +91,14 @@ export function DoubleBarChart({
   const { colors } = useTheme();
   const [internalSel, setInternalSel] = useState<number | null>(null);
   const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  const [measuredHeight, setMeasuredHeight] = useState(0);
   const fmt = formatValue ?? ((n: number) => String(n));
 
   useEffect(() => {
     if (animated) Animated.timing(grow, { toValue: 1, duration: 480, useNativeDriver: false }).start();
   }, [animated, grow]);
 
+  const effectiveHeight = fillHeight ? measuredHeight || height : height;
   const inc = bar1Color ?? colors.income;
   const exp = bar2Color ?? colors.expense;
   const max = Math.max(0, ...data.flatMap(d => [d.income, d.expense]));
@@ -113,7 +119,7 @@ export function DoubleBarChart({
 
   if (loading || data.length === 0 || max <= 0) {
     return (
-      <View testID={testID} className={cn("w-full", className)}>
+      <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
         {legend}
         <DoubleBarChartSkeleton
           isEmpty={data.length === 0 || max <= 0}
@@ -122,7 +128,8 @@ export function DoubleBarChart({
           emptyIcon={emptyIcon}
           skeletonBars={skeletonBars}
           length={data.length}
-          height={height}
+          height={effectiveHeight}
+          fillHeight={fillHeight}
           incomeColor={inc}
           expenseColor={exp}
           showAxis={showAxis}
@@ -136,7 +143,7 @@ export function DoubleBarChart({
     if (selectedIndex === undefined) setInternalSel(prev => (prev === i ? null : i));
     onBarPress?.(d, i);
   };
-  const plot = showValues ? height - 18 : height;
+  const plot = showValues ? effectiveHeight - 18 : effectiveHeight;
 
   const barH = (v: number) => {
     const h = Math.max(2, (v / scaleMax) * plot);
@@ -144,13 +151,16 @@ export function DoubleBarChart({
   };
 
   return (
-    <View testID={testID} className={cn("w-full", className)}>
+    <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
       {legend}
-      <View style={{ height }}>
+      <View
+        style={fillHeight ? { flex: 1 } : { height: effectiveHeight }}
+        onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+      >
         {showAxis ? (
           <YGrid
             scale={scale}
-            height={height}
+            height={effectiveHeight}
             n={data.length}
             leftPad={leftPad}
             axisLine={showYAxis}
@@ -158,7 +168,7 @@ export function DoubleBarChart({
             showXGrid={showXGrid}
           />
         ) : null}
-        <View className="flex-row items-end gap-0.5" style={{ height, paddingLeft: leftPad }}>
+        <View className="flex-row items-end gap-0.5" style={{ height: effectiveHeight, paddingLeft: leftPad + 10 }}>
           {data.map((d, i) => (
             <BarGroup
               key={`${d.label}-${i}`}
@@ -175,7 +185,7 @@ export function DoubleBarChart({
               colors={colors}
               barH={barH}
               testID={testID}
-              height={height}
+              height={effectiveHeight}
             />
           ))}
         </View>
@@ -189,6 +199,7 @@ export function DoubleBarChartSkeleton({
   skeletonBars,
   length,
   height = 160,
+  fillHeight = false,
   incomeColor,
   expenseColor,
   isEmpty = false,
@@ -202,6 +213,7 @@ export function DoubleBarChartSkeleton({
   skeletonBars?: number;
   length?: number;
   height?: number;
+  fillHeight?: boolean;
   incomeColor?: string;
   expenseColor?: string;
   isEmpty?: boolean;
@@ -213,15 +225,21 @@ export function DoubleBarChartSkeleton({
   showAxis?: boolean;
 }) {
   const { colors } = useTheme();
+  const [measuredHeight, setMeasuredHeight] = useState(0);
   const n = skeletonBars ?? (length || 6);
   const inc = incomeColor ?? colors.income;
   const exp = expenseColor ?? colors.expense;
   const leftPad = showAxis ? Y_AXIS_PAD : 0;
+  const effectiveHeight = fillHeight ? measuredHeight || height : height;
 
   return (
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
-      <View testID={testID} className={cn("w-full", className)}>
-        <View className="flex-row items-end gap-0.5" style={{ height, paddingLeft: leftPad }}>
+      <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
+        <View
+          className="flex-row items-end gap-0.5"
+          style={fillHeight ? { flex: 1, paddingLeft: leftPad } : { height: effectiveHeight, paddingLeft: leftPad }}
+          onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+        >
           <YGrid
             scale={buildScale(0, n, "nice", 2)}
             height={height}
@@ -315,6 +333,8 @@ function BarGroup({
       useNativeDriver: false,
     }).start();
   }, [targetOpacity, opacityAnim]);
+  const incomeOffset = d.income > d.expense ? 1 : 0.5;
+  const expenseOffset = d.income > d.expense ? 0.5 : 1;
 
   return (
     <Pressable
@@ -328,13 +348,9 @@ function BarGroup({
         if (selectedIndex === undefined) setInternalSel(null);
       }}
     >
-      <View className="w-full flex-row items-end justify-center gap-0.5" style={{ height }}>
-        <View className="items-center" style={{ width: "35%" }}>
-          {showValues ? (
-            <Text className="mb-0.5 font-mono text-[10px] text-ink-faint" numberOfLines={1}>
-              {fmt(d.income)}
-            </Text>
-          ) : null}
+      <View className="w-full flex-row items-end justify-center gap-1" style={{ height }}>
+        <View className="items-center" style={{ width: "40%" }}>
+          {showValues ? <Text className={`mb-${incomeOffset} text-[10px] text-ink-faint`}>{fmt(d.income)}</Text> : null}
           <Animated.View
             style={{
               height: barH(d.income),
@@ -347,11 +363,9 @@ function BarGroup({
             }}
           />
         </View>
-        <View className="items-center" style={{ width: "35%" }}>
+        <View className="items-center" style={{ width: "40%" }}>
           {showValues ? (
-            <Text className="mb-0.5 font-mono text-[10px] text-ink-faint" numberOfLines={1}>
-              {fmt(d.expense)}
-            </Text>
+            <Text className={`mb-${expenseOffset} text-[10px] text-ink-faint`}>{fmt(d.expense)}</Text>
           ) : null}
           <Animated.View
             style={{

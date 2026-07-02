@@ -15,6 +15,7 @@
 import { View, type DimensionValue } from "react-native";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
+
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
 

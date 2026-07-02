@@ -8,7 +8,7 @@
  *   </ChartCard>
  */
 import { type ReactNode } from "react";
-import { type StyleProp, View, type ViewStyle } from "react-native";
+import { View, type StyleProp, type ViewStyle } from "react-native";
 
 import { Card } from "../Card";
 import { IconButton } from "../IconButton";
@@ -32,7 +32,7 @@ export interface ChartCardProps {
 
 export function ChartCard({ title, children, period, className = "", style, testID = "chart-card" }: ChartCardProps) {
   return (
-    <Card className={cn("my-1.5 gap-3", className)} style={style} testID={testID}>
+    <Card className={cn("my-1.5 gap-2 p-5 pb-1", className)} style={style} testID={testID}>
       <Text variant="overline">{title}</Text>
       {/* flex-1 so a chart that knows how to fill its space (e.g. BarChart's `fillHeight`) has
           real room to grow into when a sibling card (e.g. Recent Transactions) stretches this

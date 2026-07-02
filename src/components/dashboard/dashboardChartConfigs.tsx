@@ -8,14 +8,8 @@
  * Lives in `components/` (not the Expo Router route dir) so it isn't treated as a route.
  */
 import { type ReactNode } from "react";
+import dayjs from "dayjs";
 
-import {
-  DashboardViewSelectionType,
-  type IDetailsViewProps,
-} from "@/src/app/(drawer)/(tabs)/Dashboard/useDashboardViewModel";
-import type { ChartCardPeriod } from "@/src/components/ui";
-import { BarChart, CalendarHeatmap, DonutChart, DoubleBarChart, LineChart } from "@/src/components/ui";
-import type { ThemeColors } from "@/src/components/ui/theme/tokens";
 import type {
   BarDataType,
   DoubleBarPoint,
@@ -24,7 +18,13 @@ import type {
   PieData,
 } from "@/src/types/components/Charts.types";
 import { toBarData, toDonutData, toDoubleBar, toHeatmap, toLineData } from "@/src/utils/chartAdapters";
-import dayjs from "dayjs";
+import type { ChartCardPeriod } from "@/src/components/ui";
+import { BarChart, CalendarHeatmap, DonutChart, DoubleBarChart, LineChart } from "@/src/components/ui";
+import type { ThemeColors } from "@/src/components/ui/theme/tokens";
+import {
+  DashboardViewSelectionType,
+  type IDetailsViewProps,
+} from "@/src/app/(drawer)/(tabs)/Dashboard/useDashboardViewModel";
 
 interface PeriodControl {
   label: string;
@@ -135,6 +135,8 @@ export function buildDashboardChartConfigs(
             handleDayPress({ dateString: ws.add(i, "day").format("YYYY-MM-DD") }, DashboardViewSelectionType.BAR);
           }}
           emptyTitle="No expenses this week"
+          showValues
+          formatValue={fmtMoney}
         />
       ),
     },
@@ -185,6 +187,7 @@ export function buildDashboardChartConfigs(
           color={colors.income}
           formatValue={fmtMoney}
           emptyTitle="No net worth data"
+          showLegend
         />
       ),
     },
@@ -200,12 +203,15 @@ export function buildDashboardChartConfigs(
           bar2Label={earnings.bar2Label}
           bar1Color={earnings.bar1Color}
           bar2Color={earnings.bar2Color}
+          fillHeight
           selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : null}
           onBarPress={(_d, i) => {
             const point = yearlyTransactionsTypes[i];
             if (point) handleBarPress(point);
           }}
           emptyTitle="No earnings data"
+          showValues
+          formatValue={n => fmtMoney(n).slice(0, -3)}
         />
       ),
     },
