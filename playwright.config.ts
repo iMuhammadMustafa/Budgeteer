@@ -37,10 +37,21 @@ export default defineConfig({
         },
     ],
 
-    webServer: {
-        command: "npm run web",
-        url: "http://localhost:8081",
-        reuseExistingServer: !process.env.CI,
-        timeout: 180000, // 3 min for server startup
-    },
+    // Phase 5.3: serve the prebuilt static export (startup ~2s) instead of the
+    // cold Metro dev server (~3min). Set PW_DEV_SERVER=1 to fall back to the dev
+    // server for HMR debugging. The static path requires `npm run web:export`
+    // first (CI builds it; locally `npm run web:export` once).
+    webServer: process.env.PW_DEV_SERVER
+        ? {
+              command: "npm run web",
+              url: "http://localhost:8081",
+              reuseExistingServer: true,
+              timeout: 180000, // 3 min for dev server startup
+          }
+        : {
+              command: "npm run web:serve",
+              url: "http://localhost:8081",
+              reuseExistingServer: !process.env.CI,
+              timeout: 60000,
+          },
 });

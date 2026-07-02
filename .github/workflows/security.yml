@@ -1,0 +1,66 @@
+name: Security
+
+# Phase 6 — secret scanning, dependency vulnerabilities, and SAST.
+# Blocking on PRs for the fast/high-signal checks; the heavier SAST + full
+# vuln scan also run weekly so the default branch is continuously swept.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+# Least-privilege by default.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 6.1 Secret scanning ────────────────────────────────────────────────
+  gitleaks:
+    name: gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so gitleaks can scan past commits
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  # ── 6.1 Dependency vulnerabilities ─────────────────────────────────────
+  osv-scanner:
+    name: osv-scanner (deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Non-blocking sweep of all known advisories for the lockfile.
+      - name: OSV scan (report)
+        uses: google/osv-scanner-action/osv-scanner-action@v2.2.3
+        continue-on-error: true
+        with:
+          scan-args: |-
+            --lockfile=./yarn.lock
+      - name: npm audit (blocks only on critical)
+        run: npm audit --audit-level=critical || exit 1
+
+  # ── 6.2 SAST ────────────────────────────────────────────────────────────
+  semgrep:
+    name: semgrep (SAST)
+    runs-on: ubuntu-latest
+    # Weekly + on-demand; PR-blocking SAST tends to be noisy, so keep it off PRs.
+    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: semgrep ci
+        env:
+          SEMGREP_RULES: "p/typescript p/react p/secrets"

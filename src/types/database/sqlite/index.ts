@@ -57,6 +57,10 @@ const _initializeImpl = async (): Promise<SQLite.SQLiteDatabase> => {
         await database.execAsync(indexStatement);
     }
 
+    // Migrate existing DBs created before columns were added to schema.ts
+    // (CREATE TABLE IF NOT EXISTS is a no-op on tables that already exist)
+    await migrateSchema(database);
+
     // Create views
     await createViewsAsync(database);
 
@@ -64,6 +68,29 @@ const _initializeImpl = async (): Promise<SQLite.SQLiteDatabase> => {
     console.log("SQLite database initialized successfully");
 
     return database;
+};
+
+/**
+ * Add columns to existing tables that were introduced after the table was
+ * first created. `CREATE TABLE IF NOT EXISTS` doesn't alter existing tables,
+ * so DBs created before a column was added to schema.ts never get it.
+ */
+const migrateSchema = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    await addColumnIfMissing(db, TableNames.TransactionItems, "isvoid", "INTEGER NOT NULL DEFAULT 0");
+};
+
+const addColumnIfMissing = async (
+    db: SQLite.SQLiteDatabase,
+    table: string,
+    column: string,
+    definition: string,
+): Promise<void> => {
+    const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`);
+    if (columns.some((c) => c.name === column)) {
+        return;
+    }
+    console.log(`[SQLite] Migrating: adding column ${table}.${column}`);
+    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 };
 
 /**

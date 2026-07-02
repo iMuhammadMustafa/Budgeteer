@@ -1,0 +1,105 @@
+name: Test
+
+# Phase 7.1 — PR + push gate. The unit/integration Vitest suite (money +
+# validation + SQLite integration + secret/header guards) is the blocking gate.
+# lint + typecheck are currently NON-BLOCKING because of known, tracked breakage
+# (see notes on each step) — flip them to blocking once those are fixed.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Static checks (advisory until the tooling is fixed) ─────────────────
+  static-checks:
+    name: Lint + Typecheck (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: yarn install --frozen-lockfile
+
+      # TODO(blocking): remove continue-on-error once ESLint is fixed
+      # (eslint 10 vs eslint-plugin-react — crashes on every file today).
+      - name: ESLint
+        run: npm run lint
+        continue-on-error: true
+
+      # TODO(blocking): remove continue-on-error after clearing the 4 known
+      # pre-existing tsc errors (playwright.config `dotenv` types; orphaned
+      # IconPicker.tsx imports from the redesign Step-5 legacy dereference).
+      - name: Typecheck
+        run: npm run typecheck
+        continue-on-error: true
+
+  # ── Unit + integration (BLOCKING) ───────────────────────────────────────
+  unit:
+    name: Unit + SQLite integration (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # node:sqlite (used by the SQLite integration adapter) requires Node ≥22.5.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: yarn install --frozen-lockfile
+      - name: Vitest (default suite; cloud tests self-skip without a stack)
+        run: npm run test
+
+  # ── Cloud integration + RLS (local Supabase) ────────────────────────────
+  # Heavier; skipped on fork PRs (no ability to run the stack reliably) and only
+  # runs on push/dispatch. Proves repo↔PostgREST parity + the RLS attack suite.
+  cloud-integration:
+    name: Cloud integration + RLS (local Supabase)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: yarn install --frozen-lockfile
+      - name: Start local Supabase
+        run: supabase start
+      - name: Run cloud integration + RLS suites
+        run: npm run test:integration:cloud
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
+
+  # ── E2E smoke (placeholder — enable after Phase 5.6) ────────────────────
+  # Depends on the Playwright rewrite (5.3 static export + 5.6 @smoke journeys),
+  # which is not done yet. Left here as the intended shape so wiring it up later
+  # is a one-line uncomment.
+  #
+  # e2e-smoke:
+  #   name: E2E @smoke (local, static export)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: "22" }
+  #     - run: yarn install --frozen-lockfile
+  #     - run: npx playwright install --with-deps chromium
+  #     - run: npm run web:export   # expo export --platform web (cache by lockfile+src hash)
+  #     - run: npm run test:e2e -- --grep @smoke
+  #       env:
+  #         EXPO_PUBLIC_SUPA_URL: ${{ secrets.EXPO_PUBLIC_SUPA_URL }}
+  #         EXPO_PUBLIC_SUPA_KEY: ${{ secrets.EXPO_PUBLIC_SUPA_KEY }}

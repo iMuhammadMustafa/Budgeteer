@@ -1,0 +1,22 @@
+# Phase 6.1 — automated dependency updates.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Batch the noisy, low-risk dev/tooling bumps into a single PR.
+      dev-dependencies:
+        dependency-type: "development"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"
