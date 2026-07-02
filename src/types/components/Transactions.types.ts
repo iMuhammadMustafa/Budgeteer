@@ -11,7 +11,10 @@ export type TransactionsPageHeaderProps = {
   isActionLoading: boolean;
   clearSelection: () => void;
   refreshTransactions: () => void;
-  setShowSearch: (value: boolean) => void;
+  searchText: string;
+  onSearchTextChange: (text: string) => void;
+  onOpenFilters: () => void;
+  activeFilterCount: number;
 };
 
 export type TransactionSearchFormProps = {

@@ -5,27 +5,27 @@ import { TableNames } from "../types/database/TableNames";
 import { Inserts, TransactionsView } from "../types/database/Tables.Types";
 
 export const getTransactionProp = (type: string | null) => {
-  const transactionProp = { iconName: "CircleHelp", color: "danger-100", textColor: "foreground", size: 20 };
+  const transactionProp = { iconName: "CircleHelp", color: "danger-soft", textColor: "ink", size: 20 };
   if (type === "Income") {
     transactionProp.iconName = "Plus";
-    transactionProp.color = "success-100";
-    transactionProp.textColor = "success-500";
+    transactionProp.color = "income-soft";
+    transactionProp.textColor = "income";
   } else if (type === "Expense") {
     transactionProp.iconName = "Minus";
-    transactionProp.color = "danger-100";
-    transactionProp.textColor = "danger-500";
+    transactionProp.color = "expense-soft";
+    transactionProp.textColor = "expense";
   } else if (type === "Transfer") {
     transactionProp.iconName = "ArrowLeftRight";
-    transactionProp.color = "info-100";
-    transactionProp.textColor = "info-500";
+    transactionProp.color = "transfer-soft";
+    transactionProp.textColor = "transfer";
   } else if (type === "Adjustment" || type === "Refund") {
     transactionProp.iconName = "Wrench";
-    transactionProp.color = "warning-100";
-    transactionProp.textColor = "warning-500";
+    transactionProp.color = "warning-soft";
+    transactionProp.textColor = "warning";
   } else if (type === "Initial") {
     transactionProp.iconName = "Wallet";
-    transactionProp.color = "info-100";
-    transactionProp.textColor = "info-500";
+    transactionProp.color = "info-soft";
+    transactionProp.textColor = "info";
   }
   return transactionProp;
 };
