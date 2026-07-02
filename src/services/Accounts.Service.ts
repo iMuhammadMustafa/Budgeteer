@@ -6,11 +6,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
 import { queryClient } from "../providers/QueryProvider";
-import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
-import { IConfigurationRepository } from "../repositories/interfaces/IConfigurationRepository";
-import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
-import { ConfigurationTypes, TransactionNames } from "../types/database/Config.Types";
 import createServiceHooks from "./BaseService";
+import { createAccountRepoHelper, updateAccountRepoHelper } from "./helpers/accounts.helpers";
 import { IService } from "./IService";
 
 export interface IAccountService extends IService<Account, TableNames.Accounts> {

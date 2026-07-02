@@ -46,6 +46,8 @@ export interface DonutChartProps {
   showLegend?: boolean;
   /** "auto" puts the legend beside the donut on wide screens, below on narrow. */
   legendPosition?: "auto" | "right" | "bottom";
+  /** Fixed legend height; scrolls internally when the rows overflow it. */
+  legendHeight?: number;
   /** Cap the legend height; it scrolls past this so a long category list doesn't run away. */
   legendMaxHeight?: number;
   /** Controlled selected slice; omit for uncontrolled internal selection. */
@@ -79,6 +81,7 @@ export function DonutChart({
   externalLabels = false,
   showLegend = true,
   legendPosition = "auto",
+  legendHeight,
   legendMaxHeight,
   selectedIndex,
   onSlicePress,
@@ -111,7 +114,7 @@ export function DonutChart({
 
   const frameCls = cn("gap-4", beside ? "flex-row items-center" : "items-center", className);
   const donutSlotCls = cn("items-center justify-center", beside && "flex-1");
-  const legendSlotCls = cn("min-w-0 flex-1", beside ? "ml-5" : "mt-4 w-full");
+  const legendSlotCls = cn("min-w-0", beside ? "ml-5 flex-1" : "mt-4 w-full");
 
   const positive = data.filter(d => d.value > 0);
   const total = positive.reduce((s, d) => s + d.value, 0);
@@ -124,6 +127,7 @@ export function DonutChart({
         maxSlices={maxSlices}
         showLegend={showLegend}
         legendPosition={legendPosition}
+        legendHeight={legendHeight}
         legendMaxHeight={legendMaxHeight}
         isEmpty={!loading && total <= 0}
         emptyTitle={emptyTitle}
@@ -269,6 +273,7 @@ export function DonutChart({
       {showLegend ? (
         <ChartLegend
           className={legendSlotCls}
+          height={legendHeight}
           maxHeight={legendMaxHeight}
           items={segs.map(s => ({ label: s.label, color: s.color, value: fmt(s.value), percent: s.pct }))}
           selectedIndex={selected}
@@ -285,6 +290,7 @@ export function DonutChartSkeleton({
   maxSlices = 8,
   showLegend = true,
   legendPosition = "auto",
+  legendHeight,
   legendMaxHeight,
   isEmpty = false,
   emptyTitle = "No data for this period",
@@ -298,6 +304,7 @@ export function DonutChartSkeleton({
   maxSlices?: number;
   showLegend?: boolean;
   legendPosition?: "auto" | "right" | "bottom";
+  legendHeight?: number;
   legendMaxHeight?: number;
   isEmpty?: boolean;
   emptyTitle?: string;
@@ -317,7 +324,7 @@ export function DonutChartSkeleton({
 
   const frameCls = cn("gap-4", beside ? "flex-row items-center" : "items-center", className);
   const donutSlotCls = cn("items-center justify-center", beside && "flex-1");
-  const legendSlotCls = cn("min-w-0 flex-1", beside ? "ml-5" : "mt-4 w-full");
+  const legendSlotCls = cn("min-w-0", beside ? "ml-5 flex-1" : "mt-4 w-full");
 
   const ghostRing = (
     <Svg width={size} height={size}>
@@ -346,7 +353,10 @@ export function DonutChartSkeleton({
           {ghostRing}
         </View>
         {isEmpty ? (
-          <View className={cn("items-center gap-1.5", beside ? "ml-5 flex-1" : "mt-4 w-full")}>
+          <View
+            className={cn("items-center justify-center gap-1.5", beside ? "ml-5 flex-1" : "mt-4 w-full")}
+            style={legendHeight ? { height: legendHeight } : undefined}
+          >
             <View className="h-11 w-11 items-center justify-center rounded-xl bg-surface-alt">
               <MyIcon name={emptyIcon} size={20} color={colors.inkFaint} />
             </View>
@@ -356,7 +366,10 @@ export function DonutChartSkeleton({
             {emptySubtitle ? <Badge className="rounded-xl" label={emptySubtitle} tone="neutral" /> : null}
           </View>
         ) : showLegend ? (
-          <View className={legendSlotCls} style={{ maxHeight: legendMaxHeight, overflow: "hidden" }}>
+          <View
+            className={cn(legendSlotCls, "gap-[2px]")}
+            style={{ height: legendHeight, maxHeight: legendMaxHeight, overflow: "hidden" }}
+          >
             {Array.from({ length: maxSlices }).map((_, i) => (
               <View key={i} className="flex-row items-center gap-2 px-1.5 py-1">
                 <View

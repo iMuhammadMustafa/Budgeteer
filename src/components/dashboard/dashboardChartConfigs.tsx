@@ -106,6 +106,7 @@ export function buildDashboardChartConfigs(
       formatValue={fmtMoney}
       externalLabels
       legendPosition="bottom"
+      legendHeight={148}
       onSlicePress={d => {
         if (d.label === "Other") return;
         const orig = data.find(p => p.x === d.label);
@@ -129,7 +130,7 @@ export function buildDashboardChartConfigs(
           data={toBarData(weeklyTransactionTypesData)}
           showYAxis={false}
           fillHeight
-          selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : null}
+          selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : undefined}
           onBarPress={(_d, i) => {
             if (!ws) return;
             handleDayPress({ dateString: ws.add(i, "day").format("YYYY-MM-DD") }, DashboardViewSelectionType.BAR);
@@ -204,7 +205,7 @@ export function buildDashboardChartConfigs(
           bar1Color={earnings.bar1Color}
           bar2Color={earnings.bar2Color}
           fillHeight
-          selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : null}
+          selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : undefined}
           onBarPress={(_d, i) => {
             const point = yearlyTransactionsTypes[i];
             if (point) handleBarPress(point);
