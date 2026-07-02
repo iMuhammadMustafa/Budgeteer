@@ -1,11 +1,11 @@
-import MyIcon from "@/src/components/elements/MyIcon";
+import { Chip } from "@/src/components/ui";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { Account, TransactionCategory } from "@/src/types/database/Tables.Types";
 import { useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 /** Filter keys that are internal / pagination-related and should never be shown as chips. */
-const HIDDEN_KEYS = new Set(["offset", "limit", "raw", "isDeleted"]);
+const HIDDEN_KEYS = new Set(["offset", "limit", "page", "raw", "isDeleted"]);
 
 /** Human-readable labels for each filter key. */
 const FILTER_LABELS: Record<string, string> = {
@@ -92,22 +92,12 @@ export default function ActiveFilters({
         contentContainerClassName="flex-row items-center gap-2"
       >
         {activeFilters.map(filter => (
-          <Pressable
+          <Chip
             key={filter.key}
-            onPress={() => onRemoveFilter(filter.key)}
-            className="flex-row items-center bg-secondary rounded-full pl-3 pr-2 py-1.5 gap-1.5"
-            accessibilityLabel={`Remove ${filter.label} filter`}
-            accessibilityRole="button"
-            style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Text className="text-xs text-text-secondary" selectable={false}>
-              {filter.label}:
-            </Text>
-            <Text className="text-xs font-medium text-foreground" numberOfLines={1} selectable={false}>
-              {filter.value}
-            </Text>
-            <MyIcon name="X" size={14} className="text-text-secondary ml-0.5" />
-          </Pressable>
+            label={`${filter.label}: ${filter.value}`}
+            onRemove={() => onRemoveFilter(filter.key)}
+            testID={`chip-filter-${filter.key}`}
+          />
         ))}
 
         {activeFilters.length > 1 && (
@@ -118,7 +108,6 @@ export default function ActiveFilters({
             accessibilityRole="button"
             style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
           >
-            <MyIcon name="X" size={14} className="text-status-danger" />
             <Text className="text-xs font-medium text-status-danger" selectable={false}>
               Clear All
             </Text>

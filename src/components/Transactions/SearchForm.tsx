@@ -42,11 +42,6 @@ export default function TransactionSearchForm({
   const content = (
     <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
       <Input
-        placeholder="Name"
-        value={searchParams?.name ?? ""}
-        onChangeText={text => handleTextChange("name", text)}
-      />
-      <Input
         placeholder="Amount"
         value={searchParams?.amount?.toString() ?? ""}
         onChangeText={text => handleTextChange("amount", text)}
@@ -107,7 +102,7 @@ export default function TransactionSearchForm({
           onPress={() => {
             onSubmit(searchParams);
           }}
-          label="Search"
+          label="Apply"
           testID="btn-search-submit"
         />
       </View>
@@ -118,7 +113,7 @@ export default function TransactionSearchForm({
     <ResponsiveModal
       visible={isOpen}
       onClose={handleClose}
-      title="Search Transactions"
+      title="Filter Transactions"
       size="lg"
       scrollable={false}
     >

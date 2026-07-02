@@ -1,9 +1,8 @@
-import { IconButton , Text as ThemedText } from "@/src/components/ui";
-import MyIcon from "@/src/components/elements/MyIcon";
+import { Button, IconButton, Input, Text as ThemedText } from "@/src/components/ui";
+import { useRouter } from "expo-router";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TransactionsPageHeaderProps } from "@/src/types/components/Transactions.types";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
-import { Link } from "expo-router";
 import { View } from "react-native";
 
 export default function TransactionsPageHeader({
@@ -16,8 +15,12 @@ export default function TransactionsPageHeader({
   isActionLoading,
   clearSelection,
   refreshTransactions,
-  setShowSearch,
+  searchText,
+  onSearchTextChange,
+  onOpenFilters,
+  activeFilterCount,
 }: TransactionsPageHeaderProps) {
+  const router = useRouter();
   const { formatCurrency } = usePrimaryCurrency();
   const isSelection = selectedTransactions.length > 0;
   const isSingleNonVoidTransfer =
@@ -25,89 +28,100 @@ export default function TransactionsPageHeader({
     selectedTransactions.length === 1 &&
     selectedTransactions.every(t => t.transferid === null) &&
     !selectedTransactions[0].isvoid;
-  return (
-    <View className="flex-row w-full justify-between px-10 mt-1 pt-2">
-      <SelectedInfo
-        selectedTransactions={selectedTransactions}
-        formatCurrency={formatCurrency}
-        selectedSum={selectedSum}
-      />
-      <View className="flex-row justify-between items-center gap-3">
-        {isSelection ? (
-          <>
+
+  if (isSelection) {
+    return (
+      <View className="flex-row w-full justify-between items-center px-4 pt-2 pb-2">
+        <SelectedInfo selectedTransactions={selectedTransactions} formatCurrency={formatCurrency} selectedSum={selectedSum} />
+        <View className="flex-row justify-between items-center gap-3">
+          <IconButton
+            variant="ghost"
+            size="md"
+            haptic="medium"
+            onPress={openDeleteConfirm}
+            accessibilityLabel="Delete selected transactions"
+            testID="btn-delete-selected"
+            icon="Trash"
+            disabled={isActionLoading}
+          />
+          <IconButton
+            variant="ghost"
+            size="md"
+            onPress={openDuplicateConfirm}
+            accessibilityLabel="Duplicate selected transactions"
+            testID="btn-duplicate-selected"
+            icon="Copy"
+            disabled={isActionLoading}
+          />
+          {isSingleNonVoidTransfer && (
             <IconButton
               variant="ghost"
               size="md"
-              haptic="medium"
-              onPress={openDeleteConfirm}
-              accessibilityLabel="Delete selected transactions"
-              testID="btn-delete-selected"
-              icon="Trash"
+              onPress={onSplit}
+              accessibilityLabel="Split transaction"
+              testID="btn-split-transaction"
+              icon="Scissors"
               disabled={isActionLoading}
             />
-            <IconButton
-              variant="ghost"
-              size="md"
-              onPress={openDuplicateConfirm}
-              accessibilityLabel="Duplicate selected transactions"
-              testID="btn-duplicate-selected"
-              icon="Copy"
-              disabled={isActionLoading}
-            />
-            {isSingleNonVoidTransfer && (
-              <IconButton
-                variant="ghost"
-                size="md"
-                onPress={onSplit}
-                accessibilityLabel="Split transaction"
-                testID="btn-split-transaction"
-                icon="Scissors"
-                disabled={isActionLoading}
-              />
-            )}
-            <IconButton
-              variant="ghost"
-              size="md"
-              onPress={openBatchUpdate}
-              accessibilityLabel="Batch update selected transactions"
-              testID="btn-batch-update"
-              icon="Pencil"
-              disabled={isActionLoading}
-            />
-            <IconButton
-              variant="ghost"
-              size="md"
-              onPress={clearSelection}
-              accessibilityLabel="Clear selection"
-              testID="btn-clear-selection"
-              icon="X"
-              disabled={isActionLoading}
-            />
-          </>
-        ) : (
-          <>
-            <IconButton
-              variant="ghost"
-              size="md"
-              onPress={() => setShowSearch(true)}
-              accessibilityLabel="Search transactions"
-              testID="btn-search-transactions"
-              icon="Search"
-            />
-            <IconButton
-              variant="ghost"
-              size="md"
-              onPress={refreshTransactions}
-              accessibilityLabel="Refresh transactions"
-              testID="btn-refresh-transactions"
-              icon="RefreshCw"
-            />
-            <Link href="/AddTransaction" className="items-center justify-center">
-              <MyIcon name="Plus" className="text-foreground" size={20} />
-            </Link>
-          </>
-        )}
+          )}
+          <IconButton
+            variant="ghost"
+            size="md"
+            onPress={openBatchUpdate}
+            accessibilityLabel="Batch update selected transactions"
+            testID="btn-batch-update"
+            icon="Pencil"
+            disabled={isActionLoading}
+          />
+          <IconButton
+            variant="ghost"
+            size="md"
+            onPress={clearSelection}
+            accessibilityLabel="Clear selection"
+            testID="btn-clear-selection"
+            icon="X"
+            disabled={isActionLoading}
+          />
+        </View>
       </View>
+    );
+  }
+
+  return (
+    <View className="flex-row w-full items-center gap-2 px-4 pt-2 pb-2">
+      <View className="flex-1">
+        <Input
+          iconName="Search"
+          placeholder="Search transactions..."
+          value={searchText}
+          onChangeText={onSearchTextChange}
+          testID="input-search-transactions"
+        />
+      </View>
+      <Button
+        variant="outline"
+        size="md"
+        leadingIcon="SlidersHorizontal"
+        label={activeFilterCount > 0 ? `Filter (${activeFilterCount})` : "Filter"}
+        onPress={onOpenFilters}
+        testID="btn-open-filters"
+      />
+      <IconButton
+        variant="ghost"
+        size="md"
+        onPress={refreshTransactions}
+        accessibilityLabel="Refresh transactions"
+        testID="btn-refresh-transactions"
+        icon="RefreshCw"
+      />
+      <IconButton
+        variant="outline"
+        size="md"
+        onPress={() => router.push("/AddTransaction")}
+        accessibilityLabel="Add transaction"
+        testID="btn-add-transaction"
+        icon="Plus"
+      />
     </View>
   );
 }

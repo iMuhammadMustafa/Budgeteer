@@ -25,8 +25,11 @@ export default function Transactions() {
     handleLongPress,
     handlePress,
     refreshTransactions,
-    showSearch,
-    setShowSearch,
+    showFilters,
+    setShowFilters,
+    searchText,
+    handleSearchTextChange,
+    activeFilterCount,
     filters,
     accounts,
     categories,
@@ -65,12 +68,15 @@ export default function Transactions() {
         isActionLoading={isActionLoading}
         clearSelection={clearSelection}
         refreshTransactions={refreshTransactions}
-        setShowSearch={setShowSearch}
+        searchText={searchText}
+        onSearchTextChange={handleSearchTextChange}
+        onOpenFilters={() => setShowFilters(true)}
+        activeFilterCount={activeFilterCount}
       />
 
       <TransactionSearchForm
-        isOpen={showSearch}
-        setIsOpen={setShowSearch}
+        isOpen={showFilters}
+        setIsOpen={setShowFilters}
         filters={params || filters}
         accounts={accounts ?? []}
         categories={categories ?? []}

@@ -48,7 +48,7 @@ export default function TransactionItem({
             triggerHaptic("light");
             handlePress(transaction, transferTransaction);
           }}
-          className={`m-2 p-1 flex-row items-center justify-between gap-5 flex-1 rounded-md ${isSelected ? "bg-info-100" : "bg-background"}`}
+          className={`m-2 p-3 flex-row items-center justify-between gap-5 flex-1 rounded-lg border ${isSelected ? "bg-primary-soft border-primary" : "bg-surface border-border"}`}
           testID={`transaction-item-${transaction.id}`}
           accessibilityRole="link"
           style={({ pressed }) => [
@@ -59,21 +59,21 @@ export default function TransactionItem({
           ]}
         >
           <View
-            className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-muted`}
+            className={`rounded-full h-10 w-10 flex justify-center items-center bg-${iconProp.color} border border-border`}
           >
             <MyIcon
               name={transaction.icon ?? iconProp.iconName}
               size={iconProp.size}
-              className="color-card-foreground"
+              className={`text-${iconProp.textColor}`}
             />
           </View>
           <View className="flex-1">
-            <ThemedText className={transaction.isvoid ? "line-through" : ""}>
+            <ThemedText className={`font-sans-semibold ${transaction.isvoid ? "line-through" : ""}`}>
               {transaction.name ?? transaction.categoryname ?? "Hello"}
             </ThemedText>
             {transaction.name !== transaction.categoryname && (
               <View className="flex-row justify-start items-center gap-2">
-                <ThemedText className={transaction.isvoid ? "line-through" : ""}>
+                <ThemedText variant="caption" className={transaction.isvoid ? "line-through" : ""}>
                   {transaction.categoryname}
                 </ThemedText>
               </View>
@@ -81,15 +81,15 @@ export default function TransactionItem({
           </View>
           <View className="flex items-end">
             <TransactionAmount amount={amount} color={iconProp.textColor} showSigned={!isTransfer} />
-            <ThemedText className={transaction.isvoid ? "line-through" : ""}>
+            <ThemedText variant="caption" className={transaction.isvoid ? "line-through" : ""}>
               {transaction.accountname} {" | "}
               {formatMoney(transaction.runningbalance ?? 0, primaryCurrency)}
             </ThemedText>
             {isTransfer && transferTransaction && (
               <View className="flex-row items-center justify-center gap-2">
-                <MyIcon name="ArrowRight" size={15} className="text-foreground" />
+                <MyIcon name="ArrowRight" size={15} className="text-ink-mute" />
 
-                <ThemedText className={transferTransaction.isvoid ? "line-through" : ""}>
+                <ThemedText variant="caption" className={transferTransaction.isvoid ? "line-through" : ""}>
                   {transferTransaction.accountname} {" | "}
                   {formatMoney(transferTransaction.runningbalance ?? 0, primaryCurrency)}
                 </ThemedText>
