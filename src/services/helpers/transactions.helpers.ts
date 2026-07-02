@@ -81,24 +81,11 @@ export const updateTransactionHelper = async (
   transactionRepo: ITransactionRepository,
   accountRepo: IAccountRepository,
 ) => {
-  let userId = session.user.id;
-  let tenantId = session.user.user_metadata.tenantid;
-
+  const userId = session.user.id;
+  const tenantId = session.user.user_metadata.tenantid;
   const currentTimestamp = new Date().toISOString();
+  const isTransfer = !!originalData.transferid;
 
-  const updatedTransaction: Updates<TableNames.Transactions> = {};
-  let updatedTransferTransaction: Updates<TableNames.Transactions> = {};
-
-  let newAccount: { id?: string; amount?: number } = {};
-  let newTransferAccount: { id?: string; amount?: number } = {};
-
-  let originalAccount: { id?: string; amount?: number } = {};
-  let originalTransferAccount: { id?: string; amount?: number } = {};
-
-  // If nothing is changed return
-  //   if (JSON.stringify(formTransaction) === JSON.stringify(originalData)) {
-  //     return;
-  //   }
   const isUnchanged = Object.keys(formTransaction).every(key => {
     if (key in formTransaction && key in originalData) {
       return formTransaction[key as keyof typeof formTransaction] === originalData[key as keyof typeof originalData];
@@ -107,259 +94,91 @@ export const updateTransactionHelper = async (
   });
   if (isUnchanged) return; // Exit early if no changes
 
-  // Update trnsactions values
-  if (formTransaction.name !== originalData.name) {
-    updatedTransaction.name = formTransaction.name;
-    if (originalData.transferid) {
-      updatedTransferTransaction.name = formTransaction.name;
-    }
-  }
-  if (formTransaction.date !== originalData.date) {
-    updatedTransaction.date = formTransaction.date;
-    if (originalData.transferid) {
-      updatedTransferTransaction.date = formTransaction.date;
-    }
-  }
-  if (formTransaction.payee !== originalData.payee) {
-    updatedTransaction.payee = formTransaction.payee;
-    if (originalData.transferid) {
-      updatedTransferTransaction.payee = formTransaction.payee;
-    }
-  }
-  if (formTransaction.description !== originalData.description) {
-    updatedTransaction.description = formTransaction.description;
-    if (originalData.transferid) {
-      updatedTransferTransaction.description = formTransaction.description;
-    }
-  }
-  if (formTransaction.tags !== originalData.tags) {
-    updatedTransaction.tags = formTransaction.tags;
-    if (originalData.transferid) {
-      updatedTransferTransaction.tags = formTransaction.tags;
-    }
-  }
-  if (formTransaction.notes !== originalData.notes) {
-    updatedTransaction.notes = formTransaction.notes;
-    if (originalData.transferid) {
-      updatedTransferTransaction.notes = formTransaction.notes;
-    }
-  }
-  // if (formTransaction.type !== originalData.type) {
-  //   updatedTransaction.type = formTransaction.type;
-  //   if (originalData.transferid) {
-  //     updatedTransferTransaction.type = formTransaction.type;
-  //   }
-  // }
+  // Build the update payload(s) for the edited row and, for transfers, its
+  // mirrored pair. Fields shared between the pair (everything but the
+  // account/amount legs, which are swapped/negated) are mirrored verbatim.
+  const updatedTransaction: Updates<TableNames.Transactions> = {};
+  const updatedTransferTransaction: Updates<TableNames.Transactions> = {};
 
-  if (formTransaction.categoryid !== originalData.categoryid) {
-    updatedTransaction.categoryid = formTransaction.categoryid;
-    if (originalData.transferid) {
-      updatedTransferTransaction.categoryid = formTransaction.categoryid;
+  const mirrorField = <K extends keyof Updates<TableNames.Transactions>>(field: K, value: any) => {
+    updatedTransaction[field] = value;
+    if (isTransfer) updatedTransferTransaction[field] = value;
+  };
+
+  (["name", "date", "payee", "description", "tags", "notes", "categoryid"] as const).forEach(field => {
+    if (formTransaction[field] !== undefined && formTransaction[field] !== originalData[field]) {
+      mirrorField(field, formTransaction[field]);
     }
+  });
+
+  if (formTransaction.isvoid !== undefined && formTransaction.isvoid !== originalData.isvoid) {
+    mirrorField("isvoid", formTransaction.isvoid);
   }
-
-  if (formTransaction.isvoid !== originalData.isvoid) {
-    updatedTransaction.isvoid = formTransaction.isvoid;
-    if (originalData.transferid) {
-      updatedTransferTransaction.isvoid = formTransaction.isvoid;
-    }
-
-    //If voided => Remove Amount from Accounts
-    if (updatedTransaction.isvoid === true) {
-      originalAccount = {
-        id: originalData.accountid,
-        amount: -originalData.amount,
-      };
-
-      if (originalData.transferaccountid) {
-        originalTransferAccount = {
-          id: originalData.transferaccountid,
-          amount: originalData.amount,
-        };
-      }
-    }
-    //If Unvoided => Add Amount to Accounts
-    if (originalData.isvoid === true && updatedTransaction.isvoid !== false) {
-      originalAccount = {
-        id: formTransaction.accountid,
-        amount: formTransaction.amount,
-      };
-
-      if (formTransaction.transferaccountid) {
-        originalTransferAccount = {
-          id: formTransaction.transferaccountid,
-          amount: -formTransaction.amount!,
-        };
-      }
-    }
-  }
-
-  if (formTransaction.amount !== originalData.amount) {
+  if (formTransaction.amount !== undefined && formTransaction.amount !== originalData.amount) {
     updatedTransaction.amount = formTransaction.amount;
-    if (originalData.transferid) {
-      updatedTransferTransaction.amount = -formTransaction.amount!;
-    }
-
-    // Only set account balance updates if this is the only field changing
-    // and if separate account change logic hasn't already set these
-    if (
-      !updatedTransaction.accountid &&
-      !updatedTransaction.transferaccountid &&
-      updatedTransaction.isvoid !== false &&
-      originalData.isvoid !== false
-    ) {
-      const amountDiff = formTransaction.amount! - originalData.amount;
-      originalAccount = {
-        id: originalData.accountid,
-        amount: amountDiff,
-      };
-
-      if (originalData.transferid && originalData.transferaccountid) {
-        originalTransferAccount = {
-          id: originalData.transferaccountid,
-          amount: -amountDiff,
-        };
-      }
-    }
+    if (isTransfer) updatedTransferTransaction.amount = -formTransaction.amount;
   }
-
-  // Handle Account Change =>
-  // 1. Update Transaction with new AccountId
-  // 2. Update TransferTransaction with new TransferAccountId
-  // 3. Update OriginalAccount with AccountId and -OriginalAmount
-  // 4. Update NewAccount with new AccountId and +FormAmount
-  if (formTransaction.accountid !== originalData.accountid) {
+  if (formTransaction.accountid !== undefined && formTransaction.accountid !== originalData.accountid) {
     updatedTransaction.accountid = formTransaction.accountid;
-
-    // originalAccount.id = originalData.accountid;
-    // newAccount.id = formTransaction.accountid;
-    originalAccount = {
-      id: originalData.accountid,
-      amount: originalData.isvoid === true ? undefined : -parseFloat(originalData.amount.toString()),
-    };
-    if (updatedTransaction.isvoid !== false) {
-      newAccount = {
-        id: formTransaction.accountid,
-        amount: formTransaction.amount ?? originalData.amount,
-      };
-    }
-
-    if (originalData.transferid) {
-      updatedTransferTransaction.transferaccountid = formTransaction.accountid;
-    }
+    if (isTransfer) updatedTransferTransaction.transferaccountid = formTransaction.accountid;
   }
-
-  // Handle Destination Account Change =>
-  // 1. Update Transaction with new TransferAccountId
-  // 2. Update TransferTransaction with new AccountId
-  // 3. Update Original TransferAccount with TransferAccountId and +OriginalAmount
-  // 3. Update New TransferAccount with new TransferAccountId and -FormAmount
   if (
-    formTransaction.transferaccountid &&
-    originalData.transferaccountid &&
+    formTransaction.transferaccountid !== undefined &&
     formTransaction.transferaccountid !== originalData.transferaccountid
   ) {
     updatedTransaction.transferaccountid = formTransaction.transferaccountid;
-    updatedTransferTransaction.accountid = formTransaction.transferaccountid;
-
-    // originalTransferAccount.id = originalData.transferaccountid;
-    // newTransferAccount.id = formTransaction.transferaccountid;
-
-    originalTransferAccount = {
-      id: originalData.transferaccountid,
-      amount: originalData.isvoid === true ? undefined : originalData.amount,
-    };
-    if (updatedTransaction.isvoid !== false) {
-      newTransferAccount = {
-        id: formTransaction.transferaccountid,
-        amount: -formTransaction.amount!,
-      };
-    }
+    // `transferaccountid` is `string | null`; the mirror leg's `accountid` is
+    // `string | undefined`. Coerce null→undefined (a transfer always has a
+    // destination, so this branch never receives null in practice).
+    if (isTransfer) updatedTransferTransaction.accountid = formTransaction.transferaccountid ?? undefined;
   }
 
-  if (updatedTransaction.amount && updatedTransaction.isvoid !== false && originalData.isvoid !== false) {
-    // Account Changed
-    if (updatedTransaction.accountid) {
-      originalAccount = {
-        id: originalData.accountid,
-        amount: -originalData.amount,
-      };
-      newAccount = {
-        id: updatedTransaction.accountid,
-        amount: updatedTransaction.amount,
-      };
-    }
-    // Transfer Account Changed
-    if (updatedTransaction.transferaccountid) {
-      if (originalData.transferaccountid) {
-        // Revert the original transfer account
-        originalTransferAccount = {
-          id: originalData.transferaccountid,
-          amount: originalData.amount,
-        };
-      }
-      // Update the new transfer account
-      newTransferAccount = {
-        id: updatedTransaction.transferaccountid,
-        amount: -updatedTransaction.amount,
-      };
-    }
+  // Compute account-balance deltas.
+  //
+  // A (non-voided) transaction leg contributes its signed `amount` to
+  // `accountid`'s balance, and — for transfers — the inverse amount to
+  // `transferaccountid`'s balance. A voided leg contributes nothing. The
+  // correct balance adjustment for any combination of field changes is
+  // simply (new contribution - old contribution) per affected account,
+  // so we compute both contribution sets and net them into a single delta
+  // map rather than special-casing each field combination.
+  const mergedIsVoid = formTransaction.isvoid ?? originalData.isvoid;
+  const mergedAccountId = formTransaction.accountid ?? originalData.accountid;
+  const mergedAmount = formTransaction.amount ?? originalData.amount;
+  const mergedTransferAccountId = formTransaction.transferaccountid ?? originalData.transferaccountid;
 
-    // Nothing Changed (except possibly amount, which was already handled above)
-    if (
-      !updatedTransaction.accountid &&
-      !updatedTransaction.transferaccountid &&
-      formTransaction.amount === undefined
-    ) {
-      // Only enter here if amount wasn't explicitly changed
-      originalAccount = {
-        id: originalData.accountid,
-        amount: -originalData.amount + (updatedTransaction.amount || originalData.amount), // Adjust the original account
-      };
-      if (originalData.transferaccountid) {
-        originalTransferAccount = {
-          id: originalData.transferaccountid,
-          amount: originalData.amount - (updatedTransaction.amount || originalData.amount), // Adjust the transfer account
-        };
-      }
-    }
+  const deltas = new Map<string, number>();
+  const addDelta = (accountId: string | null | undefined, amount: number | null | undefined) => {
+    if (!accountId || !amount) return;
+    deltas.set(accountId, (deltas.get(accountId) ?? 0) + amount);
+  };
+
+  if (!originalData.isvoid) {
+    addDelta(originalData.accountid, -originalData.amount);
+    if (isTransfer) addDelta(originalData.transferaccountid, originalData.amount);
+  }
+  if (!mergedIsVoid) {
+    addDelta(mergedAccountId, mergedAmount);
+    if (isTransfer) addDelta(mergedTransferAccountId, -mergedAmount!);
   }
 
-  // Update Transactions
+  // Persist the row(s) first, then apply balance deltas.
   if (Object.keys(updatedTransaction).length > 0) {
     updatedTransaction.id = originalData.id;
     updatedTransaction.updatedat = currentTimestamp;
     updatedTransaction.updatedby = userId;
-
-    const updatedTransactionRes = await transactionRepo.update(updatedTransaction.id, updatedTransaction, tenantId);
+    await transactionRepo.update(updatedTransaction.id, updatedTransaction, tenantId);
   }
-  if (originalData.transferid && Object.keys(updatedTransferTransaction).length > 0) {
-    updatedTransferTransaction.id = originalData.transferid;
+  if (isTransfer && Object.keys(updatedTransferTransaction).length > 0) {
+    updatedTransferTransaction.id = originalData.transferid!;
     updatedTransferTransaction.updatedat = currentTimestamp;
     updatedTransferTransaction.updatedby = userId;
-
-    const updatedTransferTransactionRes = await transactionRepo.update(
-      updatedTransferTransaction.id,
-      updatedTransferTransaction,
-      tenantId,
-    );
+    await transactionRepo.update(updatedTransferTransaction.id, updatedTransferTransaction, tenantId);
   }
 
-  try {
-    if (newAccount.id && newAccount.amount) {
-      await accountRepo.updateAccountBalance(newAccount.id, newAccount.amount, tenantId);
+  for (const [accountId, delta] of deltas) {
+    if (delta !== 0) {
+      await accountRepo.updateAccountBalance(accountId, delta, tenantId);
     }
-    if (newTransferAccount.id && newTransferAccount.amount) {
-      await accountRepo.updateAccountBalance(newTransferAccount.id, newTransferAccount.amount, tenantId);
-    }
-    if (originalAccount.id && originalAccount.amount) {
-      await accountRepo.updateAccountBalance(originalAccount.id, originalAccount.amount, tenantId);
-    }
-    if (originalTransferAccount.id && originalTransferAccount.amount) {
-      await accountRepo.updateAccountBalance(originalTransferAccount.id, originalTransferAccount.amount, tenantId);
-    }
-  } catch (error) {
-    // Rollback or handle the error
-    throw new Error("Failed to update account balances");
   }
 };

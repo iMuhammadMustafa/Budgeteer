@@ -251,6 +251,54 @@ describe("TransactionSqliteRepository", () => {
         const reread = await repo.findById(created.id, A);
         expect((reread as any).tags).toEqual(["x", "y"]);
     });
+
+    // Phase 1: createMultiple/updateMultiple/deleteMultiple wrap their loop in a
+    // single db.withTransactionAsync — a mid-batch failure must roll back every
+    // row in the batch, not just skip the failing one.
+    it("createMultiple rolls back every row in the batch when one violates a FK constraint", async () => {
+        const before = await repo.findAll(A);
+
+        await expect(
+            repo.createMultiple(
+                [
+                    {
+                        id: "tx-new-1", name: "Valid", amount: -5, date: "2026-02-01", type: "Expense",
+                        accountid: "acct-A", categoryid: "cat-A", isvoid: false,
+                    } as any,
+                    {
+                        id: "tx-new-2", name: "Invalid", amount: -5, date: "2026-02-01", type: "Expense",
+                        accountid: "does-not-exist", categoryid: "cat-A", isvoid: false,
+                    } as any,
+                ],
+                A,
+            ),
+        ).rejects.toThrow();
+
+        const after = await repo.findAll(A);
+        expect(after).toHaveLength(before.length);
+        expect(await repo.findById("tx-new-1", A)).toBeNull();
+    });
+
+    it("updateMultiple rolls back every update in the batch when one violates a FK constraint", async () => {
+        await ins(TableNames.Transactions, {
+            id: "tx-A2", name: "Lunch A", amount: -20, date: "2026-01-16", type: "Expense",
+            accountid: "acct-A", categoryid: "cat-A", isvoid: 0, tenantid: A, isdeleted: 0, createdat: NOW,
+        });
+
+        await expect(
+            repo.updateMultiple(
+                [
+                    { id: "tx-A", name: "Renamed" } as any,
+                    { id: "tx-A2", accountid: "does-not-exist" } as any,
+                ],
+                A,
+            ),
+        ).rejects.toThrow();
+
+        // The first update in the batch must not have persisted either.
+        const txA = await repo.findById("tx-A", A);
+        expect((txA as any)?.name).toBe("Coffee A");
+    });
 });
 
 describe("ConfigurationSqliteRepository", () => {

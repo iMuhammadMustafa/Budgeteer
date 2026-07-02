@@ -1,9 +1,9 @@
 name: Test
 
-# Phase 7.1 — PR + push gate. The unit/integration Vitest suite (money +
-# validation + SQLite integration + secret/header guards) is the blocking gate.
-# lint + typecheck are currently NON-BLOCKING because of known, tracked breakage
-# (see notes on each step) — flip them to blocking once those are fixed.
+# Phase 7.1/7.2 — PR + push gate. Blocking: Vitest unit/integration suite,
+# E2E-hygiene lint (no hard waits), and the @smoke E2E journeys (static export +
+# injection harness). Advisory: full app lint + typecheck (only pre-existing,
+# out-of-scope breakage remains; flip to blocking once cleared).
 
 on:
   push:
@@ -22,9 +22,9 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  # ── Static checks (advisory until the tooling is fixed) ─────────────────
+  # ── Static checks ───────────────────────────────────────────────────────
   static-checks:
-    name: Lint + Typecheck (advisory)
+    name: Lint + Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,15 +33,24 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - run: yarn install --frozen-lockfile
 
-      # TODO(blocking): remove continue-on-error once ESLint is fixed
-      # (eslint 10 vs eslint-plugin-react — crashes on every file today).
-      - name: ESLint
+      # BLOCKING — E2E hygiene. eslint-plugin-playwright forbids hard waits
+      # (no-wait-for-timeout) and force clicks on the active E2E suite. The
+      # quarantined legacy specs are lint-ignored (see eslint.config.js).
+      - name: ESLint (E2E hygiene, blocking)
+        run: npx eslint e2e/
+
+      # ADVISORY — full app lint. The ESLint 10 × eslint-plugin-react crash is
+      # FIXED (react version pinned in eslint.config.js). ~21 pre-existing
+      # app-code errors remain (set-state-in-effect, refs-in-render, unescaped
+      # entities, one orphaned IconPicker) — out of the test-rebuild scope.
+      # Flip to blocking once those are cleared.
+      - name: ESLint (full, advisory)
         run: npm run lint
         continue-on-error: true
 
-      # TODO(blocking): remove continue-on-error after clearing the 4 known
-      # pre-existing tsc errors (playwright.config `dotenv` types; orphaned
-      # IconPicker.tsx imports from the redesign Step-5 legacy dereference).
+      # ADVISORY — the `dotenv` error is fixed; 3 pre-existing tsc errors remain
+      # in the orphaned src/components/elements/IconPicker.tsx (redesign Step-5
+      # dereference). Flip to blocking once that orphan is resolved.
       - name: Typecheck
         run: npm run typecheck
         continue-on-error: true
@@ -84,22 +93,34 @@ jobs:
         if: always()
         run: supabase stop
 
-  # ── E2E smoke (placeholder — enable after Phase 5.6) ────────────────────
-  # Depends on the Playwright rewrite (5.3 static export + 5.6 @smoke journeys),
-  # which is not done yet. Left here as the intended shape so wiring it up later
-  # is a one-line uncomment.
-  #
-  # e2e-smoke:
-  #   name: E2E @smoke (local, static export)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-node@v4
-  #       with: { node-version: "22" }
-  #     - run: yarn install --frozen-lockfile
-  #     - run: npx playwright install --with-deps chromium
-  #     - run: npm run web:export   # expo export --platform web (cache by lockfile+src hash)
-  #     - run: npm run test:e2e -- --grep @smoke
-  #       env:
-  #         EXPO_PUBLIC_SUPA_URL: ${{ secrets.EXPO_PUBLIC_SUPA_URL }}
-  #         EXPO_PUBLIC_SUPA_KEY: ${{ secrets.EXPO_PUBLIC_SUPA_KEY }}
+  # ── E2E smoke (BLOCKING) ────────────────────────────────────────────────
+  # The rebuilt Playwright suite (Phase 5.4/5.5): static export + injection
+  # harness, fresh context per test, zero hard waits. Runs the @smoke slice on
+  # the local SQLite backend + mobile viewport. The playwright.config webServer
+  # runs `npm run web:serve` (serves ./dist) automatically. Cloud journeys
+  # self-skip without credentials. Legacy specs are quarantined (testIgnore).
+  e2e-smoke:
+    name: E2E @smoke (local, static export)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: yarn install --frozen-lockfile
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Build static web export
+        run: npm run web:export
+        env:
+          EXPO_PUBLIC_SUPA_URL: ${{ secrets.EXPO_PUBLIC_SUPA_URL }}
+          EXPO_PUBLIC_SUPA_KEY: ${{ secrets.EXPO_PUBLIC_SUPA_KEY }}
+      - name: Run @smoke journeys
+        run: npx playwright test --grep @smoke --project=chromium-local --project=mobile-smoke
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
