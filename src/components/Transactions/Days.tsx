@@ -46,12 +46,12 @@ export default function DaysList({
 }
 function DaysListHeader({ day, data }: { day: string; data: GroupedData }) {
   return (
-    <View className="flex-row m-1 p-3 justify-between items-center bg-card border border-muted rounded-lg">
+    <View className="flex-row m-1 p-3 justify-between items-center bg-surface border border-border rounded-lg">
       <View className="flex-col items-start justify-start gap-2">
-        <ThemedText>{day}</ThemedText>
+        <ThemedText className="font-sans-semibold">{day}</ThemedText>
         <View className="flex-row gap-2 items-center">
-          <MyIcon name="CalendarDays" size={15} className="text-foreground" />
-          <ThemedText>{dayjs(day).fromNow()}</ThemedText>
+          <MyIcon name="CalendarDays" size={15} className="text-ink-mute" />
+          <ThemedText variant="caption">{dayjs(day).fromNow()}</ThemedText>
         </View>
       </View>
       <TransactionAmount amount={data[day].amount} />

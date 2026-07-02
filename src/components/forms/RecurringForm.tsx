@@ -1,3 +1,29 @@
+import dayjs from "dayjs";
+import { router } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import MyIcon from "@/src/components/elements/MyIcon";
+import {
+  AmountKeypadInput,
+  Button,
+  DateTimePicker,
+  GroupedIconSelect,
+  IconButton,
+  Input,
+  ResponsiveModal,
+  SearchableSelect,
+  SegmentedControl,
+  Select,
+  Switch,
+  Text,
+  type SearchableSelectOption,
+  type SelectOption,
+} from "@/src/components/ui";
+import { accentFor, swatchForHex, type ThemeName } from "@/src/components/ui/theme/tokens";
+import { useRecentValues } from "@/src/hooks/useRecentValues";
+import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import {
   parseRecurrenceRule,
@@ -7,90 +33,42 @@ import {
 } from "@/src/services/Recurrings.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
-import { OptionItem } from "@/src/types/components/forms.types";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+import { ValidationSchema } from "@/src/types/components/forms.types";
 import { TableNames } from "@/src/types/database/TableNames";
-import { Inserts, Recurring, TransactionType, Updates } from "@/src/types/database/Tables.Types";
-import dayjs from "dayjs";
-import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, Text, View } from "react-native";
-import {
-  AccountSelecterDropdown,
-  Button,
-  DateTimePicker,
-  GroupedInput,
-  Input,
-  MyCategoriesDropdown,
-  type SearchableSelectOption,
-  SearchableSelect,
-  Select,
-  type SelectOption,
-  Switch,
-} from "@/src/components/ui";
+import { Inserts, TransactionType, Updates } from "@/src/types/database/Tables.Types";
+import { getCurrencySymbol } from "@/src/utils/currency";
+import { commonValidationRules } from "@/src/utils/form-validation";
+import FormField from "../form-builder/FormField";
+import { useFormState } from "../form-builder/hooks/useFormState";
+import { useFormSubmission } from "../form-builder/hooks/useFormSubmission";
+import AccountForm, { initialState as accountInitialState } from "./AccountForm";
+import TransactionCategoryForm, { initialState as transactionCategoryInitialState } from "./TransactionCategoryForm";
 
 type RecurringFormType = Omit<Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings>, "recurrencerule"> & {
   frequency: RecurrenceFrequency;
   interval: number;
-  type: TransactionType; // Added type field
-  transferaccountid?: string | null; // For transfer transactions
-  recurringType: RecurringType; // Standard, Transfer, CreditCardPayment
-  autoApplyEnabled: boolean; // Individual auto-apply setting
-  isAmountFlexible: boolean; // Allow transactions without predefined amount
-  isDateFlexible: boolean; // Allow transactions without predefined date
-  recurrencerule?: string; // Will be constructed
+  type: TransactionType;
+  transferaccountid?: string | null;
+  recurringType: RecurringType;
+  autoApplyEnabled: boolean;
+  isAmountFlexible: boolean;
+  isDateFlexible: boolean;
+  recurrencerule?: string;
 };
 
-const recurrenceFrequencyOptions: OptionItem[] = [
+const FREQUENCY_OPTIONS: SelectOption[] = [
   { id: "DAILY", label: "Daily", value: "DAILY" },
   { id: "WEEKLY", label: "Weekly", value: "WEEKLY" },
   { id: "MONTHLY", label: "Monthly", value: "MONTHLY" },
   { id: "YEARLY", label: "Yearly", value: "YEARLY" },
 ];
 
-const recurringTypeOptions: OptionItem[] = [
-  { id: "Expense", label: "Expense", value: "Expense" },
-  { id: "Income", label: "Income", value: "Income" },
-  { id: "Transfer", label: "Transfer", value: "Transfer" },
-];
-
-const recurringCategoryOptions: OptionItem[] = [
-  { id: RecurringType.Standard, label: "Standard Transaction", value: RecurringType.Standard },
-  { id: RecurringType.Transfer, label: "Account Transfer", value: RecurringType.Transfer },
-  // { id: RecurringType.CreditCardPayment, label: "Credit Card Payment", value: RecurringType.CreditCardPayment },
-];
-
-// DropdownField → ui Select bridges: legacy options carry the stored value on
-// `.value` and key on `.id`; Select keys/values on a string id and reports back
-// that id, so these map between the two shapes (preserving the original
-// `onSelect(item)` handlers, which still receive the legacy OptionItem).
-const toSelectOptions = (options: OptionItem[]): SelectOption[] =>
-  options.map(o => ({
-    id: String(o.id),
-    label: o.label,
-    value: o.value,
-    icon: o.icon,
-    iconColor: o.color,
-    group: (o as { group?: string }).group,
-  }));
-
-const selectIdForValue = (options: OptionItem[], selectedValue: unknown): string | null => {
-  const match = options.find(o => o.value === selectedValue);
-  return match ? String(match.id) : null;
-};
-
-const optionForId = (options: OptionItem[], id: string | string[] | null): OptionItem | null => {
-  if (id == null) return null;
-  const key = Array.isArray(id) ? id[0] : id;
-  return options.find(o => String(o.id) === key) ?? null;
-};
-
 export const initialRecurringState: RecurringFormType = {
   name: "",
   description: undefined,
   nextoccurrencedate: dayjs().local().format("YYYY-MM-DD"),
-  type: "Expense", // Default type
-  // recurrencerule: "FREQ=MONTHLY;INTERVAL=1", // Default to monthly - will be constructed
+  type: "Expense",
   frequency: "MONTHLY",
   interval: 1,
   enddate: undefined,
@@ -98,514 +76,693 @@ export const initialRecurringState: RecurringFormType = {
   currencycode: "USD",
   sourceaccountid: "",
   transferaccountid: null,
-  recurringType: RecurringType.Standard, // Default to standard
-  autoApplyEnabled: false, // Default to manual
-  isAmountFlexible: false, // Default to fixed amount
-  isDateFlexible: false, // Default to fixed date
+  recurringType: RecurringType.Standard,
+  autoApplyEnabled: false,
+  isAmountFlexible: false,
+  isDateFlexible: false,
   categoryid: undefined,
   payeename: undefined,
   notes: undefined,
   isactive: true,
   lastexecutedat: undefined,
-  tenantid: "", // Will be overridden by session, but required by type
-  // Standard fields will be set by hooks/API
-  // id: undefined, // Handled by Supabase or edit mode
-  // created_by: undefined,
-  // created_at: undefined,
-  // updated_by: undefined,
-  // updated_at: undefined,
-  // is_deleted: false,
+  tenantid: "",
 };
 
-export default function RecurringForm({ recurring }: { recurring: any }) {
+interface RecurringFormProps {
+  recurring: any;
+  onSuccess?: (saved: any) => void;
+}
+
+export default function RecurringForm({ recurring, onSuccess }: RecurringFormProps) {
+  const { isDark, colors } = useTheme();
+  const theme: ThemeName = isDark ? "dark" : "light";
+  const { formatCurrency } = usePrimaryCurrency();
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
+
   const {
+    formState,
+    updateField,
+    setFieldTouched,
+    validateForm,
+    isValid,
+    isDirty,
+    resetForm,
+    isSubmitting,
+    error,
+    isLoading,
+    isEdit,
     mode,
     setMode,
-    formData,
-    setFormData,
-    isEdit,
-    isLoading,
-    isSubmitting,
-    categories,
-    accounts,
+    categoryOptions,
+    accountOptions,
+    transferAccountOptions,
+    handleRecurringTypeChange,
+    handleTypeChange,
+    handleFlexibleDateToggle,
+    handleFlexibleAmountToggle,
+    handleSwitchAccounts,
+    blueprintSearch,
+    handleBlueprintSelect,
     blueprintLabel,
-    handleTextChange,
-    handleDateChange,
-    handleSwitchChange,
-    handleBlueprintTransactionSelect,
-    handleSubmit,
-    handleCancel,
-    handleModeToggle,
-  } = useRecurringForm(recurring);
+    onSubmit,
+  } = useRecurringForm({ recurring, onSuccess });
 
-  const transactionService = useTransactionService();
+  const data = formState.data;
 
-  // SearchableDropdown → SearchableSelect: the legacy searchAction received
-  // (text, tenantId); useFindByName already captures tenantId in its service
-  // closure and ignores the second arg, so the new (query)-only signature wraps
-  // it directly. Results ({label, item}) map to SearchableSelectOption; on
-  // select we reconstruct the legacy {label, item} shape for the handler.
-  const blueprintSearch = async (query: string): Promise<SearchableSelectOption[]> => {
-    const results = await transactionService.useFindByName(query);
-    return results.map((r, i) => ({
-      id: `${r.label}-${i}`,
-      label: r.label,
-      value: r.item,
-    }));
+  const categoryGroupRecents = useRecentValues("recurring:categorygroup");
+  const handleCategoryChange = (id: string) => {
+    updateField("categoryid", id);
+    const opt = categoryOptions.find(o => o.id === id);
+    if (opt?.group) categoryGroupRecents.record(opt.group);
   };
 
-  if (isLoading) return <ActivityIndicator className="flex-1 justify-center items-center" />;
+  const selectedCategory = useMemo(() => categoryOptions.find(o => o.id === data.categoryid), [categoryOptions, data.categoryid]);
+  const selectedAccount = useMemo(() => accountOptions.find(a => a.id === data.sourceaccountid) as any, [accountOptions, data.sourceaccountid]);
+  const selectedTransferAccount = useMemo(
+    () => transferAccountOptions.find(a => a.id === data.transferaccountid) as any,
+    [transferAccountOptions, data.transferaccountid],
+  );
+
+  const isTransfer = data.recurringType === RecurringType.Transfer;
+  const previewIcon = selectedCategory?.icon ?? (isTransfer ? "ArrowLeftRight" : "Repeat");
+  const swatch = selectedCategory?.color
+    ? (swatchForHex(selectedCategory.color, theme) ?? accentFor(selectedCategory.label ?? "", theme))
+    : accentFor(isTransfer ? "Transfer" : data.name || "Recurring", theme);
+  const amountTone = isTransfer ? "info" : undefined;
+  const previewAmountClass = isTransfer ? "text-info" : mode === "minus" ? "text-danger" : "text-success";
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center py-10">
+        <Text className="text-ink-mute">Loading…</Text>
+      </View>
+    );
+  }
 
   return (
-    <ScrollView className="p-5 px-6 flex-1" nestedScrollEnabled={true}>
-      {!isEdit && (
-        <SearchableSelect
-          label="Blueprint Transaction (Optional)"
-          placeholder="Search transaction by name..."
-          searchAction={blueprintSearch}
-          onSelect={option => handleBlueprintTransactionSelect({ label: option.label, item: option.value })}
-          selectedLabel={blueprintLabel}
-          present={Platform.OS !== "web" ? "sheet" : undefined}
-          className="my-1"
-        />
-      )}
-
-      <Input
-        label="Name"
-        value={formData.name}
-        onChangeText={text => handleTextChange("name", text)}
-        placeholder="e.g., Rent Payment"
-      />
-      <Input
-        label="Description"
-        value={formData.description ?? ""}
-        onChangeText={text => handleTextChange("description", text)}
-        placeholder="e.g., Monthly apartment rent"
-        multiline
-      />
-      <Select
-        label="Recurring Category"
-        options={toSelectOptions(recurringCategoryOptions)}
-        value={selectIdForValue(recurringCategoryOptions, formData.recurringType)}
-        onChange={id => {
-          const item = optionForId(recurringCategoryOptions, id);
-          if (item) {
-            handleTextChange("recurringType", item.id as RecurringType);
-          }
-        }}
-        present={Platform.OS !== "web" ? "sheet" : undefined}
-      />
-
-      {formData.recurringType === RecurringType.Standard && (
-        <Select
-          label="Transaction Type"
-          options={toSelectOptions(recurringTypeOptions)}
-          value={selectIdForValue(recurringTypeOptions, formData.type)}
-          onChange={id => {
-            const item = optionForId(recurringTypeOptions, id);
-            if (item) {
-              handleTextChange("type", item.id as TransactionType);
-            }
-          }}
-          present={Platform.OS !== "web" ? "sheet" : undefined}
-        />
-      )}
-
-      <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
-        <Text className="text-foreground">Flexible Date (Manual Scheduling)</Text>
-        <Switch
-          value={!!formData.isDateFlexible}
-          onValueChange={value => handleSwitchChange("isDateFlexible", value)}
-          testID="switch-flexible-date"
-        />
-      </View>
-
-      {!formData.isDateFlexible && (
-        <>
-          <DateTimePicker
-            label="Next Occurrence Date"
-            value={formData.nextoccurrencedate ? dayjs(formData.nextoccurrencedate).toISOString() : null}
-            onChange={isoDateString => handleDateChange("nextoccurrencedate", isoDateString)}
-            present={Platform.OS !== "web" ? "sheet" : undefined}
-          />
-          <Select
-            label="Frequency"
-            options={toSelectOptions(recurrenceFrequencyOptions)}
-            value={selectIdForValue(recurrenceFrequencyOptions, formData.frequency)}
-            onChange={id => {
-              const item = optionForId(recurrenceFrequencyOptions, id);
-              // Handle null item
-              if (item) {
-                handleTextChange("frequency", item.id as RecurrenceFrequency);
-              }
-            }}
-            present={Platform.OS !== "web" ? "sheet" : undefined}
-          />
-          <Input
-            label="Interval"
-            value={formData.interval.toString()}
-            onChangeText={text => handleTextChange("interval", parseInt(text, 10) || 1)}
-            keyboardType="numeric"
-            placeholder="e.g., 1"
-          />
-        </>
-      )}
-      <View className="flex-row justify-between items-center my-3 p-3 border border-border-default rounded-md">
-        <Text className="text-foreground">Flexible Amount (Enter at Execution)</Text>
-        <Switch
-          value={!!formData.isAmountFlexible}
-          onValueChange={value => handleSwitchChange("isAmountFlexible", value)}
-          testID="switch-flexible-amount"
-        />
-      </View>
-
-      {!formData.isAmountFlexible && (
-        <View className="mb-4">
-          <GroupedInput
-            label="Amount"
-            amount={formData.type === "Transfer" ? formData.amount ?? 0 : mode === "minus" ? -(formData.amount ?? 0) : formData.amount ?? 0}
-            mode={formData.type === "Transfer" ? "transfer" : mode}
-            onChange={value => handleTextChange("amount", Math.abs(value) || 0)}
-            onModeChange={newMode => {
-              if (newMode === "plus" || newMode === "minus") {
-                setMode(newMode);
-              }
-            }}
-            placeholder="e.g., 1200.50"
-            inputTestID="amount-input"
-          />
-        </View>
-      )}
-
-      <AccountSelecterDropdown
-        label="Source Account"
-        selectedValue={formData.sourceaccountid}
-        onSelect={accountOption => {
-          if (accountOption) {
-            handleTextChange("sourceaccountid", accountOption.id);
-            // Auto-set currency based on account
-            const selectedAccount = accounts?.find((acc: any) => acc.id === accountOption.id);
-            if (selectedAccount?.currency) {
-              handleTextChange("currencycode", selectedAccount.currency);
-            }
-          }
-        }}
-        accounts={accounts}
-        isModal={Platform.OS !== "web"}
-        groupBy="category.name"
-      />
-
-      {formData.recurringType === RecurringType.Transfer && (
-        <>
-          <AccountSelecterDropdown
-            label="To Account (Destination)"
-            selectedValue={formData.transferaccountid}
-            onSelect={account => handleTextChange("transferaccountid", account?.id || null)}
-            accounts={accounts}
-            isModal={Platform.OS !== "web"}
-            groupBy="category.name"
-          />
-          {formData.sourceaccountid &&
-            formData.transferaccountid &&
-            formData.sourceaccountid === formData.transferaccountid && (
-              <View className="bg-red-50 p-4 rounded-md border border-red-200">
-                <Text className="text-status-danger font-medium">Invalid Configuration</Text>
-                <Text className="text-status-danger text-sm">Source and destination accounts must be different.</Text>
-              </View>
-            )}
-        </>
-      )}
-      {/* // <TextInputField
-            //   label="Currency Code"
-            //   value={formData.currencycode}
-            //   onChange={text => handleTextChange("currencycode", text.toUpperCase())}
-            //   placeholder="e.g., USD"
-            //   maxLength={3}
-            // /> */}
-
-      <MyCategoriesDropdown
-        label="Category"
-        selectedValue={formData.categoryid}
-        categories={categories}
-        onSelect={category => handleTextChange("categoryid", category?.id || null)}
-        isModal={Platform.OS !== "web"}
-        showClearButton={!!formData.categoryid && formData.recurringType !== RecurringType.CreditCardPayment}
-        onClear={() => handleTextChange("categoryid", null)}
-      />
-      <Input
-        label="Payee Name (Optional)"
-        value={formData.payeename ?? ""}
-        onChangeText={text => handleTextChange("payeename", text)}
-        placeholder="e.g., Landlord Name"
-      />
-      <Input
-        label="Notes (Optional)"
-        value={formData.notes ?? ""}
-        onChangeText={text => handleTextChange("notes", text)}
-        placeholder="Any additional notes"
-        multiline
-      />
-      {formData.isDateFlexible && formData.isAmountFlexible && (
-        <View className="bg-blue-50 p-4 rounded-md border border-blue-200 my-3">
-          <Text className="text-status-info font-medium mb-2">Fully Flexible Transaction</Text>
-          <Text className="text-status-info text-sm">
-            This recurring transaction is fully flexible - you can execute it at any time with any amount. Perfect for
-            irregular expenses or income that vary in timing and amount.
+    <SafeAreaView className="flex-1">
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 p-1">
+        {/* Preview card */}
+        <View className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4">
+          <View className="h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: swatch.soft }}>
+            <MyIcon name={previewIcon} size={22} color={swatch.fg} />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text variant="h3" numberOfLines={1}>
+              {data.name || "New recurring"}
+            </Text>
+            <Text className="text-caption uppercase text-ink-mute" numberOfLines={1}>
+              {data.isDateFlexible
+                ? "Flexible date"
+                : data.nextoccurrencedate && dayjs(data.nextoccurrencedate).isValid()
+                  ? `Next: ${dayjs(data.nextoccurrencedate).format("MMM D, YYYY")}`
+                  : "No date set"}
+            </Text>
+          </View>
+          <Text className={`font-mono-semibold text-h3 ${previewAmountClass}`} numberOfLines={1}>
+            {data.isAmountFlexible
+              ? "Flexible"
+              : formatCurrency(mode === "minus" ? -Math.abs(data.amount ?? 0) : Math.abs(data.amount ?? 0))}
           </Text>
         </View>
-      )}
 
-      <View className="flex-row text-center justify-around items-center gap-5 mt-5 mb-10">
-        <Button
-          variant="primary"
-          size="lg"
-          haptic="success"
-          className="px-8 py-3"
-          disabled={isSubmitting}
-          loading={isSubmitting}
-          onPress={handleSubmit}
-          label={isEdit ? "Update" : "Save"}
-          testID="btn-recurring-submit"
+        {!isEdit ? (
+          <SearchableSelect
+            label="Blueprint transaction (optional)"
+            placeholder="Search a past transaction to prefill…"
+            searchAction={blueprintSearch}
+            onSelect={handleBlueprintSelect}
+            selectedLabel={blueprintLabel}
+          />
+        ) : null}
+
+        <Input
+          label="Name"
+          placeholder="e.g., Rent Payment"
+          value={data.name ?? ""}
+          onChangeText={value => updateField("name", value)}
+          onBlur={() => setFieldTouched("name")}
+          error={formState.touched.name ? formState.errors.name : undefined}
+          testID="recurring-name"
         />
-      </View>
-    </ScrollView>
+
+        <View>
+          <Text variant="label" className="mb-[7px]">
+            Recurring type
+          </Text>
+          <SegmentedControl
+            options={[
+              { key: RecurringType.Standard, label: "Standard", tone: "primary" },
+              { key: RecurringType.Transfer, label: "Transfer", tone: "info" },
+            ]}
+            value={data.recurringType}
+            onChange={key => handleRecurringTypeChange(key as RecurringType)}
+            testID="recurring-category-type"
+          />
+        </View>
+
+        {data.recurringType === RecurringType.Standard ? (
+          <View>
+            <Text variant="label" className="mb-[7px]">
+              Transaction type
+            </Text>
+            <SegmentedControl
+              options={[
+                { key: "Expense", label: "Expense", tone: "danger" },
+                { key: "Income", label: "Income", tone: "success" },
+                { key: "Transfer", label: "Transfer", tone: "info" },
+              ]}
+              value={data.type}
+              onChange={handleTypeChange}
+              testID="recurring-type"
+            />
+          </View>
+        ) : null}
+
+        {/* Flexible date */}
+        <View className="flex-row items-center justify-between rounded-xl border border-border bg-surface p-4">
+          <View className="min-w-0 flex-1 pr-3">
+            <Text className="text-body text-ink">Flexible date</Text>
+            <Text className="text-caption text-ink-mute">Schedule manually instead of a fixed occurrence.</Text>
+          </View>
+          <Switch
+            value={!!data.isDateFlexible}
+            onValueChange={handleFlexibleDateToggle}
+            testID="switch-flexible-date"
+          />
+        </View>
+
+        {!data.isDateFlexible ? (
+          <View className={`${Platform.OS === "web" ? "flex flex-row gap-4" : "gap-4"}`}>
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+              <DateTimePicker
+                label="Next occurrence"
+                value={data.nextoccurrencedate ? dayjs(data.nextoccurrencedate).toISOString() : null}
+                onChange={iso => updateField("nextoccurrencedate", dayjs(iso).format("YYYY-MM-DD"))}
+                withTime={false}
+                error={formState.touched.nextoccurrencedate ? formState.errors.nextoccurrencedate : undefined}
+                testID="recurring-next-date"
+              />
+            </View>
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+              <Select
+                label="Frequency"
+                options={FREQUENCY_OPTIONS}
+                value={data.frequency}
+                onChange={value => updateField("frequency", value as RecurrenceFrequency)}
+                testID="recurring-frequency"
+              />
+            </View>
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+              <Input
+                label="Interval"
+                placeholder="e.g., 1"
+                keyboardType="numeric"
+                value={data.interval.toString()}
+                onChangeText={text => updateField("interval", parseInt(text, 10) || 1)}
+                testID="recurring-interval"
+              />
+            </View>
+          </View>
+        ) : null}
+
+        {/* Flexible amount */}
+        <View className="flex-row items-center justify-between rounded-xl border border-border bg-surface p-4">
+          <View className="min-w-0 flex-1 pr-3">
+            <Text className="text-body text-ink">Flexible amount</Text>
+            <Text className="text-caption text-ink-mute">Enter the amount when you execute it.</Text>
+          </View>
+          <Switch
+            value={!!data.isAmountFlexible}
+            onValueChange={handleFlexibleAmountToggle}
+            testID="switch-flexible-amount"
+          />
+        </View>
+
+        {!data.isAmountFlexible ? (
+          <AmountKeypadInput
+            value={Math.abs(data.amount ?? 0)}
+            onChange={value => updateField("amount", value)}
+            mode={mode}
+            onModeChange={setMode}
+            tone={amountTone}
+            currencySymbol={getCurrencySymbol(data.currencycode)}
+            error={formState.touched.amount ? formState.errors.amount : undefined}
+            testID="recurring-amount"
+          />
+        ) : null}
+
+        {/* Category + Accounts */}
+        <View className="gap-4 rounded-xl border border-border bg-surface p-4">
+          {!isTransfer ? (
+            <GroupedIconSelect
+              label="Category"
+              options={categoryOptions}
+              value={data.categoryid}
+              onChange={handleCategoryChange}
+              recentGroups={categoryGroupRecents.recent}
+              onAddNew={() => setAddingCategory(true)}
+              addNewLabel="Add New Category"
+              error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
+              testID="recurring-category"
+            />
+          ) : null}
+
+          <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+              <FormField
+                config={{
+                  name: "sourceaccountid",
+                  label: "Source account",
+                  type: "select",
+                  required: true,
+                  options: accountOptions,
+                  group: "category.name",
+                  popUp: Platform.OS !== "web",
+                  addNew: {
+                    entityType: "Account",
+                    label: "Add New Account",
+                    renderForm: ({ onSuccess: onAccountSuccess, onCancel }) => (
+                      <AccountForm account={accountInitialState} onSuccess={onAccountSuccess} onCancel={onCancel} />
+                    ),
+                  },
+                }}
+                value={data.sourceaccountid}
+                error={formState.errors.sourceaccountid}
+                touched={formState.touched.sourceaccountid}
+                onChange={value => updateField("sourceaccountid", value)}
+                onBlur={() => setFieldTouched("sourceaccountid")}
+              />
+              {selectedAccount ? (
+                <Text className="mt-1.5 text-caption text-ink-mute">
+                  Balance: {formatCurrency(selectedAccount.balance, false)}
+                </Text>
+              ) : null}
+            </View>
+
+            {isTransfer ? (
+              <>
+                <IconButton
+                  variant="ghost"
+                  icon="ArrowUpDown"
+                  haptic="selection"
+                  onPress={handleSwitchAccounts}
+                  className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} self-center p-2`}
+                  accessibilityLabel="Switch source and destination accounts"
+                  testID="btn-switch-accounts"
+                />
+
+                <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                  <FormField
+                    config={{
+                      name: "transferaccountid",
+                      label: "Destination account",
+                      type: "select",
+                      required: true,
+                      options: transferAccountOptions,
+                      group: "category.name",
+                      popUp: Platform.OS !== "web",
+                      addNew: {
+                        entityType: "Account",
+                        label: "Add New Account",
+                        renderForm: ({ onSuccess: onAccountSuccess, onCancel }) => (
+                          <AccountForm account={accountInitialState} onSuccess={onAccountSuccess} onCancel={onCancel} />
+                        ),
+                      },
+                    }}
+                    value={data.transferaccountid}
+                    error={formState.errors.transferaccountid}
+                    touched={formState.touched.transferaccountid}
+                    onChange={value => updateField("transferaccountid", value)}
+                    onBlur={() => setFieldTouched("transferaccountid")}
+                  />
+                  {selectedTransferAccount ? (
+                    <Text className="mt-1.5 text-caption text-ink-mute">
+                      Balance: {formatCurrency(selectedTransferAccount.balance, false)}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
+          </View>
+        </View>
+
+        <ResponsiveModal visible={addingCategory} onClose={() => setAddingCategory(false)} title="Add Category" size="lg">
+          <TransactionCategoryForm
+            category={transactionCategoryInitialState}
+            onSuccess={(saved: any) => {
+              if (saved?.id) handleCategoryChange(saved.id);
+              setAddingCategory(false);
+            }}
+            onCancel={() => setAddingCategory(false)}
+          />
+        </ResponsiveModal>
+
+        {/* Advanced */}
+        <View className="rounded-xl border border-border bg-surface">
+          <Pressable
+            onPress={() => setShowAdvanced(s => !s)}
+            accessibilityRole="button"
+            testID="recurring-advanced-toggle"
+            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-80"
+          >
+            <Text className="text-body text-ink">Advanced</Text>
+            <MyIcon name={showAdvanced ? "ChevronUp" : "ChevronDown"} size={18} color={colors.inkMute} />
+          </Pressable>
+          {showAdvanced ? (
+            <View className="gap-4 px-4 pb-4">
+              <Input
+                label="Description"
+                placeholder="e.g., Monthly apartment rent"
+                multiline
+                value={data.description ?? ""}
+                onChangeText={value => updateField("description", value)}
+                testID="recurring-description"
+              />
+              {!isTransfer ? (
+                <Input
+                  label="Payee"
+                  placeholder="e.g., Landlord name"
+                  value={data.payeename ?? ""}
+                  onChangeText={value => updateField("payeename", value)}
+                  testID="recurring-payee"
+                />
+              ) : null}
+              <Input
+                label="Notes"
+                placeholder="Any additional notes"
+                multiline
+                value={data.notes ?? ""}
+                onChangeText={value => updateField("notes", value)}
+                testID="recurring-notes"
+              />
+            </View>
+          ) : null}
+        </View>
+
+        {data.isDateFlexible && data.isAmountFlexible ? (
+          <View className="rounded-xl border border-info bg-info-soft p-4">
+            <Text className="mb-1 font-sans-semibold text-body text-info">Fully flexible</Text>
+            <Text className="text-caption text-info">
+              No fixed date or amount — you'll enter both when you execute this recurring transaction.
+            </Text>
+          </View>
+        ) : null}
+
+        {error ? (
+          <View className="rounded-xl border border-danger bg-danger-soft p-3">
+            <Text className="text-caption text-danger">Error: {error.message}</Text>
+          </View>
+        ) : null}
+
+        <View className="flex-row justify-end gap-3">
+          {isDirty ? (
+            <Button label="Reset" variant="outline" onPress={resetForm} disabled={isSubmitting} testID="btn-recurring-reset" />
+          ) : null}
+          <Button
+            label={isEdit ? "Save Changes" : "Add Recurring"}
+            onPress={onSubmit}
+            disabled={!isValid || isSubmitting}
+            loading={isSubmitting}
+            leadingIcon="Check"
+            testID="btn-recurring-submit"
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const useRecurringForm = (recurringToEdit: Recurring | null) => {
-  const [formData, setFormData] = useState<RecurringFormType>(initialRecurringState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<"plus" | "minus">("minus");
-  // SearchableSelect is caller-owned for its display label (async results).
-  const [blueprintLabel, setBlueprintLabel] = useState<string | null>(null);
-
+const useRecurringForm = ({ recurring, onSuccess }: RecurringFormProps) => {
   const recurringService = useRecurringService();
-  const transactionCategoriesService = useTransactionCategoryService();
-  const accountsService = useAccountService();
-  const { data: categories, isLoading: isLoadingCategories } = transactionCategoriesService.useFindAll();
-  const { data: accounts, isLoading: isLoadingAccounts } = accountsService.useFindAll();
+  const transactionCategoryService = useTransactionCategoryService();
+  const accountService = useAccountService();
+  const transactionService = useTransactionService();
 
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAllWithGroup();
+  const { data: accounts, isLoading: isAccountsLoading } = accountService.useFindAllWithCategory();
   const { mutate: upsertRecurring } = recurringService.useUpsert();
 
-  const isEdit = !!recurringToEdit?.id;
-  const isLoading = isLoadingCategories || isLoadingAccounts;
+  const [mode, setMode] = useState<"plus" | "minus">(recurring?.amount && recurring.amount < 0 ? "minus" : recurring?.amount > 0 ? "plus" : "minus");
+  const [blueprintLabel, setBlueprintLabel] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isEdit && recurringToEdit) {
-      const { freq, interval: interv } = parseRecurrenceRule(recurringToEdit.recurrencerule);
+  const isEdit = !!recurring?.id;
 
-      setFormData({
-        ...(recurringToEdit as any), // Cast to any to allow additional form fields like frequency, interval
-        amount: Math.abs(recurringToEdit.amount || 0), // Ensure amount is positive for form
-        type: (recurringToEdit.type as TransactionType) || "Expense", // Set type, default if not present
+  const initialFormData: RecurringFormType = useMemo(() => {
+    if (isEdit) {
+      const { freq, interval } = parseRecurrenceRule(recurring.recurrencerule);
+      return {
+        ...recurring,
+        amount: Math.abs(recurring.amount || 0),
+        type: (recurring.type as TransactionType) || "Expense",
         frequency: freq,
-        interval: interv,
-        recurringType: recurringToEdit.recurringtype || RecurringType.Standard,
-        autoApplyEnabled: recurringToEdit.autoapplyenabled || false,
-        isAmountFlexible: recurringToEdit.isamountflexible || false,
-        isDateFlexible: recurringToEdit.isdateflexible || false,
-        transferaccountid: recurringToEdit.transferaccountid || null,
-        nextoccurrencedate: dayjs(recurringToEdit.nextoccurrencedate).format("YYYY-MM-DD"),
-        enddate: recurringToEdit.enddate ? dayjs(recurringToEdit.enddate).format("YYYY-MM-DD") : null,
+        interval,
+        recurringType: recurring.recurringtype || RecurringType.Standard,
+        autoApplyEnabled: recurring.autoapplyenabled || false,
+        isAmountFlexible: recurring.isamountflexible || false,
+        isDateFlexible: recurring.isdateflexible || false,
+        transferaccountid: recurring.transferaccountid || null,
+        nextoccurrencedate: dayjs(recurring.nextoccurrencedate).format("YYYY-MM-DD"),
+        enddate: recurring.enddate ? dayjs(recurring.enddate).format("YYYY-MM-DD") : null,
+      };
+    }
+    return { ...initialRecurringState, ...recurring };
+  }, [recurring, isEdit]);
+
+  const validationSchema: ValidationSchema<RecurringFormType> = useMemo(
+    () => ({
+      name: [commonValidationRules.required("Name is required")],
+      sourceaccountid: [commonValidationRules.required("Source account is required")],
+      categoryid: [
+        commonValidationRules.custom(
+          (value, data) => data?.recurringType === RecurringType.Transfer || !!value,
+          "Category is required",
+        ),
+      ],
+      transferaccountid: [
+        commonValidationRules.custom(
+          (value, data) => data?.recurringType !== RecurringType.Transfer || !!value,
+          "Destination account is required",
+        ),
+        commonValidationRules.custom(
+          (value, data) => !value || !data?.sourceaccountid || value !== data.sourceaccountid,
+          "Source and destination accounts must be different",
+        ),
+      ],
+      nextoccurrencedate: [
+        commonValidationRules.custom((value, data) => !!data?.isDateFlexible || !!value, "Date is required"),
+      ],
+      amount: [
+        commonValidationRules.custom(
+          (value, data) => !!data?.isAmountFlexible || (value !== null && value !== undefined),
+          "Amount is required",
+        ),
+      ],
+    }),
+    [],
+  );
+
+  const { formState, updateField, setFieldTouched, validateForm, resetForm, setFormData, isValid, isDirty } =
+    useFormState<RecurringFormType>(initialFormData, validationSchema);
+
+  const handleRecurringTypeChange = useCallback(
+    (value: RecurringType) => {
+      updateField("recurringType", value);
+      if (value === RecurringType.Transfer) {
+        updateField("type", "Transfer");
+        updateField("categoryid", null);
+      } else {
+        updateField("transferaccountid", null);
+      }
+    },
+    [updateField],
+  );
+
+  const handleTypeChange = useCallback(
+    (key: string) => {
+      updateField("type", key as TransactionType);
+      setMode(key === "Income" ? "plus" : "minus");
+      if (key === "Transfer") updateField("categoryid", null);
+      else updateField("transferaccountid", null);
+    },
+    [updateField],
+  );
+
+  const handleFlexibleDateToggle = useCallback(
+    (value: boolean) => {
+      updateField("isDateFlexible", value);
+      if (value) {
+        updateField("nextoccurrencedate", "");
+        updateField("frequency", "MONTHLY");
+        updateField("interval", 1);
+      }
+    },
+    [updateField],
+  );
+
+  const handleFlexibleAmountToggle = useCallback(
+    (value: boolean) => {
+      updateField("isAmountFlexible", value);
+      if (value) updateField("amount", null);
+    },
+    [updateField],
+  );
+
+  const handleSwitchAccounts = useCallback(() => {
+    const src = formState.data.sourceaccountid;
+    const dst = formState.data.transferaccountid;
+    if (src && dst) {
+      updateField("sourceaccountid", dst);
+      updateField("transferaccountid", src);
+    } else if (src && !dst) {
+      updateField("sourceaccountid", "");
+    }
+  }, [formState.data.sourceaccountid, formState.data.transferaccountid, updateField]);
+
+  const blueprintSearch = useCallback(
+    async (query: string): Promise<SearchableSelectOption[]> => {
+      const results = await transactionService.useFindByName(query);
+      return results.map((r, i) => ({ id: `${r.label}-${i}`, label: r.label, value: r.item }));
+    },
+    [transactionService],
+  );
+
+  const handleBlueprintSelect = useCallback(
+    (option: SearchableSelectOption) => {
+      const blueprintTransaction = option.value as any;
+      setBlueprintLabel(option.label);
+      if (blueprintTransaction.amount) setMode(blueprintTransaction.amount > 0 ? "plus" : "minus");
+      setFormData({
+        name: blueprintTransaction.name ?? formState.data.name,
+        description: blueprintTransaction.description ?? formState.data.description,
+        amount: Math.abs(blueprintTransaction.amount || 0),
+        type: (blueprintTransaction.type as TransactionType) ?? formState.data.type,
+        currencycode:
+          accounts?.find((acc: any) => acc.id === blueprintTransaction.accountid)?.currency ?? formState.data.currencycode,
+        sourceaccountid: blueprintTransaction.accountid ?? formState.data.sourceaccountid,
+        categoryid: blueprintTransaction.categoryid ?? formState.data.categoryid,
+        payeename: blueprintTransaction.payee ?? formState.data.payeename,
       });
-      setMode(recurringToEdit.amount && recurringToEdit.amount < 0 ? "minus" : "plus");
-    } else if (!isEdit) {
-      setFormData({ ...initialRecurringState });
-    }
-  }, [recurringToEdit, isEdit]);
+    },
+    [accounts, formState.data, setFormData],
+  );
 
-  const handleTextChange = (
-    name: keyof RecurringFormType,
-    value: string | number | boolean | null | string[] | RecurrenceFrequency | TransactionType | RecurringType,
-  ) => {
-    setFormData(prev => {
-      const newState = { ...prev, [name]: value };
+  const handleSubmit = useCallback(
+    async (submitData: RecurringFormType) => {
+      const recurrenceRule = submitData.isDateFlexible ? null : `FREQ=${submitData.frequency};INTERVAL=${submitData.interval}`;
+      const amount = submitData.isAmountFlexible ? null : mode === "plus" ? submitData.amount : -(submitData.amount ?? 0);
 
-      // Handle recurring type changes
-      if (name === "recurringType") {
-        if (value === RecurringType.Transfer) {
-          newState.type = "Transfer";
-          newState.categoryid = null as any; // Transfers don't have categories
-        } else if (value === RecurringType.CreditCardPayment) {
-          newState.type = "Transfer"; // Credit card payments are transfers
-          newState.isAmountFlexible = true; // Credit card payments always have flexible amounts
-          newState.amount = null; // Clear amount as it will be calculated at execution
-          // Keep categoryid as it's required for credit card payments
-        } else {
-          // Standard recurring transaction
-          newState.transferaccountid = undefined;
-        }
-      }
+      const dataToSubmit: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
+        id: recurring?.id,
+        name: submitData.name,
+        description: submitData.description,
+        type: submitData.type,
+        nextoccurrencedate: submitData.isDateFlexible
+          ? "2099-12-31"
+          : submitData.nextoccurrencedate || dayjs().format("YYYY-MM-DD"),
+        recurrencerule: recurrenceRule!,
+        enddate: submitData.enddate,
+        amount,
+        currencycode: submitData.currencycode,
+        sourceaccountid: submitData.sourceaccountid,
+        categoryid: submitData.categoryid,
+        payeename: submitData.payeename,
+        notes: submitData.notes,
+        isactive: submitData.isactive,
+        recurringtype: submitData.recurringType,
+        autoapplyenabled: submitData.autoApplyEnabled,
+        isamountflexible: submitData.isAmountFlexible,
+        isdateflexible: submitData.isDateFlexible,
+        transferaccountid: submitData.transferaccountid,
+      };
 
-      // Handle transaction type changes
-      if (name === "type") {
-        if (value === "Transfer") {
-          newState.categoryid = undefined; // Transfers don't have categories
-        } else {
-          newState.transferaccountid = null; // Other types don't have a destination account
-        }
-      }
-      if (name === "type") {
-        if (value === "Income") {
-          setMode("plus");
-        } else {
-          setMode("minus");
-        }
-      }
+      await new Promise<void>((resolve, reject) => {
+        upsertRecurring(
+          { form: dataToSubmit, original: recurring?.id ? recurring : undefined },
+          {
+            onSuccess: savedData => {
+              if (onSuccess) onSuccess(savedData);
+              else router.replace("/(drawer)/(tabs)/Recurrings");
+              resolve();
+            },
+            onError: err => reject(err),
+          },
+        );
+      });
+    },
+    [mode, recurring, upsertRecurring, onSuccess],
+  );
 
-      // Handle flexible amount/date changes
-      if (name === "isAmountFlexible" && value === true) {
-        newState.amount = null; // Clear amount if flexible
-      }
+  const { submit, isSubmitting, error } = useFormSubmission(handleSubmit);
 
-      if (name === "isDateFlexible" && value === true) {
-        newState.nextoccurrencedate = ""; // Clear date if flexible
-        newState.frequency = "MONTHLY"; // Reset to default
-        newState.interval = 1;
-      }
+  const onSubmit = useCallback(() => {
+    if (validateForm()) submit(formState.data);
+  }, [validateForm, submit, formState.data]);
 
-      return newState;
-    });
-  };
+  const categoryOptions = useMemo(
+    () =>
+      (categories ?? [])
+        .filter(c => c.name)
+        .map(c => ({
+          id: c.id,
+          label: c.name || "",
+          icon: c.icon,
+          color: c.color,
+          group: c.group?.name || "Uncategorized",
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [categories],
+  );
 
-  const handleDateChange = (
-    name: keyof Pick<RecurringFormType, "nextoccurrencedate" | "enddate">,
-    isoDateString: string | null,
-  ) => {
-    setFormData(prev => ({ ...prev, [name]: isoDateString ? dayjs(isoDateString).format("YYYY-MM-DD") : null }));
-  };
+  const accountOptions = useMemo(
+    () =>
+      (accounts ?? [])
+        .filter(a => a.name)
+        .map(a => ({
+          id: a.id,
+          label: a.name || "",
+          value: a.id,
+          icon: a.icon,
+          color: a.color,
+          balance: a.balance,
+          group: a.category?.name ?? "Other",
+        }))
+        .sort((a, b) => (a.group !== b.group ? a.group.localeCompare(b.group) : a.label.localeCompare(b.label))),
+    [accounts],
+  );
 
-  const handleSwitchChange = (
-    name: keyof Pick<RecurringFormType, "isactive" | "autoApplyEnabled" | "isAmountFlexible" | "isDateFlexible">,
-    value: boolean,
-  ) => {
-    setFormData(prev => {
-      const newState = { ...prev, [name]: value };
-
-      // Handle flexible amount/date changes
-      if (name === "isAmountFlexible" && value === true) {
-        newState.amount = null; // Clear amount if flexible
-      }
-
-      if (name === "isDateFlexible" && value === true) {
-        newState.nextoccurrencedate = ""; // Clear date if flexible
-        newState.frequency = "MONTHLY"; // Reset to default
-        newState.interval = 1;
-      }
-
-      return newState;
-    });
-  };
-
-  const handleBlueprintTransactionSelect = async (selected: SearchableDropdownItem) => {
-    if (selected && selected.item) {
-      // console.log("Selected Transaction ID:", selected.item);
-      try {
-        setIsSubmitting(true); // Use submitting state for loading indicator
-        const blueprintTransaction = selected.item;
-        setBlueprintLabel(selected.label);
-        // console.log("Blueprint Transaction:", blueprintTransaction);
-        let amount = blueprintTransaction.amount;
-        if (amount) {
-          setMode(amount > 0 ? "plus" : "minus");
-        }
-
-        if (blueprintTransaction) {
-          setFormData(prev => ({
-            ...prev,
-            name: blueprintTransaction.name || prev.name,
-            description: blueprintTransaction.description || prev.description,
-            amount: Math.abs(blueprintTransaction.amount || 0), // Recurrings usually positive
-            // Assuming blueprintTransaction.type exists and is compatible with TransactionType
-            type: (blueprintTransaction.type as TransactionType) || prev.type,
-            currencycode:
-              accounts?.find((acc: any) => acc.id === blueprintTransaction.accountid)?.currency || prev.currencycode,
-            sourceaccountid: blueprintTransaction.accountid || prev.sourceaccountid,
-            categoryid: blueprintTransaction.categoryid || prev.categoryid,
-            payeename: blueprintTransaction.payee || prev.payeename,
-            // notes: blueprintTransaction.notes || prev.notes, // Decide if notes should be copied
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching blueprint transaction:", error);
-        // Optionally show user feedback
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-
-    const recurrenceRule = formData.isDateFlexible ? null : `FREQ=${formData.frequency};INTERVAL=${formData.interval}`;
-
-    const amount = mode === "plus" ? formData.amount : -(formData.amount ?? 0);
-
-    const dataToSubmitApi: Inserts<TableNames.Recurrings> | Updates<TableNames.Recurrings> = {
-      id: recurringToEdit?.id,
-      name: formData.name,
-      description: formData.description,
-      type: formData.type,
-      nextoccurrencedate: formData.isDateFlexible
-        ? "2099-12-31"
-        : formData.nextoccurrencedate || dayjs().format("YYYY-MM-DD"),
-      recurrencerule: recurrenceRule!,
-      enddate: formData.enddate,
-      amount: formData.isAmountFlexible ? null : amount,
-      currencycode: formData.currencycode,
-      sourceaccountid: formData.sourceaccountid,
-      categoryid: formData.categoryid,
-      payeename: formData.payeename,
-      notes: formData.notes,
-      isactive: formData.isactive,
-      recurringtype: formData.recurringType,
-      autoapplyenabled: formData.autoApplyEnabled,
-      isamountflexible: formData.isAmountFlexible,
-      isdateflexible: formData.isDateFlexible,
-      transferaccountid: formData.transferaccountid,
-    };
-    upsertRecurring(
-      {
-        form: dataToSubmitApi,
-        original: recurringToEdit || undefined,
-      },
-      {
-        onSuccess: () => {
-          //TODO: Close Modal
-          // router.back();
-          router.replace("/(drawer)/(tabs)/Recurrings");
-        },
-        onSettled: () => setIsSubmitting(false),
-      },
-    );
-  };
-
-  const handleCancel = () => {
-    router.back();
-  };
-  const handleModeToggle = useCallback(() => {
-    const newMode = mode === "plus" ? "minus" : "plus";
-    setMode(newMode);
-  }, [mode]);
+  const transferAccountOptions = useMemo(
+    () => accountOptions.filter(a => a.id !== formState.data.sourceaccountid),
+    [accountOptions, formState.data.sourceaccountid],
+  );
 
   return {
-    formData,
-    setFormData,
-    isEdit,
-    isLoading,
+    formState,
+    updateField,
+    setFieldTouched,
+    validateForm,
+    isValid,
+    isDirty,
+    resetForm,
     isSubmitting,
-    categories,
-    accounts,
-    blueprintLabel,
-    handleTextChange,
-    handleDateChange,
-    handleSwitchChange,
-    handleBlueprintTransactionSelect,
-    handleSubmit,
-    handleCancel,
+    error,
+    isLoading: isCategoriesLoading || isAccountsLoading,
+    isEdit,
     mode,
     setMode,
-    handleModeToggle,
+    categoryOptions,
+    accountOptions,
+    transferAccountOptions,
+    handleRecurringTypeChange,
+    handleTypeChange,
+    handleFlexibleDateToggle,
+    handleFlexibleAmountToggle,
+    handleSwitchAccounts,
+    blueprintSearch,
+    handleBlueprintSelect,
+    blueprintLabel,
+    onSubmit,
   };
 };

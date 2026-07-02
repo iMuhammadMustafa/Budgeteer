@@ -1,17 +1,30 @@
 import dayjs from "dayjs";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GroupedInput, IconButton } from "@/src/components/ui";
+
+import {
+  AmountKeypadInput,
+  Button,
+  DateTimePicker,
+  GroupedIconSelect,
+  GroupedInput,
+  IconButton,
+  Input,
+  Loader,
+  SegmentedControl,
+  Text,
+} from "@/src/components/ui";
 
 import {
   MultipleTransactionItemData,
   MultipleTransactionsFormData,
-  OptionItem,
   ValidationSchema,
 } from "@/src/types/components/forms.types";
 
+import MyIcon from "../elements/MyIcon";
 import { queryClient } from "@/src/providers/QueryProvider";
+import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
@@ -20,15 +33,12 @@ import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { Inserts, TransactionsView } from "@/src/types/database/Tables.Types";
 import { roundToCents } from "@/src/utils/amount.helper";
-import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
+import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney, getCurrencySymbol } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { router } from "expo-router";
-import MyIcon from "../elements/MyIcon";
-import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
-import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
+import { router } from "expo-router";
 import { TransactionFormType } from "./TransactionForm";
 
 // Generate initial state for multiple transactions form
@@ -77,7 +87,7 @@ const convertTransactionToMultipleForm = (transaction: TransactionFormType): Mul
     transactions: {
       [transactionId]: {
         name: transaction.name || "",
-        // Keep the sign — the per-row ModeIcon derives its chip color from the amount's sign,
+        // Keep the sign — the per-row amount chip derives its color from the sign,
         // so stripping it here made the first row of every expense-split look like income.
         amount: parseFloat(transaction.amount?.toString() || "0") || 0,
         categoryid: transaction.categoryid || "",
@@ -90,11 +100,14 @@ const convertTransactionToMultipleForm = (transaction: TransactionFormType): Mul
 };
 
 function MultipleTransactions({ transaction }: { transaction: TransactionFormType | null }) {
+  const { colors } = useTheme();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   // Services
   const transactionCategoriesService = useTransactionCategoryService();
-  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.useFindAll();
+  const { data: categories, isLoading: isCategoriesLoading } = transactionCategoriesService.useFindAllWithGroup();
   const accountsService = useAccountService();
-  const { data: accounts, isLoading: isAccountsLoading } = accountsService.useFindAll();
+  const { data: accounts, isLoading: isAccountsLoading } = accountsService.useFindAllWithCategory();
   const transactionService = useTransactionService();
   const submitAllMutation = transactionService.useCreateMultipleTransactions();
   const splitMutation = transactionService.useSplitTransaction();
@@ -123,6 +136,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const isForeignCurrency = !isSplitMode && transactionCurrency !== primaryCurrency;
   const { rate: fxRate, isLoading: isFxLoading } = useExchangeRate(transactionCurrency, primaryCurrency);
   const effectiveRate = rateOverride ?? fxRate ?? 1;
+  const currencySymbol = getCurrencySymbol(transactionCurrency);
 
   const handleRateOverride = useCallback((value: string) => {
     const cleaned = value.replace(/[^0-9.]/g, "").replace(/\.{2,}/g, ".");
@@ -158,14 +172,27 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   const isDataLoading = isCategoriesLoading || isAccountsLoading;
 
-  // Initialize mode and maxAmount when transaction changes
+  // Initialize mode and maxAmount when transaction changes. A brand-new (non-split, zero-amount)
+  // form has no sign to infer, so fall back to the type's usual sign (Expense → minus) instead of
+  // always defaulting to "plus" — otherwise a fresh Expense form shows a green "+" total.
   useEffect(() => {
     if (transaction) {
-      const amount = Math.abs(parseFloat(transaction.amount?.toString() || "0"));
-      setMode(parseFloat(transaction.amount?.toString() || "0") < 0 ? "minus" : "plus");
+      const signedAmount = parseFloat(transaction.amount?.toString() || "0");
+      const amount = Math.abs(signedAmount);
+      setMode(signedAmount !== 0 ? (signedAmount < 0 ? "minus" : "plus") : transaction.type === "Income" ? "plus" : "minus");
       setMaxAmount(amount);
     }
   }, [transaction]);
+
+  // Keep the total-amount sign in step with a sensible default when the type changes — the user
+  // can still flip it with the mode chip afterward.
+  const handleTypeChange = useCallback(
+    (type: string) => {
+      updateField("type", type);
+      setMode(type === "Income" ? "plus" : "minus");
+    },
+    [updateField],
+  );
 
   // Calculate current total amount from all transactions
   const currentAmount = useMemo(() => {
@@ -228,7 +255,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           },
           {
             onSuccess: async () => {
-              console.log({ message: "Transaction split successfully", type: "success" });
               await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
               router.replace("/Transactions");
             },
@@ -238,10 +264,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         // Normal mode: create multiple transactions
         await submitAllMutation.mutateAsync(transactions, {
           onSuccess: async () => {
-            console.log({
-              message: `Transaction ${transaction?.id ? "Updated" : "Created"} Successfully`,
-              type: "success",
-            });
             await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
             router.replace("/Transactions");
           },
@@ -265,9 +287,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
 
   // Form submission hook
   const { submit, isSubmitting, error } = useFormSubmission(handleSubmit, {
-    onSuccess: () => {
-      console.log("Multiple transactions saved successfully");
-    },
     onError: error => {
       console.error("Failed to save multiple transactions:", error);
     },
@@ -295,9 +314,9 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
       .map(item => ({
         id: item.id,
         label: item.name || "",
-        value: item.id,
         icon: item.icon,
         color: item.color,
+        group: item.group?.name || "Uncategorized",
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [categories]);
@@ -311,6 +330,9 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         id: item.id,
         label: item.name || "",
         value: item.id,
+        icon: item.icon,
+        color: item.color,
+        balance: item.balance,
         group: item.category?.name || "Other",
       }))
       .sort((a, b) => {
@@ -321,517 +343,355 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
       });
   }, [accounts]);
 
-  const transactionTypeOptions: OptionItem[] = [
-    { id: "income", label: "Income", value: "Income" },
-    { id: "expense", label: "Expense", value: "Expense" },
-  ];
-
-  // Handle max amount change
-  const handleMaxAmountChange = useCallback((value: string) => {
-    let cleanValue = value
-      .replace(/[^0-9.-]/g, "")
-      .replace(/(?!^)-/g, "")
-      .replace(/\.{2,}/g, ".")
-      .replace(/^0+(?=\d)/, "");
-
-    if (cleanValue.startsWith("-")) {
-      setMode("minus");
-      cleanValue = cleanValue.replace("-", "");
-    }
-
-    if (cleanValue.includes(".")) {
-      const parts = cleanValue.split(".");
-      if (parts[1] && parts[1].length > 2) {
-        cleanValue = parts[0] + "." + parts[1].substring(0, 2);
-      }
-    }
-
-    const numericAmount = parseFloat(cleanValue) || 0;
-
-    if (numericAmount <= 999999999.99) {
-      setMaxAmount(numericAmount);
-    }
-  }, []);
+  const selectedAccount = useMemo(
+    () => accountOptions.find(a => a.id === formState.data.accountid),
+    [accountOptions, formState.data.accountid],
+  );
 
   // Check if amounts balance
   const isBalanced = Math.abs(currentAmount - (mode === "minus" ? -maxAmount : maxAmount)) < 0.01;
+  const targetAmount = mode === "minus" ? -maxAmount : maxAmount;
+  const remainingAmount = roundToCents(targetAmount - currentAmount);
+
+  if (isDataLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-bg py-10">
+        <Loader />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1">
-      {isDataLoading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text className="mt-2 text-foreground">Loading...</Text>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 p-4"
+        contentContainerStyle={Platform.OS === "web" ? ({ maxWidth: 640, width: "100%", alignSelf: "center" } as any) : undefined}
+      >
+        <SegmentedControl
+          options={[
+            { key: "Expense", label: "Expense", tone: "danger" },
+            { key: "Income", label: "Income", tone: "success" },
+          ]}
+          value={formState.data.type}
+          onChange={handleTypeChange}
+          testID="multi-type"
+        />
+
+        <AmountKeypadInput
+          label="Total Amount"
+          value={maxAmount}
+          onChange={value => setMaxAmount(value)}
+          mode={mode}
+          onModeChange={setMode}
+          currencySymbol={currencySymbol}
+          testID="multi-total-amount"
+        />
+
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-4" : "gap-4"}`}>
+          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+            <Input
+              label="Payee"
+              placeholder="Enter payee name"
+              value={formState.data.payee}
+              onChangeText={value => updateField("payee", value)}
+              onBlur={() => setFieldTouched("payee")}
+              error={formState.touched.payee ? formState.errors.payee : undefined}
+              testID="multi-payee"
+            />
+          </View>
+          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+            <DateTimePicker
+              label="Date"
+              value={formState.data.date}
+              onChange={iso => updateField("date", dayjs(iso).local().format("YYYY-MM-DDTHH:mm:ss"))}
+              testID="multi-date"
+            />
+          </View>
         </View>
-      ) : (
-        <ScrollView className="flex-1">
-          <FormContainer
-            onSubmit={onSubmit}
-            isValid={isValid && isBalanced && !isSubmitting}
-            isLoading={isSubmitting}
-            submitLabel={isSplitMode ? "Split Transaction" : "Save Multiple Transactions"}
-            showReset={isDirty}
-            onReset={handleReset}
-          >
-            {/* Basic Information Section */}
-            <FormSection
-              title="Transaction Group Details"
-              description="Enter the common information for all transactions"
+
+        <View>
+          <FormField
+            config={{
+              name: "accountid",
+              label: "Account",
+              type: "select",
+              required: true,
+              options: accountOptions,
+              group: "category.name",
+              popUp: Platform.OS !== "web",
+            }}
+            value={formState.data.accountid}
+            error={formState.errors.accountid}
+            touched={formState.touched.accountid}
+            onChange={value => updateField("accountid", value)}
+            onBlur={() => setFieldTouched("accountid")}
+          />
+          {selectedAccount ? (
+            <Text className="mt-1.5 text-caption text-ink-mute">
+              Balance: {formatMoney(selectedAccount.balance, primaryCurrency)}
+            </Text>
+          ) : null}
+        </View>
+
+        <Input
+          label="Description"
+          placeholder="Enter description"
+          value={formState.data.description}
+          onChangeText={value => updateField("description", value)}
+          onBlur={() => setFieldTouched("description")}
+          error={formState.touched.description ? formState.errors.description : undefined}
+          testID="multi-description"
+        />
+
+        {/* Advanced (currency/FX — hidden in split mode, which always uses the primary currency) */}
+        {!isSplitMode && (
+          <View className="rounded-xl border border-border bg-surface">
+            <Pressable
+              onPress={() => setShowAdvanced(s => !s)}
+              accessibilityRole="button"
+              testID="multi-advanced-toggle"
+              className="flex-row items-center justify-between px-4 py-3.5 active:opacity-80"
             >
-              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-                <FormField
-                  config={{
-                    name: "payee",
-                    label: "Payee",
-                    type: "text",
-                    required: true,
-                    placeholder: "Enter payee name",
-                  }}
-                  value={formState.data.payee}
-                  error={formState.errors.payee}
-                  touched={formState.touched.payee}
-                  onChange={value => updateField("payee", value)}
-                  onBlur={() => setFieldTouched("payee")}
-                  className="flex-1"
-                />
-
-                <FormField
-                  config={{
-                    name: "description",
-                    label: "Description",
-                    type: "text",
-                    placeholder: "Enter description",
-                  }}
-                  value={formState.data.description}
-                  error={formState.errors.description}
-                  touched={formState.touched.description}
-                  onChange={value => updateField("description", value)}
-                  onBlur={() => setFieldTouched("description")}
-                  className="flex-1"
-                />
-              </View>
-
-              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-                {/* Total Amount with Mode Toggle */}
-                <View className="flex-1">
-                  <GroupedInput
-                    label="Total Amount"
-                    amount={mode === "minus" ? -maxAmount : maxAmount}
-                    onChange={value => {
-                      setMode(value < 0 || Object.is(value, -0) ? "minus" : "plus");
-                      handleMaxAmountChange(Math.abs(value).toString());
-                    }}
-                    mode={mode}
-                    onModeChange={nextMode => setMode(nextMode === "minus" ? "minus" : "plus")}
-                    inputTestID="input-totalAmount"
-                  />
-                </View>
-
-                <FormField
-                  config={{
-                    name: "date",
-                    label: "Date",
-                    type: "date",
-                    required: true,
-                  }}
-                  value={formState.data.date}
-                  error={formState.errors.date}
-                  touched={formState.touched.date}
-                  onChange={value => {
-                    if (value) {
-                      const formattedDate = dayjs(value).local().format("YYYY-MM-DDTHH:mm:ss");
-                      updateField("date", formattedDate);
-                    }
-                  }}
-                  onBlur={() => setFieldTouched("date")}
-                  className="flex-1"
-                />
-              </View>
-
-              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-                <FormField
-                  config={{
-                    name: "type",
-                    label: "Type",
-                    type: "select",
-                    required: true,
-                    options: transactionTypeOptions,
-                  }}
-                  value={formState.data.type}
-                  error={formState.errors.type}
-                  touched={formState.touched.type}
-                  onChange={value => updateField("type", value)}
-                  onBlur={() => setFieldTouched("type")}
-                  className="flex-1"
-                />
-
-                <FormField
-                  config={{
-                    name: "accountid",
-                    label: "Account",
-                    type: "select",
-                    required: true,
-                    options: accountOptions,
-                  }}
-                  value={formState.data.accountid}
-                  error={formState.errors.accountid}
-                  touched={formState.touched.accountid}
-                  onChange={value => updateField("accountid", value)}
-                  onBlur={() => setFieldTouched("accountid")}
-                  className="flex-1"
-                />
-              </View>
-
-              {!isSplitMode && (
+              <Text className="text-body text-ink">Advanced</Text>
+              <MyIcon name={showAdvanced ? "ChevronUp" : "ChevronDown"} size={18} color={colors.inkMute} />
+            </Pressable>
+            {showAdvanced ? (
+              <View className="gap-4 px-4 pb-4">
                 <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-                  <FormField
-                    config={{
-                      name: "currency",
-                      label: "Currency",
-                      type: "select",
-                      required: true,
-                      options: currencyDropdownOptions,
-                      popUp: Platform.OS !== "web",
-                      description: `Will be stored in ${primaryCurrency}`,
-                    }}
-                    value={transactionCurrency}
-                    onChange={value => setTransactionCurrency(value || primaryCurrency)}
-                    className="flex-1"
-                  />
-                  {isForeignCurrency && (
+                  <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
                     <FormField
                       config={{
-                        name: "rate",
-                        label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
-                        type: "number",
-                        placeholder: isFxLoading ? "Loading…" : "0.00",
-                        description: isFxLoading
-                          ? "Fetching rate…"
-                          : `Total ≈ ${formatMoney(currentAmount * effectiveRate, primaryCurrency)}`,
+                        name: "currency",
+                        label: "Currency",
+                        type: "select",
+                        required: true,
+                        options: currencyDropdownOptions,
+                        popUp: Platform.OS !== "web",
+                        description: `Will be stored in ${primaryCurrency}`,
                       }}
-                      value={effectiveRate?.toString() ?? ""}
-                      onChange={handleRateOverride}
-                      className="flex-1"
+                      value={transactionCurrency}
+                      onChange={value => setTransactionCurrency(value || primaryCurrency)}
                     />
+                  </View>
+                  {isForeignCurrency && (
+                    <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                      <FormField
+                        config={{
+                          name: "rate",
+                          label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
+                          type: "number",
+                          placeholder: isFxLoading ? "Loading…" : "0.00",
+                          description: isFxLoading
+                            ? "Fetching rate…"
+                            : `Total ≈ ${formatMoney(currentAmount * effectiveRate, primaryCurrency)}`,
+                        }}
+                        value={effectiveRate?.toString() ?? ""}
+                        onChange={handleRateOverride}
+                      />
+                    </View>
                   )}
                 </View>
-              )}
-            </FormSection>
-
-            {/* Transactions List Section */}
-            <FormSection
-              title="Individual Transactions"
-              description="Break down the total amount into individual transactions"
-            >
-              <TransactionsCreationList
-                formState={formState}
-                updateField={updateField}
-                setFieldTouched={setFieldTouched}
-                maxAmount={maxAmount}
-                currentAmount={currentAmount}
-                categoryOptions={categoryOptions}
-                mode={mode}
-              />
-            </FormSection>
-
-            {/* Summary Section */}
-            <FormSection title="Summary">
-              <TransactionsSummary
-                maxAmount={maxAmount}
-                currentAmount={currentAmount}
-                mode={mode}
-                isBalanced={isBalanced}
-              />
-            </FormSection>
-
-            {/* Display submission error if any */}
-            {error && (
-              <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <Text className="text-status-danger text-sm">Error: {error.message}</Text>
               </View>
-            )}
-          </FormContainer>
-        </ScrollView>
-      )}
+            ) : null}
+          </View>
+        )}
+
+        {/* Individual transactions */}
+        <View className="gap-3">
+          <View className="flex-row items-center justify-between">
+            <Text variant="h3">Transactions</Text>
+            <Button
+              label="Add"
+              variant="secondary"
+              size="sm"
+              leadingIcon="Plus"
+              onPress={() =>
+                updateField("transactions", {
+                  ...formState.data.transactions,
+                  [GenerateUuid()]: (() => {
+                    const remaining = roundToCents(targetAmount - currentAmount);
+                    const existingRows = Object.values(formState.data.transactions) as MultipleTransactionItemData[];
+                    const lastCategoryId = [...existingRows].reverse().find(r => r?.categoryid)?.categoryid || "";
+                    const newRow: MultipleTransactionItemData = {
+                      name: "",
+                      amount: remaining,
+                      categoryid: lastCategoryId,
+                      notes: null,
+                      tags: null,
+                      groupid: formState.data.groupid,
+                    };
+                    return newRow;
+                  })(),
+                })
+              }
+              testID="btn-add-transaction"
+            />
+          </View>
+
+          {Object.entries(formState.data.transactions).map(([id, item]) => (
+            <TransactionRow
+              key={id}
+              id={id}
+              transaction={item}
+              transactions={formState.data.transactions}
+              updateField={updateField}
+              categoryOptions={categoryOptions}
+              parentMode={mode}
+              canDelete={Object.keys(formState.data.transactions).length > 1}
+            />
+          ))}
+        </View>
+
+        {/* Summary */}
+        <View className="gap-2 rounded-xl border border-border bg-surface p-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-body text-ink-mute">Target Total</Text>
+            <Text className="font-mono-semibold text-body text-ink">{formatMoney(targetAmount, transactionCurrency)}</Text>
+          </View>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-body text-ink-mute">Current Total</Text>
+            <Text className="font-mono-semibold text-body text-ink">{formatMoney(currentAmount, transactionCurrency)}</Text>
+          </View>
+          <View className="h-px bg-border" />
+          <View className="flex-row items-center justify-between">
+            <Text className="text-body text-ink-mute">Remaining</Text>
+            <Text className={`font-mono-semibold text-body ${isBalanced ? "text-success" : "text-danger"}`}>
+              {formatMoney(remainingAmount, transactionCurrency, { signed: true })}
+            </Text>
+          </View>
+          <View className={`mt-1 rounded-lg p-2 ${isBalanced ? "bg-success-soft" : "bg-danger-soft"}`}>
+            <Text className={`text-center text-caption ${isBalanced ? "text-success" : "text-danger"}`}>
+              {isBalanced ? "✓ Transactions are balanced" : "⚠ Transactions need to be balanced"}
+            </Text>
+          </View>
+        </View>
+
+        {error ? (
+          <View className="rounded-xl border border-danger bg-danger-soft p-3">
+            <Text className="text-caption text-danger">Error: {error.message}</Text>
+          </View>
+        ) : null}
+
+        <View className="flex-row justify-end gap-3">
+          {isDirty ? (
+            <Button label="Reset" variant="outline" onPress={handleReset} disabled={isSubmitting} testID="multi-reset" />
+          ) : null}
+          <Button
+            label={isSubmitting ? "Saving..." : isSplitMode ? "Split Transaction" : "Save Multiple Transactions"}
+            onPress={onSubmit}
+            disabled={!isValid || !isBalanced || isSubmitting}
+            loading={isSubmitting}
+            leadingIcon="Check"
+            testID="multi-submit"
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const TransactionsCreationList = ({
-  formState,
-  updateField,
-  setFieldTouched,
-  maxAmount,
-  currentAmount,
-  categoryOptions,
-  mode,
-}: {
-  formState: any;
-  updateField: (field: any, value: any) => void;
-  setFieldTouched: (field: any) => void;
-  maxAmount: number;
-  currentAmount: number;
-  categoryOptions: OptionItem[];
-  mode: "plus" | "minus";
-}) => {
-  const transactionIds = Object.keys(formState.data.transactions);
-
-  // Add new transaction
-  const addNewTransaction = useCallback(() => {
-    const newTransactionId = GenerateUuid();
-    // Round to cents so we never carry float drift (e.g. 0.000000000001) into the new row.
-    const signedMax = mode === "minus" ? -maxAmount : maxAmount;
-    const remainingAmount = roundToCents(signedMax - currentAmount);
-
-    let initialAmount: number = remainingAmount;
-    if (remainingAmount === 0 && mode === "minus") {
-      initialAmount = -0;
-    }
-
-    // Inherit the category from the most recently added row so users splitting a receipt
-    // into similar items don't have to repick the category every time.
-    const existingRows = Object.values(formState.data.transactions) as MultipleTransactionItemData[];
-    const lastCategoryId = [...existingRows].reverse().find(r => r?.categoryid)?.categoryid || "";
-
-    const newTransaction: MultipleTransactionItemData = {
-      name: "",
-      amount: initialAmount,
-      categoryid: lastCategoryId,
-      notes: null,
-      tags: null,
-      groupid: formState.data.groupid,
-    };
-
-    updateField("transactions", {
-      ...formState.data.transactions,
-      [newTransactionId]: newTransaction,
-    });
-  }, [formState.data.transactions, formState.data.groupid, updateField, maxAmount, currentAmount, mode]);
-
-  return (
-    <View className="space-y-4">
-      {/* Add New Transaction Button */}
-      <Pressable
-        className="p-3 bg-primary-500 rounded-md flex-row items-center justify-center"
-        onPress={addNewTransaction}
-        accessibilityLabel="Add new transaction"
-        testID="btn-add-transaction"
-      >
-        <MyIcon name="Plus" size={20} className="text-white mr-2" />
-        <Text className="text-white font-medium">Add Transaction</Text>
-      </Pressable>
-
-      {/* Transactions List */}
-      <ScrollView
-        className={`${Platform.OS === "web" ? "max-h-[400px]" : "max-h-[450px]"}`}
-        showsVerticalScrollIndicator={true}
-      >
-        {transactionIds.map((transactionId, index) => (
-          <TransactionCard
-            key={transactionId}
-            id={transactionId}
-            transaction={formState.data.transactions[transactionId]}
-            formState={formState}
-            updateField={updateField}
-            setFieldTouched={setFieldTouched}
-            categoryOptions={categoryOptions}
-            maxAmount={maxAmount}
-            currentAmount={currentAmount}
-            mode={mode}
-            canDelete={transactionIds.length > 1}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
-
-const TransactionCard = ({
+const TransactionRow = ({
   id,
   transaction,
-  formState,
+  transactions,
   updateField,
-  setFieldTouched,
   categoryOptions,
-  maxAmount,
-  currentAmount,
-  mode,
+  parentMode,
   canDelete,
 }: {
   id: string;
   transaction: MultipleTransactionItemData;
-  formState: any;
+  transactions: Record<string, MultipleTransactionItemData>;
   updateField: (field: any, value: any) => void;
-  setFieldTouched: (field: any) => void;
-  categoryOptions: OptionItem[];
-  maxAmount: number;
-  currentAmount: number;
-  mode: "plus" | "minus";
+  categoryOptions: { id: string; label: string; icon?: string | null; color?: string | null; group: string }[];
+  parentMode: "plus" | "minus";
   canDelete: boolean;
 }) => {
-  // Update a specific transaction field
-  const updateTransactionField = useCallback(
+  // A fresh row's amount is exactly 0 (no sign of its own yet) — default its chip to the
+  // group's overall sign so typing a number doesn't silently go the wrong direction.
+  const rowMode: "plus" | "minus" =
+    transaction.amount ? (transaction.amount < 0 ? "minus" : "plus") : Object.is(transaction.amount, -0) ? "minus" : parentMode;
+
+  const updateRow = useCallback(
     (field: keyof MultipleTransactionItemData, value: any) => {
-      const updatedTransactions = {
-        ...formState.data.transactions,
-        [id]: {
-          ...formState.data.transactions[id],
-          [field]: value,
-        },
-      };
-      updateField("transactions", updatedTransactions);
+      updateField("transactions", { ...transactions, [id]: { ...transactions[id], [field]: value } });
     },
-    [formState.data.transactions, id, updateField],
+    [transactions, id, updateField],
   );
 
-  // Handle transaction deletion
   const handleDelete = useCallback(() => {
     if (!canDelete) return;
-
-    const { [id]: deletedTransaction, ...remainingTransactions } = formState.data.transactions;
-    updateField("transactions", remainingTransactions);
-  }, [canDelete, formState.data.transactions, id, updateField]);
+    const { [id]: _removed, ...rest } = transactions;
+    updateField("transactions", rest);
+  }, [canDelete, transactions, id, updateField]);
 
   return (
-    <View
-      className={`bg-card border border-muted rounded-lg p-4 mb-4 ${Platform.OS === "web" ? "flex-row gap-4 items-start" : "space-y-3"}`}
-    >
-      {/* Amount Field */}
-      <View className={Platform.OS === "web" ? "flex-1" : ""}>
-        <GroupedInput
-          label="Amount"
-          amount={transaction.amount ?? 0}
-          onChange={value => updateTransactionField("amount", value)}
-          mode={(transaction.amount ?? 0) < 0 || Object.is(transaction.amount, -0) ? "minus" : "plus"}
-          showCalculator={false}
-          inputTestID="input-amount"
-        />
+    <View className="gap-3 rounded-xl border border-border bg-surface p-4" testID={`multi-row-${id}`}>
+      <View className="flex-row items-start gap-2">
+        <View className="flex-1">
+          <GroupedInput
+            label="Amount"
+            amount={transaction.amount ?? 0}
+            onChange={value => updateRow("amount", value)}
+            mode={rowMode}
+            showCalculator={false}
+            inputTestID={`multi-row-${id}-amount`}
+          />
+        </View>
+        {canDelete && (
+          <IconButton
+            icon="Trash2"
+            variant="ghost"
+            haptic="medium"
+            className="mt-6"
+            onPress={handleDelete}
+            accessibilityLabel="Delete transaction"
+            testID={`multi-row-${id}-delete`}
+          />
+        )}
       </View>
 
-      {/* Name Field */}
-      <FormField
-        config={{
-          name: "name",
-          label: "Transaction Name",
-          type: "text",
-          required: true,
-          placeholder: "Enter transaction name",
-        }}
+      <Input
+        label="Name"
+        placeholder="Enter transaction name"
         value={transaction.name || ""}
-        onChange={value => updateTransactionField("name", value)}
-        onBlur={() => setFieldTouched(`transactions.${id}.name`)}
-        className={Platform.OS === "web" ? "flex-1" : ""}
+        onChangeText={value => updateRow("name", value)}
+        testID={`multi-row-${id}-name`}
       />
 
-      {/* Category Field */}
-      <FormField
-        config={{
-          name: "categoryid",
-          label: "Category",
-          type: "select",
-          required: true,
-          options: categoryOptions,
-        }}
-        value={transaction.categoryid || ""}
-        onChange={value => updateTransactionField("categoryid", value)}
-        onBlur={() => setFieldTouched(`transactions.${id}.categoryid`)}
-        className={Platform.OS === "web" ? "flex-1" : ""}
+      <GroupedIconSelect
+        label="Category"
+        options={categoryOptions}
+        value={transaction.categoryid || null}
+        onChange={value => updateRow("categoryid", value)}
+        testID={`multi-row-${id}-category`}
       />
 
-      {/* Notes Field — kept compact: this card already has Amount/Name/Category above it */}
-      <FormField
-        config={{
-          name: "notes",
-          label: "Notes",
-          type: "textarea",
-          placeholder: "Optional notes",
-        }}
+      <Input
+        label="Notes"
+        placeholder="Optional notes"
+        multiline
         value={transaction.notes || ""}
-        onChange={value => updateTransactionField("notes", value)}
-        onBlur={() => setFieldTouched(`transactions.${id}.notes`)}
-        className={`${Platform.OS === "web" ? "flex-1" : ""} min-h-[40px] max-h-[80px]`}
+        onChangeText={value => updateRow("notes", value || null)}
+        testID={`multi-row-${id}-notes`}
       />
 
-      {/* Tags Field */}
-      <FormField
-        config={{
-          name: "tags",
-          label: "Tags",
-          type: "multiselect",
-          placeholder: "Enter tags separated by commas",
-        }}
-        value={transaction.tags}
-        onChange={value =>
-          updateTransactionField("tags", Array.isArray(value) ? value : value?.split(",").filter(Boolean))
+      <Input
+        label="Tags"
+        placeholder="Enter tags separated by commas"
+        value={Array.isArray(transaction.tags) ? transaction.tags.join(", ") : ""}
+        onChangeText={value =>
+          updateRow(
+            "tags",
+            value
+              .split(",")
+              .map(t => t.trim())
+              .filter(Boolean),
+          )
         }
-        onBlur={() => setFieldTouched(`transactions.${id}.tags`)}
-        className={Platform.OS === "web" ? "flex-1" : ""}
+        testID={`multi-row-${id}-tags`}
       />
-
-      {/* Delete Button */}
-      {canDelete && (
-        <IconButton
-          icon="Trash"
-          variant="destructive"
-          haptic="medium"
-          className="bg-red-500 hover:bg-red-600 rounded-md p-2 mt-2 self-start"
-          onPress={handleDelete}
-          accessibilityLabel="Delete transaction"
-          testID="btn-delete-transaction"
-        />
-      )}
-    </View>
-  );
-};
-
-const TransactionsSummary = ({
-  maxAmount,
-  currentAmount,
-  mode,
-  isBalanced,
-}: {
-  maxAmount: number;
-  currentAmount: number;
-  mode: "plus" | "minus";
-  isBalanced: boolean;
-}) => {
-  const targetAmount = mode === "minus" ? -maxAmount : maxAmount;
-  const remainingAmount = targetAmount - currentAmount;
-
-  return (
-    <View className="bg-surface-elevated p-4 rounded-lg border border-border-default">
-      <View className="space-y-2">
-        <View className="flex-row justify-between">
-          <Text className="text-foreground font-medium">Target Total:</Text>
-          <Text className="text-foreground font-bold">{targetAmount.toFixed(2)}</Text>
-        </View>
-
-        <View className="flex-row justify-between">
-          <Text className="text-foreground font-medium">Current Total:</Text>
-          <Text className="text-foreground font-bold">{currentAmount.toFixed(2)}</Text>
-        </View>
-
-        <View className="flex-row justify-between border-t border-border-default pt-2">
-          <Text className="text-foreground font-medium">Remaining:</Text>
-          <Text
-            className={`font-bold ${Math.abs(remainingAmount) < 0.01 ? "text-status-success" : "text-status-warning"}`}
-          >
-            {remainingAmount.toFixed(2)}
-          </Text>
-        </View>
-
-        {/* Balance Status */}
-        <View
-          className="mt-3 p-2 rounded-md bg-opacity-20"
-          style={{
-            backgroundColor: isBalanced ? "#10b981" : "#f59e0b",
-          }}
-        >
-          <Text className={`text-center font-medium ${isBalanced ? "text-status-success" : "text-status-warning"}`}>
-            {isBalanced ? "✓ Transactions are balanced" : "⚠ Transactions need to be balanced"}
-          </Text>
-        </View>
-      </View>
     </View>
   );
 };

@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
+import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
@@ -17,22 +18,27 @@ import {
   ValidationSchema,
 } from "@/src/types/components/forms.types";
 import { Transaction } from "@/src/types/database/Tables.Types";
+import { useRecentValues } from "@/src/hooks/useRecentValues";
 import { roundToCents } from "@/src/utils/amount.helper";
-import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
+import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney, getCurrencySymbol } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MyIcon from "../elements/MyIcon";
 import {
+  AmountKeypadInput,
   Button,
-  GroupedInput,
+  DateTimePicker,
+  GroupedIconSelect,
   IconButton,
+  Input,
+  ResponsiveModal,
   SearchableSelect,
+  SegmentedControl,
   type SearchableSelectOption,
   Text as ThemedText,
 } from "@/src/components/ui";
-import FormContainer from "../form-builder/FormContainer";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
@@ -103,28 +109,19 @@ const getValidationSchema = (type: string): ValidationSchema<TransactionFormType
   return baseSchema;
 };
 
+// The mode chip is the single source of truth for sign — `handleTypeChange` sets a sensible
+// default per type (Expense/Transfer → minus, Income → plus), but the user can still flip it
+// (e.g. an Expense-categorized refund that's actually a positive amount).
 const calculateFinalAmount = (data: TransactionFormType, currentMode: "plus" | "minus"): number => {
-  let finalAmount = Math.abs(data.amount);
-
-  // Apply sign based on transaction type and mode
-
-  switch (data.type) {
-    case "Transfer":
-      // Transfers are always negative from source account
-      return -finalAmount;
-    case "Income":
-      // Income is always positive
-      return finalAmount;
-    case "Expense":
-      // Expense is always negative
-      return -finalAmount;
-    default:
-      // Fallback to mode-based calculation
-      return currentMode === "minus" ? -finalAmount : finalAmount;
-  }
+  const finalAmount = Math.abs(data.amount);
+  return currentMode === "minus" ? -finalAmount : finalAmount;
 };
 
 export default function TransactionForm({ transaction }: { transaction: TransactionFormType }) {
+  const { colors } = useTheme();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
+
   const {
     onSubmit,
     isValid,
@@ -155,6 +152,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     subItemsRemaining,
     isSubItemsBalanced,
     primaryCurrency,
+    formatCurrency,
     transactionCurrency,
     setTransactionCurrency,
     displayedRate,
@@ -166,427 +164,429 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     currentFxRate,
   } = useTransactionForm({ transaction });
 
+  // Recently-used category *groups* float to the top of the (sheet-presented) category
+  // picker — the categories within a group stay in their normal order.
+  const categoryGroupRecents = useRecentValues("transaction:categorygroup");
+  const handleCategoryChange = (id: string) => {
+    updateField("categoryid", id);
+    const opt = categoryOptions.find(o => o.id === id);
+    if (opt?.group) categoryGroupRecents.record(opt.group);
+  };
+
+  // Transfer is always visually distinct (info/blue) regardless of the sign toggle; Expense/
+  // Income follow the toggled `mode` (danger when minus, success when plus).
+  const amountTone = formState.data.type === "Transfer" ? "info" : undefined;
+  const currencySymbol = getCurrencySymbol(transactionCurrency);
+
+  const selectedAccount = useMemo(
+    () => accountOptions.find(a => a.id === formState.data.accountid) as any,
+    [accountOptions, formState.data.accountid],
+  );
+  const selectedTransferAccount = useMemo(
+    () => transferAccountOptions.find(a => a.id === formState.data.transferaccountid) as any,
+    [transferAccountOptions, formState.data.transferaccountid],
+  );
+
+  const handleDateChange = (iso: string) => {
+    const formattedDate = dayjs(iso).minute(dayjs().minute()).second(dayjs().second()).local().toISOString();
+    updateField("date", formattedDate);
+  };
+
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1">
-        <FormContainer
-          onSubmit={onSubmit}
-          isValid={isValid && !isSubmitting}
-          isLoading={isSubmitting}
-          submitLabel="Save Transaction"
-          showReset={isDirty}
-          onReset={resetForm}
-        >
-          <View className="flex-row justify-end  gap-2">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 p-4"
+        contentContainerStyle={Platform.OS === "web" ? ({ maxWidth: 640, width: "100%", alignSelf: "center" } as any) : undefined}
+      >
+        <View className="flex-row items-center justify-between">
+          <Button
+            label="Clear"
+            variant="ghost"
+            size="sm"
+            disabled={isLoading}
+            onPress={() => router.replace("/AddTransaction")}
+            leadingIcon="Trash"
+            testID="btn-clear"
+          />
+          <View className="relative">
             <Button
-              label="Clear"
+              label="One More"
               variant="secondary"
-              className="bg-red-500 rounded-md"
-              disabled={isLoading}
-              onPress={() => router.replace("/AddTransaction")}
-              leadingIcon="Trash"
               size="sm"
+              disabled={isLoading || showOneMoreSuccess}
+              onPress={handleOnMoreSubmit}
+              leadingIcon="Plus"
+              loading={isOneMoreSubmitting}
+              testID="btn-one-more"
             />
-            <View className="relative">
-              <Button
-                label="One More"
-                variant="primary"
-                className="bg-primary-300 rounded-md"
-                disabled={isLoading || showOneMoreSuccess}
-                onPress={handleOnMoreSubmit}
-                leadingIcon="Plus"
-                size="sm"
-                loading={isOneMoreSubmitting}
-              />
-              {showOneMoreSuccess && (
-                <View className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                  <MyIcon name="Check" size={12} className="text-white" />
-                </View>
-              )}
-            </View>
+            {showOneMoreSuccess && (
+              <View className="absolute -top-1 -right-1 rounded-full bg-success p-1">
+                <MyIcon name="Check" size={12} color="#FFFFFF" />
+              </View>
+            )}
           </View>
+        </View>
 
-          <SearchableSelect
-            label="Name"
-            selectedLabel={formState.data.name}
-            searchAction={nameSearchAction}
-            onSelect={option => onSelectItem({ id: option.id, label: option.label, item: option.value })}
-            allowFreeText
-            onCommitText={val => updateField("name", val)}
-            className="mb-1"
+        <SegmentedControl
+          options={[
+            { key: "Expense", label: "Expense", tone: "danger" },
+            { key: "Income", label: "Income", tone: "success" },
+            { key: "Transfer", label: "Transfer", tone: "info" },
+          ]}
+          value={formState.data.type}
+          onChange={handleTypeChange}
+          testID="transaction-type"
+        />
+
+        <AmountKeypadInput
+          value={Math.abs(Number(formState.data.amount) || 0)}
+          onChange={value => updateField("amount", value)}
+          mode={mode}
+          onModeChange={nextMode => updateField("mode", nextMode)}
+          tone={amountTone}
+          currencySymbol={currencySymbol}
+          error={formState.touched.amount ? formState.errors.amount : undefined}
+          testID="field-amount"
+        />
+
+        <SearchableSelect
+          label="Name"
+          selectedLabel={formState.data.name}
+          searchAction={nameSearchAction}
+          onSelect={option => onSelectItem({ id: option.id, label: option.label, item: option.value })}
+          allowFreeText
+          onCommitText={val => updateField("name", val)}
+        />
+
+        {/* Category + Account */}
+        <View className="gap-4 rounded-xl border border-border bg-surface p-4">
+          <GroupedIconSelect
+            label="Category"
+            options={categoryOptions}
+            value={formState.data.categoryid}
+            onChange={handleCategoryChange}
+            recentGroups={categoryGroupRecents.recent}
+            onAddNew={() => setAddingCategory(true)}
+            addNewLabel="Add New Category"
+            error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
+            testID="field-categoryid"
           />
 
-          {formState.data.type !== "Transfer" && (
-            <FormField
-              config={{
-                name: "payee",
-                label: "Payee",
-                type: "text",
-                placeholder: "Enter payee name",
-                required: false,
-              }}
-              value={formState.data.payee}
-              error={formState.errors.payee}
-              touched={formState.touched.payee}
-              onChange={value => updateField("payee", value)}
-              onBlur={() => setFieldTouched("payee")}
-            />
-          )}
-
-          <FormField
-            config={{
-              name: "date",
-              label: "Date",
-              type: "date",
-              required: true,
-              popUp: Platform.OS !== "web",
-            }}
-            value={formState.data.date}
-            error={formState.errors.date}
-            touched={formState.touched.date}
-            onChange={value => {
-              if (value) {
-                const formattedDate = dayjs(value)
-                  .minute(dayjs().minute())
-                  .second(dayjs().second())
-                  .local()
-                  .toISOString();
-                updateField("date", formattedDate);
-              }
-            }}
-            onBlur={() => setFieldTouched("date")}
-          />
-
-          <View className="mb-4">
-            <GroupedInput
-              label="Amount"
-              amount={mode === "minus" ? -Math.abs(Number(formState.data.amount) || 0) : Math.abs(Number(formState.data.amount) || 0)}
-              mode={mode}
-              allowNegativeFlip={formState.data.type !== "Income" && formState.data.type !== "Transfer"}
-              onChange={value => {
-                const abs = Math.abs(value);
-                // Preserve legacy max-amount guard from handleAmountChange.
-                if (abs > 999999999.99) return;
-                updateField("amount", abs);
-              }}
-              onModeChange={nextMode => updateField("mode", nextMode)}
-              error={formState.touched.amount ? formState.errors.amount : undefined}
-              inputTestID="field-amount"
-            />
-          </View>
-
-          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+          <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
             <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
               <FormField
                 config={{
-                  name: "currency",
-                  label: "Currency",
+                  name: "accountid",
+                  label: "Account",
                   type: "select",
                   required: true,
-                  options: currencyDropdownOptions,
-                  popUp: Platform.OS !== "web",
-                  description: `Will be stored in ${primaryCurrency}`,
-                }}
-                value={transactionCurrency}
-                onChange={value => setTransactionCurrency(value || primaryCurrency)}
-              />
-            </View>
-            {isForeignCurrency && (
-              <View className={Platform.OS === "web" ? "flex-1" : ""}>
-                <FormField
-                  config={{
-                    name: "rate",
-                    label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
-                    type: "number",
-                    placeholder: isFxLoading ? "Loading…" : "0.00",
-                    description: isFxLoading ? "Fetching rate…" : `≈ ${formatMoney(convertedPreview, primaryCurrency)}`,
-                  }}
-                  value={displayedRate?.toString() ?? ""}
-                  onChange={handleRateOverride}
-                />
-                {isRateStale && currentFxRate ? (
-                  <Text className="text-status-warning text-xs mt-1">
-                    FX rate has changed since this transaction was recorded — current rate: {currentFxRate.toFixed(4)}
-                  </Text>
-                ) : null}
-              </View>
-            )}
-          </View>
-
-          <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
-            <View className="flex-1">
-              <FormField
-                config={{
-                  name: "categoryid",
-                  label: "Category",
-                  type: "select",
-                  required: true,
-                  options: categoryOptions,
-                  group: "group.name",
+                  options: accountOptions,
+                  group: "category.name",
                   popUp: Platform.OS !== "web",
                   addNew: {
-                    entityType: "TransactionCategory",
-                    label: "Add New Category",
+                    entityType: "Account",
+                    label: "Add New Account",
                     renderForm: ({ onSuccess, onCancel }) => (
-                      <TransactionCategoryForm
-                        category={transactionCategoryInitialState}
-                        onSuccess={onSuccess}
-                        onCancel={onCancel}
-                      />
+                      <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
                     ),
                   },
                 }}
-                value={formState.data.categoryid}
-                error={formState.errors.categoryid}
-                touched={formState.touched.categoryid}
-                onChange={value => updateField("categoryid", value)}
-                onBlur={() => setFieldTouched("categoryid")}
+                value={formState.data.accountid}
+                error={formState.errors.accountid}
+                touched={formState.touched.accountid}
+                onChange={value => updateField("accountid", value)}
+                onBlur={() => setFieldTouched("accountid")}
               />
+              {selectedAccount ? (
+                <Text className="mt-1.5 text-caption text-ink-mute">
+                  Balance: {formatCurrency(selectedAccount.balance, false)}
+                </Text>
+              ) : null}
             </View>
 
-            {/* TODO: Convert to Switcher */}
-            <View className="flex-1">
-              <FormField
-                config={{
-                  name: "type",
-                  label: "Type",
-                  type: "select",
-                  required: true,
-                  options: transactionTypeOptions,
-                  popUp: Platform.OS !== "web",
-                }}
-                value={formState.data.type}
-                error={formState.errors.type}
-                touched={formState.touched.type}
-                onChange={handleTypeChange}
-                onBlur={() => setFieldTouched("type")}
-              />
-            </View>
-          </View>
-
-          {/* Account Information Section */}
-          <FormSection>
-            <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
-              <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
-                <FormField
-                  config={{
-                    name: "accountid",
-                    label: "Account",
-                    type: "select",
-                    required: true,
-                    options: accountOptions,
-                    group: "category.name",
-                    popUp: Platform.OS !== "web",
-                    addNew: {
-                      entityType: "Account",
-                      label: "Add New Account",
-                      renderForm: ({ onSuccess, onCancel }) => (
-                        <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
-                      ),
-                    },
-                  }}
-                  value={formState.data.accountid}
-                  error={formState.errors.accountid}
-                  touched={formState.touched.accountid}
-                  onChange={value => updateField("accountid", value)}
-                  onBlur={() => setFieldTouched("accountid")}
+            {formState.data.type === "Transfer" && (
+              <>
+                <IconButton
+                  variant="ghost"
+                  icon="ArrowUpDown"
+                  haptic="selection"
+                  onPress={handleSwitchAccounts}
+                  className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
+                  accessibilityLabel="Switch source and destination accounts"
+                  testID="btn-switch-accounts"
                 />
-              </View>
 
-              {formState.data.type === "Transfer" && (
-                <>
-                  <IconButton
-                    variant="ghost"
-                    icon="ArrowUpDown"
-                    haptic="selection"
-                    onPress={handleSwitchAccounts}
-                    className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
-                    accessibilityLabel="Switch source and destination accounts"
-                    testID="btn-switch-accounts"
+                <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                  <FormField
+                    config={{
+                      name: "transferaccountid",
+                      label: "Destination Account",
+                      type: "select",
+                      required: true,
+                      options: transferAccountOptions,
+                      group: "category.name",
+                      addNew: {
+                        entityType: "Account",
+                        label: "Add New Account",
+                        renderForm: ({ onSuccess, onCancel }) => (
+                          <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
+                        ),
+                      },
+                    }}
+                    value={formState.data.transferaccountid}
+                    error={formState.errors.transferaccountid}
+                    touched={formState.touched.transferaccountid}
+                    onChange={value => updateField("transferaccountid", value)}
+                    onBlur={() => setFieldTouched("transferaccountid")}
                   />
+                  {selectedTransferAccount ? (
+                    <Text className="mt-1.5 text-caption text-ink-mute">
+                      Balance: {formatCurrency(selectedTransferAccount.balance, false)}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
 
-                  <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+        <ResponsiveModal visible={addingCategory} onClose={() => setAddingCategory(false)} title="Add Category" size="lg">
+          <TransactionCategoryForm
+            category={transactionCategoryInitialState}
+            onSuccess={(saved: any) => {
+              if (saved?.id) handleCategoryChange(saved.id);
+              setAddingCategory(false);
+            }}
+            onCancel={() => setAddingCategory(false)}
+          />
+        </ResponsiveModal>
+
+        {/* Date + Note */}
+        <View className={`${Platform.OS === "web" ? "flex flex-row gap-4" : "gap-4"}`}>
+          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+            <DateTimePicker label="Date" value={formState.data.date} onChange={handleDateChange} testID="field-date" />
+            {formState.touched.date && formState.errors.date ? (
+              <Text className="mt-1.5 text-caption text-danger">{formState.errors.date}</Text>
+            ) : null}
+          </View>
+          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+            <Input
+              label="Note"
+              placeholder="Add a note"
+              value={formState.data.notes ?? ""}
+              onChangeText={value => updateField("notes", value)}
+              testID="field-note"
+            />
+          </View>
+        </View>
+
+        {/* Advanced (payee, currency/FX, tags, line items — all preserved) */}
+        <View className="rounded-xl border border-border bg-surface">
+          <Pressable
+            onPress={() => setShowAdvanced(s => !s)}
+            accessibilityRole="button"
+            testID="transaction-advanced-toggle"
+            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-80"
+          >
+            <ThemedText className="text-body text-ink">Advanced</ThemedText>
+            <MyIcon name={showAdvanced ? "ChevronUp" : "ChevronDown"} size={18} color={colors.inkMute} />
+          </Pressable>
+
+          {showAdvanced ? (
+            <View className="gap-4 px-4 pb-4">
+              {formState.data.type !== "Transfer" && (
+                <Input
+                  label="Payee"
+                  placeholder="Enter payee name"
+                  value={formState.data.payee ?? ""}
+                  onChangeText={value => updateField("payee", value)}
+                  onBlur={() => setFieldTouched("payee")}
+                  error={formState.touched.payee ? formState.errors.payee : undefined}
+                  testID="field-payee"
+                />
+              )}
+
+              <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
+                <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                  <FormField
+                    config={{
+                      name: "currency",
+                      label: "Currency",
+                      type: "select",
+                      required: true,
+                      options: currencyDropdownOptions,
+                      popUp: Platform.OS !== "web",
+                      description: `Will be stored in ${primaryCurrency}`,
+                    }}
+                    value={transactionCurrency}
+                    onChange={value => setTransactionCurrency(value || primaryCurrency)}
+                  />
+                </View>
+                {isForeignCurrency && (
+                  <View className={Platform.OS === "web" ? "flex-1" : ""}>
                     <FormField
                       config={{
-                        name: "transferaccountid",
-                        label: "Destination Account",
-                        type: "select",
-                        required: true,
-                        options: transferAccountOptions,
-                        group: "category.name",
-                        addNew: {
-                          entityType: "Account",
-                          label: "Add New Account",
-                          renderForm: ({ onSuccess, onCancel }) => (
-                            <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
-                          ),
-                        },
+                        name: "rate",
+                        label: `Rate (1 ${transactionCurrency} → ${primaryCurrency})`,
+                        type: "number",
+                        placeholder: isFxLoading ? "Loading…" : "0.00",
+                        description: isFxLoading
+                          ? "Fetching rate…"
+                          : `≈ ${formatMoney(convertedPreview, primaryCurrency)}`,
                       }}
-                      value={formState.data.transferaccountid}
-                      error={formState.errors.transferaccountid}
-                      touched={formState.touched.transferaccountid}
-                      onChange={value => updateField("transferaccountid", value)}
-                      onBlur={() => setFieldTouched("transferaccountid")}
+                      value={displayedRate?.toString() ?? ""}
+                      onChange={handleRateOverride}
                     />
+                    {isRateStale && currentFxRate ? (
+                      <Text className="text-status-warning text-xs mt-1">
+                        FX rate has changed since this transaction was recorded — current rate:{" "}
+                        {currentFxRate.toFixed(4)}
+                      </Text>
+                    ) : null}
                   </View>
-                </>
-              )}
-            </View>
-          </FormSection>
-
-          {/* Line Items Section — optional sub-item breakdown */}
-          <FormSection
-            title="Line Items"
-            description="Optional breakdown of this transaction into individual items"
-            actionBtn={
-              <IconButton
-                variant="outline"
-                icon="Plus"
-                onPress={() => addSubItem(formState.data.amount)}
-                accessibilityLabel="Add line item"
-                testID="btn-add-subitem"
-                className="mt-1"
-              />
-            }
-          >
-            {subItems.length > 0 && (
-              <View>
-                {/* Balance indicator (signed: items with opposite mode net against the parent) */}
-                <View className="flex-row items-center justify-between mb-3 px-1">
-                  <ThemedText className="text-xs">Items total: {subItemsTotal.toFixed(2)}</ThemedText>
-                  <ThemedText
-                    className={`text-xs font-medium ${isSubItemsBalanced ? "text-success-500" : "text-danger-500"}`}
-                  >
-                    {isSubItemsBalanced ? "✓ Balanced" : `Remaining: ${subItemsRemaining.toFixed(2)}`}
-                  </ThemedText>
-                </View>
-
-                {/* Sub-item cards */}
-                {subItems.map((item, index) => (
-                  <View key={item.id || index} className="border border-border rounded-lg p-3 mb-2 bg-card">
-                    <View className="flex-row items-center justify-end mb-2">
-                      <Pressable
-                        onPress={() => removeSubItem(index)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove item ${index + 1}`}
-                        testID={`btn-remove-subitem-${index}`}
-                        className="m-0 p-0 active:opacity-60"
-                      >
-                        <MyIcon name="X" size={16} className="text-danger-500" />
-                      </Pressable>
-                    </View>
-                    <View className={`${Platform.OS === "web" ? "flex flex-row gap-2" : "gap-2"}`}>
-                      <View className="flex-[2]">
-                        <TextInput
-                          placeholder="Item name"
-                          value={item.name}
-                          onChangeText={val => updateSubItem(index, "name", val)}
-                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
-                          testID={`input-subitem-name-${index}`}
-                        />
-                      </View>
-                      <View className="justify-center">
-                        {(() => {
-                          const subItemMode = (item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus";
-                          return (
-                            <IconButton
-                              icon={subItemMode === "minus" ? "Minus" : "Plus"}
-                              variant="ghost"
-                              haptic="selection"
-                              onPress={() => updateSubItem(index, "amount", -(item.amount ?? 0))}
-                              accessibilityLabel={`Toggle amount sign, currently ${subItemMode}`}
-                              testID={`btn-subitem-mode-${index}`}
-                              className={`${subItemMode === "plus" ? "bg-success-400" : "bg-danger-400"} border border-muted rounded-lg p-1.5`}
-                            />
-                          );
-                        })()}
-                      </View>
-                      <View className="flex-1">
-                        <TextInput
-                          placeholder="Amount"
-                          value={item.amount || Object.is(item.amount, -0) ? String(Math.abs(item.amount)) : ""}
-                          onChangeText={val => {
-                            let cleanValue = val
-                              .replace(/[^0-9.]/g, "")
-                              .replace(/\.{2,}/g, ".")
-                              .replace(/^0+(?=\d)/, "");
-                            if (cleanValue.includes(".")) {
-                              const parts = cleanValue.split(".");
-                              if (parts[1] && parts[1].length > 2) {
-                                cleanValue = parts[0] + "." + parts[1].substring(0, 2);
-                              }
-                            }
-                            const parsed = parseFloat(cleanValue) || 0;
-                            const isNegative = (item.amount ?? 0) < 0 || Object.is(item.amount, -0);
-                            updateSubItem(index, "amount", isNegative ? -parsed : parsed);
-                          }}
-                          keyboardType="decimal-pad"
-                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
-                          testID={`input-subitem-amount-${index}`}
-                        />
-                      </View>
-                      <View className="flex-[1.5]">
-                        <TextInput
-                          placeholder="Notes (optional)"
-                          value={item.notes || ""}
-                          onChangeText={val => updateSubItem(index, "notes", val || null)}
-                          className="border border-border rounded-md px-3 py-2 text-foreground bg-background h-full"
-                          testID={`input-subitem-notes-${index}`}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                ))}
+                )}
               </View>
-            )}
-          </FormSection>
 
-          {/* Additional Information Section */}
-          <FormSection title="Additional Information" description="Optional notes and tags">
-            <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""} relative`}>
-              <FormField
-                config={{
-                  name: "tags",
-                  label: "Tags",
-                  type: "multiselect",
-                  placeholder: "Enter tags separated by commas",
-                  description: "Add tags to categorize and search transactions",
-                }}
-                value={formState.data.tags}
-                error={formState.errors.tags}
-                touched={formState.touched.tags}
-                onChange={value =>
-                  updateField("tags", Array.isArray(value) ? value : value?.split(",").filter(Boolean))
-                }
+              <Input
+                label="Tags"
+                placeholder="Enter tags separated by commas"
+                value={Array.isArray(formState.data.tags) ? formState.data.tags.join(", ") : (formState.data.tags ?? "")}
+                onChangeText={value => updateField("tags", value.split(",").map(t => t.trim()).filter(Boolean))}
                 onBlur={() => setFieldTouched("tags")}
-                className="flex-1"
+                error={formState.touched.tags ? formState.errors.tags : undefined}
+                testID="field-tags"
               />
+              <Text className="text-caption text-ink-mute">Add tags to categorize and search transactions</Text>
 
-              <FormField
-                config={{
-                  name: "notes",
-                  label: "Notes",
-                  type: "textarea",
-                  placeholder: "Enter any additional notes",
-                  description: "Optional notes about this transaction",
-                }}
-                value={formState.data.notes}
-                error={formState.errors.notes}
-                touched={formState.touched.notes}
-                onChange={value => updateField("notes", value)}
-                onBlur={() => setFieldTouched("notes")}
-                className="flex-1"
-              />
-            </View>
-          </FormSection>
+              {/* Line Items — optional sub-item breakdown */}
+              <FormSection
+                title="Line Items"
+                description="Optional breakdown of this transaction into individual items"
+                actionBtn={
+                  <IconButton
+                    variant="outline"
+                    icon="Plus"
+                    onPress={() => addSubItem()}
+                    accessibilityLabel="Add line item"
+                    testID="btn-add-subitem"
+                    className="mt-1"
+                  />
+                }
+              >
+                {subItems.length > 0 && (
+                  <View>
+                    <View className="flex-row items-center justify-between mb-3 px-1">
+                      <ThemedText className="text-xs">Items total: {subItemsTotal.toFixed(2)}</ThemedText>
+                      <ThemedText
+                        className={`text-xs font-medium ${isSubItemsBalanced ? "text-success-500" : "text-danger-500"}`}
+                      >
+                        {isSubItemsBalanced ? "✓ Balanced" : `Remaining: ${subItemsRemaining.toFixed(2)}`}
+                      </ThemedText>
+                    </View>
 
-          {/* Display submission error if any */}
-          {error && (
-            <View className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <Text className="text-status-danger text-sm">Error: {error.message}</Text>
+                    {subItems.map((item, index) => (
+                      <View key={item.id || index} className="border border-border rounded-lg p-3 mb-2 bg-card">
+                        <View className="flex-row items-center justify-end mb-2">
+                          <Pressable
+                            onPress={() => removeSubItem(index)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove item ${index + 1}`}
+                            testID={`btn-remove-subitem-${index}`}
+                            className="m-0 p-0 active:opacity-60"
+                          >
+                            <MyIcon name="X" size={16} className="text-danger-500" />
+                          </Pressable>
+                        </View>
+                        <View className={`${Platform.OS === "web" ? "flex flex-row gap-2" : "gap-2"}`}>
+                          <View className="flex-[2]">
+                            <TextInput
+                              placeholder="Item name"
+                              value={item.name}
+                              onChangeText={val => updateSubItem(index, "name", val)}
+                              className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
+                              testID={`input-subitem-name-${index}`}
+                            />
+                          </View>
+                          <View className="justify-center">
+                            {(() => {
+                              const subItemMode =
+                                (item.amount ?? 0) < 0 || Object.is(item.amount, -0) ? "minus" : "plus";
+                              return (
+                                <IconButton
+                                  icon={subItemMode === "minus" ? "Minus" : "Plus"}
+                                  variant="ghost"
+                                  haptic="selection"
+                                  onPress={() => updateSubItem(index, "amount", -(item.amount ?? 0))}
+                                  accessibilityLabel={`Toggle amount sign, currently ${subItemMode}`}
+                                  testID={`btn-subitem-mode-${index}`}
+                                  className={`${subItemMode === "plus" ? "bg-success-400" : "bg-danger-400"} border border-muted rounded-lg p-1.5`}
+                                />
+                              );
+                            })()}
+                          </View>
+                          <View className="flex-1">
+                            <TextInput
+                              placeholder="Amount"
+                              value={item.amount || Object.is(item.amount, -0) ? String(Math.abs(item.amount)) : ""}
+                              onChangeText={val => {
+                                let cleanValue = val
+                                  .replace(/[^0-9.]/g, "")
+                                  .replace(/\.{2,}/g, ".")
+                                  .replace(/^0+(?=\d)/, "");
+                                if (cleanValue.includes(".")) {
+                                  const parts = cleanValue.split(".");
+                                  if (parts[1] && parts[1].length > 2) {
+                                    cleanValue = parts[0] + "." + parts[1].substring(0, 2);
+                                  }
+                                }
+                                const parsed = parseFloat(cleanValue) || 0;
+                                const isNegative = (item.amount ?? 0) < 0 || Object.is(item.amount, -0);
+                                updateSubItem(index, "amount", isNegative ? -parsed : parsed);
+                              }}
+                              keyboardType="decimal-pad"
+                              className="border border-border rounded-md px-3 py-2 text-foreground bg-background"
+                              testID={`input-subitem-amount-${index}`}
+                            />
+                          </View>
+                          <View className="flex-[1.5]">
+                            <TextInput
+                              placeholder="Notes (optional)"
+                              value={item.notes || ""}
+                              onChangeText={val => updateSubItem(index, "notes", val || null)}
+                              className="border border-border rounded-md px-3 py-2 text-foreground bg-background h-full"
+                              testID={`input-subitem-notes-${index}`}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </FormSection>
             </View>
-          )}
-        </FormContainer>
+          ) : null}
+        </View>
+
+        {error ? (
+          <View className="rounded-xl border border-danger bg-danger-soft p-3">
+            <Text className="text-caption text-danger">Error: {error.message}</Text>
+          </View>
+        ) : null}
+
+        <View className="flex-row justify-end gap-3">
+          {isDirty ? (
+            <Button label="Reset" variant="outline" onPress={resetForm} disabled={isSubmitting} testID="btn-form-reset" />
+          ) : null}
+          <Button
+            label={isSubmitting ? "Saving..." : "Save Transaction"}
+            onPress={onSubmit}
+            disabled={!isValid || isSubmitting}
+            loading={isSubmitting}
+            leadingIcon="Check"
+            testID="btn-form-submit"
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -612,7 +612,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   const [subItems, setSubItems] = useState<TransactionSubItem[]>([]);
 
-  const { primaryCurrency } = usePrimaryCurrency();
+  const { primaryCurrency, formatCurrency } = usePrimaryCurrency();
   const [transactionCurrency, setTransactionCurrency] = useState<string>(primaryCurrency || DEFAULT_CURRENCY);
   const [rateOverride, setRateOverride] = useState<number | null>(null);
   const hasInitializedCurrencyRef = useRef(false);
@@ -668,23 +668,6 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
       );
     }
   }, [existingItems]);
-
-  const addSubItem = useCallback(
-    (parentAmount: number) => {
-      setSubItems(prev => {
-        const currentTotal = prev.reduce((sum, item) => sum + Math.abs(item.amount ?? 0), 0);
-        const remaining = Math.max(0, Math.abs(parentAmount || 0) - currentTotal);
-
-        let initialAmount = remaining;
-        if (mode === "minus") {
-          initialAmount = remaining === 0 ? -0 : -remaining;
-        }
-
-        return [...prev, { id: GenerateUuid(), name: "", amount: initialAmount, categoryid: null, notes: null }];
-      });
-    },
-    [mode],
-  );
 
   const removeSubItem = useCallback((index: number) => {
     setSubItems(prev => prev.filter((_, i) => i !== index));
@@ -753,6 +736,16 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     if (subItems.length === 0) return true;
     return subItemsRemaining === 0;
   }, [subItems, subItemsRemaining]);
+
+  // New rows start at the current signed remaining gap (already rounded to cents), so they
+  // both auto-rebalance to 0 and never inherit float drift from an abs()-based calculation
+  // that ignored mixed-sign items (e.g. a refund line within an expense breakdown).
+  const addSubItem = useCallback(() => {
+    setSubItems(prev => [
+      ...prev,
+      { id: GenerateUuid(), name: "", categoryid: null, notes: null, amount: subItemsRemaining },
+    ]);
+  }, [subItemsRemaining]);
 
   const convertedPreview = useMemo(() => {
     const userTyped = Math.abs(Number(formState.data.amount) || 0);
@@ -1016,6 +1009,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         value: item.id,
         icon: item.icon,
         color: item.color,
+        balance: item.balance,
         // Accounts do not have categoryname, fallback to "Other"
         group: item.category?.name ?? "Other",
       }))
@@ -1091,6 +1085,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     subItemsRemaining,
     isSubItemsBalanced,
     primaryCurrency,
+    formatCurrency,
     transactionCurrency,
     setTransactionCurrency,
     displayedRate,

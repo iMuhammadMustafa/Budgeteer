@@ -53,10 +53,13 @@ export { Select, type SelectProps, type SelectOption, type SelectPresent } from 
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
 export { QuickPills, type QuickPillsProps, type QuickPillOption } from "./QuickPills";
+export { GroupedIconSelect, type GroupedIconSelectProps, type GroupedIconOption } from "./GroupedIconSelect";
 export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
 export { DatePicker, type DatePickerProps } from "./DatePicker";
 export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
 export { GroupedInput, type GroupedInputProps } from "./GroupedInput";
+export { NumericKeypad, type NumericKeypadProps, type NumericKeypadKey } from "./NumericKeypad";
+export { AmountKeypadInput, type AmountKeypadInputProps, type AmountKeypadTone } from "./AmountKeypadInput";
 export {
   MyCategoriesDropdown,
   AccountSelecterDropdown,

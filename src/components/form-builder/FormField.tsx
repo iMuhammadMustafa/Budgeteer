@@ -39,7 +39,9 @@ function FormFieldComponent<T>({ config, value, error, touched, onChange, onBlur
         label: opt.label,
         value: opt.value,
         icon: opt.icon,
-        iconColor: opt.color,
+        // Legacy records sometimes store a token fragment (e.g. "info-100") instead of a
+        // real hex color — that isn't a valid CSS color, so only pass real hex through.
+        iconColor: opt.color && opt.color.startsWith("#") ? opt.color : undefined,
         // Forms attach a `.group` string to options when grouping is enabled.
         group: (opt as { group?: string }).group,
         disabled: opt.disabled,

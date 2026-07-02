@@ -12,7 +12,7 @@ export default function TransactionAmount({
 }) {
     const { formatCurrency } = usePrimaryCurrency();
     return (
-        <ThemedText className={`${color ? `text-${color}` : amount > 0 ? "text-success-500" : "text-danger-500"}`}>
+        <ThemedText className={`font-mono-semibold ${color ? `text-${color}` : amount > 0 ? "text-income" : "text-expense"}`}>
             {formatCurrency(amount, showSigned)}
         </ThemedText>
     )

@@ -33,7 +33,7 @@ export default function RecurringsScreen() {
           </View>
         )}
         title="Recurring Transactions"
-        detailsUrl={"/Recurrings/Upsert?id="}
+        detailHref={"/Recurrings/"}
         queryKey={[TableNames.Recurrings]}
         service={recurringsService}
         initialState={initialRecurringState}
