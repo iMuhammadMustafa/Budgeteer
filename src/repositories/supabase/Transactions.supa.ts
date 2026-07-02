@@ -211,6 +211,8 @@ export class TransactionSupaRepository
       searchFilters.limit > 0
     ) {
       query = query.range(searchFilters.offset, searchFilters.offset + searchFilters.limit - 1);
+    } else if (searchFilters.limit !== undefined && searchFilters.limit > 0) {
+      query = query.limit(searchFilters.limit);
     }
 
     return query;
