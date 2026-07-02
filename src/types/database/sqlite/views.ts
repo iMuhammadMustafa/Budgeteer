@@ -14,6 +14,7 @@ export const CREATE_TRANSACTIONS_VIEW = `
   SELECT 
     t.id,
     t.name,
+    t.description,
     t.amount,
     t.date,
     t.payee,
