@@ -205,6 +205,7 @@ export const CREATE_TRANSACTION_ITEMS_TABLE = `
     categoryid TEXT,
     notes TEXT,
     displayorder INTEGER NOT NULL DEFAULT 0,
+    isvoid INTEGER NOT NULL DEFAULT 0,
     tenantid TEXT NOT NULL,
     isdeleted INTEGER NOT NULL DEFAULT 0,
     createdat TEXT NOT NULL,

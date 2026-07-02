@@ -1,0 +1,25 @@
+# gitleaks configuration — Phase 6.1 (secret scanning)
+# Extends the built-in ruleset and adds an allowlist for values that are public
+# by design in this app: EXPO_PUBLIC_* vars are inlined into the client bundle,
+# and the Supabase anon key is a public token (Row-Level Security is the real
+# boundary). Anything NOT matched here is still caught.
+
+title = "Budgeteer gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public-by-design values and non-secret fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.test\.example$''',
+  # Generated Supabase types contain no secrets, only shapes.
+  '''src/types/database/supabase/.*''',
+]
+regexes = [
+  # EXPO_PUBLIC_* are compile-time public envs, safe to appear in commits.
+  '''EXPO_PUBLIC_[A-Z0-9_]+''',
+]
+# NOTE: The anon key still ships publicly, but a leaked *service_role* key is
+# catastrophic — it is intentionally NOT allowlisted so gitleaks flags it.

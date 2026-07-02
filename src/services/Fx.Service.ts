@@ -34,7 +34,7 @@ async function writeCache(payload: RatesPayload): Promise<void> {
   }
 }
 
-async function fetchPrimary(base: string): Promise<RatesPayload> {
+export async function fetchPrimary(base: string): Promise<RatesPayload> {
   const res = await fetch(PRIMARY_ENDPOINT(base));
   if (!res.ok) throw new Error(`fx primary http ${res.status}`);
   const json = await res.json();
@@ -44,7 +44,7 @@ async function fetchPrimary(base: string): Promise<RatesPayload> {
   return { base: base.toUpperCase(), rates: json.rates, fetchedAt: Date.now() };
 }
 
-async function fetchFallback(base: string): Promise<RatesPayload> {
+export async function fetchFallback(base: string): Promise<RatesPayload> {
   const res = await fetch(FALLBACK_ENDPOINT(base));
   if (!res.ok) throw new Error(`fx fallback http ${res.status}`);
   const json = await res.json();
@@ -58,7 +58,7 @@ async function fetchFallback(base: string): Promise<RatesPayload> {
   return { base: base.toUpperCase(), rates, fetchedAt: Date.now() };
 }
 
-async function loadRates(base: string): Promise<RatesPayload> {
+export async function loadRates(base: string): Promise<RatesPayload> {
   const baseUpper = base.toUpperCase();
   const cached = await readCache(baseUpper);
   const fresh = cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS;

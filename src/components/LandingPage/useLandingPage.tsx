@@ -5,7 +5,7 @@ import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { StorageMode } from "@/src/types/StorageMode";
-import { SQLITE_DEFAULTS, SQLITE_DEMO } from "@/src/types/database/watermelon/constants";
+import { buildLocalSession } from "@/src/utils/localSession";
 import { router } from "expo-router";
 
 const WEB_DESKTOP_BREAKPOINT = 860;
@@ -60,42 +60,10 @@ export default function useLandingPage() {
       }
 
       if (mode.id === StorageMode.Local) {
-        await setSession(
-          {
-            user: {
-              id: SQLITE_DEFAULTS.userId,
-              email: SQLITE_DEFAULTS.email,
-              user_metadata: { tenantid: SQLITE_DEFAULTS.tenantId, full_name: SQLITE_DEFAULTS.name },
-              app_metadata: {},
-              aud: "authenticated",
-              created_at: new Date().toISOString(),
-            },
-            access_token: "local-access-token",
-            refresh_token: "local-refresh-token",
-            expires_in: 3600,
-            token_type: "bearer",
-          },
-          StorageMode.Local,
-        );
+        await setSession(buildLocalSession(StorageMode.Local), StorageMode.Local);
       }
       if (mode.id === StorageMode.Demo) {
-        await setSession(
-          {
-            user: {
-              id: SQLITE_DEMO.userId,
-              email: SQLITE_DEMO.email,
-              user_metadata: { tenantid: SQLITE_DEMO.tenantId, full_name: SQLITE_DEMO.name },
-              app_metadata: {},
-              aud: "authenticated",
-              created_at: new Date().toISOString(),
-            },
-            access_token: "demo-access-token",
-            refresh_token: "demo-refresh-token",
-            expires_in: 3600,
-            token_type: "bearer",
-          },
-          StorageMode.Demo,
-        );
+        await setSession(buildLocalSession(StorageMode.Demo), StorageMode.Demo);
       }
       console.log("Navigating to Dashboard");
       return router.push("/Dashboard");
