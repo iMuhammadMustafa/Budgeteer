@@ -8,8 +8,9 @@
  *   </ChartCard>
  */
 import { memo, type ReactNode } from "react";
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
 
+import { useTheme } from "@/src/providers/ThemeProvider";
 import { Card } from "../Card";
 import { IconButton } from "../IconButton";
 import { Text } from "../Text";
@@ -37,6 +38,9 @@ export interface ChartCardProps {
   period?: ChartCardPeriod;
   /** Body height in px (default `CHART_BODY_HEIGHT`), or `"auto"` to size to content. */
   bodyHeight?: number | "auto";
+  /** Show a subtle spinner in the header while this chart's data is refetching (e.g. a period
+   * change). The stale chart stays visible underneath, so this is non-blocking feedback. */
+  loading?: boolean;
   className?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -47,14 +51,21 @@ function ChartCardInner({
   children,
   period,
   bodyHeight = CHART_BODY_HEIGHT,
+  loading = false,
   className = "",
   style,
   testID = "chart-card",
 }: ChartCardProps) {
+  const { colors } = useTheme();
   const auto = bodyHeight === "auto";
   return (
     <Card className={cn("my-1.5 gap-2 p-5 pb-1", className)} style={style} testID={testID}>
-      <Text variant="overline">{title}</Text>
+      <View className="flex-row items-center justify-between">
+        <Text variant="overline">{title}</Text>
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.inkFaint} testID={`${testID}-loading`} />
+        ) : null}
+      </View>
       {/* A fixed-height body gives fill-height charts (BarChart's `fillHeight`, etc.) a stable
           box to grow into and keeps every card the same height; `"auto"` falls back to the old
           flex-1 grow-to-fill behaviour for cards that manage their own height (e.g. Calendar). */}

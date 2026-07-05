@@ -58,7 +58,13 @@ function DashboardCharts({
   const chartCell = (c: (typeof configs)[number]) =>
     wrapCell(
       c.key,
-      <ChartCard title={c.title} period={c.period} className="my-0 h-full" testID={`chart-card-${c.key}`}>
+      <ChartCard
+        title={c.title}
+        period={c.period}
+        loading={c.loading}
+        className="my-0 h-full"
+        testID={`chart-card-${c.key}`}
+      >
         {c.node}
       </ChartCard>,
     );
@@ -88,6 +94,7 @@ function DashboardCharts({
         <ChartCard
           title={calendarConfig.title}
           period={calendarConfig.period}
+          loading={calendarConfig.loading}
           bodyHeight="auto"
           className="my-0"
           testID={`chart-card-${calendarConfig.key}`}

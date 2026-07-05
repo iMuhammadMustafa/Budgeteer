@@ -31,6 +31,8 @@ interface PeriodControl {
   prev: () => void;
   next: () => void;
   currentDate?: string;
+  /** This chart's query is refetching (e.g. after a period change) — drives the card's spinner. */
+  loading?: boolean;
 }
 
 export interface DashboardChartsProps {
@@ -61,6 +63,8 @@ export interface DashboardChartConfig {
   title: string;
   /** Period bar shown in the ChartCard; omitted for charts that own their own nav (e.g. calendar). */
   period?: ChartCardPeriod;
+  /** This chart's data is refetching — surfaces a subtle spinner in the card header. */
+  loading?: boolean;
   node: ReactNode;
 }
 
@@ -130,6 +134,7 @@ export function buildDashboardChartConfigs(
       detailType: DashboardViewSelectionType.BAR,
       title: "Week's Expenses",
       period: period(periodControls.week),
+      loading: periodControls.week.loading,
       node: (
         <BarChart
           animated={animated}
@@ -151,6 +156,7 @@ export function buildDashboardChartConfigs(
       key: "calendar",
       detailType: DashboardViewSelectionType.CALENDAR,
       title: "Calendar",
+      loading: periodControls.calendar.loading,
       // No period bar — the calendar's own arrows/swipe are the single nav, wired to the data cursor.
       node: (
         <CalendarHeatmap
@@ -173,6 +179,7 @@ export function buildDashboardChartConfigs(
       pieType: "category",
       title: "Categories",
       period: period(periodControls.categoriesMonth),
+      loading: periodControls.categoriesMonth.loading,
       node: donut(monthlyCategories, "category"),
     },
     {
@@ -181,6 +188,7 @@ export function buildDashboardChartConfigs(
       pieType: "group",
       title: "Groups",
       period: period(periodControls.groupsMonth),
+      loading: periodControls.groupsMonth.loading,
       node: donut(monthlyGroups, "group"),
     },
     {
@@ -188,6 +196,7 @@ export function buildDashboardChartConfigs(
       detailType: DashboardViewSelectionType.PIE, // net worth has no dedicated detail view; not routed to
       title: "Net Worth Growth",
       period: period(periodControls.netWorthYear),
+      loading: periodControls.netWorthYear.loading,
       node: (
         <LineChart
           animated={animated}
@@ -205,6 +214,7 @@ export function buildDashboardChartConfigs(
       detailType: DashboardViewSelectionType.DOUBLE_BAR,
       title: "Net Earnings",
       period: period(periodControls.earningsYear),
+      loading: periodControls.earningsYear.loading,
       node: (
         <DoubleBarChart
           animated={animated}

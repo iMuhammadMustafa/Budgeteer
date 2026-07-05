@@ -65,28 +65,41 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const [earningsYearCursor, setEarningsYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
   const [netWorthYearCursor, setNetWorthYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
 
-  // Fetch raw daily transactions for the calendar + weekly bar (month-bound)
-  const { data: dailyTransactionsRaw = [], isLoading: isDailyLoading } = statsService.useGetStatsDailyTransactionsRaw(
-    dailyMonthCursor.start,
-    dailyMonthCursor.end,
-  );
+  // Fetch raw daily transactions for the calendar + weekly bar (month-bound).
+  // `isFetching` (vs `isLoading`) stays true on a period change too — the queries keep the previous
+  // period's data as placeholder, so we surface a subtle per-chart spinner instead of blanking.
+  const {
+    data: dailyTransactionsRaw = [],
+    isLoading: isDailyLoading,
+    isFetching: isDailyFetching,
+  } = statsService.useGetStatsDailyTransactionsRaw(dailyMonthCursor.start, dailyMonthCursor.end);
 
   // Fetch monthly categories (month-bound)
-  const { data: monthlyCategoriesData = { categories: [], groups: [] }, isLoading: isCategoriesLoading } =
-    statsService.useGetStatsMonthlyCategoriesTransactions(categoriesMonthCursor.start, categoriesMonthCursor.end);
+  const {
+    data: monthlyCategoriesData = { categories: [], groups: [] },
+    isLoading: isCategoriesLoading,
+    isFetching: isCategoriesFetching,
+  } = statsService.useGetStatsMonthlyCategoriesTransactions(categoriesMonthCursor.start, categoriesMonthCursor.end);
 
   // Fetch monthly groups (month-bound)
-  const { data: monthlyGroupsData = { categories: [], groups: [] }, isLoading: isGroupsLoading } =
-    statsService.useGetStatsMonthlyCategoriesTransactions(groupsMonthCursor.start, groupsMonthCursor.end);
+  const {
+    data: monthlyGroupsData = { categories: [], groups: [] },
+    isLoading: isGroupsLoading,
+    isFetching: isGroupsFetching,
+  } = statsService.useGetStatsMonthlyCategoriesTransactions(groupsMonthCursor.start, groupsMonthCursor.end);
 
   // Fetch yearly charts (year-bound)
-  const { data: yearlyTransactionsTypes = [], isLoading: isYearlyLoading } =
-    statsService.useGetStatsMonthlyTransactionsTypes(earningsYearCursor.start, earningsYearCursor.end);
+  const {
+    data: yearlyTransactionsTypes = [],
+    isLoading: isYearlyLoading,
+    isFetching: isYearlyFetching,
+  } = statsService.useGetStatsMonthlyTransactionsTypes(earningsYearCursor.start, earningsYearCursor.end);
 
-  const { data: netWorthGrowth = [], isLoading: isNetWorthLoading } = statsService.useGetStatsNetWorthGrowth(
-    netWorthYearCursor.start,
-    netWorthYearCursor.end,
-  );
+  const {
+    data: netWorthGrowth = [],
+    isLoading: isNetWorthLoading,
+    isFetching: isNetWorthFetching,
+  } = statsService.useGetStatsNetWorthGrowth(netWorthYearCursor.start, netWorthYearCursor.end);
 
   const filters = useMemo<TransactionFilters | undefined>(() => {
     if (!fetchTransactions) return undefined;
@@ -428,17 +441,28 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   }, [netWorthYearCursor]);
 
   const periodControls = {
-    week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek },
-    categoriesMonth: { label: categoriesMonthLabel, prev: onPrevCategoriesMonth, next: onNextCategoriesMonth },
-    groupsMonth: { label: groupsMonthLabel, prev: onPrevGroupsMonth, next: onNextGroupsMonth },
+    week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek, loading: isDailyFetching },
+    categoriesMonth: {
+      label: categoriesMonthLabel,
+      prev: onPrevCategoriesMonth,
+      next: onNextCategoriesMonth,
+      loading: isCategoriesFetching,
+    },
+    groupsMonth: {
+      label: groupsMonthLabel,
+      prev: onPrevGroupsMonth,
+      next: onNextGroupsMonth,
+      loading: isGroupsFetching,
+    },
     calendar: {
       label: calendarLabel,
       prev: onPrevCalendarMonth,
       next: onNextCalendarMonth,
       currentDate: dailyMonthCursor.start,
+      loading: isDailyFetching,
     },
-    earningsYear: { label: earningsYearLabel, prev: onPrevEarningsYear, next: onNextEarningsYear },
-    netWorthYear: { label: netWorthYearLabel, prev: onPrevNetWorthYear, next: onNextNetWorthYear },
+    earningsYear: { label: earningsYearLabel, prev: onPrevEarningsYear, next: onNextEarningsYear, loading: isYearlyFetching },
+    netWorthYear: { label: netWorthYearLabel, prev: onPrevNetWorthYear, next: onNextNetWorthYear, loading: isNetWorthFetching },
   };
 
   return {
