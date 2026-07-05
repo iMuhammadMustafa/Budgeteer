@@ -1,4 +1,4 @@
-import Pulse from "@/src/components/elements/Pulse";
+import { Pulse } from "@/src/components/ui";
 import { View } from "react-native";
 
 export default function DaySkeleton() {
