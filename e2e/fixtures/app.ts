@@ -48,8 +48,11 @@ export async function awaitAppReady(page: Page): Promise<void> {
  *
  * - `local` / `demo`: inject the mode; the provider seeds the DB and a synthetic
  *   session and the app lands straight on `/Dashboard`.
- * - `cloud`: inject the mode (persists it, no synthetic session) so the app
- *   routes to `/Login`, then perform the real login. Requires credentials.
+ * - `cloud`: inject the mode (persists it, no synthetic session) so repos use
+ *   the Supabase backend, then click the Cloud entry on the landing page to
+ *   reach `/Login` (there is no cloud auto-redirect — by design, so the
+ *   local/demo choices stay reachable), and perform the real login.
+ *   Requires credentials.
  *
  * Pass no `mode` to use the current project's mode (see {@link projectMode}).
  */
@@ -59,10 +62,13 @@ export async function gotoApp(page: Page, mode: StorageMode = projectMode()): Pr
       throw new Error("Cloud credentials missing — set E2E_CLOUD_EMAIL / E2E_CLOUD_PASSWORD");
     }
     await page.goto(`/?storageMode=cloud`);
+    // Landing shows the storage-mode picker (no synthetic session in cloud);
+    // clicking the Cloud entry routes to the real Login screen.
+    await page.getByTestId("mode-cloud").click();
     await page.waitForURL(/\/Login/);
-    await page.getByRole("textbox", { name: "Email" }).fill(cloudCredentials.email);
-    await page.getByRole("textbox", { name: "Password" }).fill(cloudCredentials.password);
-    await page.getByRole("button", { name: /login|sign in/i }).click();
+    await page.getByTestId("input-login-email").fill(cloudCredentials.email);
+    await page.getByTestId("input-login-password").fill(cloudCredentials.password);
+    await page.getByTestId("btn-login-submit").click();
     await page.waitForURL("**/Dashboard");
   } else {
     await page.goto(`/?storageMode=${mode}`);

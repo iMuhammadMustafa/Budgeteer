@@ -84,6 +84,7 @@ export default function Login() {
         disabled={!isValid}
         variant="primary"
         className="mb-4 bg"
+        testID="btn-login-submit"
       />
       {/* TODO: Create a Link Button that either wraps a button or take the styles of the button is in button component */}
       <Link className="py-2 mb-4 bg-secondary rounded-lg items-center text-center" href="/Register">
