@@ -12,6 +12,7 @@
  * no subscription outlives its provider (a memory-leak class we avoid).
  */
 import { PropsWithChildren, useEffect, useRef } from "react";
+import { resolveTenantId } from "@/src/utils/tenant";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import { StorageMode } from "@/src/types/StorageMode";
@@ -78,7 +79,7 @@ function keysForTable(table: string): readonly (readonly unknown[])[] {
 export default function CloudSyncProvider({ children }: PropsWithChildren) {
   const { storageMode } = useStorageMode();
   const { session } = useAuth();
-  const tenantId: string | undefined = session?.user?.user_metadata?.tenantid;
+  const tenantId: string | undefined = resolveTenantId(session);
   const userId = session?.user?.id;
 
   // Tables changed since the last flush; drained on the debounced invalidation.

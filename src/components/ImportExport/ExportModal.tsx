@@ -1,4 +1,5 @@
 import { Button, ResponsiveModal, Switch } from "@/src/components/ui";
+import { resolveTenantId } from "@/src/utils/tenant";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -16,7 +17,7 @@ export default function ExportModal({ visible, onClose }: {
 }) {
     const { session } = useAuth();
     const { dbContext, storageMode } = useStorageMode();
-    const tenantId = session?.user?.user_metadata?.tenantid || "";
+    const tenantId = resolveTenantId(session) || "";
 
     const [selectedTables, setSelectedTables] = useState<Set<TableNames>>(new Set(EXPORTABLE_TABLES));
     const [selectedView, setSelectedView] = useState<ViewNames | null>(null);

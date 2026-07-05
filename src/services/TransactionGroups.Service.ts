@@ -1,4 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { TableNames } from "@/src/types/database//TableNames";
 import { TransactionGroup } from "@/src/types/database//Tables.Types";
 import { useAuth } from "../providers/AuthProvider";
@@ -11,7 +12,7 @@ export function useTransactionGroupService(): ITransactionGroupService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
 
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();

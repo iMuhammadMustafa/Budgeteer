@@ -1,4 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { ConfigurationTypes } from "@/src/types/database/Config.Types";
 import { TableNames } from "@/src/types/database//TableNames";
 import { Configuration } from "@/src/types/database//Tables.Types";
@@ -24,7 +25,7 @@ export function useConfigurationService(): IConfigurationService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
 
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();

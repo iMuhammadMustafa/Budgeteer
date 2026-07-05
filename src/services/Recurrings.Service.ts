@@ -1,4 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { TableNames } from "@/src/types/database//TableNames";
 import { Inserts, Recurring } from "@/src/types/database//Tables.Types";
 import { Session } from "@supabase/supabase-js";
@@ -27,7 +28,7 @@ export function useRecurringService(): IRecurringService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
 
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();
@@ -103,7 +104,7 @@ export const executeRecurringHelper = async (
   accountRepo: IAccountRepository,
 ): Promise<ApplyResult> => {
   const userId = session.user.id;
-  const tenantId = session.user.user_metadata.tenantid;
+  const tenantId = resolveTenantId(session);
 
   let updatedReucrring: Recurring | null = { ...recurring };
   try {

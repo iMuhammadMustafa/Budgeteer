@@ -4,6 +4,7 @@
  * to the originals; repositories are injected as parameters.
  */
 import { Session } from "@supabase/supabase-js";
+import { resolveTenantId } from "@/src/utils/tenant";
 import dayjs from "dayjs";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Account, Inserts, Updates } from "@/src/types/database/Tables.Types";
@@ -23,7 +24,7 @@ export const createAccountRepoHelper = async (
   categoryRepo: ITransactionCategoryRepository,
 ) => {
   let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+  let tenantid = resolveTenantId(session);
 
   formAccount.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   formAccount.createdby = userId;
@@ -70,7 +71,7 @@ export const updateAccountRepoHelper = async (
   addAdjustmentTransaction = false,
 ) => {
   let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+  let tenantid = resolveTenantId(session);
 
   formData.updatedby = userId;
   formData.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
