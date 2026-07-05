@@ -169,6 +169,63 @@ export async function createTransactionCategory(page: Page, opts: { name: string
   return opts.name;
 }
 
+/** A transaction row on the Transactions list, matched by its visible name. */
+export const transactionRow = (page: Page, name: string) =>
+  page.getByTestId(/^transaction-item-/).filter({ hasText: name });
+
+/**
+ * Long-press a transaction row to enter selection mode and select it. A plain
+ * click with a delay is how RNW surfaces a long-press on web.
+ */
+export async function selectTransaction(page: Page, name: string) {
+  await transactionRow(page, name).first().click({ delay: 700 });
+}
+
+/**
+ * Batch-delete the currently-selected transaction(s) via the selection header
+ * (`btn-delete-selected`) + the shared confirm dialog.
+ */
+export async function deleteSelectedTransactions(page: Page) {
+  await page.getByTestId("btn-delete-selected").click();
+  await waitForOverlayOpen(page);
+  await overlay(page).getByRole("button", { name: "Delete", exact: true }).click();
+  await waitForOverlayClosed(page);
+}
+
+/**
+ * Void / unvoid the currently-selected transaction(s) via the BatchUpdateModal.
+ * Enables the "Update Void Status" option, sets the switch to match `shouldVoid`
+ * (the switch defaults to Active=false, so only toggle when voiding), applies,
+ * and confirms through the BatchActionConfirmModal ("Update").
+ */
+export async function setSelectedVoid(page: Page, shouldVoid: boolean) {
+  await page.getByTestId("btn-batch-update").click();
+  await waitForOverlayOpen(page);
+  await page.getByTestId("btn-toggle-update-void-status").click();
+  if (shouldVoid) {
+    await page.getByTestId("switch-void-status").click();
+  }
+  await overlay(page).getByRole("button", { name: "Apply Updates" }).click();
+  // The apply hands off to the BatchActionConfirmModal; confirm with "Update".
+  await waitForOverlayOpen(page);
+  await overlay(page).getByRole("button", { name: "Update", exact: true }).click();
+  await waitForOverlayClosed(page);
+}
+
+/**
+ * Delete a list row that has dependents by *reassigning* them to another entity
+ * (rather than cascade-deleting). Opens the DeleteConfirmModal, picks the
+ * replacement from its `select` dropdown, and confirms. Used for the
+ * delete-account-and-move-transactions journey.
+ */
+export async function deleteItemReassigning(page: Page, id: string, replacementId: string) {
+  await page.getByTestId(`delete-btn-${id}`).click();
+  await waitForOverlayOpen(page);
+  await selectDropdownOption(page, "select", replacementId);
+  await overlay(page).getByRole("button", { name: "Delete", exact: true }).click();
+  await waitForOverlayClosed(page);
+}
+
 /**
  * Fill and submit the redesigned TransactionForm (`/AddTransaction`). Assumes
  * the caller has already navigated there. On wide web (the desktop project) the

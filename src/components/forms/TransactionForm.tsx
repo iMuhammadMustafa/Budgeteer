@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { useConfigurationService } from "@/src/services/Configurations.Service";
 import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
@@ -17,6 +18,8 @@ import {
   TransactionSubItem,
   ValidationSchema,
 } from "@/src/types/components/forms.types";
+import { ConfigurationTypes } from "@/src/types/database/Config.Types";
+import { TableNames } from "@/src/types/database/TableNames";
 import { Transaction } from "@/src/types/database/Tables.Types";
 import { useRecentValues } from "@/src/hooks/useRecentValues";
 import { roundToCents } from "@/src/utils/amount.helper";
@@ -597,8 +600,22 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   const accountService = useAccountService();
   const transactionService = useTransactionService();
   const transactionItemService = useTransactionItemService();
+  const configurationService = useConfigurationService();
 
   const { data: categories, isLoading: isCategoriesLoading } = transactionCategoryService.useFindAllWithGroup();
+  // The category used for transfers is resolved from configuration (never by name).
+  // Falls back to any Transfer/Adjustment-typed category so the picker still
+  // auto-fills if the mapping is absent; the write path self-heals it for real.
+  const { data: transferCategoryConfig } = configurationService.useGetConfiguration(
+    TableNames.TransactionCategories,
+    ConfigurationTypes.AccountOpertationsCategory,
+    "id",
+  );
+  const transferCategoryId = useMemo(() => {
+    const mapped = transferCategoryConfig?.value;
+    if (mapped && categories?.some(c => c.id === mapped)) return mapped;
+    return categories?.find(c => c.type === "Transfer" || c.type === "Adjustment")?.id ?? null;
+  }, [transferCategoryConfig?.value, categories]);
   const { data: accounts, isLoading: isAccountLoading } = accountService.useFindAllWithCategory();
   const { mutate: upsertTransaction } = transactionService.useUpsert();
   const createItemsMutation = transactionItemService.useCreateMultiple();
@@ -908,20 +925,16 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         // Clear payee for transfers
         updateField("payee", "");
 
-        // Find and set transfer category
-        const transferCategory = categories?.find(
-          category =>
-            category.name?.toLowerCase().includes("transfer") || category.name?.toLowerCase().includes("account"),
-        );
-        if (transferCategory) {
-          updateField("categoryid", transferCategory.id);
+        // Set the configured transfer category (resolved via configuration, not by name)
+        if (transferCategoryId) {
+          updateField("categoryid", transferCategoryId);
         }
       } else {
         // Clear transfer account for non-transfers
         updateField("transferaccountid", null);
       }
     },
-    [updateField, categories, formState.data.name],
+    [updateField, transferCategoryId, formState.data.name],
   );
 
   // Enhanced account switching for transfers with validation

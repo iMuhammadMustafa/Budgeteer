@@ -1,14 +1,21 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { ConfigurationTypes } from "@/src/types/database/Config.Types";
 import { TableNames } from "@/src/types/database//TableNames";
 import { Configuration } from "@/src/types/database//Tables.Types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../providers/AuthProvider";
+import { queryClient } from "../providers/QueryProvider";
 import createServiceHooks from "./BaseService";
+import { setSystemCategoryMapping } from "./helpers/systemCategories";
 import { IService } from "./IService";
 import { queryKeys } from "./queryKeys";
 
 export interface IConfigurationService extends IService<Configuration, TableNames.Configurations> {
-  useGetConfiguration: (table: string, type: string, key: string) => ReturnType<typeof useQuery<Configuration>>;
+  useGetConfiguration: (table: string, type: string, key: string) => ReturnType<typeof useQuery<Configuration | null>>;
+  /** Remap a reserved (system) category to a different category id. */
+  useSetSystemCategory: () => ReturnType<
+    typeof useMutation<void, unknown, { configType: ConfigurationTypes; categoryId: string }>
+  >;
 }
 
 export function useConfigurationService(): IConfigurationService {
@@ -22,13 +29,27 @@ export function useConfigurationService(): IConfigurationService {
   const configurationRepo = dbContext.ConfigurationRepository();
 
   const useGetConfiguration = (table: string, type: string, key: string) => {
-    return useQuery<Configuration>({
+    return useQuery<Configuration | null>({
       queryKey: queryKeys.configurations.byLookup(table, type, key, tenantId),
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
-        return configurationRepo.getConfiguration(table, type, key, tenantId);
+        // A missing configuration is a valid, expected state (e.g. an unmapped
+        // system category) — resolve to null instead of throwing/retrying.
+        return configurationRepo.getConfiguration(table, type, key, tenantId).catch(() => null);
       },
       enabled: !!tenantId,
+    });
+  };
+
+  const useSetSystemCategory = () => {
+    const userId = session.user.id;
+    return useMutation({
+      mutationFn: async ({ configType, categoryId }: { configType: ConfigurationTypes; categoryId: string }) => {
+        await setSystemCategoryMapping(configType, categoryId, tenantId, userId, configurationRepo);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.configurations.all });
+      },
     });
   };
 
@@ -40,5 +61,6 @@ export function useConfigurationService(): IConfigurationService {
       session,
     ),
     useGetConfiguration,
+    useSetSystemCategory,
   };
 }

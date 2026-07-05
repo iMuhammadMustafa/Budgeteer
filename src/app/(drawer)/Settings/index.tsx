@@ -60,6 +60,18 @@ export default function SettingsIndex() {
       />
 
       <ListRow
+        iconName="Wallet"
+        iconShape="circle"
+        iconColor={colors.primary}
+        iconBg={colors.primarySoft}
+        title="System Categories"
+        subtitle="Map the categories used for balance adjustments & transfers"
+        right={chevron}
+        onPress={() => router.push("/Settings/SystemCategories")}
+        testID="btn-settings-system-categories"
+      />
+
+      <ListRow
         iconName="Bell"
         iconShape="circle"
         iconColor={colors.inkMute}

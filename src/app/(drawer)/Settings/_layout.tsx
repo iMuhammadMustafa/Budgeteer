@@ -7,6 +7,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="ImportExport" />
       <Stack.Screen name="Appearance" />
       <Stack.Screen name="Currency" />
+      <Stack.Screen name="SystemCategories" />
     </Stack>
   );
 }
