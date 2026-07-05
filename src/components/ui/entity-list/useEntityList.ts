@@ -11,7 +11,11 @@ import { queryClient } from "@/src/providers/QueryProvider";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Updates } from "@/src/types/database/Tables.Types";
 import useBackAction from "@/src/utils/useBackAction";
+import { useNotify } from "@/src/components/ui/notifications/context";
 import { EntityListState, UseEntityListConfig } from "./types";
+
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error && err.message ? err.message : fallback;
 
 const getNestedValue = (obj: any, path: string) => {
   if (!path) return undefined;
@@ -28,6 +32,7 @@ export function useEntityList<TModel, TTable extends TableNames>({
 }: UseEntityListConfig<TModel, TTable>): EntityListState<TModel> {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const isSelectionMode = selectedItems.length > 0;
+  const { notify } = useNotify();
 
   // Android back / web Escape exits selection mode.
   const clearSelection = useCallback(() => setSelectedItems([]), []);
@@ -141,11 +146,18 @@ export function useEntityList<TModel, TTable extends TableNames>({
     const items = selectedItems;
     setSelectedItems([]);
     const results = await Promise.allSettled(items.map(item => deleteAsync({ id: item.id, item })));
-    const failed = results.filter(r => r.status === "rejected").length;
-    if (failed > 0) {
-      console.warn(`[entity-list] bulk delete: ${failed}/${items.length} item(s) failed to delete`);
+    const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    if (rejected.length > 0) {
+      console.warn(`[entity-list] bulk delete: ${rejected.length}/${items.length} item(s) failed to delete`);
+      notify({
+        type: "error",
+        message:
+          rejected.length === 1
+            ? errorMessage(rejected[0].reason, "One item couldn't be deleted.")
+            : `${rejected.length} of ${items.length} items couldn't be deleted.`,
+      });
     }
-  }, [isSelectionMode, selectedItems, deleteAsync]);
+  }, [isSelectionMode, selectedItems, deleteAsync, notify]);
 
   const handleDeleteConfirm = useCallback(
     async (replacementItemId?: string, alsoDeleteDependencies?: boolean) => {
@@ -159,6 +171,7 @@ export function useEntityList<TModel, TTable extends TableNames>({
           await deleteAsync({ id: target.id, item: target });
         } catch (err) {
           console.warn(`[entity-list] delete of "${target.name ?? target.id}" was blocked:`, err);
+          notify({ type: "error", message: errorMessage(err, `“${target.name ?? "This item"}” couldn't be deleted.`) });
         } finally {
           setItemToDelete(null);
         }
@@ -195,6 +208,7 @@ export function useEntityList<TModel, TTable extends TableNames>({
       updateMultipleMutate,
       deleteAsync,
       deleteDependencies,
+      notify,
     ],
   );
 
