@@ -70,11 +70,16 @@ export default function useTransactions() {
   const addMutation = transactionService.useCreate();
   const deleteMutation = transactionService.useDelete();
 
-  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
-  // Mirror of `selectionMode` in a ref so the press callbacks can read the live value
-  // without depending on it — keeps them referentially stable across renders.
-  const selectionModeRef = useRef(false);
+  // Selection mode is fully derived from the selection: entering = first item added,
+  // exiting = last item removed. No parallel state/effect to keep in sync.
+  const selectionMode = selectedTransactions.length > 0;
+  // Latest selection, mirrored for the stable press callbacks to read at click time
+  // (kept in an effect so we never assign a ref during render).
+  const selectedRef = useRef(selectedTransactions);
+  useEffect(() => {
+    selectedRef.current = selectedTransactions;
+  }, [selectedTransactions]);
 
   const selectedIds = useMemo(
     () => new Set(selectedTransactions.map(t => t.id)),
@@ -131,8 +136,6 @@ export default function useTransactions() {
 
   const clearSelection = useCallback(() => {
     setSelectedTransactions([]);
-    selectionModeRef.current = false;
-    setSelectionMode(false);
   }, []);
 
   const copyTransactions = async () => {
@@ -223,19 +226,11 @@ export default function useTransactions() {
     }
   };
 
-  // Exit selection mode once the last item is deselected. Driven off the selection
-  // array so the toggle logic in `handlePress` stays a pure functional update.
-  useEffect(() => {
-    if (selectionMode && selectedTransactions.length === 0) {
-      selectionModeRef.current = false;
-      setSelectionMode(false);
-    }
-  }, [selectionMode, selectedTransactions.length]);
-
   const handlePress = useCallback(
     (item: TransactionsView, _transferItem?: TransactionsView) => {
-      if (selectionModeRef.current) {
-        // In selection mode, short press selects/deselects.
+      if (selectedRef.current.length > 0) {
+        // In selection mode, short press selects/deselects (deselecting the last
+        // item empties the array, so `selectionMode` derives back to false).
         if (Platform.OS !== "web") Haptics.selectionAsync();
         setSelectedTransactions(prev =>
           prev.some(i => i.id === item.id) ? prev.filter(t => t.id !== item.id) : [...prev, item],
@@ -252,13 +247,11 @@ export default function useTransactions() {
     (item: TransactionsView, transferItem?: TransactionsView) => {
       // Already selecting: a long-press is just another toggle (delegate once —
       // the old code toggled AND re-appended, double-adding the item).
-      if (selectionModeRef.current) {
+      if (selectedRef.current.length > 0) {
         handlePress(item, transferItem);
         return;
       }
       if (Platform.OS !== "web") Haptics.selectionAsync();
-      selectionModeRef.current = true;
-      setSelectionMode(true);
       setSelectedTransactions(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]));
     },
     [handlePress],
