@@ -7,5 +7,5 @@ export class TransactionGroupSqliteRepository
     extends BaseSqliteRepository<TransactionGroup, TableNames.TransactionGroups>
     implements ITransactionGroupRepository {
     protected tableName = TableNames.TransactionGroups;
-    protected orderByFieldsDesc = ["displayorder", "name"];
+    protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 }

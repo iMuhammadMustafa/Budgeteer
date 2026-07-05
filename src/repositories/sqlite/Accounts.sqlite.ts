@@ -10,9 +10,7 @@ export class AccountSqliteRepository
     extends BaseSqliteRepository<Account, TableNames.Accounts>
     implements IAccountRepository {
     protected tableName = TableNames.Accounts;
-    protected orderByFieldsAsc = ["displayorder"];
-    protected orderByFieldsDesc = ["displayorder"];
-    protected orderDirection: "ASC" | "DESC" = "DESC";
+    protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 
     async findAllWithCategory(tenantId: string, filters?: QueryFilters): Promise<Account[]> {
         const db = await getSqliteDB();
@@ -41,7 +39,7 @@ export class AccountSqliteRepository
             query += ` AND a.isdeleted = 0`;
         }
 
-        query += ` ORDER BY a.displayorder DESC, a.name`;
+        query += ` ORDER BY a.displayorder DESC, a.createdat DESC, a.name`;
 
         const rows = await db.getAllAsync<Record<string, unknown>>(query, params);
 

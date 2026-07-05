@@ -9,8 +9,7 @@ export class TransactionCategorySqliteRepository
     extends BaseSqliteRepository<TransactionCategory, TableNames.TransactionCategories>
     implements ITransactionCategoryRepository {
     protected tableName = TableNames.TransactionCategories;
-    protected orderByField = "displayorder";
-    protected orderDirection: "ASC" | "DESC" = "DESC";
+    protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 
     async findAllWithGroup(tenantId: string, filters?: QueryFilters): Promise<TransactionCategory[]> {
         const db = await getSqliteDB();
@@ -42,7 +41,7 @@ export class TransactionCategorySqliteRepository
             query += ` AND tc.isdeleted = 0`;
         }
 
-        query += ` ORDER BY tc.displayorder DESC, tc.name`;
+        query += ` ORDER BY tc.displayorder DESC, tc.createdat DESC, tc.name`;
 
         const rows = await db.getAllAsync<Record<string, unknown>>(query, params);
 

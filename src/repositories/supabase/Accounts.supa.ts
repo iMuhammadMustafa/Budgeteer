@@ -7,7 +7,7 @@ import { IAccountRepository } from "../interfaces/IAccountRepository";
 
 export class AccountSupaRepository extends SupaRepository<Account, TableNames.Accounts> implements IAccountRepository {
   protected tableName = TableNames.Accounts;
-  protected orderByFieldsDesc = ["displayorder", "name"];
+  protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 
   async findAllWithCategory(tenantId: string, filters: QueryFilters = {}): Promise<Account[]> {
     let query = supabase
@@ -27,6 +27,7 @@ export class AccountSupaRepository extends SupaRepository<Account, TableNames.Ac
     const { data, error } = await query
       .order("category(displayorder)", { ascending: false })
       .order("displayorder", { ascending: false })
+      .order("createdat", { ascending: false })
       .order("name")
       .order("owner");
     if (error) throw error;

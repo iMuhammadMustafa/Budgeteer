@@ -7,5 +7,5 @@ export class AccountCategorySupaRepository
   extends SupaRepository<AccountCategory, TableNames.AccountCategories>
   implements IAccountCategoryRepository {
   protected tableName = TableNames.AccountCategories;
-  protected orderByFieldsDesc = ["displayorder", "name"];
+  protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 }
