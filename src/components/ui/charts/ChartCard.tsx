@@ -15,6 +15,16 @@ import { IconButton } from "../IconButton";
 import { Text } from "../Text";
 import { cn } from "../utils/cn";
 
+/**
+ * Fixed height (px) for a chart card's body, so every card in the dashboard grid is
+ * uniformly tall regardless of its chart's intrinsic content. This is what lets the
+ * fill-height charts (Bar/DoubleBar/Line) and the vertically-centered Donut share one
+ * footprint — and it stops a row from jumping height when a period change swaps in data
+ * of a different shape. Cards that own their own sizing (e.g. the Calendar) pass
+ * `bodyHeight="auto"` to opt out.
+ */
+export const CHART_BODY_HEIGHT = 320;
+
 export interface ChartCardPeriod {
   label: string;
   onPrev: () => void;
@@ -25,19 +35,32 @@ export interface ChartCardProps {
   title: string;
   children: ReactNode;
   period?: ChartCardPeriod;
+  /** Body height in px (default `CHART_BODY_HEIGHT`), or `"auto"` to size to content. */
+  bodyHeight?: number | "auto";
   className?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-function ChartCardInner({ title, children, period, className = "", style, testID = "chart-card" }: ChartCardProps) {
+function ChartCardInner({
+  title,
+  children,
+  period,
+  bodyHeight = CHART_BODY_HEIGHT,
+  className = "",
+  style,
+  testID = "chart-card",
+}: ChartCardProps) {
+  const auto = bodyHeight === "auto";
   return (
     <Card className={cn("my-1.5 gap-2 p-5 pb-1", className)} style={style} testID={testID}>
       <Text variant="overline">{title}</Text>
-      {/* flex-1 so a chart that knows how to fill its space (e.g. BarChart's `fillHeight`) has
-          real room to grow into when a sibling card (e.g. Recent Transactions) stretches this
-          card taller than the chart's own natural content height. */}
-      <View className="flex-1">{children}</View>
+      {/* A fixed-height body gives fill-height charts (BarChart's `fillHeight`, etc.) a stable
+          box to grow into and keeps every card the same height; `"auto"` falls back to the old
+          flex-1 grow-to-fill behaviour for cards that manage their own height (e.g. Calendar). */}
+      <View className={cn(auto && "flex-1")} style={auto ? undefined : { height: bodyHeight }}>
+        {children}
+      </View>
       {period && (
         <View className="mt-auto flex-row items-center justify-between" testID={`${testID}-period`}>
           <IconButton

@@ -38,6 +38,10 @@ export interface DonutChartProps {
   data: DonutDatum[];
   size?: number;
   thickness?: number;
+  /** Fill the available vertical space (e.g. a fixed-height ChartCard body) and vertically
+   * center the ring + legend, so a sparse donut sits centered rather than top-anchored with a
+   * pool of empty space below it. */
+  fillHeight?: boolean;
   /** Fold the smallest slices beyond this count into "Other" (default 8). Also the loading legend row count. */
   maxSlices?: number;
   centerLabel?: string;
@@ -76,6 +80,7 @@ export function DonutChart({
   data,
   size = 180,
   thickness = 30,
+  fillHeight = false,
   maxSlices = 8,
   centerLabel,
   centerValue,
@@ -120,7 +125,13 @@ export function DonutChart({
   const rOuter = size / 2 - 1;
   const rInner = rOuter - thickness;
 
-  const frameCls = cn("gap-4", beside ? "flex-row items-center" : "items-center", className);
+  const frameCls = cn(
+    "gap-4",
+    beside ? "flex-row items-center" : "items-center",
+    fillHeight && "flex-1",
+    fillHeight && !beside && "justify-center",
+    className,
+  );
   const donutSlotCls = cn("items-center justify-center", beside && "flex-1");
   const legendSlotCls = cn("min-w-0", beside ? "ml-5 flex-1" : "mt-4 w-full");
 
@@ -132,6 +143,7 @@ export function DonutChart({
       <DonutChartSkeleton
         size={size}
         thickness={thickness}
+        fillHeight={fillHeight}
         maxSlices={maxSlices}
         showLegend={showLegend}
         legendPosition={legendPosition}
@@ -290,6 +302,7 @@ export function DonutChart({
 export function DonutChartSkeleton({
   size = 180,
   thickness = 30,
+  fillHeight = false,
   maxSlices = 8,
   showLegend = true,
   legendPosition = "auto",
@@ -304,6 +317,7 @@ export function DonutChartSkeleton({
 }: {
   size?: number;
   thickness?: number;
+  fillHeight?: boolean;
   maxSlices?: number;
   showLegend?: boolean;
   legendPosition?: "auto" | "right" | "bottom";
@@ -325,7 +339,13 @@ export function DonutChartSkeleton({
   const rOuter = size / 2 - 1;
   const rInner = rOuter - thickness;
 
-  const frameCls = cn("gap-4", beside ? "flex-row items-center" : "items-center", className);
+  const frameCls = cn(
+    "gap-4",
+    beside ? "flex-row items-center" : "items-center",
+    fillHeight && "flex-1",
+    fillHeight && !beside && "justify-center",
+    className,
+  );
   const donutSlotCls = cn("items-center justify-center", beside && "flex-1");
   const legendSlotCls = cn("min-w-0", beside ? "ml-5 flex-1" : "mt-4 w-full");
 
