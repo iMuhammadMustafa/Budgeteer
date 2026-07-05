@@ -7,7 +7,7 @@
  * Week's Expenses, stretched to the same row height as its sibling ChartCard.
  * Replaces the legacy `@/src/components/Charts/DashboardCharts`.
  */
-import { memo, useEffect, useRef, type ReactNode } from "react";
+import { memo, useState, type ReactNode } from "react";
 import { useWindowDimensions, View } from "react-native";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -28,11 +28,11 @@ function DashboardCharts({
   // Animate the charts' entry only on the first mount. Subsequent renders (period
   // changes swapping in fresh data) pass `animated={false}` so the 6 charts update
   // their bars/lines in place instead of replaying their grow/draw-on animations.
-  const hasAnimatedRef = useRef(false);
-  const animated = !hasAnimatedRef.current;
-  useEffect(() => {
-    hasAnimatedRef.current = true;
-  }, []);
+  // Animate the charts' entry once per MOUNT. This stays `true` for the component's
+  // life: the charts run their grow/draw-on animation when they mount, then in-place
+  // data updates on a period change leave them mounted (grow already settled at 1),
+  // so values jump without replaying. A genuine remount re-animates, as intended.
+  const [animated] = useState(true);
 
   const configs = buildDashboardChartConfigs(chartProps, colors, n => formatCurrency(n, false), animated);
 

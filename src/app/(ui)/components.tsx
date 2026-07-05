@@ -59,6 +59,8 @@ import {
 } from "@/src/components/ui";
 import { PageHeader } from "@/src/components/ui/pages/PageHeader";
 import PageLayout from "@/src/components/ui/pages/PageLayout";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 // Legacy charts (victory-native) — kept only for the before/after comparison below.
 // Lazy-loaded so the heavy victory suite is a separate web chunk (loaded only when
 // this dev-showcase route mounts) instead of bloating the app's entry bundle.
@@ -67,7 +69,6 @@ const LegacyDoubleBar = lazy(() => import("@/src/components/Charts/DoubleBar"));
 const LegacyLine = lazy(() => import("@/src/components/Charts/Line"));
 const LegacyMyCalendar = lazy(() => import("@/src/components/Charts/MyCalendar"));
 const LegacyMyPie = lazy(() => import("@/src/components/Charts/MyPie"));
-import MyIcon from "@/src/components/elements/MyIcon";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
