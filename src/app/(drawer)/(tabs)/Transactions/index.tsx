@@ -11,8 +11,9 @@ import TransactionSearchForm from "@/src/components/Transactions/SearchForm";
 import SplitTransactionModal from "@/src/components/Transactions/SplitTransactionModal";
 import TransactionItem from "@/src/components/Transactions/TransactionItem";
 import { TransactionListRow } from "@/src/types/components/Transactions.types";
+import { CONTENT_MAX_WIDTH } from "@/src/constants/layout";
 import { useCallback } from "react";
-import { FlatList } from "react-native";
+import { FlatList, View } from "react-native";
 import useTransactions from "./useTransactions";
 
 export default function Transactions() {
@@ -76,8 +77,9 @@ export default function Transactions() {
   }
 
   return (
-    <>
-      <TransactionsPageHeader
+    <View className="flex-1 items-center">
+      <View className="w-full flex-1" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
+        <TransactionsPageHeader
         selectedTransactions={selectedTransactions}
         selectedSum={selectedSum}
         openDeleteConfirm={() => openConfirmModal("delete")}
@@ -158,6 +160,7 @@ export default function Transactions() {
         onConfirm={executeConfirmedAction}
         updateSummary={confirmAction === "update" ? updateSummary : undefined}
       />
-    </>
+      </View>
+    </View>
   );
 }
