@@ -67,13 +67,12 @@ test.describe("account ↔ transaction integration", () => {
     await expect(listItem(page, target)).toContainText("$350.00");
   });
 
-  test("voiding a transfer restores the source but not the destination (KNOWN BUG)", async ({ page }) => {
-    // KNOWN BUG (task_2001b6da): the batch-update void path in
-    // Transactions.Service.ts (`useUpdateMultipleTransactions`) only reverses
-    // `tx.accountid`, never `tx.transferaccountid`. So voiding a transfer
-    // restores the SOURCE account but strands the money in the DESTINATION.
-    // This test LOCKS the current (buggy) behavior — flip the destination
-    // assertion to "$0.00" once the service reverses both legs.
+  test("voiding a transfer restores both the source and the destination", async ({ page }) => {
+    // Regression (task_2001b6da): the batch-update void path in
+    // Transactions.Service.ts (`useUpdateMultipleTransactions`) used to reverse
+    // only `tx.accountid`, never `tx.transferaccountid` — voiding a transfer
+    // restored the SOURCE account but stranded the money in the DESTINATION.
+    // Now the void branch reverses both legs, mirroring the create/update path.
     const stamp = Date.now();
     const source = `VoidXfer Src ${stamp}`;
     const target = `VoidXfer Dst ${stamp}`;
@@ -102,7 +101,7 @@ test.describe("account ↔ transaction integration", () => {
 
     await navigateToAccounts(page);
     await expect(listItem(page, source)).toContainText("$1,000.00"); // source restored
-    await expect(listItem(page, target)).toContainText("$200.00"); // BUG: destination NOT restored
+    await expect(listItem(page, target)).toContainText("$0.00"); // destination restored
   });
 
   test("adjusting balance with 'record' on writes a Balance Adjustment transaction", async ({ page }) => {
