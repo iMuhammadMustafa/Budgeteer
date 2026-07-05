@@ -262,6 +262,19 @@ export function useTransactionService(): ITransactionService {
           return payload;
         });
 
+        // For transfers, `transactions` only carries the displayed (source) row;
+        // its mirrored pair (linked by `transferid`) is never selected. When the
+        // void flag flips we must mirror it onto the pair row too, otherwise the
+        // pair row's stored `isvoid` goes stale even though its balance leg was
+        // reversed above — matching how `updateTransactionHelper` mirrors isvoid.
+        if (updates.isvoid !== undefined) {
+          for (const tx of transactions) {
+            if (tx.transferid && tx.isvoid !== updates.isvoid) {
+              updatePayloads.push({ id: tx.transferid, isvoid: updates.isvoid });
+            }
+          }
+        }
+
         // 2. Perform the transaction updates FIRST
         await transactionRepo.updateMultiple!(updatePayloads, tenantId);
 
@@ -291,6 +304,13 @@ export function useTransactionService(): ITransactionService {
             if (tx.isvoid !== updates.isvoid) {
               const balanceChange = updates.isvoid ? -tx.amount! : tx.amount!;
               addDelta(tx.accountid!, balanceChange);
+              // For transfers, the mirrored leg contributes the inverse amount to
+              // `transferaccountid` (see create/update helpers), so reversing a
+              // void must also reverse that leg — otherwise the destination
+              // balance sticks after a void.
+              if (tx.transferaccountid) {
+                addDelta(tx.transferaccountid, -balanceChange);
+              }
             }
           }
         }
