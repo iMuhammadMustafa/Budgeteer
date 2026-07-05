@@ -77,8 +77,9 @@ export default function Transactions() {
   }
 
   return (
-    <View className="flex-1 items-center">
-      <View className="w-full flex-1" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
+    <View className="flex-1">
+      {/* Fixed header block, centered to the content width so it aligns with the list rows. */}
+      <View className="w-full self-center" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
         <TransactionsPageHeader
         selectedTransactions={selectedTransactions}
         selectedSum={selectedSum}
@@ -112,11 +113,17 @@ export default function Transactions() {
         onRemoveFilter={handleRemoveFilter}
         onClearAll={handleSearchReset}
       />
+      </View>
 
+      {/* Full-width scroller so the scrollbar sits at the page edge, not inside the
+          centered column; the rows themselves stay centered via contentContainerStyle. */}
       {isLoading ? (
-        <SkeletonGroup count={5} renderRow={() => <DaySkeleton />} />
+        <View className="w-full flex-1 self-center" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
+          <SkeletonGroup count={5} renderRow={() => <DaySkeleton />} />
+        </View>
       ) : (
         <FlatList
+          className="flex-1"
           data={rows}
           keyExtractor={row => row.key}
           renderItem={renderItem}
@@ -124,7 +131,10 @@ export default function Transactions() {
           onEndReachedThreshold={0.5}
           onRefresh={refreshTransactions}
           refreshing={isLoading && rows.length > 0}
-          contentContainerStyle={rows.length === 0 ? { flexGrow: 1 } : undefined}
+          contentContainerStyle={[
+            { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+            rows.length === 0 ? { flexGrow: 1 } : null,
+          ]}
           ListFooterComponent={isFetchingNextPage ? <DaySkeleton /> : null}
           ListEmptyComponent={<EmptyListComponent />}
           windowSize={11}
@@ -160,7 +170,6 @@ export default function Transactions() {
         onConfirm={executeConfirmedAction}
         updateSummary={confirmAction === "update" ? updateSummary : undefined}
       />
-      </View>
     </View>
   );
 }
