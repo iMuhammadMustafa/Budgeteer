@@ -7,7 +7,7 @@
  * Week's Expenses, stretched to the same row height as its sibling ChartCard.
  * Replaces the legacy `@/src/components/Charts/DashboardCharts`.
  */
-import { type ReactNode } from "react";
+import { memo, useEffect, useRef, type ReactNode } from "react";
 import { useWindowDimensions, View } from "react-native";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -16,7 +16,7 @@ import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 import { buildDashboardChartConfigs, type DashboardChartsProps } from "./dashboardChartConfigs";
 
-export default function DashboardCharts({
+function DashboardCharts({
   recentTransactionsSlot,
   ...chartProps
 }: DashboardChartsProps & { recentTransactionsSlot?: ReactNode }) {
@@ -24,7 +24,17 @@ export default function DashboardCharts({
   const { formatCurrency } = usePrimaryCurrency();
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
-  const configs = buildDashboardChartConfigs(chartProps, colors, n => formatCurrency(n, false));
+
+  // Animate the charts' entry only on the first mount. Subsequent renders (period
+  // changes swapping in fresh data) pass `animated={false}` so the 6 charts update
+  // their bars/lines in place instead of replaying their grow/draw-on animations.
+  const hasAnimatedRef = useRef(false);
+  const animated = !hasAnimatedRef.current;
+  useEffect(() => {
+    hasAnimatedRef.current = true;
+  }, []);
+
+  const configs = buildDashboardChartConfigs(chartProps, colors, n => formatCurrency(n, false), animated);
 
   const calendarConfig = configs.find(c => c.key === "calendar");
   const weekConfig = configs.find(c => c.key === "week");
@@ -87,3 +97,5 @@ export default function DashboardCharts({
     </View>
   );
 }
+
+export default memo(DashboardCharts);

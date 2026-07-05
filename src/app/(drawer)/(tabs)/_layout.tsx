@@ -16,6 +16,10 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Mount each tab lazily on first visit and freeze it while blurred so
+        // off-screen tabs (e.g. the 6-chart Dashboard) don't keep re-rendering.
+        lazy: true,
+        freezeOnBlur: true,
         tabBarShowLabel: true,
         tabBarLabelPosition: "below-icon",
         tabBarActiveTintColor: colors.primary,

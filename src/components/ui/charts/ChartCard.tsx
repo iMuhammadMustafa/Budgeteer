@@ -7,7 +7,7 @@
  *     <BarChart data={...} />
  *   </ChartCard>
  */
-import { type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 
 import { Card } from "../Card";
@@ -30,7 +30,7 @@ export interface ChartCardProps {
   testID?: string;
 }
 
-export function ChartCard({ title, children, period, className = "", style, testID = "chart-card" }: ChartCardProps) {
+function ChartCardInner({ title, children, period, className = "", style, testID = "chart-card" }: ChartCardProps) {
   return (
     <Card className={cn("my-1.5 gap-2 p-5 pb-1", className)} style={style} testID={testID}>
       <Text variant="overline">{title}</Text>
@@ -64,3 +64,5 @@ export function ChartCard({ title, children, period, className = "", style, test
     </Card>
   );
 }
+
+export const ChartCard = memo(ChartCardInner);

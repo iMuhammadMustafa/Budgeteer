@@ -37,6 +37,9 @@ export default function DrawerLayout() {
         screenOptions={{
           header: () => <Topbar isLargeScreen={isLargeScreen} />,
           sceneStyle: { backgroundColor: "transparent" },
+          // Freeze blurred drawer screens so they stop re-rendering in the
+          // background (TanStack refetch-on-mount refreshes them on return).
+          freezeOnBlur: true,
           drawerType: isLargeScreen ? "permanent" : "slide",
           drawerStyle: isLargeScreen
             ? {
