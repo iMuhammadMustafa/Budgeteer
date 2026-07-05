@@ -59,13 +59,32 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             setSession(JSON.parse(demoSession));
           }
           break;
-        case StorageMode.Cloud:
+        case StorageMode.Cloud: {
+          // Optimistic: paint the app immediately from the last persisted session
+          // so the drawer doesn't block on the network, then reconcile below.
+          const cached = await storage.getItem(STORAGE_KEYS.CLOUD_SESSION);
+          if (cached) {
+            try {
+              setSession(JSON.parse(cached));
+              setIsLoading(false);
+            } catch {
+              await storage.removeItem(STORAGE_KEYS.CLOUD_SESSION);
+            }
+          }
+          // Reconcile against Supabase (may refresh the token over the network).
           const {
-            data: { session },
-            error,
+            data: { session: freshSession },
           } = await supabase.auth.getSession();
-          if (session) setSession(session);
+          if (freshSession) {
+            setSession(freshSession);
+            await storage.setItem(STORAGE_KEYS.CLOUD_SESSION, JSON.stringify(freshSession));
+          } else {
+            // No valid session — drop the optimistic one (DrawerLayout redirects to "/").
+            setSession(null);
+            await storage.removeItem(STORAGE_KEYS.CLOUD_SESSION);
+          }
           break;
+        }
         default:
           console.warn("Unknown storage mode:", storageMode);
           break;
@@ -76,11 +95,30 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     fetchSession();
   }, [storageMode, isStorageLoading]);
 
+  // Keep the optimistic-startup cache fresh: Supabase refreshes tokens on its own
+  // schedule, so mirror every Cloud auth-state change into the cache (persist only —
+  // React state is owned by the fetch/reconcile flow above).
+  useEffect(() => {
+    if (storageMode !== StorageMode.Cloud) return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession) storage.setItem(STORAGE_KEYS.CLOUD_SESSION, JSON.stringify(nextSession));
+      else storage.removeItem(STORAGE_KEYS.CLOUD_SESSION);
+    });
+    return () => subscription.unsubscribe();
+  }, [storageMode]);
+
   const handleSetSession = useCallback(async (newSession: Session | null, newStorageMode: StorageMode | null) => {
     if (newStorageMode === StorageMode.Local || newStorageMode === StorageMode.Demo) {
       await storage.setItem(STORAGE_KEYS.LOCAL_SESSION, JSON.stringify(newSession));
     } else {
       await storage.removeItem(STORAGE_KEYS.LOCAL_SESSION);
+      // Keep the optimistic-startup cache in sync for Cloud mode.
+      if (newStorageMode === StorageMode.Cloud) {
+        if (newSession) await storage.setItem(STORAGE_KEYS.CLOUD_SESSION, JSON.stringify(newSession));
+        else await storage.removeItem(STORAGE_KEYS.CLOUD_SESSION);
+      }
     }
 
     setSession(newSession);
@@ -103,6 +141,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         break;
       case StorageMode.Cloud:
         await supabase.auth.signOut();
+        await storage.removeItem(STORAGE_KEYS.CLOUD_SESSION);
         break;
     }
     setSession(null);

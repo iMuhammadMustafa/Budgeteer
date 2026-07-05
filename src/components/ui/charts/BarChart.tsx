@@ -8,7 +8,8 @@
  *   <BarChart data={days} color={colors.expense} onBarPress={(d, i) => setSel(i)} />
  */
 import { useEffect, useState } from "react";
-import { Animated, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
 
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -88,11 +89,13 @@ export function BarChart({
 }: BarChartProps) {
   const { colors } = useTheme();
   const [internalSel, setInternalSel] = useState<number | null>(null);
-  const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  // Bars grow up from the baseline. Reanimated drives the shared `grow` on the UI
+  // thread (no more JS-thread `useNativeDriver:false` height animation).
+  const grow = useSharedValue(animated ? 0 : 1);
   const [measuredHeight, setMeasuredHeight] = useState(0);
 
   useEffect(() => {
-    if (animated) Animated.timing(grow, { toValue: 1, duration: 480, useNativeDriver: false }).start();
+    grow.value = animated ? withTiming(1, { duration: 480 }) : 1;
   }, [animated, grow]);
 
   // Before the first onLayout fires (or when fillHeight is off), fall back to the fixed `height`.
@@ -148,7 +151,6 @@ export function BarChart({
         <View className="flex-row items-end gap-2" style={{ height: effectiveHeight, paddingLeft: leftPad }}>
           {data.map((d, i) => {
             const h = Math.max(2, (d.value / scaleMax) * plot);
-            const barHeight = animated ? grow.interpolate({ inputRange: [0, 1], outputRange: [2, h] }) : h;
             return (
               <BarGroup
                 key={`${d.label}-${i}`}
@@ -162,7 +164,8 @@ export function BarChart({
                 fmt={fmt}
                 color={color}
                 colors={colors}
-                barHeight={barHeight}
+                grow={grow}
+                targetHeight={h}
                 testID={testID}
                 height={effectiveHeight}
               />
@@ -268,7 +271,8 @@ function BarGroup({
   fmt,
   color,
   colors,
-  barHeight,
+  grow,
+  targetHeight,
   testID,
   height,
 }: {
@@ -282,21 +286,25 @@ function BarGroup({
   fmt: (n: number) => string;
   color?: string;
   colors: any;
-  barHeight: any;
+  grow: SharedValue<number>;
+  targetHeight: number;
   testID: string;
   height: number;
 }) {
   const isSelected = selected === i;
   const targetOpacity = selected == null ? 0.8 : isSelected ? 0.9 : 0.4;
-  const [opacityAnim] = useState(() => new Animated.Value(targetOpacity));
+  const opacity = useSharedValue(targetOpacity);
 
   useEffect(() => {
-    Animated.timing(opacityAnim, {
-      toValue: targetOpacity,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [targetOpacity, opacityAnim]);
+    opacity.value = withTiming(targetOpacity, { duration: 200 });
+  }, [targetOpacity, opacity]);
+
+  // Height interpolates from the 2px baseline to the bar's target as `grow` 0→1;
+  // opacity eases on selection. Both run on the UI thread.
+  const barStyle = useAnimatedStyle(() => ({
+    height: 2 + grow.value * (targetHeight - 2),
+    opacity: opacity.value,
+  }));
 
   return (
     <Pressable
@@ -317,15 +325,16 @@ function BarGroup({
           </Text>
         ) : null}
         <Animated.View
-          style={{
-            height: barHeight,
-            width: BAR_WIDTH,
-            backgroundColor: d.color ?? color ?? seriesColor(i, undefined, d.label),
-            opacity: opacityAnim,
-            borderTopLeftRadius: 4,
-            borderTopRightRadius: 4,
-            ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink }),
-          }}
+          style={[
+            barStyle,
+            {
+              width: BAR_WIDTH,
+              backgroundColor: d.color ?? color ?? seriesColor(i, undefined, d.label),
+              borderTopLeftRadius: 4,
+              borderTopRightRadius: 4,
+              ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink }),
+            },
+          ]}
         />
       </View>
     </Pressable>

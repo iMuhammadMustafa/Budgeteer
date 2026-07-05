@@ -7,7 +7,8 @@
  *   <DoubleBarChart data={months} onBarPress={(d, i) => drill(d)} loading={busy} />
  */
 import { useEffect, useState } from "react";
-import { Animated, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
 import MyIcon from "@/src/components/elements/MyIcon";
@@ -90,12 +91,13 @@ export function DoubleBarChart({
 }: DoubleBarChartProps) {
   const { colors } = useTheme();
   const [internalSel, setInternalSel] = useState<number | null>(null);
-  const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  // Reanimated drives the shared `grow` on the UI thread (no JS-thread height anim).
+  const grow = useSharedValue(animated ? 0 : 1);
   const [measuredHeight, setMeasuredHeight] = useState(0);
   const fmt = formatValue ?? ((n: number) => String(n));
 
   useEffect(() => {
-    if (animated) Animated.timing(grow, { toValue: 1, duration: 480, useNativeDriver: false }).start();
+    grow.value = animated ? withTiming(1, { duration: 480 }) : 1;
   }, [animated, grow]);
 
   const effectiveHeight = fillHeight ? measuredHeight || height : height;
@@ -145,10 +147,8 @@ export function DoubleBarChart({
   };
   const plot = showValues ? effectiveHeight - 18 : effectiveHeight;
 
-  const barH = (v: number) => {
-    const h = Math.max(2, (v / scaleMax) * plot);
-    return animated ? grow.interpolate({ inputRange: [0, 1], outputRange: [2, h] }) : h;
-  };
+  // Plain target height; the grow animation is applied per-bar in BarGroup.
+  const barH = (v: number) => Math.max(2, (v / scaleMax) * plot);
 
   return (
     <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
@@ -183,7 +183,9 @@ export function DoubleBarChart({
               inc={inc}
               exp={exp}
               colors={colors}
-              barH={barH}
+              grow={grow}
+              incomeHeight={barH(d.income)}
+              expenseHeight={barH(d.expense)}
               testID={testID}
               height={effectiveHeight}
             />
@@ -303,7 +305,9 @@ function BarGroup({
   inc,
   exp,
   colors,
-  barH,
+  grow,
+  incomeHeight,
+  expenseHeight,
   testID,
   height,
 }: {
@@ -318,21 +322,31 @@ function BarGroup({
   inc: string;
   exp: string;
   colors: any;
-  barH: (v: number) => any;
+  grow: SharedValue<number>;
+  incomeHeight: number;
+  expenseHeight: number;
   testID: string;
   height: number;
 }) {
   const isSelected = selected === i;
   const targetOpacity = selected == null ? 0.8 : isSelected ? 0.9 : 0.4;
-  const [opacityAnim] = useState(() => new Animated.Value(targetOpacity));
+  const opacity = useSharedValue(targetOpacity);
 
   useEffect(() => {
-    Animated.timing(opacityAnim, {
-      toValue: targetOpacity,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [targetOpacity, opacityAnim]);
+    opacity.value = withTiming(targetOpacity, { duration: 200 });
+  }, [targetOpacity, opacity]);
+
+  // Both bars grow up from the 2px baseline as `grow` 0→1, sharing the group's
+  // selection opacity — all on the UI thread.
+  const incomeStyle = useAnimatedStyle(() => ({
+    height: 2 + grow.value * (incomeHeight - 2),
+    opacity: opacity.value,
+  }));
+  const expenseStyle = useAnimatedStyle(() => ({
+    height: 2 + grow.value * (expenseHeight - 2),
+    opacity: opacity.value,
+  }));
+
   const incomeOffset = d.income > d.expense ? 1 : 0.5;
   const expenseOffset = d.income > d.expense ? 0.5 : 1;
 
@@ -352,15 +366,16 @@ function BarGroup({
         <View className="items-center" style={{ width: "40%" }}>
           {showValues ? <Text className={`mb-${incomeOffset} text-[10px] text-ink-faint`}>{fmt(d.income)}</Text> : null}
           <Animated.View
-            style={{
-              height: barH(d.income),
-              width: "100%",
-              backgroundColor: inc,
-              opacity: opacityAnim,
-              borderTopLeftRadius: 4,
-              borderTopRightRadius: 4,
-              ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink, borderBottomWidth: 0 }),
-            }}
+            style={[
+              incomeStyle,
+              {
+                width: "100%",
+                backgroundColor: inc,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink, borderBottomWidth: 0 }),
+              },
+            ]}
           />
         </View>
         <View className="items-center" style={{ width: "40%" }}>
@@ -368,15 +383,16 @@ function BarGroup({
             <Text className={`mb-${expenseOffset} text-[10px] text-ink-faint`}>{fmt(d.expense)}</Text>
           ) : null}
           <Animated.View
-            style={{
-              height: barH(d.expense),
-              width: "100%",
-              backgroundColor: exp,
-              opacity: opacityAnim,
-              borderTopLeftRadius: 4,
-              borderTopRightRadius: 4,
-              ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink, borderBottomWidth: 0 }),
-            }}
+            style={[
+              expenseStyle,
+              {
+                width: "100%",
+                backgroundColor: exp,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                ...(isSelected && { borderWidth: 1.5, borderColor: colors.ink, borderBottomWidth: 0 }),
+              },
+            ]}
           />
         </View>
       </View>
