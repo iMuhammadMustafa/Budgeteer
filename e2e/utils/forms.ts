@@ -89,11 +89,28 @@ export async function openEditFormById(page: Page, id: string) {
   await waitForOverlayOpen(page);
 }
 
-/** Delete a list row by entity id via the shared DeleteConfirmModal. */
+/**
+ * Delete a list row by entity id via the shared DeleteConfirmModal.
+ * Scoped to the overlay — other rows' `delete-btn-<id>` icon buttons also
+ * carry the accessible name "Delete", so a page-wide role lookup would be
+ * ambiguous.
+ *
+ * When the entity has dependents (e.g. an account's opening transaction), the
+ * modal disables the confirm button until either a replacement is chosen or
+ * "Also delete all …" is toggled. This helper opts into cascade-delete when
+ * that affordance is present so it works for both dependency-free and
+ * dependency-bearing entities.
+ */
 export async function deleteItemById(page: Page, id: string) {
   await page.getByTestId(`delete-btn-${id}`).click();
   await waitForOverlayOpen(page);
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  const cascade = overlay(page).getByRole("button", { name: /Also delete all/ });
+  if (await cascade.count()) {
+    await cascade.first().click();
+  }
+  await overlay(page)
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await waitForOverlayClosed(page);
 }
 
@@ -101,7 +118,9 @@ export async function deleteItemById(page: Page, id: string) {
 export async function restoreItemById(page: Page, id: string) {
   await page.getByTestId(`restore-btn-${id}`).click();
   await waitForOverlayOpen(page);
-  await page.getByRole("button", { name: /^Restore/ }).click();
+  await overlay(page)
+    .getByRole("button", { name: /^Restore/ })
+    .click();
   await waitForOverlayClosed(page);
 }
 
@@ -109,4 +128,105 @@ export async function restoreItemById(page: Page, id: string) {
 export async function selectDropdownOption(page: Page, dropdownTestId: string, optionId: string) {
   await page.getByTestId(dropdownTestId).click();
   await page.getByTestId(`${dropdownTestId}-option-${optionId}`).click();
+}
+
+/**
+ * Create an account category (`AccountCategoryForm`). Only `name` is required —
+ * type defaults to "Asset" and icon/color have defaults.
+ */
+export async function createAccountCategory(page: Page, opts: { name: string }): Promise<string> {
+  await openAddForm(page);
+  await page.getByTestId("accountcategory-name").fill(opts.name);
+  await page.getByTestId("accountcategory-save").click();
+  await waitForOverlayClosed(page);
+  await expect(listItem(page, opts.name)).toBeVisible();
+  return opts.name;
+}
+
+/** Create a transaction group (`TransactionGroupForm`). Only `name` is required. */
+export async function createTransactionGroup(page: Page, opts: { name: string }): Promise<string> {
+  await openAddForm(page);
+  await page.getByTestId("group-name").fill(opts.name);
+  await page.getByTestId("group-save").click();
+  await waitForOverlayClosed(page);
+  await expect(listItem(page, opts.name)).toBeVisible();
+  return opts.name;
+}
+
+/**
+ * Create a transaction category (`TransactionCategoryForm`). Requires name +
+ * group + icon + color; icon/color default. The group is a required QuickPills
+ * pick — we select the first available group pill (any valid group satisfies
+ * validation; the specific group is irrelevant to a create journey).
+ */
+export async function createTransactionCategory(page: Page, opts: { name: string }): Promise<string> {
+  await openAddForm(page);
+  await page.getByTestId("transactioncategory-name").fill(opts.name);
+  await page.getByTestId(/^transactioncategory-group-pill-/).first().click();
+  await page.getByTestId("transactioncategory-save").click();
+  await waitForOverlayClosed(page);
+  await expect(listItem(page, opts.name)).toBeVisible();
+  return opts.name;
+}
+
+/**
+ * Fill and submit the redesigned TransactionForm (`/AddTransaction`). Assumes
+ * the caller has already navigated there. On wide web (the desktop project) the
+ * amount is a plain text `field-amount-input` (the on-screen keypad is hidden
+ * ≥768px). Category + account are picked by their visible label from the
+ * option lists. On submit the form resets and routes to `/Transactions`.
+ */
+export async function fillTransactionForm(
+  page: Page,
+  opts: {
+    type?: "Expense" | "Income" | "Transfer";
+    amount: string;
+    categoryName?: string;
+    accountName: string;
+    transferAccountName?: string;
+    name?: string;
+  },
+) {
+  const { type = "Expense", amount, categoryName, accountName, transferAccountName } = opts;
+  // `name` is a required field with no auto-fill, so always set one.
+  const name = opts.name ?? `E2E ${type} ${amount}`;
+
+  if (type !== "Expense") {
+    await page.getByTestId(`transaction-type-${type}`).click();
+  }
+
+  await page.getByTestId("field-amount-input").fill(amount);
+
+  // Name — a free-text SearchableSelect (default testID). Open, type, commit.
+  await page.getByTestId("searchable-select").click();
+  await page.getByTestId("searchable-select-search").fill(name);
+  await page.getByTestId("searchable-select-commit-text").click();
+
+  if (categoryName) {
+    await page.getByTestId("field-categoryid").click();
+    await page
+      .locator('[data-testid^="field-categoryid-option-"]')
+      .filter({ hasText: categoryName })
+      .first()
+      .click();
+  }
+
+  await page.getByTestId("field-accountid").click();
+  await page
+    .locator('[data-testid^="field-accountid-option-"]')
+    .filter({ hasText: accountName })
+    .first()
+    .click();
+
+  if (type === "Transfer" && transferAccountName) {
+    await page.getByTestId("field-transferaccountid").click();
+    await page
+      .locator('[data-testid^="field-transferaccountid-option-"]')
+      .filter({ hasText: transferAccountName })
+      .first()
+      .click();
+  }
+
+  await page.getByTestId("btn-form-submit").click();
+  await page.waitForURL(/\/Transactions/);
 }

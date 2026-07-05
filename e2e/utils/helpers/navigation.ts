@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 /**
  * Navigation helpers for the redesigned (Sage Paper) UI.
@@ -50,50 +50,72 @@ export async function navigateToRestore(page: Page) {
 // ============================================
 // SUB-SCREEN NAVIGATION (tabs within a landing screen)
 // ============================================
+//
+// Sub-screens are `SecondaryTabBar` (router mode) tabs — real `<Link asChild>`s,
+// so on web each tab is an `<a>` (role "link", not "tab"; the inner testid is
+// swallowed by the anchor). We scope the lookup to the tab-strip container
+// (`testID="secondary-tabbar"`) so a same-named sidebar link can't collide.
+//
+// Tab topology (important — Account Categories is NOT under the Categories
+// screen): Accounts screen → [Accounts, Categories(=Account Categories)];
+// Categories screen → [Categories(=Transaction Categories), Groups].
 
-/** Categories landing → Account Categories tab. */
-export async function navigateToAccountCategories(page: Page) {
-  await navigateToCategories(page);
-  await page.getByRole("tab", { name: /account categor/i }).first().click();
-  await expect(page).toHaveURL(/Categories/);
+/** Click a `SecondaryTabBar` tab by its label and wait for the route. */
+async function clickTab(page: Page, tabName: string, urlPattern: RegExp): Promise<void> {
+  await page
+    .getByTestId("secondary-tabbar")
+    .getByRole("link", { name: tabName, exact: true })
+    .first()
+    .click();
+  await page.waitForURL(urlPattern);
 }
 
-/** Categories landing → Transaction Groups tab. */
+/** Accounts screen → Account Categories tab (`/Accounts/Categories`). */
+export async function navigateToAccountCategories(page: Page) {
+  await navigateToAccounts(page);
+  await clickTab(page, "Categories", /\/Accounts\/Categories/);
+}
+
+/** Categories screen → Transaction Groups tab (`/Categories/Groups`). */
 export async function navigateToTransactionGroups(page: Page) {
   await navigateToCategories(page);
-  await page.getByRole("tab", { name: /groups/i }).first().click();
+  await clickTab(page, "Groups", /\/Categories\/Groups/);
 }
 
-/** Categories landing → Transaction Categories tab. */
+/**
+ * Categories screen → Transaction Categories tab (`/Categories`).
+ * The Categories index IS Transaction Categories, so landing there suffices.
+ */
 export async function navigateToTransactionCategories(page: Page) {
   await navigateToCategories(page);
-  await page.getByRole("tab", { name: /categories/i }).first().click();
+  await clickTab(page, "Categories", /\/Categories$/);
 }
 
-// Restore sub-screens
+// Restore sub-screens. `/Restore` auto-redirects to `/Restore/Accounts`; the
+// explicit tab click makes the target unambiguous regardless of prior state.
 export async function navigateToRestoreAccounts(page: Page) {
   await navigateToRestore(page);
-  await page.getByRole("tab", { name: /accounts/i }).first().click();
+  await clickTab(page, "Accounts", /\/Restore\/Accounts/);
 }
 
 export async function navigateToRestoreAccountCategories(page: Page) {
   await navigateToRestore(page);
-  await page.getByRole("tab", { name: /account categor/i }).first().click();
+  await clickTab(page, "Account Categories", /\/Restore\/AccountCategories/);
 }
 
 export async function navigateToRestoreTransactions(page: Page) {
   await navigateToRestore(page);
-  await page.getByRole("tab", { name: /transactions/i }).first().click();
+  await clickTab(page, "Transactions", /\/Restore\/Transactions/);
 }
 
 export async function navigateToRestoreTransactionGroups(page: Page) {
   await navigateToRestore(page);
-  await page.getByRole("tab", { name: /groups/i }).first().click();
+  await clickTab(page, "Transaction Groups", /\/Restore\/TransactionGroups/);
 }
 
 export async function navigateToRestoreTransactionCategories(page: Page) {
   await navigateToRestore(page);
-  await page.getByRole("tab", { name: /transaction categor/i }).first().click();
+  await clickTab(page, "Transaction Categories", /\/Restore\/TransactionCategories/);
 }
 
 // Back-compat aliases used by legacy specs.
