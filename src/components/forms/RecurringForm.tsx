@@ -8,6 +8,7 @@ import MyIcon from "@/src/components/elements/MyIcon";
 import {
   AmountKeypadInput,
   Button,
+  Chip,
   DateTimePicker,
   GroupedIconSelect,
   IconButton,
@@ -132,11 +133,17 @@ export default function RecurringForm({ recurring, onSuccess }: RecurringFormPro
   const data = formState.data;
 
   const categoryGroupRecents = useRecentValues("recurring:categorygroup");
+  const categoryRecents = useRecentValues("recurring:category");
   const handleCategoryChange = (id: string) => {
     updateField("categoryid", id);
     const opt = categoryOptions.find(o => o.id === id);
     if (opt?.group) categoryGroupRecents.record(opt.group);
+    categoryRecents.record(id);
   };
+  const recentCategoryOptions = useMemo(
+    () => categoryRecents.recent.map(id => categoryOptions.find(o => o.id === id)).filter(Boolean).slice(0, 6),
+    [categoryRecents.recent, categoryOptions],
+  ) as (typeof categoryOptions);
 
   const selectedCategory = useMemo(() => categoryOptions.find(o => o.id === data.categoryid), [categoryOptions, data.categoryid]);
   const selectedAccount = useMemo(() => accountOptions.find(a => a.id === data.sourceaccountid) as any, [accountOptions, data.sourceaccountid]);
@@ -317,17 +324,39 @@ export default function RecurringForm({ recurring, onSuccess }: RecurringFormPro
         {/* Category + Accounts */}
         <View className="gap-4 rounded-xl border border-border bg-surface p-4">
           {!isTransfer ? (
-            <GroupedIconSelect
-              label="Category"
-              options={categoryOptions}
-              value={data.categoryid}
-              onChange={handleCategoryChange}
-              recentGroups={categoryGroupRecents.recent}
-              onAddNew={() => setAddingCategory(true)}
-              addNewLabel="Add New Category"
-              error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
-              testID="recurring-category"
-            />
+            <View className="gap-2">
+              {recentCategoryOptions.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerClassName="gap-2 pb-0.5"
+                  testID="recurring-category-recents"
+                >
+                  {recentCategoryOptions.map(o => (
+                    <Chip
+                      key={o.id}
+                      label={o.label}
+                      iconName={o.icon ?? undefined}
+                      selected={o.id === data.categoryid}
+                      onPress={() => handleCategoryChange(o.id)}
+                      testID={`recurring-category-recent-${o.id}`}
+                    />
+                  ))}
+                </ScrollView>
+              ) : null}
+              <GroupedIconSelect
+                label="Category"
+                options={categoryOptions}
+                value={data.categoryid}
+                onChange={handleCategoryChange}
+                recentGroups={categoryGroupRecents.recent}
+                onAddNew={() => setAddingCategory(true)}
+                addNewLabel="Add New Category"
+                error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
+                testID="recurring-category"
+              />
+            </View>
           ) : null}
 
           <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
@@ -466,7 +495,7 @@ export default function RecurringForm({ recurring, onSuccess }: RecurringFormPro
           <View className="rounded-xl border border-info bg-info-soft p-4">
             <Text className="mb-1 font-sans-semibold text-body text-info">Fully flexible</Text>
             <Text className="text-caption text-info">
-              No fixed date or amount — you'll enter both when you execute this recurring transaction.
+              No fixed date or amount — you&apos;ll enter both when you execute this recurring transaction.
             </Text>
           </View>
         ) : null}
