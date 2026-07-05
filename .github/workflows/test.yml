@@ -1,14 +1,20 @@
 name: Test
 
-# Phase 7.1/7.2 — PR + push gate. Blocking: Vitest unit/integration suite,
-# E2E-hygiene lint (no hard waits), and the @smoke E2E journeys (static export +
-# injection harness). Advisory: full app lint + typecheck (only pre-existing,
+# Phase 7.1/7.2 — layered gate.
+#   • PR              → static checks, unit/integration (Vitest), @smoke E2E.
+#   • Push to master  → the above + the FULL local E2E suite + cloud/RLS.
+#   • Nightly (cron)  → full E2E (local + mobile) + cloud integration/RLS sweep
+#                       (security scans run in security.yml, also nightly).
+# Blocking: Vitest, E2E-hygiene lint, @smoke E2E, and (on master/nightly) the
+# full E2E suite. Advisory: full app lint + typecheck (only pre-existing,
 # out-of-scope breakage remains; flip to blocking once cleared).
 
 on:
   push:
     branches: [master]
   pull_request:
+  schedule:
+    - cron: "0 4 * * *" # nightly 04:00 UTC — full E2E + cloud/RLS sweep
   workflow_dispatch:
 
 permissions:
@@ -75,7 +81,7 @@ jobs:
   cloud-integration:
     name: Cloud integration + RLS (local Supabase)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -122,5 +128,37 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── E2E full suite (BLOCKING on master + nightly) ───────────────────────
+  # The complete journey suite (all specs) on the local SQLite backend + the
+  # mobile viewport slice. Too heavy for every PR (the @smoke job covers those);
+  # runs on merges to master and the nightly cron. Cloud journeys self-skip
+  # without credentials.
+  e2e-full:
+    name: E2E full suite (local + mobile)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: yarn install --frozen-lockfile
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Build static web export
+        run: npm run web:export
+        env:
+          EXPO_PUBLIC_SUPA_URL: ${{ secrets.EXPO_PUBLIC_SUPA_URL }}
+          EXPO_PUBLIC_SUPA_KEY: ${{ secrets.EXPO_PUBLIC_SUPA_KEY }}
+      - name: Run full suite (chromium-local + mobile-smoke)
+        run: npx playwright test --project=chromium-local --project=mobile-smoke
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full
           path: playwright-report/
           retention-days: 7
