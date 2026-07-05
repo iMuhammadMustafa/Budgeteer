@@ -48,6 +48,9 @@ export interface DonutChartProps {
   centerValue?: string;
   /** Draw leader-line labels (name + %) around the ring for the larger slices. */
   externalLabels?: boolean;
+  /** Always label at least this many of the largest slices, even when they fall below the
+   * value threshold — so a ring of uniformly small slices isn't left completely unlabeled. */
+  minExternalLabels?: number;
   showLegend?: boolean;
   /** "auto" puts the legend beside the donut on wide screens, below on narrow. */
   legendPosition?: "auto" | "right" | "bottom";
@@ -85,6 +88,7 @@ export function DonutChart({
   centerLabel,
   centerValue,
   externalLabels = false,
+  minExternalLabels = 4,
   showLegend = true,
   legendPosition = "auto",
   legendHeight,
@@ -197,39 +201,62 @@ export function DonutChart({
   const centerMain = selected != null ? fmt(colored[selected].value) : centerValue;
   const centerSub = selected != null ? colored[selected].label : centerLabel;
 
-  // External leader-line labels for the larger slices (skip tiny ones + "Other" to avoid collisions).
+  // External leader-line labels: always the `minExternalLabels` largest slices (segs is sorted
+  // descending), plus any others above the value threshold; "Other" is never labeled. This keeps
+  // a ring of uniformly-small slices from rendering with no labels at all.
   const LABEL_MIN_PCT = maxSlices;
-  const labelEls =
+  const LABEL_ROW_H = 14; // min vertical gap between two labels on the same side
+  const LABEL_MAX_CHARS = 11;
+  const rawLabels =
     externalLabels && !single
       ? segs
-          .filter(s => s.pct >= LABEL_MIN_PCT && s.label !== "Other")
-          .map((s, i) => {
+          .filter(s => s.label !== "Other")
+          .filter((s, i) => i < minExternalLabels || s.pct >= LABEL_MIN_PCT)
+          .map(s => {
             const mid = (s.start + s.end) / 2;
             const cos = Math.cos(mid);
             const sin = Math.sin(mid);
             const right = cos >= 0;
-            const x0 = cx + rOuter * cos;
-            const y0 = cy + rOuter * sin;
-            const x1 = cx + (rOuter + 12) * cos;
-            const y1 = cy + (rOuter + 12) * sin;
-            // Elbow just outside the ring; the text then grows outward into the (wide) label pad.
-            const x2 = right ? cx + rOuter + 16 : cx - rOuter - 16;
-            const ty = Math.min(Math.max(y1, 12), size - 8);
             // Long category names can still outrun the label pad at any width, so clip the name
             // itself (not just rely on padding) — this is what was getting cut off at the canvas edge.
-            const LABEL_MAX_CHARS = 11;
             const shortLabel = s.label.length > LABEL_MAX_CHARS ? `${s.label.slice(0, LABEL_MAX_CHARS - 1)}…` : s.label;
             return {
-              key: `${s.label}-${i}`,
-              leader: `M ${x0.toFixed(1)} ${y0.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${ty.toFixed(1)}`,
-              tx: right ? x2 + 4 : x2 - 4,
-              ty,
-              anchor: right ? ("start" as const) : ("end" as const),
+              key: s.label,
+              right,
+              x0: cx + rOuter * cos,
+              y0: cy + rOuter * sin,
+              ty: Math.min(Math.max(cy + (rOuter + 12) * sin, 12), size - 8),
               text: `${shortLabel} ${Math.round(s.pct)}%`,
               color: s.color,
             };
           })
       : [];
+
+  // De-collide vertically per side: slices clustered in a small arc (e.g. several tiny ones near
+  // the top) would otherwise stack their labels on the same y. Sort each side top→down and push
+  // each label at least LABEL_ROW_H below the previous, then lift the column if it overflows.
+  const spread = (arr: typeof rawLabels) => {
+    arr.sort((a, b) => a.ty - b.ty);
+    for (let i = 1; i < arr.length; i++) {
+      if (arr[i].ty < arr[i - 1].ty + LABEL_ROW_H) arr[i].ty = arr[i - 1].ty + LABEL_ROW_H;
+    }
+    const overflow = arr.length ? arr[arr.length - 1].ty - (size - 8) : 0;
+    if (overflow > 0) for (const l of arr) l.ty = Math.max(12, l.ty - overflow);
+    return arr;
+  };
+  const labelEls = [...spread(rawLabels.filter(l => l.right)), ...spread(rawLabels.filter(l => !l.right))].map(l => {
+    const xElbow = l.right ? cx + rOuter + 6 : cx - rOuter - 6;
+    const x2 = l.right ? cx + rOuter + 16 : cx - rOuter - 16;
+    return {
+      key: l.key,
+      leader: `M ${l.x0.toFixed(1)} ${l.y0.toFixed(1)} L ${xElbow.toFixed(1)} ${l.ty.toFixed(1)} L ${x2.toFixed(1)} ${l.ty.toFixed(1)}`,
+      tx: l.right ? x2 + 4 : x2 - 4,
+      ty: l.ty,
+      anchor: l.right ? ("start" as const) : ("end" as const),
+      text: l.text,
+      color: l.color,
+    };
+  });
 
   return (
     <View testID={testID} className={frameCls}>
