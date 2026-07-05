@@ -47,14 +47,17 @@ export interface IStatsService {
     startDate: string,
     endDate: string,
     type?: TransactionType,
+    enabled?: boolean,
   ) => ReturnType<typeof useQuery<StatsDailyTransactions[]>>;
   useGetStatsMonthlyTransactionsTypes: (
     startDate?: string,
     endDate?: string,
+    enabled?: boolean,
   ) => ReturnType<typeof useQuery<DoubleBarPoint[]>>;
   useGetStatsMonthlyCategoriesTransactions: (
     startDate?: string,
     endDate?: string,
+    enabled?: boolean,
   ) => ReturnType<
     typeof useQuery<{
       groups: (PieData & { id: string })[];
@@ -97,30 +100,35 @@ export function useStatsService(): IStatsService {
     });
   };
 
-  const useGetStatsDailyTransactionsRaw = (startDate: string, endDate: string, type?: TransactionType) => {
+  const useGetStatsDailyTransactionsRaw = (
+    startDate: string,
+    endDate: string,
+    type?: TransactionType,
+    enabled: boolean = true,
+  ) => {
     return useQuery<StatsDailyTransactions[]>({
       queryKey: queryKeys.stats.dailyRaw(startDate, endDate, type, tenantId),
       queryFn: async () => {
         return statsRepo.getStatsDailyTransactions(tenantId, startDate, endDate, type);
       },
-      enabled: !!tenantId,
+      enabled: !!tenantId && enabled,
       placeholderData: (prev: any) => prev,
     });
   };
 
-  const useGetStatsMonthlyTransactionsTypes = (startDate?: string, endDate?: string) => {
+  const useGetStatsMonthlyTransactionsTypes = (startDate?: string, endDate?: string, enabled: boolean = true) => {
     return useQuery({
       queryKey: queryKeys.stats.monthlyTypes(startDate, endDate, tenantId),
       queryFn: async () => {
         const data = await statsRepo.getStatsMonthlyTransactionsTypes(tenantId, startDate, endDate);
         return getStatsMonthlyTransactionsTypesHelper(data);
       },
-      enabled: !!tenantId,
+      enabled: !!tenantId && enabled,
       placeholderData: (prev: any) => prev,
     });
   };
 
-  const useGetStatsMonthlyCategoriesTransactions = (startDate?: string, endDate?: string) => {
+  const useGetStatsMonthlyCategoriesTransactions = (startDate?: string, endDate?: string, enabled: boolean = true) => {
     return useQuery<{
       groups: (PieData & { id: string })[];
       categories: (PieData & { id: string })[];
@@ -130,7 +138,7 @@ export function useStatsService(): IStatsService {
         const data = await statsRepo.getStatsMonthlyCategoriesTransactions(tenantId, startDate, endDate);
         return getStatsMonthlyCategoriesTransactionsDashboardHelper(data);
       },
-      enabled: !!tenantId,
+      enabled: !!tenantId && enabled,
       placeholderData: (prev: any) => prev,
     });
   };
