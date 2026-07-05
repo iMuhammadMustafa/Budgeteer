@@ -99,6 +99,30 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const earnings = usePeriodCursor(initialYearFromParams, "year");
   const netWorth = usePeriodCursor(initialYearFromParams, "year");
 
+  // Tap-to-select highlight state per drillable chart. Kept here (not inside the chart components)
+  // so the ChartCard "Details" link can carry the currently-selected item into the drill-down page.
+  // Each setter toggles: re-selecting the same item clears it.
+  const [selection, setSelection] = useState<{
+    weekDate: string | null;
+    category: PieData | null;
+    group: PieData | null;
+    earningsMonth: string | null;
+  }>({ weekDate: null, category: null, group: null, earningsMonth: null });
+
+  const selectWeekDay = useCallback(
+    (date: string) => setSelection(s => ({ ...s, weekDate: s.weekDate === date ? null : date })),
+    [],
+  );
+  const selectPieSlice = useCallback(
+    (type: "category" | "group", item: PieData | null) =>
+      setSelection(s => ({ ...s, [type]: item && s[type]?.id === item.id ? null : item })),
+    [],
+  );
+  const selectEarningsMonth = useCallback(
+    (month: string) => setSelection(s => ({ ...s, earningsMonth: s.earningsMonth === month ? null : month })),
+    [],
+  );
+
   // Fetch raw daily transactions for the calendar + weekly bar (month-bound).
   // `isFetching` (vs `isLoading`) stays true on a period change too — the queries keep the previous
   // period's data as placeholder, so we surface a subtle per-chart skeleton instead of blanking.
@@ -217,6 +241,31 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     ],
   );
 
+  // Month-at-a-glance summary for the panel beside the (otherwise sparse, full-width) calendar on
+  // wide screens. Derived from the same raw daily rows the heatmap already uses — no extra query.
+  const calendarSummary = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    const spendByDay = new Map<string, number>();
+    const activeDays = new Set<string>();
+    for (const r of dailyTransactionsRaw as { date: string | null; sum: number | null; type: string | null }[]) {
+      if (!r.date) continue;
+      const key = dayjs(r.date).format("YYYY-MM-DD");
+      activeDays.add(key);
+      const amt = Math.abs(r.sum ?? 0);
+      if (r.type === "Income") income += amt;
+      else if (r.type === "Expense") {
+        expense += amt;
+        spendByDay.set(key, (spendByDay.get(key) ?? 0) + amt);
+      }
+    }
+    const topDays = [...spendByDay.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([date, amount]) => ({ date, amount }));
+    return { income, expense, net: income - expense, activeDays: activeDays.size, topDays };
+  }, [dailyTransactionsRaw]);
+
   const [isLocalLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isLoading =
@@ -318,8 +367,9 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     [earnings.range],
   );
 
-  // The "Details" link on a chart card: drill into the whole period (no focused item), so the
-  // details page opens on its "All · <period>" scope. Item-level drill-in is long-press instead.
+  // The "Details" link on a chart card: drill into the whole period. If a slice/day/month is
+  // tap-selected, carry it as the focused item so the details page opens on it (and its chart
+  // highlights it); otherwise the page opens on its "All · <period>" scope.
   const handleChartDetails = useCallback(
     (opts: {
       type: DashboardViewSelectionType;
@@ -327,6 +377,13 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       periodStart: string;
       periodEnd: string;
       label: string;
+      /** Focused item, when a chart element is tap-selected. */
+      date?: string;
+      startDate?: string;
+      endDate?: string;
+      itemId?: string;
+      itemLabel?: string;
+      month?: string;
     }) => {
       router.push({
         pathname: "/Dashboard/Details",
@@ -334,10 +391,15 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           type: opts.type,
           pieType: opts.pieType,
           label: opts.label,
-          startDate: opts.periodStart,
-          endDate: opts.periodEnd,
+          // Focused-item window falls back to the whole period when nothing is selected.
+          startDate: opts.startDate ?? opts.periodStart,
+          endDate: opts.endDate ?? opts.periodEnd,
           periodStart: opts.periodStart,
           periodEnd: opts.periodEnd,
+          date: opts.date,
+          itemId: opts.itemId,
+          itemLabel: opts.itemLabel,
+          month: opts.month,
         },
       });
     },
@@ -427,6 +489,13 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           periodStart: weekPeriod.start,
           periodEnd: weekPeriod.end,
           label: weekLabel,
+          ...(selection.weekDate
+            ? {
+                date: selection.weekDate,
+                startDate: dayjs(selection.weekDate).utc().startOf("day").toISOString(),
+                endDate: dayjs(selection.weekDate).utc().endOf("day").toISOString(),
+              }
+            : {}),
         }),
     },
     categoriesMonth: {
@@ -441,6 +510,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           periodStart: categories.range.start,
           periodEnd: categories.range.end,
           label: `Categories · ${categories.label}`,
+          ...(selection.category ? { itemId: selection.category.id, itemLabel: selection.category.x } : {}),
         }),
     },
     groupsMonth: {
@@ -455,6 +525,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           periodStart: groups.range.start,
           periodEnd: groups.range.end,
           label: `Groups · ${groups.label}`,
+          ...(selection.group ? { itemId: selection.group.id, itemLabel: selection.group.x } : {}),
         }),
     },
     calendar: {
@@ -475,6 +546,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           periodStart: earnings.range.start,
           periodEnd: earnings.range.end,
           label: `Net Earnings · ${earnings.label}`,
+          ...(selection.earningsMonth ? { month: selection.earningsMonth } : {}),
         }),
     },
     netWorthYear: { label: netWorth.label, prev: netWorth.prev, next: netWorth.next, loading: isNetWorthFetching },
@@ -494,5 +566,10 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     params,
     handleViewAllNavigation,
     periodControls,
+    calendarSummary,
+    selection,
+    selectWeekDay,
+    selectPieSlice,
+    selectEarningsMonth,
   };
 }

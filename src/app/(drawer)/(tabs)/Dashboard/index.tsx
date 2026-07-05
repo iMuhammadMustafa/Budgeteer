@@ -26,6 +26,11 @@ export default function DashboardIndex() {
     handleBarPress,
     handleTransactionPress,
     periodControls,
+    calendarSummary,
+    selection,
+    selectWeekDay,
+    selectPieSlice,
+    selectEarningsMonth,
   } = useDashboard();
 
   const accountService = useAccountService();
@@ -71,6 +76,11 @@ export default function DashboardIndex() {
           handleDayPress={handleDayPress}
           handlePiePress={handlePiePress}
           handleBarPress={handleBarPress}
+          selection={selection}
+          onSelectWeekDay={selectWeekDay}
+          onSelectPieSlice={selectPieSlice}
+          onSelectEarningsMonth={selectEarningsMonth}
+          calendarSummary={calendarSummary}
           periodControls={periodControls}
           recentTransactionsSlot={<RecentTransactions transactions={recentTransactions} onPress={handleTransactionPress} />}
         />

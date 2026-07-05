@@ -56,12 +56,19 @@ export default function useDetailsViewModel() {
   const [scope, setScope] = useState<DetailsScope>(hasParamItem ? "focused" : "period");
   const focused = scope === "focused";
 
+  // The calendar can page between months on the details page too; its own cursor drives which
+  // month's dots are fetched (the bar/pie/double windows stay pinned to the drilled period).
+  const [calBase, setCalBase] = useState<string>(() => periodStart ?? dayjs().toISOString());
+  const dailyStart = isCalendar ? dayjs(calBase).utc().startOf("month").toISOString() : periodStart;
+  const dailyEnd = isCalendar ? dayjs(calBase).utc().endOf("month").toISOString() : periodEnd;
+  const onCalendarMonthChange = useCallback((dateString: string) => setCalBase(dateString), []);
+
   // ---- chart-for-context data (only the one chart this page shows) ----
   const { data: dailyRaw = [] } = statsService.useGetStatsDailyTransactionsRaw(
-    periodStart ?? "",
-    periodEnd ?? "",
+    dailyStart ?? "",
+    dailyEnd ?? "",
     undefined,
-    isDayish && !!periodStart,
+    isDayish && !!dailyStart,
   );
   const { data: monthlyCats = { categories: [], groups: [] } } = statsService.useGetStatsMonthlyCategoriesTransactions(
     periodStart,
@@ -83,18 +90,22 @@ export default function useDetailsViewModel() {
     [isPie, params.pieType, monthlyCats],
   );
 
-  // Selected index for the charts that can express it (donut stays uncontrolled — it sorts/folds
-  // slices internally, so a stable index is unreliable; it highlights on tap instead).
+  // Selected index for the bar charts; the donut is controlled by label instead (it sorts/folds
+  // slices internally, so a raw index is unreliable — a label is stable). Highlight only while
+  // the "focused" scope is active, so the "All · <period>" chip visibly clears the slice.
+  // All three highlights are gated on the "focused" scope so switching to "All · <period>"
+  // (whether via the chip or by re-tapping the selected item) visibly clears the chart selection.
+  const pieSelectedLabel = focused ? (sel.pieLabel ?? null) : null;
   const barSelectedIndex = useMemo(() => {
-    if (!isBar || !sel.date || !periodStart) return undefined;
+    if (!focused || !isBar || !sel.date || !periodStart) return undefined;
     const i = dayjs(sel.date).diff(dayjs(periodStart).startOf("week"), "day");
     return i >= 0 && i < 7 ? i : undefined;
-  }, [isBar, sel.date, periodStart]);
+  }, [focused, isBar, sel.date, periodStart]);
   const doubleSelectedIndex = useMemo(() => {
-    if (!isDouble || sel.monthIndex == null) return undefined;
+    if (!focused || !isDouble || sel.monthIndex == null) return undefined;
     const i = yearlyTypes.findIndex(d => MONTHS.indexOf(d.x) === sel.monthIndex);
     return i >= 0 ? i : undefined;
-  }, [isDouble, sel.monthIndex, yearlyTypes]);
+  }, [focused, isDouble, sel.monthIndex, yearlyTypes]);
 
   // ---- transaction filters (period window + optional focus) ----
   const filters = useMemo<TransactionFilters>(() => {
@@ -177,25 +188,33 @@ export default function useDetailsViewModel() {
   }, [isPie, isDayish, isDouble, sel, params.itemLabel]);
 
   // ---- re-pick handlers (chart tap) ----
+  // Re-tapping the already-focused item toggles back to the whole-period ("All") scope — the same
+  // as pressing "View all" — so a second tap on a selected slice/day/month deselects it.
   const selectPie = useCallback(
     (label: string) => {
       const orig = (pieData ?? []).find(p => p.x === label);
       if (!orig) return;
+      setScope(prev => (prev === "focused" && sel.pieLabel === orig.x ? "period" : "focused"));
       setSel(s => ({ ...s, pieId: (orig as any).id, pieLabel: orig.x }));
-      setScope("focused");
     },
-    [pieData],
+    [pieData, sel.pieLabel],
   );
-  const selectDay = useCallback((date: string) => {
-    setSel(s => ({ ...s, date }));
-    setScope("focused");
-  }, []);
-  const selectMonth = useCallback((monthLabel: string) => {
-    const idx = MONTHS.indexOf(monthLabel);
-    if (idx < 0) return;
-    setSel(s => ({ ...s, monthIndex: idx }));
-    setScope("focused");
-  }, []);
+  const selectDay = useCallback(
+    (date: string) => {
+      setScope(prev => (prev === "focused" && sel.date === date ? "period" : "focused"));
+      setSel(s => ({ ...s, date }));
+    },
+    [sel.date],
+  );
+  const selectMonth = useCallback(
+    (monthLabel: string) => {
+      const idx = MONTHS.indexOf(monthLabel);
+      if (idx < 0) return;
+      setScope(prev => (prev === "focused" && sel.monthIndex === idx ? "period" : "focused"));
+      setSel(s => ({ ...s, monthIndex: idx }));
+    },
+    [sel.monthIndex],
+  );
 
   const handleTransactionPress = useCallback((transaction: TransactionsView) => {
     if (transaction.id) router.push({ pathname: "/AddTransaction", params: { id: transaction.id } });
@@ -239,7 +258,10 @@ export default function useDetailsViewModel() {
     yearlyTypes,
     barSelectedIndex,
     doubleSelectedIndex,
+    pieSelectedLabel,
     selectedDate: sel.date ?? null,
+    calendarCurrent: calBase,
+    onCalendarMonthChange,
     selectPie,
     selectDay,
     selectMonth,

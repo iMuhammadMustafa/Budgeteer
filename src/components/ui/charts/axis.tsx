@@ -110,7 +110,7 @@ export function buildScale(min: number, max: number, mode: YTickMode = "nice", c
 export function XLabels({
   labels,
   selectedIndex,
-  angled,
+  angled = false,
   leftPad = 0,
   xPositions,
   width,
