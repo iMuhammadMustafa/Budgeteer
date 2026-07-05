@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform } from "react-native";
 
 import useBackAction from "@/src/utils/useBackAction";
@@ -11,6 +11,7 @@ import { queryKeys } from "@/src/services/queryKeys";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
+import { TransactionListRow } from "@/src/types/components/Transactions.types";
 
 import { BatchActionType } from "@/src/components/Transactions/BatchActionConfirmModal";
 import { BatchUpdatePayload } from "@/src/components/Transactions/BatchUpdateModal";
@@ -42,7 +43,7 @@ export default function useTransactions() {
   const transactionService = useTransactionService();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, isLoading } =
     transactionService.useFindAllInfinite(queryFilters);
-  const transactions = data?.pages.flatMap(page => page);
+  const transactions = useMemo(() => data?.pages.flatMap(page => page), [data]);
 
   // Restore roughly how far the user had scrolled: the URL's `page` param tracks how many
   // pages of the infinite query were loaded, so a fresh load of the same URL replays that
@@ -71,7 +72,18 @@ export default function useTransactions() {
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<TransactionsView[]>([]);
-  const [selectedSum, setSelectedSum] = useState(0);
+  // Mirror of `selectionMode` in a ref so the press callbacks can read the live value
+  // without depending on it — keeps them referentially stable across renders.
+  const selectionModeRef = useRef(false);
+
+  const selectedIds = useMemo(
+    () => new Set(selectedTransactions.map(t => t.id)),
+    [selectedTransactions],
+  );
+  const selectedSum = useMemo(
+    () => selectedTransactions.reduce((acc, curr) => acc + (curr?.amount ?? 0), 0),
+    [selectedTransactions],
+  );
 
   const [showFilters, setShowFilters] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -91,12 +103,35 @@ export default function useTransactions() {
   const openConfirmModal = (actionType: BatchActionType) => setConfirmAction(actionType);
   const closeConfirmModal = () => setConfirmAction(null);
 
-  const dailyTransactions = groupTransactions(transactions ?? []);
-  const days = Object.keys(dailyTransactions);
+  // Single pass over the flat transaction list → the row model the FlatList renders.
+  // O(1) transfer pairing via a by-id map (replaces the old per-item O(n) `.find`),
+  // day grouping/totals from `groupTransactions`, and hiding of the positive-amount
+  // transfer side happens here at flatten time (was a `null` render inside the item).
+  const rows = useMemo<TransactionListRow[]>(() => {
+    const list = transactions ?? [];
+    const transactionsById = new Map<string, TransactionsView>();
+    for (const t of list) {
+      if (t.id) transactionsById.set(t.id, t);
+    }
+
+    const grouped = groupTransactions(list);
+    const out: TransactionListRow[] = [];
+    for (const day of Object.keys(grouped)) {
+      out.push({ kind: "header", key: `d:${day}`, day, amount: grouped[day].amount });
+      for (const t of grouped[day].transactions) {
+        const transferTransaction = t.transferid ? transactionsById.get(t.transferid) : undefined;
+        // Hide the positive-amount side of a transfer when its paired counterpart is
+        // present in the list (when filtering by account only one side may exist).
+        if (t.type === "Transfer" && (t.amount ?? 0) > 0 && transferTransaction) continue;
+        out.push({ kind: "transaction", key: `t:${t.id}`, transaction: t, transferTransaction });
+      }
+    }
+    return out;
+  }, [transactions]);
 
   const clearSelection = useCallback(() => {
     setSelectedTransactions([]);
-    setSelectedSum(0);
+    selectionModeRef.current = false;
     setSelectionMode(false);
   }, []);
 
@@ -188,43 +223,46 @@ export default function useTransactions() {
     }
   };
 
-  const handlePress = (item: TransactionsView, transferItem?: TransactionsView) => {
-    if (selectionMode) {
-      // In selection mode, short press selects/deselects
-      if (Platform.OS !== "web") Haptics.selectionAsync();
-
-      const updatedSelections = selectedTransactions.find(i => i.id === item.id)
-        ? selectedTransactions.filter(t => t.id !== item.id)
-        : [...selectedTransactions, item];
-
-      setSelectedTransactions(updatedSelections);
-
-      setSelectedSum(
-        updatedSelections.reduce((acc, curr) => {
-          return acc + (curr?.amount ?? 0);
-        }, 0),
-      );
-
-      // Exit selection mode if no more items are selected
-      if (updatedSelections.length === 0) {
-        setSelectionMode(false);
-      }
-    } else {
-      // Outside selection mode, navigate to transaction details
-      // if (item.transferid) {
-      //   item = transactions?.find(t => t.id === item.transferid) ?? item;
-      // }
-      router.push({ pathname: `/AddTransaction`, params: item as any }); // Remove the braces in params
+  // Exit selection mode once the last item is deselected. Driven off the selection
+  // array so the toggle logic in `handlePress` stays a pure functional update.
+  useEffect(() => {
+    if (selectionMode && selectedTransactions.length === 0) {
+      selectionModeRef.current = false;
+      setSelectionMode(false);
     }
-  };
+  }, [selectionMode, selectedTransactions.length]);
 
-  const handleLongPress = (item: any, transferItem?: TransactionsView) => {
-    if (selectionMode) handlePress(item, transferItem);
-    if (Platform.OS !== "web") Haptics.selectionAsync();
-    setSelectionMode(true);
-    setSelectedTransactions(prev => [...prev, item]);
-    setSelectedSum(prev => prev + item.amount);
-  };
+  const handlePress = useCallback(
+    (item: TransactionsView, _transferItem?: TransactionsView) => {
+      if (selectionModeRef.current) {
+        // In selection mode, short press selects/deselects.
+        if (Platform.OS !== "web") Haptics.selectionAsync();
+        setSelectedTransactions(prev =>
+          prev.some(i => i.id === item.id) ? prev.filter(t => t.id !== item.id) : [...prev, item],
+        );
+      } else {
+        // Outside selection mode, navigate to transaction details.
+        router.push({ pathname: `/AddTransaction`, params: item as any });
+      }
+    },
+    [router],
+  );
+
+  const handleLongPress = useCallback(
+    (item: TransactionsView, transferItem?: TransactionsView) => {
+      // Already selecting: a long-press is just another toggle (delegate once —
+      // the old code toggled AND re-appended, double-adding the item).
+      if (selectionModeRef.current) {
+        handlePress(item, transferItem);
+        return;
+      }
+      if (Platform.OS !== "web") Haptics.selectionAsync();
+      selectionModeRef.current = true;
+      setSelectionMode(true);
+      setSelectedTransactions(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]));
+    },
+    [handlePress],
+  );
 
   const refreshTransactions = async () => {
     // resetInfiniteQueryPagination();
@@ -365,10 +403,11 @@ export default function useTransactions() {
     transactions,
     error,
     isLoading,
-    dailyTransactions,
-    days,
+    isFetchingNextPage,
+    rows,
     selectionMode,
     selectedTransactions,
+    selectedIds,
     selectedSum,
     isActionLoading,
     backAction,

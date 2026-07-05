@@ -5,48 +5,40 @@ import { TransactionsView } from "@/src/types/database/Tables.Types";
 import { formatMoney } from "@/src/utils/currency";
 import { getTransactionProp } from "@/src/utils/transactions.helper";
 import { Link } from "expo-router";
+import { memo } from "react";
 import { Pressable, View } from "react-native";
 import TransactionAmount from "./TransactionAmount";
 
-export default function TransactionItem({
+function TransactionItem({
   transaction,
-  selectedTransactions,
-  handleLongPress,
-  handlePress,
   transferTransaction,
+  isSelected,
+  onPress,
+  onLongPress,
 }: {
   transaction: TransactionsView;
-  selectedTransactions: TransactionsView[];
-  handleLongPress: (item: TransactionsView, transferItem?: TransactionsView) => void;
-  handlePress: (item: TransactionsView, transferItem?: TransactionsView) => void;
   transferTransaction?: TransactionsView;
+  isSelected: boolean;
+  onPress: (item: TransactionsView, transferItem?: TransactionsView) => void;
+  onLongPress: (item: TransactionsView, transferItem?: TransactionsView) => void;
 }) {
-  const isSelected = selectedTransactions.find(t => t.id === transaction.id);
   const iconProp = getTransactionProp(transaction.type);
   const isTransfer = transaction.type === "Transfer";
-  const isPositiveTransferSide = isTransfer && transaction.amount! > 0;
   const { primaryCurrency } = usePrimaryCurrency();
   const amount = isTransfer ? Math.abs(transaction.amount ?? 0) : transaction.amount ?? 0;
 
-  // Hide the positive-amount side of a transfer (the paired row) only when
-  // its counterpart (negative side) is also present in the current list.
-  // When filtering by account, only one side may be present — render it normally.
-  if (isPositiveTransferSide && transferTransaction) {
-    return null;
-  }
-
   return (
-    <View className="flex-row items-center justify-between">
+    <View className="flex-row items-center justify-between px-3">
       <Link href={`/AddTransaction?id=${transaction.id}`} asChild onPress={e => e.preventDefault()}>
         <Pressable
           delayLongPress={300}
           onLongPress={() => {
             triggerHaptic("light");
-            handleLongPress(transaction, transferTransaction);
+            onLongPress(transaction, transferTransaction);
           }}
           onPress={() => {
             triggerHaptic("light");
-            handlePress(transaction, transferTransaction);
+            onPress(transaction, transferTransaction);
           }}
           className={`m-2 p-3 flex-row items-center justify-between gap-5 flex-1 rounded-lg border ${isSelected ? "bg-primary-soft border-primary" : "bg-surface border-border"}`}
           testID={`transaction-item-${transaction.id}`}
@@ -101,3 +93,5 @@ export default function TransactionItem({
     </View>
   );
 }
+
+export default memo(TransactionItem);
