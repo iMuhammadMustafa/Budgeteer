@@ -19,6 +19,9 @@ type StorageModeContextType = {
 
 export const STORAGE_KEYS = {
   LOCAL_SESSION: "budgeteer-local-session",
+  // Last-known Cloud session, cached so a cold start can render the app
+  // optimistically while `supabase.auth.getSession()` reconciles in the background.
+  CLOUD_SESSION: "budgeteer-cloud-session",
   STORAGE_MODE: "budgeteer-storage-mode",
 } as const;
 

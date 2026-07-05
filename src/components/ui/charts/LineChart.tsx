@@ -10,11 +10,24 @@
  *   <LineChart data={netWorth} seriesLabel="Net worth" fillArea formatValue={fmtMoney} />
  */
 import { useEffect, useState } from "react";
-import { Animated, View } from "react-native";
+import { View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import Svg, { Circle, Path, Line as SvgLine, Text as SvgText } from "react-native-svg";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
 import MyIcon from "@/src/components/elements/MyIcon";
+
+// SVG primitives whose props (dash offset / opacity) we drive on the UI thread.
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+const DRAW_DURATION = 700;
 
 import { Badge } from "../Badge";
 import { Pulse } from "../Pulse";
@@ -95,11 +108,15 @@ export function LineChart({
   const { colors } = useTheme();
   const [w, setW] = useState(0);
   const [internalSel, setInternalSel] = useState<number | null>(null);
-  const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  // Draw-on entry: `progress` 0→1 drives the line's stroke-dash offset (the line
+  // draws itself through the dots), the area fade, and the staggered dots.
+  const progress = useSharedValue(animated ? 0 : 1);
 
   useEffect(() => {
-    if (animated) Animated.timing(grow, { toValue: 1, duration: 460, useNativeDriver: true }).start();
-  }, [animated, grow]);
+    progress.value = animated
+      ? withTiming(1, { duration: DRAW_DURATION, easing: Easing.out(Easing.cubic) })
+      : 1;
+  }, [animated, progress]);
 
   const stroke = color ?? colors.primary;
   const fmt = formatValue ?? ((n: number) => String(n));
@@ -155,12 +172,22 @@ export function LineChart({
       : "";
   const angled = n > X_LABEL_ANGLE_THRESHOLD;
 
+  // Cumulative polyline length per point → total length (for the stroke-dash draw)
+  // and each dot's fractional position so it fades in as the line reaches it.
+  const cumLen: number[] = [0];
+  for (let i = 1; i < pts.length; i++) {
+    cumLen[i] = cumLen[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  }
+  const pathLength = cumLen[cumLen.length - 1] || 1;
+  // Scale thresholds to 0.85 so even the last dot is fully in by the time the draw finishes.
+  const dotThresholds = cumLen.map(c => (c / pathLength) * 0.85);
+
   return (
     <View testID={testID} className={cn("w-full", className)} onLayout={e => setW(e.nativeEvent.layout.width)}>
       {seriesLabel ? (
         <ChartLegend horizontal scrollable className="mb-2" items={[{ label: seriesLabel, color: stroke }]} />
       ) : null}
-      <Animated.View style={{ height, opacity: grow }}>
+      <View style={{ height }}>
         {w > 0 ? (
           <Svg width={w} height={height}>
             {/* vertical (x) gridlines, one per point */}
@@ -219,21 +246,22 @@ export function LineChart({
                 strokeWidth={1}
               />
             ) : null}
-            {fillArea && n > 1 ? <Path d={areaPath} fill={stroke} opacity={0.12} /> : null}
-            <Path d={linePath} fill="none" stroke={stroke} strokeWidth={2.5} />
+            {fillArea && n > 1 ? <AnimatedAreaPath progress={progress} d={areaPath} fill={stroke} /> : null}
+            <AnimatedLinePath progress={progress} d={linePath} length={pathLength} stroke={stroke} />
             {showDots
               ? pts.map((p, i) => {
                   const active = selected === i;
                   return (
-                    <Circle
+                    <AnimatedDot
                       key={`${data[i].label}-${i}`}
+                      progress={progress}
+                      threshold={dotThresholds[i]}
                       cx={p.x}
                       cy={p.y}
                       r={active ? 6 : 4}
                       fill={active ? stroke : colors.surface}
                       stroke={stroke}
-                      strokeWidth={2}
-                      opacity={selected == null || active ? 1 : 0.45}
+                      selectionOpacity={selected == null || active ? 1 : 0.45}
                       onPress={() => select(i, data[i])}
                     />
                   );
@@ -253,7 +281,7 @@ export function LineChart({
             ) : null}
           </Svg>
         ) : null}
-      </Animated.View>
+      </View>
       {w > 0 ? (
         <XLabels labels={data.map(d => d.label)} selectedIndex={selected} xPositions={xs} width={w} angled={angled} />
       ) : null}
@@ -267,6 +295,81 @@ export function LineChart({
         />
       ) : null}
     </View>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Animated SVG pieces — each owns its `useAnimatedProps` so the parent's
+ * early-return (loading/empty) never conditionally skips a hook.
+ * ------------------------------------------------------------------ */
+function AnimatedLinePath({
+  progress,
+  d,
+  length,
+  stroke,
+}: {
+  progress: SharedValue<number>;
+  d: string;
+  length: number;
+  stroke: string;
+}) {
+  // strokeDashoffset walks from full-length (hidden) to 0 (fully drawn).
+  const animatedProps = useAnimatedProps(() => ({ strokeDashoffset: length * (1 - progress.value) }));
+  return (
+    <AnimatedPath
+      d={d}
+      fill="none"
+      stroke={stroke}
+      strokeWidth={2.5}
+      strokeDasharray={length}
+      animatedProps={animatedProps}
+    />
+  );
+}
+
+function AnimatedAreaPath({ progress, d, fill }: { progress: SharedValue<number>; d: string; fill: string }) {
+  const animatedProps = useAnimatedProps(() => ({ opacity: 0.12 * progress.value }));
+  return <AnimatedPath d={d} fill={fill} animatedProps={animatedProps} />;
+}
+
+function AnimatedDot({
+  progress,
+  threshold,
+  cx,
+  cy,
+  r,
+  fill,
+  stroke,
+  selectionOpacity,
+  onPress,
+}: {
+  progress: SharedValue<number>;
+  threshold: number;
+  cx: number;
+  cy: number;
+  r: number;
+  fill: string;
+  stroke: string;
+  selectionOpacity: number;
+  onPress: () => void;
+}) {
+  // Dot fades in over a short window once the draw reaches its position, then the
+  // selection dim (selectionOpacity) takes over.
+  const animatedProps = useAnimatedProps(() => {
+    const appear = Math.min(1, Math.max(0, (progress.value - threshold) / 0.15));
+    return { opacity: appear * selectionOpacity };
+  });
+  return (
+    <AnimatedCircle
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={2}
+      animatedProps={animatedProps}
+      onPress={onPress}
+    />
   );
 }
 
