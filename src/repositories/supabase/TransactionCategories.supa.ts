@@ -9,7 +9,7 @@ export class TransactionCategorySupaRepository
   extends SupaRepository<TransactionCategory, TableNames.TransactionCategories>
   implements ITransactionCategoryRepository {
   protected tableName = TableNames.TransactionCategories;
-  protected orderByFieldsDesc = ["displayorder", "name"];
+  protected orderByFieldsDesc = ["displayorder", "createdat", "name"];
 
 
   async findAllWithGroup(tenantId: string, filters?: QueryFilters): Promise<TransactionCategory[]> {
@@ -30,6 +30,7 @@ export class TransactionCategorySupaRepository
     const { data, error } = await query
       .order("group(displayorder)", { ascending: false })
       .order("displayorder", { ascending: false })
+      .order("createdat", { ascending: false })
       .order("name");
     if (error) throw error;
     return data as unknown as TransactionCategory[];
