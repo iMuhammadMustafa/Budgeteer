@@ -1,5 +1,5 @@
 import { gotoApp, awaitAppReady, test } from "../fixtures/app";
-import { deleteItemById, getItemId, listItem, openAddForm, waitForOverlayClosed } from "../utils/forms";
+import { openAddForm, waitForOverlayClosed } from "../utils/forms";
 import { navigateToAccountCategories, navigateToTransactions } from "../utils/helpers/navigation";
 import { expect } from "@playwright/test";
 
@@ -38,16 +38,20 @@ test.describe("@cloud-only cloud backend", () => {
     await expect(page.getByTestId(/^list-item-[0-9a-f-]+$/).first()).toBeVisible({ timeout: 15_000 });
   });
 
-  // KNOWN GAP (needs investigation, not a harness bug): a create round-trip does
-  // not surface the new row in cloud mode. The form saves and its overlay closes,
-  // but the created account-category never appears — not via cache and not after a
-  // full reload + refetch (verified 2026-07-03 against the real test tenant; the
-  // list DOES render this tenant's other rows, so auth/RLS/reads are fine). Likely
-  // a cloud create-invalidation/persistence issue and/or an interaction with the
-  // pending rls-tenant-vuln migration + this account's app_metadata/tenantid state.
-  // Reproduce with `npm run test:e2e:cloud`, then inspect the PostgREST POST via
-  // the browser network panel. Unskip once the write is confirmed to persist.
-  test.fixme("entity write persists to the real backend (reload round-trip)", async ({ page }) => {
+  // Create round-trip against the real backend, verified via the DETAIL page
+  // rather than the list.
+  //
+  // Investigation 2026-07-03: the create is NOT broken. The POST returns 201 with
+  // the row (correct tenantid, isdeleted=false) and the onSuccess invalidation
+  // refetches it — it's present in the payload. It just isn't *visible in the
+  // list*: the list orders `displayorder DESC` and new rows default to
+  // `displayorder: 0`, so on the polluted shared cloud tenant (240+ categories,
+  // some with displayorder 999300) the new row lands near the bottom, below the
+  // virtualized FlatList window. So this test confirms persistence by navigating
+  // straight to the detail page by id (deep link → RLS-scoped findById), which
+  // doesn't depend on list position. Surfacing new rows at the top of the list is
+  // tracked separately (createdat tiebreaker — deferred).
+  test("entity write persists to the real backend (detail-page round-trip)", async ({ page }) => {
     const stamp = Date.now();
     const name = `Cloud E2E Cat ${stamp}`;
 
@@ -55,16 +59,36 @@ test.describe("@cloud-only cloud backend", () => {
 
     await openAddForm(page);
     await page.getByTestId("accountcategory-name").fill(name);
-    await page.getByTestId("accountcategory-save").click();
+
+    // The insert (`.insert().select().single()`) returns the created row as a
+    // single object; capture it to get the id + reuse its auth headers for cleanup.
+    const [postResp] = await Promise.all([
+      page.waitForResponse(
+        r =>
+          r.url().includes("/rest/v1/accountcategories") &&
+          r.request().method() === "POST" &&
+          r.status() === 201,
+      ),
+      page.getByTestId("accountcategory-save").click(),
+    ]);
     await waitForOverlayClosed(page);
 
-    await page.reload();
-    await awaitAppReady(page);
-    await navigateToAccountCategories(page);
-    await expect(listItem(page, name)).toBeVisible({ timeout: 15_000 });
+    const created = (await postResp.json()) as { id: string };
+    expect(created.id).toBeTruthy();
 
-    const id = await getItemId(page, name);
-    await deleteItemById(page, id);
-    await expect(listItem(page, name).filter({ visible: true })).toHaveCount(0);
+    // Confirm via the detail page (deep link) — proves the write persisted and is
+    // readable under RLS, independent of where it sorts in the list.
+    await page.goto(`/Accounts/Categories/${created.id}?storageMode=cloud`);
+    await awaitAppReady(page);
+    await expect(page.getByText(name)).toBeVisible({ timeout: 15_000 });
+
+    // Clean up (shared tenant): hard-delete via PostgREST, reusing the POST's
+    // apikey + bearer token so it runs under the same authenticated identity.
+    const headers = await postResp.request().allHeaders();
+    const del = await page.request.delete(
+      `${new URL(postResp.url()).origin}/rest/v1/accountcategories?id=eq.${created.id}`,
+      { headers: { apikey: headers["apikey"], authorization: headers["authorization"] } },
+    );
+    expect(del.ok()).toBeTruthy();
   });
 });
