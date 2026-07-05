@@ -60,6 +60,7 @@ export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOpti
 export { DatePicker, type DatePickerProps } from "./DatePicker";
 export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
 export { GroupedInput, type GroupedInputProps } from "./GroupedInput";
+export { TagInput, type TagInputProps } from "./TagInput";
 export { NumericKeypad, type NumericKeypadProps, type NumericKeypadKey } from "./NumericKeypad";
 export { AmountKeypadInput, type AmountKeypadInputProps, type AmountKeypadTone } from "./AmountKeypadInput";
 export {

@@ -32,6 +32,7 @@ import MyIcon from "../elements/MyIcon";
 import {
   AmountKeypadInput,
   Button,
+  Chip,
   DateTimePicker,
   GroupedIconSelect,
   IconButton,
@@ -39,6 +40,7 @@ import {
   ResponsiveModal,
   SearchableSelect,
   SegmentedControl,
+  TagInput,
   type SearchableSelectOption,
   Text as ThemedText,
 } from "@/src/components/ui";
@@ -170,11 +172,18 @@ export default function TransactionForm({ transaction }: { transaction: Transact
   // Recently-used category *groups* float to the top of the (sheet-presented) category
   // picker — the categories within a group stay in their normal order.
   const categoryGroupRecents = useRecentValues("transaction:categorygroup");
+  // Recently-used *categories* power the one-tap strip above the picker.
+  const categoryRecents = useRecentValues("transaction:category");
   const handleCategoryChange = (id: string) => {
     updateField("categoryid", id);
     const opt = categoryOptions.find(o => o.id === id);
     if (opt?.group) categoryGroupRecents.record(opt.group);
+    categoryRecents.record(id);
   };
+  const recentCategoryOptions = useMemo(
+    () => categoryRecents.recent.map(id => categoryOptions.find(o => o.id === id)).filter(Boolean).slice(0, 6),
+    [categoryRecents.recent, categoryOptions],
+  ) as (typeof categoryOptions);
 
   // Transfer is always visually distinct (info/blue) regardless of the sign toggle; Expense/
   // Income follow the toggled `mode` (danger when minus, success when plus).
@@ -264,17 +273,39 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
         {/* Category + Account */}
         <View className="gap-4 rounded-xl border border-border bg-surface p-4">
-          <GroupedIconSelect
-            label="Category"
-            options={categoryOptions}
-            value={formState.data.categoryid}
-            onChange={handleCategoryChange}
-            recentGroups={categoryGroupRecents.recent}
-            onAddNew={() => setAddingCategory(true)}
-            addNewLabel="Add New Category"
-            error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
-            testID="field-categoryid"
-          />
+          <View className="gap-2">
+            {formState.data.type !== "Transfer" && recentCategoryOptions.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerClassName="gap-2 pb-0.5"
+                testID="category-recents"
+              >
+                {recentCategoryOptions.map(o => (
+                  <Chip
+                    key={o.id}
+                    label={o.label}
+                    iconName={o.icon ?? undefined}
+                    selected={o.id === formState.data.categoryid}
+                    onPress={() => handleCategoryChange(o.id)}
+                    testID={`category-recent-${o.id}`}
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
+            <GroupedIconSelect
+              label="Category"
+              options={categoryOptions}
+              value={formState.data.categoryid}
+              onChange={handleCategoryChange}
+              recentGroups={categoryGroupRecents.recent}
+              onAddNew={() => setAddingCategory(true)}
+              addNewLabel="Add New Category"
+              error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
+              testID="field-categoryid"
+            />
+          </View>
 
           <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
             <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
@@ -365,7 +396,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           />
         </ResponsiveModal>
 
-        {/* Date + Note */}
+        {/* Date + Payee */}
         <View className={`${Platform.OS === "web" ? "flex flex-row gap-4" : "gap-4"}`}>
           <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
             <DateTimePicker label="Date" value={formState.data.date} onChange={handleDateChange} testID="field-date" />
@@ -373,15 +404,19 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               <Text className="mt-1.5 text-caption text-danger">{formState.errors.date}</Text>
             ) : null}
           </View>
-          <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
-            <Input
-              label="Note"
-              placeholder="Add a note"
-              value={formState.data.notes ?? ""}
-              onChangeText={value => updateField("notes", value)}
-              testID="field-note"
-            />
-          </View>
+          {formState.data.type !== "Transfer" && (
+            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+              <Input
+                label="Payee"
+                placeholder="Enter payee name"
+                value={formState.data.payee ?? ""}
+                onChangeText={value => updateField("payee", value)}
+                onBlur={() => setFieldTouched("payee")}
+                error={formState.touched.payee ? formState.errors.payee : undefined}
+                testID="field-payee"
+              />
+            </View>
+          )}
         </View>
 
         {/* Advanced (payee, currency/FX, tags, line items — all preserved) */}
@@ -398,17 +433,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
           {showAdvanced ? (
             <View className="gap-4 px-4 pb-4">
-              {formState.data.type !== "Transfer" && (
-                <Input
-                  label="Payee"
-                  placeholder="Enter payee name"
-                  value={formState.data.payee ?? ""}
-                  onChangeText={value => updateField("payee", value)}
-                  onBlur={() => setFieldTouched("payee")}
-                  error={formState.touched.payee ? formState.errors.payee : undefined}
-                  testID="field-payee"
-                />
-              )}
+              <Input
+                label="Note"
+                placeholder="Add a note"
+                value={formState.data.notes ?? ""}
+                onChangeText={value => updateField("notes", value)}
+                testID="field-note"
+              />
 
               <View className={`${Platform.OS === "web" ? "flex flex-row gap-5" : ""}`}>
                 <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
@@ -451,11 +482,17 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 )}
               </View>
 
-              <Input
+              <TagInput
                 label="Tags"
-                placeholder="Enter tags separated by commas"
-                value={Array.isArray(formState.data.tags) ? formState.data.tags.join(", ") : (formState.data.tags ?? "")}
-                onChangeText={value => updateField("tags", value.split(",").map(t => t.trim()).filter(Boolean))}
+                placeholder="Add a tag…"
+                value={
+                  Array.isArray(formState.data.tags)
+                    ? formState.data.tags
+                    : formState.data.tags
+                      ? String(formState.data.tags).split(",").map(t => t.trim()).filter(Boolean)
+                      : []
+                }
+                onChange={tags => updateField("tags", tags)}
                 onBlur={() => setFieldTouched("tags")}
                 error={formState.touched.tags ? formState.errors.tags : undefined}
                 testID="field-tags"
