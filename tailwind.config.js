@@ -323,10 +323,6 @@ module.exports = {
         "sans-bold": ["HankenGrotesk_700Bold"],
         mono: ["JetBrainsMono_500Medium"],
         "mono-semibold": ["JetBrainsMono_600SemiBold"],
-        // legacy aliases now mapped to the new families
-        heading: ["Newsreader_600SemiBold"],
-        body: ["HankenGrotesk_400Regular"],
-        roboto: ["Roboto", "sans-serif"],
       },
       fontWeight: {
         extrablack: "950",
