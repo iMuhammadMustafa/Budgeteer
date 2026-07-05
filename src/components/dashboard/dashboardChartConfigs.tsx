@@ -2,8 +2,8 @@
  * dashboardChartConfigs — single source of truth for the dashboard's six charts.
  * `buildDashboardChartConfigs` returns a typed descriptor list (title, period bar,
  * detail-routing metadata, and the ready-to-render new `ui/charts` node with its
- * data adapted + callbacks wired). `DashboardCharts` maps the whole list;
- * `ChartSwitcher` picks the one descriptor matching the drill-down `params`.
+ * data adapted + callbacks wired). `DashboardCharts` maps the whole list. (The drill-down page
+ * no longer uses this builder — it renders its one chart directly from `useDetailsViewModel`.)
  *
  * Lives in `components/` (not the Expo Router route dir) so it isn't treated as a route.
  */
