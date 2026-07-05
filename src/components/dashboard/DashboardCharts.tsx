@@ -14,6 +14,8 @@ import { useTheme } from "@/src/providers/ThemeProvider";
 import { ChartCard } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
+import { DashboardViewSelectionType } from "@/src/app/(drawer)/(tabs)/Dashboard/useDashboardViewModel";
+import CalendarSummaryPanel from "./CalendarSummaryPanel";
 import { buildDashboardChartConfigs, type DashboardChartsProps } from "./dashboardChartConfigs";
 
 function DashboardCharts({
@@ -24,6 +26,7 @@ function DashboardCharts({
   const { formatCurrency } = usePrimaryCurrency();
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const fmtMoney = (n: number) => formatCurrency(n, false);
 
   // Animate the charts' entry only on the first mount. Subsequent renders (period
   // changes swapping in fresh data) pass `animated={false}` so the 6 charts update
@@ -34,7 +37,7 @@ function DashboardCharts({
   // so values jump without replaying. A genuine remount re-animates, as intended.
   const [animated] = useState(true);
 
-  const configs = buildDashboardChartConfigs(chartProps, colors, n => formatCurrency(n, false), animated);
+  const configs = buildDashboardChartConfigs(chartProps, colors, fmtMoney, animated);
 
   const calendarConfig = configs.find(c => c.key === "calendar");
   const weekConfig = configs.find(c => c.key === "week");
@@ -92,16 +95,41 @@ function DashboardCharts({
         </View>
       ))}
       {calendarConfig ? (
-        <ChartCard
-          title={calendarConfig.title}
-          period={calendarConfig.period}
-          loading={calendarConfig.loading}
-          bodyHeight="auto"
-          className="my-0"
-          testID={`chart-card-${calendarConfig.key}`}
-        >
-          {calendarConfig.node}
-        </ChartCard>
+        isWide && chartProps.calendarSummary ? (
+          // Wide: pair the calendar with a month-summary panel so it stops stretching the full width.
+          <View className="flex-row items-stretch gap-3">
+            <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }}>
+              <ChartCard
+                title={calendarConfig.title}
+                loading={calendarConfig.loading}
+                bodyHeight="auto"
+                className="my-0 h-full"
+                testID={`chart-card-${calendarConfig.key}`}
+              >
+                {calendarConfig.node}
+              </ChartCard>
+            </View>
+            <View style={{ width: 300 }}>
+              <CalendarSummaryPanel
+                className="my-0 h-full"
+                summary={chartProps.calendarSummary}
+                monthLabel={chartProps.periodControls.calendar.label}
+                fmtMoney={fmtMoney}
+                onDayPress={ds => chartProps.handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
+              />
+            </View>
+          </View>
+        ) : (
+          <ChartCard
+            title={calendarConfig.title}
+            loading={calendarConfig.loading}
+            bodyHeight="auto"
+            className="my-0"
+            testID={`chart-card-${calendarConfig.key}`}
+          >
+            {calendarConfig.node}
+          </ChartCard>
+        )
       ) : null}
     </View>
   );

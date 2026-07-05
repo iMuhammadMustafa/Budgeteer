@@ -58,8 +58,11 @@ export interface DonutChartProps {
   legendHeight?: number;
   /** Cap the legend height; it scrolls past this so a long category list doesn't run away. */
   legendMaxHeight?: number;
-  /** Controlled selected slice; omit for uncontrolled internal selection. */
+  /** Controlled selected slice by index; omit for uncontrolled internal selection. */
   selectedIndex?: number | null;
+  /** Controlled selected slice by label — stable across the internal sort/fold that makes a raw
+   * index unreliable. Pass `null` for "nothing selected"; omit to leave selection uncontrolled. */
+  selectedLabel?: string | null;
   onSlicePress?: (datum: DonutDatum, index: number) => void;
   /** Long-press a slice or legend row to drill into its details (tap = select, long-press = drill). */
   onSliceLongPress?: (datum: DonutDatum, index: number) => void;
@@ -96,6 +99,7 @@ export function DonutChart({
   legendHeight,
   legendMaxHeight,
   selectedIndex,
+  selectedLabel,
   onSlicePress,
   onSliceLongPress,
   formatValue,
@@ -181,9 +185,20 @@ export function DonutChart({
       : sorted;
   const colored = slices.map((s, i) => ({ ...s, color: seriesColor(i, s.color, s.label) }));
 
-  const selected = selectedIndex !== undefined ? selectedIndex : internalSel;
+  // Resolve the controlled selection: an explicit index wins; otherwise a label is matched against
+  // the sorted/folded slices (stable where a raw index isn't); otherwise fall back to internal state.
+  const labelIndex = selectedLabel != null ? colored.findIndex(c => c.label === selectedLabel) : -1;
+  const controlled = selectedIndex !== undefined || selectedLabel !== undefined;
+  const selected =
+    selectedIndex !== undefined
+      ? selectedIndex
+      : selectedLabel !== undefined
+        ? labelIndex >= 0
+          ? labelIndex
+          : null
+        : internalSel;
   const select = (i: number) => {
-    if (selectedIndex === undefined) setInternalSel(prev => (prev === i ? null : i)); // toggle off if re-pressed
+    if (!controlled) setInternalSel(prev => (prev === i ? null : i)); // toggle off if re-pressed
     onSlicePress?.(colored[i], i);
   };
   const drill = onSliceLongPress ? (i: number) => onSliceLongPress(colored[i], i) : undefined;

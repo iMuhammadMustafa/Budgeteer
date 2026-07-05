@@ -46,7 +46,7 @@ export function CalendarHeatmap({
   className,
   testID = "calendar-heatmap",
 }: CalendarHeatmapProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   if (loading) {
     return (
@@ -74,6 +74,10 @@ export function CalendarHeatmap({
   return (
     <View testID={testID} className={cn("w-full", className)} style={{ minHeight: 366 }}>
       <Calendar
+        // react-native-calendars memoizes its StyleSheet from `theme` at mount and doesn't rebuild
+        // it when the theme prop changes — so a light/dark switch left stale colors until a full
+        // reload. Keying on the mode forces a remount, which rebuilds the themed styles.
+        key={isDark ? "dark" : "light"}
         current={selectedDate ?? currentDate}
         minDate={minDate}
         maxDate={maxDate}

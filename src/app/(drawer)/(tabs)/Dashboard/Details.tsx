@@ -4,7 +4,7 @@
  * the focused item ("Groceries") and the whole period ("All · May 2026").
  */
 import { useCallback } from "react";
-import { FlatList, Pressable, View } from "react-native";
+import { FlatList, Pressable, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -34,7 +34,6 @@ export default function DetailView() {
   const {
     type,
     title,
-    hasItem,
     scope,
     setScope,
     periodLabel,
@@ -45,7 +44,10 @@ export default function DetailView() {
     yearlyTypes,
     barSelectedIndex,
     doubleSelectedIndex,
+    pieSelectedLabel,
     selectedDate,
+    calendarCurrent,
+    onCalendarMonthChange,
     selectPie,
     selectDay,
     selectMonth,
@@ -58,6 +60,10 @@ export default function DetailView() {
 
   const { colors } = useTheme();
   const { formatCurrency } = usePrimaryCurrency();
+  const { width } = useWindowDimensions();
+  // Matches DonutChart's own "beside" breakpoint: on a wide details page the legend sits next to
+  // the ring and gets vertical room to scroll; on a narrow one it drops below with a shorter cap.
+  const wideDonut = width >= 600;
   const fmtMoney = useCallback((n: number) => formatCurrency(n, false), [formatCurrency]);
 
   const renderItem = useCallback(
@@ -86,7 +92,7 @@ export default function DetailView() {
             fillHeight
             showValues
             formatValue={fmtMoney}
-            selectedIndex={barSelectedIndex}
+            selectedIndex={barSelectedIndex ?? null}
             onBarPress={(_d, i) => {
               const date = weeklyBars?.[i]?.item?.date;
               if (date) selectDay(date);
@@ -98,8 +104,10 @@ export default function DetailView() {
         return (
           <CalendarHeatmap
             markedDates={toHeatmap(calendarData)}
+            currentDate={calendarCurrent}
             selectedDate={selectedDate}
             onDayPress={selectDay}
+            onMonthChange={onCalendarMonthChange}
           />
         );
       case DashboardViewSelectionType.PIE: {
@@ -110,8 +118,9 @@ export default function DetailView() {
             formatValue={fmtMoney}
             externalLabels
             fillHeight
-            legendPosition="bottom"
-            legendMaxHeight={120}
+            legendPosition="auto"
+            legendMaxHeight={wideDonut ? 260 : 120}
+            selectedLabel={pieSelectedLabel}
             centerLabel="Spent"
             centerValue={fmtMoney(total)}
             emptyTitle="No data"
@@ -133,7 +142,7 @@ export default function DetailView() {
             fillHeight
             showValues
             formatValue={n => fmtMoney(n).slice(0, -3)}
-            selectedIndex={doubleSelectedIndex}
+            selectedIndex={doubleSelectedIndex ?? null}
             onBarPress={(_d, i) => {
               const month = yearlyTypes[i]?.x;
               if (month) selectMonth(month);
@@ -173,8 +182,9 @@ export default function DetailView() {
         </ChartCard>
       ) : null}
 
-      {/* Scope toggle — only when the drill carried a focusable item. */}
-      {hasItem && itemLabel ? (
+      {/* Scope toggle — shown whenever something is selected, whether it arrived from the drill
+          or was tap-selected here, so the two entry paths behave identically. */}
+      {itemLabel ? (
         <View className="flex-row gap-2">
           <ScopeChip active={scope === "focused"} label={itemLabel} onPress={() => setScope("focused")} />
           <ScopeChip active={scope === "period"} label={`All · ${periodLabel}`} onPress={() => setScope("period")} />
@@ -186,28 +196,26 @@ export default function DetailView() {
   return (
     <SafeAreaView className="flex-1" edges={["top"]}>
       <View className="flex-1">
-        {isLoading ? (
-          <View className="w-full flex-1 self-center px-4" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
-            {header}
-            <SkeletonGroup count={5} renderRow={() => <DaySkeleton />} />
-          </View>
-        ) : (
-          <FlatList
-            className="flex-1"
-            data={rows}
-            keyExtractor={row => row.key}
-            renderItem={renderItem}
-            ListHeaderComponent={header}
-            ListEmptyComponent={<EmptyListComponent />}
-            contentContainerStyle={[
-              { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center", paddingHorizontal: 16 },
-              rows.length === 0 ? { flexGrow: 1 } : null,
-            ]}
-            windowSize={11}
-            maxToRenderPerBatch={12}
-            initialNumToRender={12}
-          />
-        )}
+        {/* One always-mounted FlatList: only the LIST body swaps to skeletons while the transaction
+            query refetches. The header (and its context chart) stays mounted across that refetch, so
+            re-picking a slice no longer unmounts/remounts — and re-animates — the chart. */}
+        <FlatList
+          className="flex-1"
+          data={isLoading ? [] : rows}
+          keyExtractor={row => row.key}
+          renderItem={renderItem}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            isLoading ? <SkeletonGroup count={5} renderRow={() => <DaySkeleton />} /> : <EmptyListComponent />
+          }
+          contentContainerStyle={[
+            { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center", paddingHorizontal: 16 },
+            isLoading || rows.length === 0 ? { flexGrow: 1 } : null,
+          ]}
+          windowSize={11}
+          maxToRenderPerBatch={12}
+          initialNumToRender={12}
+        />
       </View>
     </SafeAreaView>
   );

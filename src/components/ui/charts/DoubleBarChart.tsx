@@ -94,6 +94,9 @@ export function DoubleBarChart({
 }: DoubleBarChartProps) {
   const { colors } = useTheme();
   const [internalSel, setInternalSel] = useState<number | null>(null);
+  // Hover is a transient highlight that never commits selection — moving the pointer away
+  // restores whatever is actually selected (a click, or the controlled `selectedIndex`).
+  const [hovered, setHovered] = useState<number | null>(null);
   // Reanimated drives the shared `grow` on the UI thread (no JS-thread height anim).
   const grow = useSharedValue(animated ? 0 : 1);
   const [measuredHeight, setMeasuredHeight] = useState(0);
@@ -143,7 +146,9 @@ export function DoubleBarChart({
     );
   }
 
-  const selected = selectedIndex !== undefined ? selectedIndex : internalSel;
+  const committed = selectedIndex !== undefined ? selectedIndex : internalSel;
+  // The visually-highlighted group: a live hover wins, otherwise the committed selection.
+  const selected = hovered != null ? hovered : committed;
   const select = (i: number, d: DoubleBarDatum) => {
     if (selectedIndex === undefined) setInternalSel(prev => (prev === i ? null : i));
     onBarPress?.(d, i);
@@ -178,8 +183,7 @@ export function DoubleBarChart({
               d={d}
               i={i}
               selected={selected}
-              selectedIndex={selectedIndex}
-              setInternalSel={setInternalSel}
+              setHovered={setHovered}
               select={select}
               onLongPress={onBarLongPress}
               showValues={showValues}
@@ -301,8 +305,7 @@ function BarGroup({
   d,
   i,
   selected,
-  selectedIndex,
-  setInternalSel,
+  setHovered,
   select,
   onLongPress,
   showValues,
@@ -319,8 +322,7 @@ function BarGroup({
   d: DoubleBarDatum;
   i: number;
   selected: number | null;
-  selectedIndex?: number | null;
-  setInternalSel: React.Dispatch<React.SetStateAction<number | null>>;
+  setHovered: (i: number | null) => void;
   select: (i: number, d: DoubleBarDatum) => void;
   onLongPress?: (d: DoubleBarDatum, i: number) => void;
   showValues: boolean;
@@ -362,12 +364,8 @@ function BarGroup({
       className="flex-1 active:opacity-80"
       onPress={() => select(i, d)}
       onLongPress={onLongPress ? () => onLongPress(d, i) : undefined}
-      onHoverIn={() => {
-        if (selectedIndex === undefined) setInternalSel(i);
-      }}
-      onHoverOut={() => {
-        if (selectedIndex === undefined) setInternalSel(null);
-      }}
+      onHoverIn={() => setHovered(i)}
+      onHoverOut={() => setHovered(null)}
     >
       <View className="w-full flex-row items-end justify-center gap-1" style={{ height }}>
         <View className="items-center" style={{ width: "40%" }}>

@@ -47,6 +47,24 @@ export interface DashboardChartsProps {
   handleDayPress: (day: { dateString: string }, type: DashboardViewSelectionType) => void;
   handlePiePress: (item: PieData, type: "category" | "group") => void;
   handleBarPress: (item: DoubleBarPoint, barKey?: "barOne" | "barTwo") => void;
+  /** Tap-to-select highlight state (lifted to the dashboard so the Details link can carry it). */
+  selection?: {
+    weekDate: string | null;
+    category: PieData | null;
+    group: PieData | null;
+    earningsMonth: string | null;
+  };
+  onSelectWeekDay?: (date: string) => void;
+  onSelectPieSlice?: (type: "category" | "group", item: PieData | null) => void;
+  onSelectEarningsMonth?: (month: string) => void;
+  /** Month-at-a-glance data for the panel beside the wide-screen calendar. */
+  calendarSummary?: {
+    income: number;
+    expense: number;
+    net: number;
+    activeDays: number;
+    topDays: { date: string; amount: number }[];
+  };
   params?: Partial<IDetailsViewProps>;
   periodControls: {
     week: PeriodControl;
@@ -98,16 +116,23 @@ export function buildDashboardChartConfigs(
     handleDayPress,
     handlePiePress,
     handleBarPress,
+    selection,
+    onSelectWeekDay,
+    onSelectPieSlice,
+    onSelectEarningsMonth,
     params = {},
     periodControls,
   } = props;
 
   const ws = weekStart(weeklyTransactionTypesData);
+  // Live tap-selection wins; params.* is the fallback for older item-carrying links.
+  const selectedWeekDate = selection?.weekDate ?? params.date ?? null;
   const barSelectedIndex =
-    params.date && ws
-      ? weeklyTransactionTypesData.findIndex((_, i) => ws.add(i, "day").format("YYYY-MM-DD") === params.date)
+    selectedWeekDate && ws
+      ? weeklyTransactionTypesData.findIndex((_, i) => ws.add(i, "day").format("YYYY-MM-DD") === selectedWeekDate)
       : -1;
-  const doubleBarSelectedIndex = params.month ? yearlyTransactionsTypes.findIndex(d => d.x === params.month) : -1;
+  const selectedMonth = selection?.earningsMonth ?? params.month ?? null;
+  const doubleBarSelectedIndex = selectedMonth ? yearlyTransactionsTypes.findIndex(d => d.x === selectedMonth) : -1;
 
   const earnings = toDoubleBar(yearlyTransactionsTypes);
 
@@ -120,6 +145,14 @@ export function buildDashboardChartConfigs(
       fillHeight
       legendPosition="bottom"
       legendMaxHeight={120}
+      selectedLabel={(type === "category" ? selection?.category : selection?.group)?.x ?? null}
+      onSlicePress={d => {
+        if (d.label === "Other") {
+          onSelectPieSlice?.(type, null);
+          return;
+        }
+        onSelectPieSlice?.(type, data.find(p => p.x === d.label) ?? null);
+      }}
       onSliceLongPress={d => {
         if (d.label === "Other") return;
         const orig = data.find(p => p.x === d.label);
@@ -146,7 +179,10 @@ export function buildDashboardChartConfigs(
           data={toBarData(weeklyTransactionTypesData)}
           showYAxis={false}
           fillHeight
-          selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : undefined}
+          selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : null}
+          onBarPress={(_d, i) => {
+            if (ws) onSelectWeekDay?.(ws.add(i, "day").format("YYYY-MM-DD"));
+          }}
           onBarLongPress={(_d, i) => {
             if (!ws) return;
             handleDayPress({ dateString: ws.add(i, "day").format("YYYY-MM-DD") }, DashboardViewSelectionType.BAR);
@@ -232,7 +268,11 @@ export function buildDashboardChartConfigs(
           bar1Color={earnings.bar1Color}
           bar2Color={earnings.bar2Color}
           fillHeight
-          selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : undefined}
+          selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : null}
+          onBarPress={(_d, i) => {
+            const point = yearlyTransactionsTypes[i];
+            if (point) onSelectEarningsMonth?.(point.x);
+          }}
           onBarLongPress={(_d, i) => {
             const point = yearlyTransactionsTypes[i];
             if (point) handleBarPress(point);
