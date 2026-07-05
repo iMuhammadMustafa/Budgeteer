@@ -1,4 +1,5 @@
 import { TableNames } from "@/src/types/database//TableNames";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { TransactionCategory } from "@/src/types/database//Tables.Types";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../providers/AuthProvider";
@@ -20,7 +21,7 @@ export function useTransactionCategoryService(): ITransactionCategoryService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
 
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();

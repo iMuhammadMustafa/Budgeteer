@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/providers/AuthProvider";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import {
@@ -79,7 +80,7 @@ export interface IStatsService {
 
 export function useStatsService(): IStatsService {
   const { session } = useAuth();
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   const { dbContext } = useStorageMode();
   const statsRepo = dbContext.StatsRepository();
   const transactionRepo = dbContext.TransactionRepository();

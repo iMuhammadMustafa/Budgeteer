@@ -64,11 +64,16 @@ export const duplicateTransaction = (item: TransactionsView) => {
 
     accountid: item.accountid!,
     categoryid: item.categoryid!,
+    // Carry the transfer's destination so the create path recreates BOTH legs.
+    // We intentionally do NOT copy `transferid`: createTransactionHelper mints a
+    // fresh pair id for the duplicate (copying it would link the duplicate to the
+    // original's mirror leg). Omitting `transferaccountid` here produced an
+    // orphaned single-leg transfer.
+    transferaccountid: item.transferaccountid,
 
     createdat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
     isdeleted: false,
     // tenantid: item.tenantid as string,
-    // transferaccountid: item.transferaccountid
     // transferid: item.transferid
   };
 

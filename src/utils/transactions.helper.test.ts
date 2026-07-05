@@ -68,6 +68,12 @@ describe("duplicateTransaction", () => {
     it("defaults a null amount to zero", () => {
         expect(duplicateTransaction(tx({ amount: null as unknown as number })).amount).toBe(0);
     });
+    it("carries transferaccountid so a duplicated transfer keeps both legs", () => {
+        const source = tx({ id: "orig", type: "Transfer", accountid: "src", transferaccountid: "dst" });
+        const dup = duplicateTransaction(source);
+        expect(dup.transferaccountid).toBe("dst"); // regression: was dropped → orphaned single-leg transfer
+        expect(dup).not.toHaveProperty("transferid"); // fresh pair id is minted by the create path
+    });
 });
 
 describe("initialSearchFilters", () => {

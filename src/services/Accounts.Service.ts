@@ -1,4 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { TableNames } from "@/src/types/database//TableNames";
 import { Account, Inserts, Updates } from "@/src/types/database//Tables.Types";
 import { Session } from "@supabase/supabase-js";
@@ -24,7 +25,7 @@ export function useAccountService(): IAccountService {
   const { session } = useAuth();
   if (!session) throw new Error("Session not found");
 
-  const tenantId = session?.user?.user_metadata?.tenantid;
+  const tenantId = resolveTenantId(session);
   if (!tenantId) throw new Error("Tenant ID not found in session");
 
   const { dbContext } = useStorageMode();

@@ -1,4 +1,5 @@
 import { Button, ResponsiveModal } from "@/src/components/ui";
+import { resolveTenantId } from "@/src/utils/tenant";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
@@ -17,7 +18,7 @@ export default function ImportModal({ visible, onClose, onImportComplete }: {
 }) {
     const { session } = useAuth();
     const { dbContext } = useStorageMode();
-    const tenantId = session?.user?.user_metadata?.tenantid || "";
+    const tenantId = resolveTenantId(session) || "";
 
     const [step, setStep] = useState<ImportStep>("select");
     const [importData, setImportData] = useState<ExportData | null>(null);

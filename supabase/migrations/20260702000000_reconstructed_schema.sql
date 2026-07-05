@@ -222,23 +222,23 @@ create table if not exists public.profiles (
 );
 
 -- ── Row-Level Security ──────────────────────────────────────────────────────
--- current_tenant() is a FAITHFUL REPLICA of production's real `auth.tenantid()`
--- (src/types/database/supabase/migrations/20250201102938_User_Management_Starter.sql
--- line 15): it reads tenantid from the USER-WRITABLE `user_metadata` claim.
--- Defined in `public` (not `auth`) only because the local `supabase db reset` role
--- cannot create objects in the reserved `auth` schema — the LOGIC is identical, so
--- the policies below exercise production's ACTUAL RLS behavior.
+-- current_tenant() mirrors production's `auth.tenantid()` AS FIXED by migration
+-- 20260703000000_fix_tenant_isolation: it reads tenantid from the SERVER-MANAGED
+-- `app_metadata` claim, which the client cannot write. Defined in `public` (not
+-- `auth`) only because the local `supabase db reset` role cannot create objects
+-- in the reserved `auth` schema — the LOGIC is identical, so the policies below
+-- exercise production's ACTUAL (fixed) RLS behavior.
 --
--- ⚠️ This IS the live rls-tenant-vuln: user_metadata is client-writable, so a user
--- can escalate across tenants (the RLS suite reproduces this on the real tables).
--- When the vuln fix lands, switch this to read `app_metadata` and flip the
--- escalation assertion in supabase.rls.cloud.test.ts.
+-- Before the fix this read `user_metadata` (client-writable), which was the live
+-- rls-tenant-vuln. The RLS suite now proves the escalation is BLOCKED: a user who
+-- rewrites their own user_metadata.tenantid gains nothing, because policies read
+-- the untamperable app_metadata claim.
 create or replace function public.current_tenant()
 returns text
 language sql stable
 as $$
   select coalesce(
-    nullif(current_setting('request.jwt.claims', true), '')::jsonb -> 'user_metadata' ->> 'tenantid',
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb -> 'app_metadata' ->> 'tenantid',
     null
   );
 $$;

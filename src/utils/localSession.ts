@@ -15,8 +15,11 @@ export function buildLocalSession(mode: StorageMode.Local | StorageMode.Demo): S
     user: {
       id: c.userId,
       email: c.email,
+      // tenantid lives in app_metadata to mirror the server-managed cloud model
+      // (see resolveTenantId / migration 20260703000000_fix_tenant_isolation);
+      // kept in user_metadata too for any pre-fix read path.
       user_metadata: { tenantid: c.tenantId, full_name: c.name },
-      app_metadata: {},
+      app_metadata: { tenantid: c.tenantId },
       aud: "authenticated",
       created_at: new Date().toISOString(),
     },

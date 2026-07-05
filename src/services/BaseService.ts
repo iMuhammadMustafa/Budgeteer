@@ -1,4 +1,5 @@
 import { TableNames } from "@/src/types/database//TableNames";
+import { resolveTenantId } from "@/src/utils/tenant";
 import { Session } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -253,7 +254,7 @@ async function createBaseRepoHelper<TTModel, TTable extends TableNames>(
   repository: any,
 ) {
   let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+  let tenantid = resolveTenantId(session);
 
   form.createdat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");
   form.createdby = userId;
@@ -271,7 +272,7 @@ async function updateBaseRepoHelper<TTModel, TTable extends TableNames>(
   repository: any,
 ) {
   let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+  let tenantid = resolveTenantId(session);
 
   form.updatedby = userId;
   form.updatedat = dayjs().format("YYYY-MM-DDTHH:mm:ssZ");

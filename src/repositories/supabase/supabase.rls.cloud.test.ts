@@ -157,24 +157,22 @@ describe.skipIf(!cloudEnabled)("RLS attack table (live local stack)", () => {
         expect(data ?? []).toHaveLength(0);
     });
 
-    // ── LIVE VULN REPRODUCTION (rls-tenant-vuln) ─────────────────────────────
-    // The policies replicate production's real `auth.tenantid()`, which reads the
-    // USER-WRITABLE `user_metadata` claim. This test proves the exploit: an
-    // authenticated user rewrites their own user_metadata.tenantid and gains full
-    // cross-tenant access. It asserts the CURRENT (insecure) reality so the vuln
-    // is documented and reproducible.
-    //
-    // ⚠️ WHEN THE FIX LANDS (auth.tenantid()/current_tenant() reads app_metadata):
-    // this exploit stops working — flip the assertion below from `.toContain`/
-    // `>0` to `toHaveLength(0)` and rename to "escalation blocked".
-    it("VULN(rls-tenant-vuln): user rewriting own user_metadata gains cross-tenant access", async () => {
+    // ── FIX VERIFICATION (rls-tenant-vuln) ───────────────────────────────────
+    // The policies mirror production's `auth.tenantid()` AS FIXED (migration
+    // 20260703000000_fix_tenant_isolation): tenantid is read from the
+    // SERVER-MANAGED `app_metadata` claim. This test performs the old exploit —
+    // an authenticated user rewrites their own `user_metadata.tenantid` — and
+    // proves it now gains NOTHING, because policies ignore the client-writable
+    // claim. (`updateUser({ data })` can only write user_metadata; app_metadata
+    // is not client-writable, so B's effective tenant stays TENANT_B.)
+    it("rls-tenant-vuln FIXED: rewriting own user_metadata grants no cross-tenant access", async () => {
         const attacker = await clientFor(userB);
 
-        // Baseline: honest B sees only its own account (isolation works for honest users).
+        // Baseline: honest B sees only its own account.
         const before = await attacker.from("accounts").select("id").eq("tenantid", TENANT_A);
         expect(before.data ?? []).toHaveLength(0);
 
-        // The attack: overwrite the client-writable user_metadata tenantid → A.
+        // The (now-defeated) attack: overwrite the client-writable user_metadata → A.
         const { error: updErr } = await attacker.auth.updateUser({ data: { tenantid: TENANT_A } });
         expect(updErr).toBeNull();
         await attacker.auth.refreshSession(); // fresh JWT carries the tampered claim
@@ -183,8 +181,9 @@ describe.skipIf(!cloudEnabled)("RLS attack table (live local stack)", () => {
         const { data: me } = await attacker.auth.getUser();
         expect((me.user?.user_metadata as any)?.tenantid).toBe(TENANT_A);
 
-        // ⚠️ EXPLOITED: B now reads tenant A's private data via the real policy.
+        // ✅ BLOCKED: policies read app_metadata (untampered TENANT_B), so B still
+        // reads none of tenant A's rows despite the forged user_metadata claim.
         const stolen = await attacker.from("accounts").select("id,name").eq("tenantid", TENANT_A);
-        expect((stolen.data ?? []).map((r: any) => r.id)).toContain(ROW_ID.accounts("A"));
+        expect(stolen.data ?? []).toHaveLength(0);
     });
 });

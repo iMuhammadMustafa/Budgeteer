@@ -4,6 +4,7 @@
  * identical to the originals; repositories are injected as parameters.
  */
 import { Session } from "@supabase/supabase-js";
+import { resolveTenantId } from "@/src/utils/tenant";
 import dayjs from "dayjs";
 import GenerateUuid from "@/src/utils/uuid.Helper";
 import { TableNames } from "@/src/types/database/TableNames";
@@ -18,7 +19,7 @@ export const createTransactionHelper = async (
   accountRepo: IAccountRepository,
 ) => {
   let userId = session.user.id;
-  let tenantid = session.user.user_metadata.tenantid;
+  let tenantid = resolveTenantId(session);
   const transactions: Inserts<TableNames.Transactions>[] = [];
 
   const id = GenerateUuid();
@@ -82,7 +83,7 @@ export const updateTransactionHelper = async (
   accountRepo: IAccountRepository,
 ) => {
   const userId = session.user.id;
-  const tenantId = session.user.user_metadata.tenantid;
+  const tenantId = resolveTenantId(session);
   const currentTimestamp = new Date().toISOString();
   const isTransfer = !!originalData.transferid;
 
