@@ -5,7 +5,7 @@
  * /components (web) or via Settings → Appearance → Components, and cross-linked
  * from the /design token showcase.
  */
-import React, { useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Moon, Sun } from "lucide-react-native";
@@ -60,11 +60,13 @@ import {
 import { PageHeader } from "@/src/components/ui/pages/PageHeader";
 import PageLayout from "@/src/components/ui/pages/PageLayout";
 // Legacy charts (victory-native) — kept only for the before/after comparison below.
-import LegacyBar from "@/src/components/Charts/Bar";
-import LegacyDoubleBar from "@/src/components/Charts/DoubleBar";
-import LegacyLine from "@/src/components/Charts/Line";
-import LegacyMyCalendar from "@/src/components/Charts/MyCalendar";
-import LegacyMyPie from "@/src/components/Charts/MyPie";
+// Lazy-loaded so the heavy victory suite is a separate web chunk (loaded only when
+// this dev-showcase route mounts) instead of bloating the app's entry bundle.
+const LegacyBar = lazy(() => import("@/src/components/Charts/Bar"));
+const LegacyDoubleBar = lazy(() => import("@/src/components/Charts/DoubleBar"));
+const LegacyLine = lazy(() => import("@/src/components/Charts/Line"));
+const LegacyMyCalendar = lazy(() => import("@/src/components/Charts/MyCalendar"));
+const LegacyMyPie = lazy(() => import("@/src/components/Charts/MyPie"));
 import MyIcon from "@/src/components/elements/MyIcon";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -993,7 +995,7 @@ export default function ComponentsPreview() {
           <View key={row.title} className="gap-3 md:flex-row">
             <Card className="flex-1">
               <Badge tone="neutral" label="Before" className="mb-3 self-start" />
-              {row.before}
+              <Suspense fallback={<Text variant="caption">Loading legacy chart…</Text>}>{row.before}</Suspense>
             </Card>
             <Card className="flex-1">
               <Badge tone="primary" label="After" className="mb-3 self-start" />
