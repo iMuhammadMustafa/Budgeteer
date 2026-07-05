@@ -88,6 +88,7 @@ function DashboardCharts({
         <ChartCard
           title={calendarConfig.title}
           period={calendarConfig.period}
+          bodyHeight="auto"
           className="my-0"
           testID={`chart-card-${calendarConfig.key}`}
         >

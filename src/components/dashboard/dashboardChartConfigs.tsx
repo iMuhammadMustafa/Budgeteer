@@ -109,8 +109,9 @@ export function buildDashboardChartConfigs(
       data={toDonutData(data)}
       formatValue={fmtMoney}
       externalLabels
+      fillHeight
       legendPosition="bottom"
-      legendHeight={148}
+      legendMaxHeight={120}
       onSlicePress={d => {
         if (d.label === "Other") return;
         const orig = data.find(p => p.x === d.label);
@@ -194,6 +195,7 @@ export function buildDashboardChartConfigs(
           color={colors.income}
           formatValue={fmtMoney}
           emptyTitle="No net worth data"
+          fillHeight
           showLegend
         />
       ),

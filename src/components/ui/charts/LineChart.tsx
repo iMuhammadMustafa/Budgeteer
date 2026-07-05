@@ -49,6 +49,9 @@ export interface LineDatum {
 export interface LineChartProps {
   data: LineDatum[];
   height?: number;
+  /** Grow to fill the available vertical space (like BarChart's `fillHeight`) instead of a fixed
+   * `height`. Measures its own plot box via onLayout; `height` is the fallback before first layout. */
+  fillHeight?: boolean;
   color?: string;
   /** Single series-name chip above the chart. */
   seriesLabel?: string;
@@ -83,6 +86,7 @@ export interface LineChartProps {
 export function LineChart({
   data,
   height = 180,
+  fillHeight = false,
   color,
   seriesLabel,
   showLegend = false,
@@ -107,6 +111,7 @@ export function LineChart({
 }: LineChartProps) {
   const { colors } = useTheme();
   const [w, setW] = useState(0);
+  const [measuredHeight, setMeasuredHeight] = useState(0);
   const [internalSel, setInternalSel] = useState<number | null>(null);
   // Draw-on entry: `progress` 0→1 drives the line's stroke-dash offset (the line
   // draws itself through the dots), the area fade, and the staggered dots.
@@ -114,7 +119,9 @@ export function LineChart({
 
   const stroke = color ?? colors.primary;
   const fmt = formatValue ?? ((n: number) => String(n));
-  const plotH = height - PAD_Y * 2;
+  // Before the first onLayout fires (or when fillHeight is off), fall back to the fixed `height`.
+  const h = fillHeight ? measuredHeight || height : height;
+  const plotH = h - PAD_Y * 2;
   const innerW = Math.max(0, w - LEFT_PAD - RIGHT_PAD);
   const isEmpty = data.length === 0 || data.every(d => d.value === 0);
 
@@ -162,7 +169,7 @@ export function LineChart({
     const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
     const areaPath =
       n > 1
-        ? `${linePath} L ${pts[n - 1].x.toFixed(1)} ${height - PAD_Y} L ${pts[0].x.toFixed(1)} ${height - PAD_Y} Z`
+        ? `${linePath} L ${pts[n - 1].x.toFixed(1)} ${h - PAD_Y} L ${pts[0].x.toFixed(1)} ${h - PAD_Y} Z`
         : "";
     const angled = n > X_LABEL_ANGLE_THRESHOLD;
 
@@ -178,9 +185,12 @@ export function LineChart({
 
     return (
       <>
-        <View style={{ height }}>
+        <View
+          style={fillHeight ? { flex: 1 } : { height: h }}
+          onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+        >
           {w > 0 ? (
-            <Svg width={w} height={height}>
+            <Svg width={w} height={h}>
               {/* vertical (x) gridlines, one per point */}
               {showXGrid
                 ? xs.map((x, i) => (
@@ -189,7 +199,7 @@ export function LineChart({
                       x1={x}
                       y1={PAD_Y}
                       x2={x}
-                      y2={height - PAD_Y}
+                      y2={h - PAD_Y}
                       stroke={colors.border}
                       strokeWidth={1}
                       strokeDasharray="3 4"
@@ -232,7 +242,7 @@ export function LineChart({
                   x1={LEFT_PAD}
                   y1={PAD_Y}
                   x2={LEFT_PAD}
-                  y2={height - PAD_Y}
+                  y2={h - PAD_Y}
                   stroke={colors.borderStrong}
                   strokeWidth={1}
                 />
@@ -295,7 +305,11 @@ export function LineChart({
   // that React reconciled onto the same DOM node — the observer attached post-mount and
   // never fired an initial layout on web, so `w` stuck at 0 and the SVG never rendered.
   return (
-    <View testID={testID} className={cn("w-full", className)} onLayout={e => setW(e.nativeEvent.layout.width)}>
+    <View
+      testID={testID}
+      className={cn("w-full", fillHeight && "flex-1", className)}
+      onLayout={e => setW(e.nativeEvent.layout.width)}
+    >
       {seriesLabel ? (
         <ChartLegend horizontal scrollable className="mb-2" items={[{ label: seriesLabel, color: stroke }]} />
       ) : null}
@@ -306,7 +320,8 @@ export function LineChart({
           emptySubtitle={emptySubtitle}
           emptyIcon={emptyIcon}
           length={data.length}
-          height={height}
+          height={h}
+          fillHeight={fillHeight}
           color={stroke}
           showLegend={showLegend}
           legendHeight={legendHeight}
@@ -396,6 +411,7 @@ function AnimatedDot({
 export function LineChartSkeleton({
   length,
   height = 180,
+  fillHeight = false,
   color,
   isEmpty = false,
   emptyTitle = "No growth data yet",
@@ -408,6 +424,7 @@ export function LineChartSkeleton({
 }: {
   length?: number;
   height?: number;
+  fillHeight?: boolean;
   color?: string;
   isEmpty?: boolean;
   emptyTitle?: string;
@@ -420,10 +437,12 @@ export function LineChartSkeleton({
 }) {
   const { colors } = useTheme();
   const [w, setW] = useState(0);
+  const [measuredHeight, setMeasuredHeight] = useState(0);
 
   const stroke = color ?? colors.primary;
   const n = Math.max(GHOST_PATTERN.length, length || GHOST_PATTERN.length);
-  const plotH = height - PAD_Y * 2;
+  const h = fillHeight ? measuredHeight || height : height;
+  const plotH = h - PAD_Y * 2;
   const innerW = Math.max(0, w - LEFT_PAD - RIGHT_PAD);
   const bandW = n > 0 ? innerW / n : innerW;
   const xAt = (i: number) => LEFT_PAD + (i + 0.5) * bandW;
@@ -438,10 +457,17 @@ export function LineChartSkeleton({
 
   return (
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
-      <View testID={testID} className={cn("w-full", className)} onLayout={e => setW(e.nativeEvent.layout.width)}>
-        <View style={{ height }}>
+      <View
+        testID={testID}
+        className={cn("w-full", fillHeight && "flex-1", className)}
+        onLayout={e => setW(e.nativeEvent.layout.width)}
+      >
+        <View
+          style={fillHeight ? { flex: 1 } : { height: h }}
+          onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
+        >
           {w > 0 ? (
-            <Svg width={w} height={height}>
+            <Svg width={w} height={h}>
               <Path d={dPath} fill="none" stroke={colors.surfaceAlt} strokeWidth={3} />
               {pts.map((p, i) => (
                 <Circle key={i} cx={p.x} cy={p.y} r={4} fill={stroke} opacity={0.3} />
