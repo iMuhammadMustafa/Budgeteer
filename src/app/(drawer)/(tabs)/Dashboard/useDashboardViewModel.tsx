@@ -27,6 +27,37 @@ export interface IDetailsViewProps {
   transactionType?: string;
 }
 
+type PeriodRange = { start: string; end: string };
+
+/** Month cursor boundaries — `YYYY-MM-DD` strings (what the month-bound stat queries expect). */
+const monthRange = (base: dayjs.Dayjs): PeriodRange => ({
+  start: base.utc().startOf("month").format("YYYY-MM-DD"),
+  end: base.utc().endOf("month").format("YYYY-MM-DD"),
+});
+
+/** Year cursor boundaries — ISO strings (what the year-bound stat queries expect). */
+const yearRange = (base: dayjs.Dayjs): PeriodRange => ({
+  start: base.utc().startOf("year").toISOString(),
+  end: base.utc().endOf("year").toISOString(),
+});
+
+/**
+ * One independent period cursor for a chart: the current `range`, its display `label`, and
+ * `prev`/`next` steppers. Replaces five near-identical cursor+label+prev+next quadruples in this
+ * view model — behaviour is unchanged (same boundary formats, same labels, same stepping math).
+ */
+function usePeriodCursor(initial: PeriodRange, unit: "month" | "year") {
+  const [range, setRange] = useState<PeriodRange>(initial);
+  const rangeOf = unit === "month" ? monthRange : yearRange;
+  const prev = useCallback(() => setRange(r => rangeOf(dayjs(r.start).subtract(1, unit))), [rangeOf, unit]);
+  const next = useCallback(() => setRange(r => rangeOf(dayjs(r.start).add(1, unit))), [rangeOf, unit]);
+  const label = useMemo(
+    () => (unit === "month" ? dayjs(range.start).format("MMM YYYY") : range.start.substring(0, 4)),
+    [range.start, unit],
+  );
+  return { range, label, prev, next, setRange };
+}
+
 export default function useDashboard(options?: { fetchTransactions?: boolean }) {
   const statsService = useStatsService();
   const transactionService = useTransactionService();
@@ -55,51 +86,50 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     return dateRanges.currentYear;
   }, [params, dateRanges]);
 
-  // Period cursors (independent per-chart)
+  // Period cursors (independent per-chart). The week cursor is bespoke (it also nudges the daily
+  // month cursor when a week crosses a month); the rest are uniform month/year cursors.
   const [weekBaseDate, setWeekBaseDate] = useState<string>(params.startDate ?? dayjs().toISOString());
-  const [dailyMonthCursor, setDailyMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
-  const [categoriesMonthCursor, setCategoriesMonthCursor] = useState<{ start: string; end: string }>(
-    initialMonthFromParams,
-  );
-  const [groupsMonthCursor, setGroupsMonthCursor] = useState<{ start: string; end: string }>(initialMonthFromParams);
-  const [earningsYearCursor, setEarningsYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
-  const [netWorthYearCursor, setNetWorthYearCursor] = useState<{ start: string; end: string }>(initialYearFromParams);
+  const daily = usePeriodCursor(initialMonthFromParams, "month"); // calendar + weekly-bar month bound
+  const categories = usePeriodCursor(initialMonthFromParams, "month");
+  const groups = usePeriodCursor(initialMonthFromParams, "month");
+  const earnings = usePeriodCursor(initialYearFromParams, "year");
+  const netWorth = usePeriodCursor(initialYearFromParams, "year");
 
   // Fetch raw daily transactions for the calendar + weekly bar (month-bound).
   // `isFetching` (vs `isLoading`) stays true on a period change too — the queries keep the previous
-  // period's data as placeholder, so we surface a subtle per-chart spinner instead of blanking.
+  // period's data as placeholder, so we surface a subtle per-chart skeleton instead of blanking.
   const {
     data: dailyTransactionsRaw = [],
     isLoading: isDailyLoading,
     isFetching: isDailyFetching,
-  } = statsService.useGetStatsDailyTransactionsRaw(dailyMonthCursor.start, dailyMonthCursor.end);
+  } = statsService.useGetStatsDailyTransactionsRaw(daily.range.start, daily.range.end);
 
   // Fetch monthly categories (month-bound)
   const {
     data: monthlyCategoriesData = { categories: [], groups: [] },
     isLoading: isCategoriesLoading,
     isFetching: isCategoriesFetching,
-  } = statsService.useGetStatsMonthlyCategoriesTransactions(categoriesMonthCursor.start, categoriesMonthCursor.end);
+  } = statsService.useGetStatsMonthlyCategoriesTransactions(categories.range.start, categories.range.end);
 
   // Fetch monthly groups (month-bound)
   const {
     data: monthlyGroupsData = { categories: [], groups: [] },
     isLoading: isGroupsLoading,
     isFetching: isGroupsFetching,
-  } = statsService.useGetStatsMonthlyCategoriesTransactions(groupsMonthCursor.start, groupsMonthCursor.end);
+  } = statsService.useGetStatsMonthlyCategoriesTransactions(groups.range.start, groups.range.end);
 
   // Fetch yearly charts (year-bound)
   const {
     data: yearlyTransactionsTypes = [],
     isLoading: isYearlyLoading,
     isFetching: isYearlyFetching,
-  } = statsService.useGetStatsMonthlyTransactionsTypes(earningsYearCursor.start, earningsYearCursor.end);
+  } = statsService.useGetStatsMonthlyTransactionsTypes(earnings.range.start, earnings.range.end);
 
   const {
     data: netWorthGrowth = [],
     isLoading: isNetWorthLoading,
     isFetching: isNetWorthFetching,
-  } = statsService.useGetStatsNetWorthGrowth(netWorthYearCursor.start, netWorthYearCursor.end);
+  } = statsService.useGetStatsNetWorthGrowth(netWorth.range.start, netWorth.range.end);
 
   const filters = useMemo<TransactionFilters | undefined>(() => {
     if (!fetchTransactions) return undefined;
@@ -111,12 +141,12 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       baseFilters.startDate = dayjs(weekBaseDate).utc().startOf("week").toISOString();
       baseFilters.endDate = dayjs(weekBaseDate).utc().endOf("week").toISOString();
     } else if (params.type === DashboardViewSelectionType.PIE) {
-      const cursor = params.pieType === "category" ? categoriesMonthCursor : groupsMonthCursor;
+      const cursor = params.pieType === "category" ? categories.range : groups.range;
       baseFilters.startDate = dayjs(cursor.start).utc().startOf("day").toISOString();
       baseFilters.endDate = dayjs(cursor.end).utc().endOf("day").toISOString();
     } else if (params.type === DashboardViewSelectionType.CALENDAR) {
-      baseFilters.startDate = dayjs(dailyMonthCursor.start).utc().startOf("day").toISOString();
-      baseFilters.endDate = dayjs(dailyMonthCursor.end).utc().endOf("day").toISOString();
+      baseFilters.startDate = dayjs(daily.range.start).utc().startOf("day").toISOString();
+      baseFilters.endDate = dayjs(daily.range.end).utc().endOf("day").toISOString();
     } else if (params.type === DashboardViewSelectionType.DOUBLE_BAR) {
       baseFilters.startDate = params.startDate;
       baseFilters.endDate = params.endDate;
@@ -138,7 +168,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     }
 
     return baseFilters;
-  }, [fetchTransactions, params, weekBaseDate, categoriesMonthCursor, groupsMonthCursor, dailyMonthCursor]);
+  }, [fetchTransactions, params, weekBaseDate, categories.range, groups.range, daily.range]);
 
   const transactionsQuery = fetchTransactions && filters ? transactionService.useFindAllView(filters) : undefined;
   const filteredTransactions = fetchTransactions ? transactionsQuery?.data : undefined;
@@ -221,7 +251,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const handlePiePress = useCallback(
     (item: PieData, type: "category" | "group") => {
       // Keep the currently selected monthly period when drilling into pies
-      const cursor = type === "category" ? categoriesMonthCursor : groupsMonthCursor;
+      const cursor = type === "category" ? categories.range : groups.range;
       const startOfMonth = cursor.start;
       const endOfMonth = cursor.end;
 
@@ -238,12 +268,12 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         },
       });
     },
-    [categoriesMonthCursor, groupsMonthCursor],
+    [categories.range, groups.range],
   );
 
   const handleBarPress = useCallback(
     (item: DoubleBarPoint, barKey?: "barOne" | "barTwo") => {
-      const baseYear = dayjs(earningsYearCursor.start);
+      const baseYear = dayjs(earnings.range.start);
       const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(
         item.x,
       );
@@ -270,7 +300,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         },
       });
     },
-    [earningsYearCursor],
+    [earnings.range],
   );
 
   const handleBackToOverview = useCallback(() => {
@@ -311,158 +341,54 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     });
   }, [params]);
 
-  // Period labels
+  // Week period label (bespoke — spans two dates rather than a single month/year).
   const weekLabel = useMemo(() => {
     const start = dayjs(weekBaseDate).local().startOf("week");
     const end = dayjs(weekBaseDate).local().endOf("week");
-    const sameMonth = start.month() === end.month();
-    const startFmt = sameMonth ? start.format("MMM D") : start.format("MMM D");
+    const startFmt = start.format("MMM D");
     const endFmt = end.format("MMM D, YYYY");
     return `Week: ${startFmt} – ${endFmt}`;
   }, [weekBaseDate]);
 
-  const categoriesMonthLabel = useMemo(
-    () => dayjs(categoriesMonthCursor.start).format("MMM YYYY"),
-    [categoriesMonthCursor],
+  // Week navigation is bespoke: it moves the week cursor and, when the new week falls in a
+  // different month, nudges the daily month cursor so the calendar/heatmap follows along.
+  const stepWeek = useCallback(
+    (delta: 1 | -1) => {
+      const next = dayjs(weekBaseDate).add(delta, "week");
+      setWeekBaseDate(next.toISOString());
+      const cur = dayjs(daily.range.start);
+      if (next.month() !== cur.month() || next.year() !== cur.year()) {
+        daily.setRange(monthRange(next));
+      }
+    },
+    [weekBaseDate, daily],
   );
-  const groupsMonthLabel = useMemo(() => dayjs(groupsMonthCursor.start).format("MMM YYYY"), [groupsMonthCursor]);
-  const calendarLabel = useMemo(() => dayjs(dailyMonthCursor.start).format("MMM YYYY"), [dailyMonthCursor]);
-  const earningsYearLabel = useMemo(() => earningsYearCursor.start.substring(0, 4), [earningsYearCursor]);
-  const netWorthYearLabel = useMemo(() => netWorthYearCursor.start.substring(0, 4), [netWorthYearCursor]);
-
-  // Period navigation handlers
-  const onPrevWeek = useCallback(() => {
-    const next = dayjs(weekBaseDate).subtract(1, "week");
-    setWeekBaseDate(next.toISOString());
-    // If crossing month, update daily month cursor (refetch only daily dataset)
-    if (
-      next.month() !== dayjs(dailyMonthCursor.start).month() ||
-      next.year() !== dayjs(dailyMonthCursor.start).year()
-    ) {
-      setDailyMonthCursor({
-        start: next.utc().startOf("month").format("YYYY-MM-DD"),
-        end: next.utc().endOf("month").format("YYYY-MM-DD"),
-      });
-    }
-  }, [weekBaseDate, dailyMonthCursor]);
-
-  const onNextWeek = useCallback(() => {
-    const next = dayjs(weekBaseDate).add(1, "week");
-    setWeekBaseDate(next.toISOString());
-    if (
-      next.month() !== dayjs(dailyMonthCursor.start).month() ||
-      next.year() !== dayjs(dailyMonthCursor.start).year()
-    ) {
-      setDailyMonthCursor({
-        start: next.utc().startOf("month").format("YYYY-MM-DD"),
-        end: next.utc().endOf("month").format("YYYY-MM-DD"),
-      });
-    }
-  }, [weekBaseDate, dailyMonthCursor]);
-
-  const onPrevCategoriesMonth = useCallback(() => {
-    const base = dayjs(categoriesMonthCursor.start).subtract(1, "month");
-    setCategoriesMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [categoriesMonthCursor]);
-
-  const onNextCategoriesMonth = useCallback(() => {
-    const base = dayjs(categoriesMonthCursor.start).add(1, "month");
-    setCategoriesMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [categoriesMonthCursor]);
-
-  const onPrevGroupsMonth = useCallback(() => {
-    const base = dayjs(groupsMonthCursor.start).subtract(1, "month");
-    setGroupsMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [groupsMonthCursor]);
-
-  const onNextGroupsMonth = useCallback(() => {
-    const base = dayjs(groupsMonthCursor.start).add(1, "month");
-    setGroupsMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [groupsMonthCursor]);
-
-  const onPrevCalendarMonth = useCallback(() => {
-    const base = dayjs(dailyMonthCursor.start).subtract(1, "month");
-    setDailyMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [dailyMonthCursor]);
-
-  const onNextCalendarMonth = useCallback(() => {
-    const base = dayjs(dailyMonthCursor.start).add(1, "month");
-    setDailyMonthCursor({
-      start: base.utc().startOf("month").format("YYYY-MM-DD"),
-      end: base.utc().endOf("month").format("YYYY-MM-DD"),
-    });
-  }, [dailyMonthCursor]);
-
-  const onPrevEarningsYear = useCallback(() => {
-    const base = dayjs(earningsYearCursor.start).subtract(1, "year");
-    setEarningsYearCursor({
-      start: base.utc().startOf("year").toISOString(),
-      end: base.utc().endOf("year").toISOString(),
-    });
-  }, [earningsYearCursor]);
-
-  const onNextEarningsYear = useCallback(() => {
-    const base = dayjs(earningsYearCursor.start).add(1, "year");
-    setEarningsYearCursor({
-      start: base.utc().startOf("year").toISOString(),
-      end: base.utc().endOf("year").toISOString(),
-    });
-  }, [earningsYearCursor]);
-
-  const onPrevNetWorthYear = useCallback(() => {
-    const base = dayjs(netWorthYearCursor.start).subtract(1, "year");
-    setNetWorthYearCursor({
-      start: base.utc().startOf("year").toISOString(),
-      end: base.utc().endOf("year").toISOString(),
-    });
-  }, [netWorthYearCursor]);
-
-  const onNextNetWorthYear = useCallback(() => {
-    const base = dayjs(netWorthYearCursor.start).add(1, "year");
-    setNetWorthYearCursor({
-      start: base.utc().startOf("year").toISOString(),
-      end: base.utc().endOf("year").toISOString(),
-    });
-  }, [netWorthYearCursor]);
+  const onPrevWeek = useCallback(() => stepWeek(-1), [stepWeek]);
+  const onNextWeek = useCallback(() => stepWeek(1), [stepWeek]);
 
   const periodControls = {
     week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek, loading: isDailyFetching },
     categoriesMonth: {
-      label: categoriesMonthLabel,
-      prev: onPrevCategoriesMonth,
-      next: onNextCategoriesMonth,
+      label: categories.label,
+      prev: categories.prev,
+      next: categories.next,
       loading: isCategoriesFetching,
     },
     groupsMonth: {
-      label: groupsMonthLabel,
-      prev: onPrevGroupsMonth,
-      next: onNextGroupsMonth,
+      label: groups.label,
+      prev: groups.prev,
+      next: groups.next,
       loading: isGroupsFetching,
     },
     calendar: {
-      label: calendarLabel,
-      prev: onPrevCalendarMonth,
-      next: onNextCalendarMonth,
-      currentDate: dailyMonthCursor.start,
+      label: daily.label,
+      prev: daily.prev,
+      next: daily.next,
+      currentDate: daily.range.start,
       loading: isDailyFetching,
     },
-    earningsYear: { label: earningsYearLabel, prev: onPrevEarningsYear, next: onNextEarningsYear, loading: isYearlyFetching },
-    netWorthYear: { label: netWorthYearLabel, prev: onPrevNetWorthYear, next: onNextNetWorthYear, loading: isNetWorthFetching },
+    earningsYear: { label: earnings.label, prev: earnings.prev, next: earnings.next, loading: isYearlyFetching },
+    netWorthYear: { label: netWorth.label, prev: netWorth.prev, next: netWorth.next, loading: isNetWorthFetching },
   };
 
   return {
