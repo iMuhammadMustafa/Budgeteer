@@ -9,7 +9,8 @@ on:
     branches: [master]
   pull_request:
   schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC — weekly deep sweep
+    - cron: "0 4 * * *" # nightly 04:00 UTC — continuous secret/dep/SAST sweep
   workflow_dispatch:
 
 # Least-privilege by default.

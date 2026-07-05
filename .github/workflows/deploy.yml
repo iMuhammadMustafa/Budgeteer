@@ -21,10 +21,46 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
+  # 0. Full-suite gate (Phase 7.3)
+  #    Deploys are blocked until the unit/integration suite AND the full local
+  #    E2E journey suite pass on the exact ref being shipped. This is the last
+  #    line of defence even though master is already gated by test.yml on push.
+  # ──────────────────────────────────────────────
+  full-suite:
+    name: Full suite (unit + E2E) gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # node:sqlite (SQLite integration adapter) requires Node ≥22.5.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: yarn install --frozen-lockfile
+      - name: Vitest (unit + SQLite integration)
+        run: npm run test
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Build static web export
+        run: npm run web:export
+        env:
+          EXPO_PUBLIC_SUPA_URL: ${{ secrets.EXPO_PUBLIC_SUPA_URL }}
+          EXPO_PUBLIC_SUPA_KEY: ${{ secrets.EXPO_PUBLIC_SUPA_KEY }}
+      - name: Run full E2E suite (chromium-local + mobile-smoke)
+        run: npx playwright test --project=chromium-local --project=mobile-smoke
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-gate-playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
   # 1. Deploy web app to Vercel
   # ──────────────────────────────────────────────
   deploy-vercel:
     name: Deploy to Vercel
+    needs: [full-suite]
     runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -57,6 +93,7 @@ jobs:
   # ──────────────────────────────────────────────
   deploy-eas-update:
     name: EAS Update (OTA)
+    needs: [full-suite]
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.eas_build == true) }}
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +120,7 @@ jobs:
   # ──────────────────────────────────────────────
   deploy-eas-build:
     name: EAS Build (Native)
+    needs: [full-suite]
     if: github.event_name == 'workflow_dispatch' && inputs.eas_build == true
     runs-on: ubuntu-latest
     steps:
