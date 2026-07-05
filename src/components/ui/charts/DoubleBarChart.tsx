@@ -50,6 +50,8 @@ export interface DoubleBarChartProps {
   yTickMode?: YTickMode;
   selectedIndex?: number | null;
   onBarPress?: (d: DoubleBarDatum, i: number) => void;
+  /** Long-press a group to drill into its details (tap = select, long-press = drill). */
+  onBarLongPress?: (d: DoubleBarDatum, i: number) => void;
   formatValue?: (n: number) => string;
   loading?: boolean;
   animated?: boolean;
@@ -79,6 +81,7 @@ export function DoubleBarChart({
   selectedIndex,
   formatValue = compactTick,
   onBarPress,
+  onBarLongPress,
   loading = false,
   animated = true,
   skeletonBars,
@@ -178,6 +181,7 @@ export function DoubleBarChart({
               selectedIndex={selectedIndex}
               setInternalSel={setInternalSel}
               select={select}
+              onLongPress={onBarLongPress}
               showValues={showValues}
               fmt={fmt}
               inc={inc}
@@ -300,6 +304,7 @@ function BarGroup({
   selectedIndex,
   setInternalSel,
   select,
+  onLongPress,
   showValues,
   fmt,
   inc,
@@ -317,6 +322,7 @@ function BarGroup({
   selectedIndex?: number | null;
   setInternalSel: React.Dispatch<React.SetStateAction<number | null>>;
   select: (i: number, d: DoubleBarDatum) => void;
+  onLongPress?: (d: DoubleBarDatum, i: number) => void;
   showValues: boolean;
   fmt: (n: number) => string;
   inc: string;
@@ -355,6 +361,7 @@ function BarGroup({
       testID={`${testID}-group-${i}`}
       className="flex-1 active:opacity-80"
       onPress={() => select(i, d)}
+      onLongPress={onLongPress ? () => onLongPress(d, i) : undefined}
       onHoverIn={() => {
         if (selectedIndex === undefined) setInternalSel(i);
       }}

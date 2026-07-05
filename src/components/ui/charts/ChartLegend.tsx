@@ -23,6 +23,8 @@ export interface ChartLegendItem {
 export interface ChartLegendProps {
   items: ChartLegendItem[];
   onItemPress?: (index: number) => void;
+  /** Long-press a row to drill into its details (tap = select, long-press = drill). */
+  onItemLongPress?: (index: number) => void;
   /** Highlight one row (and dim the rest) — e.g. the selected donut slice. */
   selectedIndex?: number | null;
   /** Inline wrapping row of dot+label chips (e.g. the income/expense legend). */
@@ -42,6 +44,7 @@ export interface ChartLegendProps {
 export function ChartLegend({
   items,
   onItemPress,
+  onItemLongPress,
   selectedIndex,
   horizontal = false,
   scrollable = false,
@@ -135,10 +138,11 @@ export function ChartLegend({
         ) : null}
       </View>
     );
-    return onItemPress ? (
+    return onItemPress || onItemLongPress ? (
       <Pressable
         key={`${it.label}-${i}`}
-        onPress={() => onItemPress(i)}
+        onPress={onItemPress ? () => onItemPress(i) : undefined}
+        onLongPress={onItemLongPress ? () => onItemLongPress(i) : undefined}
         testID={`${testID}-item-${i}`}
         className={cn("rounded-md px-1.5 py-1 active:opacity-70", selected && "bg-primary-soft")}
       >

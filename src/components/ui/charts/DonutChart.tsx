@@ -61,6 +61,8 @@ export interface DonutChartProps {
   /** Controlled selected slice; omit for uncontrolled internal selection. */
   selectedIndex?: number | null;
   onSlicePress?: (datum: DonutDatum, index: number) => void;
+  /** Long-press a slice or legend row to drill into its details (tap = select, long-press = drill). */
+  onSliceLongPress?: (datum: DonutDatum, index: number) => void;
   formatValue?: (n: number) => string;
   loading?: boolean;
   animated?: boolean;
@@ -95,6 +97,7 @@ export function DonutChart({
   legendMaxHeight,
   selectedIndex,
   onSlicePress,
+  onSliceLongPress,
   formatValue,
   loading = false,
   animated = true,
@@ -183,6 +186,7 @@ export function DonutChart({
     if (selectedIndex === undefined) setInternalSel(prev => (prev === i ? null : i)); // toggle off if re-pressed
     onSlicePress?.(colored[i], i);
   };
+  const drill = onSliceLongPress ? (i: number) => onSliceLongPress(colored[i], i) : undefined;
 
   const single = colored.length === 1;
   const pad = single ? 0 : 0.018; // small gap between slices (radians)
@@ -273,6 +277,7 @@ export function DonutChart({
                 strokeWidth={thickness}
                 opacity={dimOf(0)}
                 onPress={() => select(0)}
+                onLongPress={drill ? () => drill(0) : undefined}
               />
             ) : (
               <G>
@@ -283,6 +288,7 @@ export function DonutChart({
                     fill={s.color}
                     opacity={dimOf(i)}
                     onPress={() => select(i)}
+                    onLongPress={drill ? () => drill(i) : undefined}
                   />
                 ))}
               </G>
@@ -320,6 +326,7 @@ export function DonutChart({
           items={segs.map(s => ({ label: s.label, color: s.color, value: fmt(s.value), percent: s.pct }))}
           selectedIndex={selected}
           onItemPress={i => select(i)}
+          onItemLongPress={drill ? i => drill(i) : undefined}
         />
       ) : null}
     </View>

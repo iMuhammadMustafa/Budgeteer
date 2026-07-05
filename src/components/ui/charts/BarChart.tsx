@@ -52,6 +52,8 @@ export interface BarChartProps {
   yTickMode?: YTickMode;
   selectedIndex?: number | null;
   onBarPress?: (d: BarDatum, i: number) => void;
+  /** Long-press a bar to drill into its details (dashboard uses tap = select, long-press = drill). */
+  onBarLongPress?: (d: BarDatum, i: number) => void;
   formatValue?: (n: number) => string;
   loading?: boolean;
   animated?: boolean;
@@ -77,6 +79,7 @@ export function BarChart({
   yTickMode = "nice",
   selectedIndex,
   onBarPress,
+  onBarLongPress,
   formatValue,
   loading = false,
   animated = true,
@@ -160,6 +163,7 @@ export function BarChart({
                 selectedIndex={selectedIndex}
                 setInternalSel={setInternalSel}
                 select={select}
+                onLongPress={onBarLongPress}
                 showValues={showValues}
                 fmt={fmt}
                 color={color}
@@ -267,6 +271,7 @@ function BarGroup({
   selectedIndex,
   setInternalSel,
   select,
+  onLongPress,
   showValues,
   fmt,
   color,
@@ -282,6 +287,7 @@ function BarGroup({
   selectedIndex?: number | null;
   setInternalSel: React.Dispatch<React.SetStateAction<number | null>>;
   select: (i: number, d: BarDatum) => void;
+  onLongPress?: (d: BarDatum, i: number) => void;
   showValues: boolean;
   fmt: (n: number) => string;
   color?: string;
@@ -311,6 +317,7 @@ function BarGroup({
       testID={`${testID}-bar-${i}`}
       className="flex-1 active:opacity-80"
       onPress={() => select(i, d)}
+      onLongPress={onLongPress ? () => onLongPress(d, i) : undefined}
       onHoverIn={() => {
         if (selectedIndex === undefined) setInternalSel(i);
       }}

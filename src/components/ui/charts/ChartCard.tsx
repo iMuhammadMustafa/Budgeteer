@@ -8,8 +8,9 @@
  *   </ChartCard>
  */
 import { memo, type ReactNode } from "react";
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
 
+import MyIcon from "@/src/components/elements/MyIcon";
 import Pulse from "@/src/components/elements/Pulse";
 import { useTheme } from "@/src/providers/ThemeProvider";
 
@@ -44,6 +45,9 @@ export interface ChartCardProps {
    * skeleton. It shares the body's fixed footprint, so it swaps in without shifting the card —
    * unlike a header spinner, which grew the header row and jolted the chart below. */
   loading?: boolean;
+  /** When set, show a subtle "Details ›" link in the header that drills into this chart's
+   * details page for the whole period. Omitted → no link (non-drillable cards stay clean). */
+  onDetails?: () => void;
   className?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -55,14 +59,31 @@ function ChartCardInner({
   period,
   bodyHeight = CHART_BODY_HEIGHT,
   loading = false,
+  onDetails,
   className = "",
   style,
   testID = "chart-card",
 }: ChartCardProps) {
+  const { colors } = useTheme();
   const auto = bodyHeight === "auto";
   return (
     <Card className={cn("my-1.5 gap-2 p-5 pb-1", className)} style={style} testID={testID}>
-      <Text variant="overline">{title}</Text>
+      <View className="flex-row items-center justify-between">
+        <Text variant="overline">{title}</Text>
+        {onDetails ? (
+          <Pressable
+            onPress={onDetails}
+            className="flex-row items-center gap-0.5 active:opacity-60"
+            accessibilityLabel={`View ${title} details`}
+            testID={`${testID}-details`}
+          >
+            <Text variant="overline" className="text-primary">
+              Details
+            </Text>
+            <MyIcon name="ChevronRight" size={13} color={colors.primary} />
+          </Pressable>
+        ) : null}
+      </View>
       {/* A fixed-height body gives fill-height charts (BarChart's `fillHeight`, etc.) a stable
           box to grow into and keeps every card the same height; `"auto"` falls back to the old
           flex-1 grow-to-fill behaviour for cards that manage their own height (e.g. Calendar). */}
