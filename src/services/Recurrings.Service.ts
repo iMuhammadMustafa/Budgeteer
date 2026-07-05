@@ -1,5 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { TableNames, ViewNames } from "@/src/types/database//TableNames";
+import { TableNames } from "@/src/types/database//TableNames";
 import { Inserts, Recurring } from "@/src/types/database//Tables.Types";
 import { Session } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { ITransactionRepository } from "../repositories/interfaces/ITransactionR
 import GenerateUuid from "../utils/uuid.Helper";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface IRecurringService extends IService<Recurring, TableNames.Recurrings> {
   useExecuteRecurring: () => ReturnType<
@@ -40,10 +41,10 @@ export function useRecurringService(): IRecurringService {
         return await executeRecurringHelper(recurring, overrides, session, recurringRepo, transactionRepo, accountRepo);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.recurrings.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
       onError: error => {
         console.error("Error executing recurring:", error);
@@ -77,7 +78,7 @@ export function useRecurringService(): IRecurringService {
         return updated;
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Recurrings] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.recurrings.all });
       },
       onError: error => {
         console.error("Error skipping recurring:", error);

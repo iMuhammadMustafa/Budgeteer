@@ -1,7 +1,7 @@
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { TableNames } from "@/src/types/database/TableNames";
 import {
   Inserts,
   SearchDistinctTransactions,
@@ -17,6 +17,7 @@ import { useStorageMode } from "../providers/StorageModeProvider";
 import createServiceHooks from "./BaseService";
 import { createTransactionHelper, updateTransactionHelper } from "./helpers/transactions.helpers";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface BatchUpdateParams {
   transactions: TransactionsView[];
@@ -56,7 +57,7 @@ export function useTransactionService(): ITransactionService {
 
   const useFindAllView = (searchFilters?: TransactionFilters) => {
     return useQuery<TransactionsView[]>({
-      queryKey: [ViewNames.TransactionsView, searchFilters, tenantId],
+      queryKey: queryKeys.transactions.view(searchFilters, tenantId),
       queryFn: async () => {
         return transactionRepo.findAllFromView(tenantId, searchFilters ?? {});
       },
@@ -70,7 +71,7 @@ export function useTransactionService(): ITransactionService {
 
   const useGetByTransferId = (id?: string) => {
     return useQuery<TransactionsView>({
-      queryKey: [TableNames.Transactions, "transfer", id, tenantId],
+      queryKey: queryKeys.transactions.transfer(id, tenantId),
       queryFn: async () => {
         if (!id) throw new Error("ID is required");
         return transactionRepo.findByTransferId(id, tenantId);
@@ -85,9 +86,9 @@ export function useTransactionService(): ITransactionService {
         return await transactionRepo.createMultiple!(transactions, tenantId);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
     });
   };
@@ -98,9 +99,9 @@ export function useTransactionService(): ITransactionService {
         return await transactionRepo.updateTransferTransaction(transaction);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
     });
   };
@@ -109,7 +110,7 @@ export function useTransactionService(): ITransactionService {
     const normalizedFilters = Object.keys(searchFilters).length !== 0 ? searchFilters : {};
     const pageSize = 10;
     return useInfiniteQuery<TransactionsView[]>({
-      queryKey: [ViewNames.TransactionsView, normalizedFilters, tenantId, "infinite"],
+      queryKey: queryKeys.transactions.infinite(normalizedFilters, tenantId),
       initialPageParam: 0,
       queryFn: async ({ pageParam = 0 }) => {
         const offset = (pageParam as number) * pageSize;
@@ -133,7 +134,7 @@ export function useTransactionService(): ITransactionService {
   const useFindDeleted = (searchFilters: TransactionFilters) => {
     const pageSize = searchFilters.limit ?? 10;
     return useInfiniteQuery<Transaction[]>({
-      queryKey: [TableNames.Transactions, "deleted", tenantId, "infinite", pageSize],
+      queryKey: queryKeys.transactions.deletedInfinite(tenantId, pageSize),
       initialPageParam: 0,
       queryFn: async ({ pageParam = 0 }) => {
         const offset = (pageParam as number) * pageSize;
@@ -172,9 +173,9 @@ export function useTransactionService(): ITransactionService {
         )) as Transaction;
       },
       onSuccess: async (_, data) => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));
@@ -201,10 +202,10 @@ export function useTransactionService(): ITransactionService {
         }
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactionItems.all });
       },
     });
   };
@@ -226,9 +227,9 @@ export function useTransactionService(): ITransactionService {
         }
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
     });
   };
@@ -301,9 +302,9 @@ export function useTransactionService(): ITransactionService {
         }
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
     });
   };
@@ -375,10 +376,10 @@ export function useTransactionService(): ITransactionService {
         return created;
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactionItems.all });
       },
     });
   };
@@ -388,7 +389,7 @@ export function useTransactionService(): ITransactionService {
    */
   const useFindSplitChildren = (splitFromId?: string) => {
     return useQuery<Transaction[]>({
-      queryKey: [TableNames.Transactions, "split-children", splitFromId, tenantId],
+      queryKey: queryKeys.transactions.splitChildren(splitFromId, tenantId),
       queryFn: async () => {
         if (!splitFromId) return [];
         return transactionRepo.findBySplitFromId(splitFromId, tenantId);

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../providers/AuthProvider";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface IConfigurationService extends IService<Configuration, TableNames.Configurations> {
   useGetConfiguration: (table: string, type: string, key: string) => ReturnType<typeof useQuery<Configuration>>;
@@ -22,7 +23,7 @@ export function useConfigurationService(): IConfigurationService {
 
   const useGetConfiguration = (table: string, type: string, key: string) => {
     return useQuery<Configuration>({
-      queryKey: [TableNames.Configurations, table, type, key, tenantId],
+      queryKey: queryKeys.configurations.byLookup(table, type, key, tenantId),
       queryFn: async () => {
         if (!tenantId) throw new Error("Tenant ID not found in session");
         return configurationRepo.getConfiguration(table, type, key, tenantId);

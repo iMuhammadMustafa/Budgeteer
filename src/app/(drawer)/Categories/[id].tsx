@@ -13,7 +13,7 @@ import { useTransactionCategoryService } from "@/src/services/TransactionCategor
 import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 
 export default function TransactionCategoryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,8 +33,8 @@ export default function TransactionCategoryDetail() {
   const [editing, setEditing] = useState(false);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] });
-    queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.transactionCategories.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
   };
 
   const group = useMemo(() => groups?.find(g => g.id === category?.groupid), [groups, category?.groupid]);

@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import type { Account } from "@/src/types/database/Tables.Types";
 import { getCurrencySymbol } from "@/src/utils/currency";
 import {
@@ -55,8 +55,8 @@ export default function AccountDetail() {
   const [recordAdjustment, setRecordAdjustment] = useState(true);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-    queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
   };
 
   const category = useMemo(

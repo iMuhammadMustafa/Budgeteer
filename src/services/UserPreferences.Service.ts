@@ -7,11 +7,9 @@ import supabase from "@/src/providers/Supabase";
 import { StorageMode } from "@/src/types/StorageMode";
 import { DEFAULT_CURRENCY, formatMoney } from "@/src/utils/currency";
 import { storage } from "@/src/utils/storageUtils";
+import { queryKeys } from "@/src/services/queryKeys";
 
 const LOCAL_KEY = "app:primaryCurrency";
-
-const queryKey = (storageMode: StorageMode | null, userId: string | undefined) =>
-  ["primaryCurrency", storageMode ?? "none", userId ?? "anon"] as const;
 
 async function readLocal(): Promise<string | null> {
   try {
@@ -36,7 +34,7 @@ export function usePrimaryCurrency() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKey(storageMode, userId),
+    queryKey: queryKeys.primaryCurrency(storageMode, userId),
     queryFn: async () => {
       const cached = await readLocal();
 
@@ -81,7 +79,7 @@ export function usePrimaryCurrency() {
       return code;
     },
     onSuccess: code => {
-      queryClient.setQueryData(queryKey(storageMode, userId), code);
+      queryClient.setQueryData(queryKeys.primaryCurrency(storageMode, userId), code);
     },
   });
 

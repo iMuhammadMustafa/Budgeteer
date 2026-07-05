@@ -24,6 +24,7 @@ import { useAccountService } from "@/src/services/Accounts.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { AccountFormData, ValidationSchema } from "@/src/types/components/forms.types";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { Account, Updates } from "@/src/types/database/Tables.Types";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, getCurrencySymbol } from "@/src/utils/currency";
 import { commonValidationRules, createAccountNameValidation } from "@/src/utils/form-validation";
@@ -155,7 +156,7 @@ export default function AccountForm({ account, onSuccess, onDelete }: AccountFor
         { form: updatedAccount, original: account as Account, props: { addAdjustmentTransaction: false } },
         {
           onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, account.id, "RunningBalance"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.accounts.runningBalance(account.id) });
           },
         },
       );

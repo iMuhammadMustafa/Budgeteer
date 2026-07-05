@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BrandSplash, useBudgeteerFonts } from "@/src/components/ui";
 import AppInitializer from "@/src/providers/AppInitalizer";
 import AuthProvider from "@/src/providers/AuthProvider";
+import CloudSyncProvider from "@/src/providers/CloudSyncProvider";
 import OverlayProvider from "@/src/providers/OverlayProvider";
 import QueryProvider from "@/src/providers/QueryProvider";
 import StorageModeProvider from "@/src/providers/StorageModeProvider";
@@ -77,14 +78,16 @@ export default function RootLayout() {
               <AuthProvider>
                 <AppInitializer>
                   <QueryProvider>
-                    <OverlayProvider>
-                      <Stack>
-                        <Stack.Screen name="index" options={{ headerShown: false }} />
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(ui)" options={{ headerShown: false }} />
-                      </Stack>
-                    </OverlayProvider>
+                    <CloudSyncProvider>
+                      <OverlayProvider>
+                        <Stack>
+                          <Stack.Screen name="index" options={{ headerShown: false }} />
+                          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+                          <Stack.Screen name="(ui)" options={{ headerShown: false }} />
+                        </Stack>
+                      </OverlayProvider>
+                    </CloudSyncProvider>
                   </QueryProvider>
                 </AppInitializer>
               </AuthProvider>

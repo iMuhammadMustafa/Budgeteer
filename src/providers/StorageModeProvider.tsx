@@ -8,6 +8,7 @@ import { buildLocalSession } from "@/src/utils/localSession";
 import { storage } from "@/src/utils/storageUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { PERSIST_CACHE_KEY, queryClient } from "./QueryProvider";
 
 type StorageModeContextType = {
   isLoading: boolean;
@@ -100,6 +101,10 @@ export default function StorageModeProvider({ children }: { children: React.Reac
         }
 
         await AsyncStorage.removeItem(STORAGE_KEYS.STORAGE_MODE);
+        // Drop cached query data (in-memory + persisted) so one backend's rows
+        // can't bleed into the next mode or be resurrected from disk on restart.
+        queryClient.clear();
+        await AsyncStorage.removeItem(PERSIST_CACHE_KEY);
         return true;
       }
 
@@ -125,24 +130,25 @@ export default function StorageModeProvider({ children }: { children: React.Reac
       }
 
       setStorageMode(mode);
+
+      // New backend is initialized and mode state is set — purge the previous
+      // backend's cached data (in-memory + persisted) so it can't render or be
+      // resurrected from disk on restart.
+      queryClient.clear();
+      await AsyncStorage.removeItem(PERSIST_CACHE_KEY);
+
       setIsLoading(false);
       return true;
     },
     [storageMode],
   );
 
-  return (
-    <storageModeContext.Provider
-      value={{
-        isLoading,
-        storageMode,
-        setStorageMode: handleSetStorageMode,
-        dbContext,
-      }}
-    >
-      {children}
-    </storageModeContext.Provider>
+  const value = useMemo(
+    () => ({ isLoading, storageMode, setStorageMode: handleSetStorageMode, dbContext }),
+    [isLoading, storageMode, handleSetStorageMode, dbContext],
   );
+
+  return <storageModeContext.Provider value={value}>{children}</storageModeContext.Provider>;
 }
 export const useStorageMode = () => {
   const context = useContext(storageModeContext);

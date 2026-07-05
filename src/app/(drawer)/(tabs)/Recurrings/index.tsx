@@ -3,6 +3,7 @@ import { RecurringDetails } from "@/src/components/recurrings/RecurringStatusBad
 import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
 import { useRecurringService } from "@/src/services/Recurrings.Service";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { Recurring } from "@/src/types/database/Tables.Types";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -34,7 +35,7 @@ export default function RecurringsScreen() {
         )}
         title="Recurring Transactions"
         detailHref={"/Recurrings/"}
-        queryKey={[TableNames.Recurrings]}
+        queryKey={queryKeys.recurrings.all}
         service={recurringsService}
         initialState={initialRecurringState}
         UpsertModal={item => <RecurringForm recurring={item} />}
