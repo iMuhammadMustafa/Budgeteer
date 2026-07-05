@@ -17,9 +17,16 @@
  *   columns stay even (no dead whitespace), unlike a CSS grid.
  * - Labeled add button (icon + text) — single Plus affordance.
  * - Bulk delete in the toolbar (with `useConfirm`) instead of a floating FAB.
+ *
+ * Performance (Phase 4): the body is a flattened row model computed in ONE
+ * `useMemo` (group blocks or, ungrouped, item rows). The common single-column
+ * layout renders through a virtualized `FlatList` so off-screen rows/groups are
+ * not mounted; the wide two-column layout keeps the balanced-height distribution
+ * (memoized) in a `ScrollView` — that path only triggers on ≥1024px desktop
+ * where virtualization is not the bottleneck.
  */
-import { Fragment, type ReactNode } from "react";
-import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
+import { Fragment, useCallback, useMemo, type ReactNode } from "react";
+import { FlatList, Platform, ScrollView, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "../Button";
@@ -33,6 +40,13 @@ import { cn } from "../utils/cn";
 
 /** ≥ this width, two-column layouts are allowed (else single column). */
 const TWO_COL_MIN_WIDTH = 1024;
+
+/* ------------------------------------------------------------------ *
+ * Row model — the flattened list the body renders.                    *
+ * ------------------------------------------------------------------ */
+type EntityRow<TModel extends { id: string }> =
+  | { type: "group"; key: string; groupName: string; items: TModel[] }
+  | { type: "row"; key: string; item: TModel };
 
 /* ------------------------------------------------------------------ *
  * Props                                                               *
@@ -126,16 +140,16 @@ function GroupSection<TModel extends { id: string }>({
   );
 }
 
-/** Distribute weighted blocks into `cols` columns, always adding the next block
+/** Distribute weighted values into `cols` columns, always adding the next value
  *  to the currently-shortest column — keeps column heights balanced. */
-function balanceColumns(blocks: { weight: number; node: ReactNode }[], cols: number): ReactNode[][] {
-  const columns = Array.from({ length: cols }, () => ({ nodes: [] as ReactNode[], total: 0 }));
+function balanceColumns<T>(blocks: { weight: number; value: T }[], cols: number): T[][] {
+  const columns = Array.from({ length: cols }, () => ({ values: [] as T[], total: 0 }));
   for (const block of blocks) {
     const target = columns.reduce((min, c) => (c.total < min.total ? c : min), columns[0]);
-    target.nodes.push(block.node);
+    target.values.push(block.value);
     target.total += block.weight;
   }
-  return columns.map(c => c.nodes);
+  return columns.map(c => c.values);
 }
 
 /* ------------------------------------------------------------------ *
@@ -168,10 +182,50 @@ export function EntityListScreen<TModel extends { id: string }>({
   const { width } = useWindowDimensions();
   const confirm = useConfirm();
 
-  const groups = Object.entries(groupedData);
+  const groups = useMemo(() => Object.entries(groupedData), [groupedData]);
   const isGrouped = groups.length > 1 || (groups.length === 1 && groups[0][0] !== "");
   const wantTwoCol = columns === 2 || (columns === "auto" && isGrouped);
   const numCols = wantTwoCol && width >= TWO_COL_MIN_WIDTH ? 2 : 1;
+
+  // Flattened row model: one entry per group (grouped) or per row (ungrouped).
+  // Depends only on the (memoized) grouped data, so it stays referentially
+  // stable across selection toggles and re-renders.
+  const listData = useMemo<EntityRow<TModel>[]>(() => {
+    if (isGrouped) {
+      return groups.map(([groupName, items]) => ({
+        type: "group" as const,
+        key: groupName || "__ungrouped",
+        groupName,
+        items,
+      }));
+    }
+    return (groups[0]?.[1] ?? []).map(item => ({ type: "row" as const, key: item.id, item }));
+  }, [groups, isGrouped]);
+
+  const renderRow = useCallback(
+    (row: EntityRow<TModel>): ReactNode =>
+      row.type === "group" ? (
+        <GroupSection groupName={row.groupName} items={row.items} renderItem={renderItem} groupStyle={groupStyle} />
+      ) : (
+        <Fragment>{renderItem(row.item)}</Fragment>
+      ),
+    [renderItem, groupStyle],
+  );
+
+  const flatRenderItem = useCallback(
+    ({ item }: { item: EntityRow<TModel> }) => <>{renderRow(item)}</>,
+    [renderRow],
+  );
+
+  // Wide two-column layout: distribute rows into height-balanced columns.
+  const balancedColumns = useMemo(
+    () =>
+      balanceColumns(
+        listData.map(row => ({ weight: row.type === "group" ? row.items.length + 1 : 1, value: row })),
+        2,
+      ),
+    [listData],
+  );
 
   const handleBulkDeleteConfirm = async () => {
     const ok = await confirm({
@@ -182,25 +236,6 @@ export function EntityListScreen<TModel extends { id: string }>({
     });
     if (ok) onBulkDelete();
   };
-
-  // Build the top-level blocks: one per group (grouped) or one per row (ungrouped).
-  const blocks: { weight: number; node: ReactNode }[] = isGrouped
-    ? groups.map(([groupName, itemsInGroup]) => ({
-        weight: itemsInGroup.length + 1,
-        node: (
-          <GroupSection
-            key={groupName || "__ungrouped"}
-            groupName={groupName}
-            items={itemsInGroup}
-            renderItem={renderItem}
-            groupStyle={groupStyle}
-          />
-        ),
-      }))
-    : (groups[0]?.[1] ?? []).map(item => ({
-        weight: 1,
-        node: <Fragment key={item.id}>{renderItem(item)}</Fragment>,
-      }));
 
   return (
     <SafeAreaView className="flex-1" edges={["top", "left", "right"]} testID={testID}>
@@ -252,20 +287,34 @@ export function EntityListScreen<TModel extends { id: string }>({
           <View className="px-4">
             <SkeletonGroup count={8} />
           </View>
-        ) : (
+        ) : numCols === 2 ? (
+          // Wide desktop: height-balanced two columns (non-virtualized — the
+          // memoized distribution keeps the columns even without dead space).
           <ScrollView className="custom-scrollbar mt-1 flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
-            {numCols === 2 ? (
-              <View className="flex-row gap-4 px-4 pb-4 lg:px-6">
-                {balanceColumns(blocks, 2).map((colNodes, i) => (
-                  <View key={i} className="flex-1 gap-3">
-                    {colNodes}
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View className="gap-3 px-4 pb-4">{blocks.map(b => b.node)}</View>
-            )}
+            <View className="flex-row gap-4 px-4 pb-4 lg:px-6">
+              {balancedColumns.map((colRows, i) => (
+                <View key={i} className="flex-1 gap-3">
+                  {colRows.map(row => (
+                    <Fragment key={row.key}>{renderRow(row)}</Fragment>
+                  ))}
+                </View>
+              ))}
+            </View>
           </ScrollView>
+        ) : (
+          // Single column: virtualized — off-screen rows/groups stay unmounted.
+          <FlatList
+            className="custom-scrollbar mt-1 flex-1"
+            data={listData}
+            keyExtractor={row => row.key}
+            renderItem={flatRenderItem}
+            ItemSeparatorComponent={ROW_SEPARATOR}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }}
+            windowSize={11}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={Platform.OS !== "web"}
+          />
         )}
 
         {/* ── Footer ── */}
@@ -288,3 +337,6 @@ export function EntityListScreen<TModel extends { id: string }>({
     </SafeAreaView>
   );
 }
+
+/** 12px gap between single-column rows (matches the old `gap-3`). */
+const ROW_SEPARATOR = () => <View style={{ height: 12 }} />;

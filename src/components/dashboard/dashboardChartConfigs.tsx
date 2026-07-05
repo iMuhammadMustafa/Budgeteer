@@ -76,6 +76,9 @@ export function buildDashboardChartConfigs(
   props: DashboardChartsProps,
   colors: ThemeColors,
   fmtMoney: (n: number) => string,
+  /** Run the charts' entry (grow/draw-on) animations. Callers pass `false` after
+   *  first mount so a period change re-renders data without replaying animations. */
+  animated: boolean = true,
 ): DashboardChartConfig[] {
   const {
     weeklyTransactionTypesData = [],
@@ -102,6 +105,7 @@ export function buildDashboardChartConfigs(
 
   const donut = (data: PieData[], type: "category" | "group") => (
     <DonutChart
+      animated={animated}
       data={toDonutData(data)}
       formatValue={fmtMoney}
       externalLabels
@@ -127,6 +131,7 @@ export function buildDashboardChartConfigs(
       period: period(periodControls.week),
       node: (
         <BarChart
+          animated={animated}
           data={toBarData(weeklyTransactionTypesData)}
           showYAxis={false}
           fillHeight
@@ -184,6 +189,7 @@ export function buildDashboardChartConfigs(
       period: period(periodControls.netWorthYear),
       node: (
         <LineChart
+          animated={animated}
           data={toLineData(netWorthGrowth)}
           color={colors.income}
           formatValue={fmtMoney}
@@ -199,6 +205,7 @@ export function buildDashboardChartConfigs(
       period: period(periodControls.earningsYear),
       node: (
         <DoubleBarChart
+          animated={animated}
           data={earnings.data}
           bar1Label={earnings.bar1Label}
           bar2Label={earnings.bar2Label}
