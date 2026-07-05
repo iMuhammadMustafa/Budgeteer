@@ -220,7 +220,7 @@ export function DonutChart({
             transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}
         >
-          <Svg width={canvasW} height={size}>
+          <Svg width={canvasW} height={size} className="overflow-visible">
             {single ? (
               <Circle
                 cx={cx}
