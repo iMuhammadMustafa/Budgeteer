@@ -27,7 +27,7 @@ jobs:
     name: gitleaks (secret scan)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history so gitleaks can scan past commits
       - name: Run gitleaks
@@ -40,7 +40,7 @@ jobs:
     name: osv-scanner (deps)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Non-blocking sweep of all known advisories for the lockfile.
       - name: OSV scan (report)
         uses: google/osv-scanner-action/osv-scanner-action@v2.2.3
@@ -60,7 +60,7 @@ jobs:
     container:
       image: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run Semgrep
         run: semgrep ci
         env:
