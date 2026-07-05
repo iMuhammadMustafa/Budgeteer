@@ -36,4 +36,19 @@ test.describe("summary / stats", () => {
     await page.getByTestId("summary-period-minus").click();
     await expect(count).toHaveText(before);
   });
+
+  test("shows the frozen Category axis and a grand Total row", async ({ page }) => {
+    // The grid's frozen left column is a "Category" overline header with a
+    // "Total" row pinned at the bottom (SummaryGrid) — the legacy
+    // current-column + totals-row assertions.
+    await expect(page.getByText("Category", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Total", { exact: true }).first()).toBeVisible();
+  });
+
+  test("lists a seeded expense category in the grid", async ({ page }) => {
+    // Demo seeds recurring Rent/Groceries/Fuel expenses, so those category rows
+    // populate the grid (legacy "expense category appears in summary table").
+    const categories = page.getByText(/^(Rent|Groceries|Fuel)$/);
+    await expect(categories.first()).toBeVisible();
+  });
 });
