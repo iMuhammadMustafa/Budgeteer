@@ -33,3 +33,17 @@ export type GroupedData = {
     transactions: TransactionsView[];
   };
 };
+
+/**
+ * Flattened row model for the single virtualized Transactions list.
+ * `header` rows carry the day label + day total; `transaction` rows carry the
+ * transaction and (for transfers) its pre-resolved paired counterpart.
+ */
+export type TransactionListRow =
+  | { kind: "header"; key: string; day: string; amount: number } // key `d:${day}`
+  | {
+      kind: "transaction";
+      key: string; // key `t:${id}`
+      transaction: TransactionsView;
+      transferTransaction?: TransactionsView;
+    };
