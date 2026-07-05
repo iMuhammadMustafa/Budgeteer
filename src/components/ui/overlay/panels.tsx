@@ -10,9 +10,8 @@
  * ScrollView in RN), so long content scrolls instead of clipping. Pass
  * `scrollable={false}` when the child manages its own scroll (e.g. Select).
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
-  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,6 +20,7 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -57,13 +57,14 @@ export function resolveAnchoredPlacement(anchor: Anchor, winW: number, winH: num
   return { left, width, maxHeight, placeBelow, pos };
 }
 
-/** Opacity fade-in wrapper (RN Animated — no reanimated dependency). */
+/** Opacity fade-in wrapper (reanimated — UI thread, proper driver on web). */
 export function Fade({ children, style, duration = 140 }: { children: ReactNode; style?: ViewStyle; duration?: number }) {
-  const [opacity] = useState(() => new Animated.Value(0));
+  const opacity = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(opacity, { toValue: 1, duration, useNativeDriver: true }).start();
+    opacity.value = withTiming(1, { duration });
   }, [opacity, duration]);
-  return <Animated.View style={[style, { opacity }]}>{children}</Animated.View>;
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[style, fadeStyle]}>{children}</Animated.View>;
 }
 
 /** Full-layer scrim; tap dismisses when `dismissable`. `transparent` for popovers. */

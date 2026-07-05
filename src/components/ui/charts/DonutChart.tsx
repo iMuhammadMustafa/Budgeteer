@@ -11,7 +11,8 @@
  *     selectedIndex={sel} onSlicePress={(d, i) => setSel(i)} loading={isLoading} />
  */
 import { useEffect, useState } from "react";
-import { Animated, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
@@ -97,11 +98,18 @@ export function DonutChart({
   const { colors } = useTheme();
   const { width: winW } = useWindowDimensions();
   const [internalSel, setInternalSel] = useState<number | null>(null);
-  const [grow] = useState(() => new Animated.Value(animated ? 0 : 1));
+  // Reanimated drives the entry grow (opacity + scale) on the UI thread — proper
+  // driver on web too (no core-Animated JS-thread fallback / warning).
+  const grow = useSharedValue(animated ? 0 : 1);
 
   useEffect(() => {
-    if (animated) Animated.timing(grow, { toValue: 1, duration: 420, useNativeDriver: true }).start();
+    grow.value = animated ? withTiming(1, { duration: 420 }) : 1;
   }, [animated, grow]);
+
+  const growStyle = useAnimatedStyle(() => ({
+    opacity: grow.value,
+    transform: [{ scale: 0.92 + grow.value * 0.08 }],
+  }));
 
   const beside = legendPosition === "right" || (legendPosition === "auto" && winW >= 600);
   // External labels need horizontal room on both sides; the ring stays `size`, the canvas widens.
@@ -214,12 +222,7 @@ export function DonutChart({
   return (
     <View testID={testID} className={frameCls}>
       <View style={{ width: canvasW, height: size }} className={donutSlotCls}>
-        <Animated.View
-          style={{
-            opacity: grow,
-            transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
-          }}
-        >
+        <Animated.View style={growStyle}>
           <Svg width={canvasW} height={size} className="overflow-visible">
             {single ? (
               <Circle
