@@ -3,15 +3,15 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- PROBLEM (the live vulnerability):
---   auth.tenantid() read `tenantid` from the JWT `user_metadata` claim, which is
+--   public.tenantid() read `tenantid` from the JWT `user_metadata` claim, which is
 --   CLIENT-WRITABLE (supabase.auth.updateUser({ data: { tenantid } }) and the
 --   signup `options.data`). An authenticated user could rewrite their own
 --   user_metadata.tenantid to any other tenant's id and — because every RLS
---   policy filters on `tenantid = auth.tenantid()` — read and write that tenant's
+--   policy filters on `tenantid = public.tenantid()` — read and write that tenant's
 --   rows. Confirmed by supabase.rls.cloud.test.ts → VULN(rls-tenant-vuln).
 --
 -- FIX:
---   1. auth.tenantid() now reads from `app_metadata`, which is SERVER-MANAGED:
+--   1. public.tenantid() now reads from `app_metadata`, which is SERVER-MANAGED:
 --      PostgREST/GoTrue never let a client write it, so the claim can't be forged.
 --   2. The active tenant is assigned SERVER-SIDE at signup (client-supplied
 --      tenantid in user_metadata is IGNORED for the security claim).
@@ -33,7 +33,7 @@
 begin;
 
 -- 1. ── Tenant resolver now reads the server-managed app_metadata claim ────────
-create or replace function auth.tenantid()
+create or replace function public.tenantid()
 returns uuid as $$
 declare
     tenantid_text text;
