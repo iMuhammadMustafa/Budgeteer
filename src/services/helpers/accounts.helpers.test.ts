@@ -5,14 +5,20 @@ import { createAccountRepoHelper, updateAccountRepoHelper } from "./accounts.hel
 
 const session = fakeSession({ tenantid: "t1", userId: "u1" });
 
+// The account-operations category the config points at. Must exist (and be live)
+// in the category repo, otherwise the resolver self-heals to its fallback id.
+const opsCat = () => createInMemoryRepo([{ id: "ops-cat", tenantid: "t1" }]);
+const FALLBACK_OPS_CAT_ID = "5b3daefa-e88c-43f9-a8e4-0c4aab18fcf9";
+
 describe("createAccountRepoHelper", () => {
     it("creates the account then an opening 'Initial' transaction for its balance", async () => {
         const accRepo = createFakeAccountRepo();
         const txRepo = createInMemoryRepo();
         const cfgRepo = createFakeConfigRepo({ id: "cfg", value: "ops-cat" });
+        const catRepo = opsCat();
         const form: any = { name: "Checking", balance: 250 };
 
-        const created = await createAccountRepoHelper(form, session, accRepo as any, txRepo as any, cfgRepo as any);
+        const created = await createAccountRepoHelper(form, session, accRepo as any, txRepo as any, cfgRepo as any, catRepo as any);
 
         // account created, stamped with tenant + createdby
         expect(accRepo.callsTo("create")).toHaveLength(1);
@@ -27,18 +33,27 @@ describe("createAccountRepoHelper", () => {
     it("defaults the opening transaction amount to 0 when no balance is given", async () => {
         const accRepo = createFakeAccountRepo();
         const txRepo = createInMemoryRepo();
-        const cfgRepo = createFakeConfigRepo();
-        await createAccountRepoHelper({ name: "Empty" } as any, session, accRepo as any, txRepo as any, cfgRepo as any);
+        const cfgRepo = createFakeConfigRepo({ id: "cfg", value: "ops-cat" });
+        const catRepo = opsCat();
+        await createAccountRepoHelper({ name: "Empty" } as any, session, accRepo as any, txRepo as any, cfgRepo as any, catRepo as any);
         expect(txRepo.callsTo("create")[0].args[0].amount).toBe(0);
     });
 
-    it("throws when the account-operations category is missing", async () => {
+    it("self-heals (recreates the category + mapping) when the account-operations category is missing", async () => {
         const accRepo = createFakeAccountRepo();
         const txRepo = createInMemoryRepo();
-        const cfgRepo = createFakeConfigRepo(null); // getConfiguration -> null
-        await expect(
-            createAccountRepoHelper({ name: "X", balance: 1 } as any, session, accRepo as any, txRepo as any, cfgRepo as any),
-        ).rejects.toThrow("Account Operations Category not found");
+        const cfgRepo = createFakeConfigRepo(null); // no configuration mapping
+        const catRepo = createInMemoryRepo(); // no categories at all
+
+        await createAccountRepoHelper({ name: "X", balance: 1 } as any, session, accRepo as any, txRepo as any, cfgRepo as any, catRepo as any);
+
+        // fallback category recreated with its deterministic id
+        expect(catRepo.callsTo("create")).toHaveLength(1);
+        expect(catRepo.callsTo("create")[0].args[0].id).toBe(FALLBACK_OPS_CAT_ID);
+        // configuration mapping recreated to point at it
+        expect(cfgRepo.callsTo("create")).toHaveLength(1);
+        // opening transaction still written, against the healed category
+        expect(txRepo.callsTo("create")[0].args[0]).toMatchObject({ type: "Initial", categoryid: FALLBACK_OPS_CAT_ID });
     });
 });
 
@@ -47,10 +62,11 @@ describe("updateAccountRepoHelper", () => {
         const accRepo = createFakeAccountRepo([{ id: "acc-1", tenantid: "t1", name: "Old", balance: 100 }]);
         const txRepo = createInMemoryRepo();
         const cfgRepo = createFakeConfigRepo();
+        const catRepo = opsCat();
         const original: any = { id: "acc-1", name: "Old", balance: 100 };
         const form: any = { id: "acc-1", name: "New", balance: 100 };
 
-        await updateAccountRepoHelper(form, session, original, accRepo as any, txRepo as any, cfgRepo as any);
+        await updateAccountRepoHelper(form, session, original, accRepo as any, txRepo as any, cfgRepo as any, catRepo as any);
 
         expect(accRepo.callsTo("update")).toHaveLength(1);
         expect(form.updatedby).toBe("u1");
@@ -62,10 +78,11 @@ describe("updateAccountRepoHelper", () => {
         const accRepo = createFakeAccountRepo([{ id: "acc-1", tenantid: "t1", balance: 100 }]);
         const txRepo = createInMemoryRepo();
         const cfgRepo = createFakeConfigRepo({ id: "cfg", value: "ops-cat" });
+        const catRepo = opsCat();
         const original: any = { id: "acc-1", balance: 100 };
         const form: any = { id: "acc-1", balance: 175 };
 
-        await updateAccountRepoHelper(form, session, original, accRepo as any, txRepo as any, cfgRepo as any, true);
+        await updateAccountRepoHelper(form, session, original, accRepo as any, txRepo as any, cfgRepo as any, catRepo as any, true);
 
         const txCreate = txRepo.callsTo("create")[0];
         expect(txCreate.args[0]).toMatchObject({ type: "Adjustment", amount: 75, accountid: "acc-1", categoryid: "ops-cat" });
@@ -75,6 +92,7 @@ describe("updateAccountRepoHelper", () => {
         const accRepo = createFakeAccountRepo([{ id: "acc-1", tenantid: "t1", balance: 100 }]);
         const txRepo = createInMemoryRepo();
         const cfgRepo = createFakeConfigRepo();
+        const catRepo = opsCat();
         await updateAccountRepoHelper(
             { id: "acc-1", balance: 175 } as any,
             session,
@@ -82,6 +100,7 @@ describe("updateAccountRepoHelper", () => {
             accRepo as any,
             txRepo as any,
             cfgRepo as any,
+            catRepo as any,
             false,
         );
         expect(txRepo.callsTo("create")).toHaveLength(0);

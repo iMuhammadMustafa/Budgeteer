@@ -9,8 +9,10 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { Account, Inserts, Updates } from "@/src/types/database/Tables.Types";
 import { IAccountRepository } from "@/src/repositories/interfaces/IAccountRepository";
 import { IConfigurationRepository } from "@/src/repositories/interfaces/IConfigurationRepository";
+import { ITransactionCategoryRepository } from "@/src/repositories/interfaces/ITransactionCategoryRepository";
 import { ITransactionRepository } from "@/src/repositories/interfaces/ITransactionRepository";
 import { ConfigurationTypes, TransactionNames } from "@/src/types/database/Config.Types";
+import { resolveSystemCategoryId } from "./systemCategories";
 
 export const createAccountRepoHelper = async (
   formAccount: Inserts<TableNames.Accounts>,
@@ -18,6 +20,7 @@ export const createAccountRepoHelper = async (
   accountRepo: IAccountRepository,
   transactionRepo: ITransactionRepository,
   configRepo: IConfigurationRepository,
+  categoryRepo: ITransactionCategoryRepository,
 ) => {
   let userId = session.user.id;
   let tenantid = session.user.user_metadata.tenantid;
@@ -29,21 +32,20 @@ export const createAccountRepoHelper = async (
   const newAcc = await accountRepo.create(formAccount, tenantid);
 
   if (newAcc) {
-    let config = await configRepo.getConfiguration(
-      TableNames.TransactionCategories,
+    // Resolves the mapped "Account Operations" category, self-healing the
+    // configuration/category if the user deleted either one.
+    const categoryid = await resolveSystemCategoryId(
       ConfigurationTypes.AccountOpertationsCategory,
-      "id",
       tenantid,
+      userId,
+      { configRepo, categoryRepo },
     );
-    if (!config) {
-      throw new Error("Account Operations Category not found");
-    }
     const transaction = await transactionRepo.create(
       {
         name: TransactionNames.AccountOpened,
         amount: formAccount.balance || 0,
         accountid: newAcc.id,
-        categoryid: config.value,
+        categoryid,
         type: "Initial",
         createdby: userId,
         createdat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
@@ -64,6 +66,7 @@ export const updateAccountRepoHelper = async (
   accountRepo: IAccountRepository,
   transactionRepo: ITransactionRepository,
   configRepo: IConfigurationRepository,
+  categoryRepo: ITransactionCategoryRepository,
   addAdjustmentTransaction = false,
 ) => {
   let userId = session.user.id;
@@ -84,23 +87,19 @@ export const updateAccountRepoHelper = async (
   const updatedAccount = await accountRepo.update(formData.id, formData, tenantid);
 
   if (formData.balance && formData.balance !== originalData.balance && addAdjustmentTransaction) {
-    const config = await configRepo.getConfiguration(
-      TableNames.TransactionCategories,
+    const categoryid = await resolveSystemCategoryId(
       ConfigurationTypes.AccountOpertationsCategory,
-      "id",
       tenantid,
+      userId,
+      { configRepo, categoryRepo },
     );
-
-    if (!config) {
-      throw new Error("Account Operations Category not found");
-    }
 
     await transactionRepo.create(
       {
         name: TransactionNames.BalanceAdjustment,
         amount: formData.balance - originalData.balance,
         accountid: originalData.id,
-        categoryid: config.value,
+        categoryid,
         type: "Adjustment",
         createdby: userId,
         tenantid: tenantid,

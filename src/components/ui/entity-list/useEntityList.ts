@@ -152,6 +152,18 @@ export function useEntityList<TModel, TTable extends TableNames>({
       if (!itemToDelete) return;
       const target = itemToDelete;
 
+      // A delete can be rejected by the service (e.g. a reserved/system category);
+      // surface it without leaving an unhandled rejection.
+      const runDelete = async () => {
+        try {
+          await deleteAsync({ id: target.id, item: target });
+        } catch (err) {
+          console.warn(`[entity-list] delete of "${target.name ?? target.id}" was blocked:`, err);
+        } finally {
+          setItemToDelete(null);
+        }
+      };
+
       if (dependencyCount > 0 && !alsoDeleteDependencies && replacementItemId && dependencyConfig) {
         const updates: Updates<any>[] = dependencies.map((dep: any) => ({
           id: dep.id,
@@ -165,17 +177,14 @@ export function useEntityList<TModel, TTable extends TableNames>({
             if (dependencyConfig.onAfterUpdate) {
               await dependencyConfig.onAfterUpdate(dependencies, target.id, replacementItemId);
             }
-            await deleteAsync({ id: target.id, item: target });
-            setItemToDelete(null);
+            await runDelete();
           },
         });
       } else if (alsoDeleteDependencies && dependencyCount > 0) {
         dependencies.forEach((dep: any) => deleteDependencies({ id: dep.id, item: dep }));
-        await deleteAsync({ id: target.id, item: target });
-        setItemToDelete(null);
+        await runDelete();
       } else {
-        await deleteAsync({ id: target.id, item: target });
-        setItemToDelete(null);
+        await runDelete();
       }
     },
     [

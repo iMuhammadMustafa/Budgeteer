@@ -31,6 +31,7 @@ export function useAccountService(): IAccountService {
   const accountRepo = dbContext.AccountRepository();
   const transactionRepo = dbContext.TransactionRepository();
   const configRepo = dbContext.ConfigurationRepository();
+  const categoryRepo = dbContext.TransactionCategoryRepository();
 
   const useFindAllWithCategory = (isDeleted?: boolean) => {
     return useQuery<Account[]>({
@@ -109,7 +110,7 @@ export function useAccountService(): IAccountService {
   const useCreate = () => {
     return useMutation({
       mutationFn: async (form: Inserts<TableNames.Accounts>) => {
-        return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo);
+        return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo, categoryRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
@@ -139,6 +140,7 @@ export function useAccountService(): IAccountService {
           accountRepo,
           transactionRepo,
           configRepo,
+          categoryRepo,
           addAdjustmentTransaction,
         );
       },
@@ -177,6 +179,7 @@ export function useAccountService(): IAccountService {
             accountRepo,
             transactionRepo,
             configRepo,
+            categoryRepo,
             addAdjustmentTransaction,
           );
         }
@@ -186,6 +189,7 @@ export function useAccountService(): IAccountService {
           accountRepo,
           transactionRepo,
           configRepo,
+          categoryRepo,
         );
       },
       onSuccess: async (_, data) => {
