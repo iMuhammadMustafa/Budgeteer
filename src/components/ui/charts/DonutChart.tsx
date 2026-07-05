@@ -419,7 +419,7 @@ export function DonutChartSkeleton({
   );
 
   return (
-    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
+    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85} style={fillHeight ? { flex: 1 } : undefined}>
       <View testID={testID} className={frameCls}>
         <View style={{ width: size, height: size }} className={donutSlotCls}>
           {ghostRing}

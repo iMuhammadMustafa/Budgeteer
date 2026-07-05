@@ -243,7 +243,7 @@ export function DoubleBarChartSkeleton({
   const effectiveHeight = fillHeight ? measuredHeight || height : height;
 
   return (
-    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
+    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85} style={fillHeight ? { flex: 1 } : undefined}>
       <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
         <View
           className="flex-row items-end gap-0.5"

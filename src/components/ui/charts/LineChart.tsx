@@ -456,7 +456,7 @@ export function LineChartSkeleton({
   const legendSpace = showLegend ? (legendHeight ?? 28) + 12 : 0;
 
   return (
-    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85}>
+    <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85} style={fillHeight ? { flex: 1 } : undefined}>
       <View
         testID={testID}
         className={cn("w-full", fillHeight && "flex-1", className)}
