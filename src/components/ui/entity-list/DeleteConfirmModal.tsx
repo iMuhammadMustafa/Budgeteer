@@ -18,6 +18,10 @@ interface DeleteConfirmModalProps<TModel> {
   replacementItemLabel?: (item: TModel) => string;
   onConfirm: (replacementItemId?: string, alsoDeleteDependencies?: boolean) => void;
   allowDeleteDependencies?: boolean;
+  /** When true the item can't be deleted (reserved by the system); Delete is disabled. */
+  isProtected?: boolean;
+  /** Explanation shown inline when `isProtected`. */
+  protectedMessage?: string;
 }
 
 export default function DeleteConfirmModal<TModel extends { id: string; name?: string }>({
@@ -31,14 +35,17 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
   replacementItemLabel,
   onConfirm,
   allowDeleteDependencies = false,
+  isProtected = false,
+  protectedMessage,
 }: DeleteConfirmModalProps<TModel>) {
   const [selectedReplacementId, setSelectedReplacementId] = useState<string | undefined>();
   const [deleteWithDependencies, setDeleteWithDependencies] = useState(false);
 
   const hasDependencies = dependencyCount > 0;
-  const showReplacementDropdown = hasDependencies && !deleteWithDependencies;
+  const showReplacementDropdown = hasDependencies && !deleteWithDependencies && !isProtected;
 
   const handleConfirm = () => {
+    if (isProtected) return;
     if (showReplacementDropdown && !selectedReplacementId) return;
     onConfirm(selectedReplacementId, deleteWithDependencies);
     setIsOpen(false);
@@ -59,11 +66,23 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
 
   const content = (
     <View className="p-4">
-      <Text variant="body" className="mb-4">
-        Are you sure you want to delete &quot;{itemToDelete?.name || itemName}&quot;?
-      </Text>
+      {isProtected ? (
+        <View className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-3">
+          <Text variant="label" className="mb-1 text-warning">
+            Can’t delete this {itemName}
+          </Text>
+          <Text variant="caption" className="text-ink-mute">
+            {protectedMessage ??
+              `“${itemToDelete?.name || itemName}” is reserved by the system and can’t be deleted.`}
+          </Text>
+        </View>
+      ) : (
+        <Text variant="body" className="mb-4">
+          Are you sure you want to delete &quot;{itemToDelete?.name || itemName}&quot;?
+        </Text>
+      )}
 
-      {hasDependencies && (
+      {!isProtected && hasDependencies && (
         <View className="mb-4">
           <Text variant="label" className="mb-2">
             This {itemName} has {dependencyCount} associated {dependencyType}.
@@ -100,13 +119,15 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
       )}
 
       <View className="flex-row justify-end gap-2 mt-4">
-        <Button variant="outline" onPress={handleClose} label="Cancel" />
-        <Button
-          variant="destructive"
-          onPress={handleConfirm}
-          disabled={showReplacementDropdown && !selectedReplacementId}
-          label="Delete"
-        />
+        <Button variant="outline" onPress={handleClose} label={isProtected ? "Close" : "Cancel"} />
+        {!isProtected && (
+          <Button
+            variant="destructive"
+            onPress={handleConfirm}
+            disabled={showReplacementDropdown && !selectedReplacementId}
+            label="Delete"
+          />
+        )}
       </View>
     </View>
   );
