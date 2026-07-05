@@ -3,6 +3,7 @@ import { MyTab } from "@/src/components/ui";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 
 export default function TransactionGroupsTab() {
   const categories = useTransactionCategoryService();
@@ -12,7 +13,7 @@ export default function TransactionGroupsTab() {
     <MyTab
       title="Transaction Categories"
       detailHref="/Categories/"
-      queryKey={[TableNames.TransactionCategories]}
+      queryKey={queryKeys.transactionCategories.all}
       service={categories}
       groupBy="group.name"
       customFindAll={categories.useFindAllWithGroup}

@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { queryClient } from "../providers/QueryProvider";
 import { IRepository } from "../repositories/interfaces/IRepository";
 import { Inserts, Updates } from "../types/database/Tables.Types";
+import { entityKeys } from "./queryKeys";
 
 export function useBaseFindAll<TEntity, TTable extends TableNames>(
   tableName: TableNames,
@@ -13,7 +14,7 @@ export function useBaseFindAll<TEntity, TTable extends TableNames>(
   filters?: any,
 ) {
   return useQuery<TEntity[]>({
-    queryKey: [tableName, tenantId, filters],
+    queryKey: entityKeys(tableName).list(tenantId, filters),
     queryFn: async () => {
       return repo.findAll(tenantId, filters ?? {});
     },
@@ -27,7 +28,7 @@ export function useBaseFindAllDeleted<TEntity, TTable extends TableNames>(
   repo: IRepository<TEntity, TTable>,
 ) {
   return useQuery<TEntity[]>({
-    queryKey: [tableName, "deleted", tenantId],
+    queryKey: entityKeys(tableName).deleted(tenantId),
     queryFn: async () => {
       return repo.findAll(tenantId, { isDeleted: true });
     },
@@ -42,7 +43,7 @@ export function useBaseFindById<TModel, TTable extends TableNames>(
   id?: string,
 ) {
   return useQuery<TModel | null>({
-    queryKey: [tableName, id, tenantId],
+    queryKey: entityKeys(tableName).detail(id, tenantId),
     queryFn: async () => {
       if (!id) throw new Error("ID is required");
       return repo.findById(id, tenantId);
@@ -68,7 +69,7 @@ export function useBaseCreate<TModel, TTable extends TableNames>(
       return await createBaseRepoHelper(form, session, repo);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -90,7 +91,7 @@ export function useBaseUpdate<TModel, TTable extends TableNames>(
       return await updateBaseRepoHelper(form, session, repo);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -125,7 +126,7 @@ export function useBaseUpsert<TModel, TTable extends TableNames>(
       return await createBaseRepoHelper(form as Inserts<TTable>, session, repo);
     },
     onSuccess: async (_, data) => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
     onError: (error, variables, context) => {
       throw new Error(JSON.stringify(error));
@@ -150,7 +151,7 @@ export function useBaseDelete<TModel, TTable extends TableNames>(
       return await repo.softDelete(vars.id, tenantId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -166,7 +167,7 @@ export function useBaseHardDelete<TModel, TTable extends TableNames>(
       return await repo.hardDelete(id, tenantId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -188,7 +189,7 @@ export function useBaseSoftDelete<TModel, TTable extends TableNames>(
       return await repo.softDelete(vars.id, tenantId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -210,7 +211,7 @@ export function useBaseRestore<TModel, TTable extends TableNames>(
       return await repo.restore(vars.id, tenantId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
     },
   });
 }
@@ -236,10 +237,10 @@ export function useBaseUpdateMultiple<TModel, TTable extends TableNames>(
       return await repo.updateMultiple!(updates, tenantId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [tableName] });
+      await queryClient.invalidateQueries({ queryKey: entityKeys(tableName).all });
       if (relatedTablesToInvalidate) {
         for (const relatedTable of relatedTablesToInvalidate) {
-          await queryClient.invalidateQueries({ queryKey: [relatedTable] });
+          await queryClient.invalidateQueries({ queryKey: entityKeys(relatedTable).all });
         }
       }
     },

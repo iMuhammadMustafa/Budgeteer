@@ -5,6 +5,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { useStorageMode } from "../providers/StorageModeProvider";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface ITransactionCategoryService extends IService<TransactionCategory, TableNames.TransactionCategories> {
   useFindAllWithGroup: (isDeleted?: boolean) => ReturnType<typeof useQuery<TransactionCategory[]>>;
@@ -22,7 +23,7 @@ export function useTransactionCategoryService(): ITransactionCategoryService {
 
   const useFindAllWithGroup = (isDeleted?: boolean) => {
     return useQuery<TransactionCategory[]>({
-      queryKey: [TableNames.TransactionCategories, "WithGroup", tenantId, isDeleted],
+      queryKey: queryKeys.transactionCategories.withGroup(tenantId, isDeleted),
       queryFn: async () => {
         return transactionCategoryRepo.findAllWithGroup(tenantId, { isDeleted: isDeleted ?? false });
       },

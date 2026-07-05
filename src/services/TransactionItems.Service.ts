@@ -1,11 +1,12 @@
 import { useAuth } from "@/src/providers/AuthProvider";
 import { queryClient } from "@/src/providers/QueryProvider";
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, TransactionItem } from "@/src/types/database/Tables.Types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStorageMode } from "../providers/StorageModeProvider";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface ITransactionItemService extends IService<TransactionItem, TableNames.TransactionItems> {
   useCreateMultiple: () => ReturnType<typeof useMutation<TransactionItem[], Error, { data: Inserts<TableNames.TransactionItems>[] }>>;
@@ -25,7 +26,7 @@ export function useTransactionItemService(): ITransactionItemService {
 
   const useFindByTransactionId = (transactionId?: string) => {
     return useQuery<TransactionItem[]>({
-      queryKey: [TableNames.TransactionItems, transactionId, tenantId],
+      queryKey: queryKeys.transactionItems.byTransaction(transactionId, tenantId),
       queryFn: async () => {
         if (!transactionId) return [];
         return transactionItemRepo.findByTransactionId(transactionId, tenantId);
@@ -40,9 +41,9 @@ export function useTransactionItemService(): ITransactionItemService {
         return transactionItemRepo.createMultiple!(data, tenantId);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactionItems.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
       },
     });
   };
@@ -53,7 +54,7 @@ export function useTransactionItemService(): ITransactionItemService {
         await transactionItemRepo.deleteByTransactionId(transactionId, tenantId);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.TransactionItems] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactionItems.all });
       },
     });
   };

@@ -36,7 +36,7 @@ export interface DependencyConfig {
 
 export interface UseEntityListConfig<TModel, TTable extends TableNames> {
   service: IService<TModel, TTable>;
-  queryKey: string[];
+  queryKey: readonly string[];
   groupBy?: string;
   showDeleted?: boolean;
   dependencyConfig?: DependencyConfig;

@@ -34,7 +34,7 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
   /** Hide the in-page toolbar heading (the SecondaryTabBar already names Restore tabs). Default true. */
   showTitle?: boolean;
   service: IService<TModel, TTable>;
-  queryKey: string[];
+  queryKey: readonly string[];
   groupBy?: string;
   Footer?: ReactNode | string;
   detailsContent?: (item: any) => string;

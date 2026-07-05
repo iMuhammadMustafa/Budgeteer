@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { storage } from "@/src/utils/storageUtils";
+import { queryKeys } from "@/src/services/queryKeys";
 
 type RatesPayload = {
   base: string;
@@ -87,7 +88,7 @@ export async function loadRates(base: string): Promise<RatesPayload> {
 export function useRates(base: string | null | undefined) {
   const effectiveBase = (base ?? "USD").toUpperCase();
   return useQuery({
-    queryKey: ["fx-rates", effectiveBase],
+    queryKey: queryKeys.fx.rates(effectiveBase),
     queryFn: () => loadRates(effectiveBase),
     staleTime: CACHE_TTL_MS,
     gcTime: CACHE_TTL_MS,

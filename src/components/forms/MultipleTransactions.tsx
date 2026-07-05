@@ -30,7 +30,8 @@ import { useExchangeRate } from "@/src/services/Fx.Service";
 import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { Inserts, TransactionsView } from "@/src/types/database/Tables.Types";
 import { roundToCents } from "@/src/utils/amount.helper";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney, getCurrencySymbol } from "@/src/utils/currency";
@@ -255,7 +256,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           },
           {
             onSuccess: async () => {
-              await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+              await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll, exact: false });
               router.replace("/Transactions");
             },
           },
@@ -264,7 +265,7 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
         // Normal mode: create multiple transactions
         await submitAllMutation.mutateAsync(transactions, {
           onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll, exact: false });
             router.replace("/Transactions");
           },
         });

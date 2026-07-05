@@ -1,7 +1,7 @@
 import { StorageMode } from "@/src/types/StorageMode";
 import { Session } from "@supabase/supabase-js";
 import { router } from "expo-router";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { storage } from "../utils/storageUtils";
 import { queryClient } from "./QueryProvider";
 import { STORAGE_KEYS, useStorageMode } from "./StorageModeProvider";
@@ -111,13 +111,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     router.replace("/");
   }, [storageMode]);
 
-  return (
-    <AuthContext.Provider
-      value={{ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ session, user, setSession: handleSetSession, isLoading, setIsLoading, isLoggedIn, logout }),
+    [session, user, handleSetSession, isLoading, isLoggedIn, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

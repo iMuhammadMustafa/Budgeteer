@@ -6,6 +6,7 @@ import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
@@ -40,7 +41,7 @@ export default function AccountsIndex() {
       <MyTab
         title="Accounts"
         detailHref={"/Accounts/"}
-        queryKey={[TableNames.Accounts]}
+        queryKey={queryKeys.accounts.all}
         service={accountService}
         groupBy={"category.name"}
         Footer={

@@ -12,6 +12,7 @@ import { useTransactionCategoryService } from "@/src/services/TransactionCategor
 import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 
 export default function TransactionGroupDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,8 +30,8 @@ export default function TransactionGroupDetail() {
   const [editing, setEditing] = useState(false);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: [TableNames.TransactionGroups] });
-    queryClient.invalidateQueries({ queryKey: [TableNames.TransactionCategories] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.transactionGroups.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.transactionCategories.all });
   };
 
   const categoriesInGroup = useMemo(

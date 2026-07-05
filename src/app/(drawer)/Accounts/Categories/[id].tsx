@@ -12,6 +12,7 @@ import { useAccountCategoryService } from "@/src/services/AccountCategories.Serv
 import { useAccountService } from "@/src/services/Accounts.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 
 export default function AccountCategoryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,8 +30,8 @@ export default function AccountCategoryDetail() {
   const [editing, setEditing] = useState(false);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: [TableNames.AccountCategories] });
-    queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.accountCategories.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
   };
 
   const accountsInCategory = useMemo(

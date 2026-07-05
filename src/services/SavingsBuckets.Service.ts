@@ -8,6 +8,7 @@ import { queryClient } from "../providers/QueryProvider";
 import { ISavingsBucketRepository } from "../repositories/interfaces/ISavingsBucketRepository";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface ISavingsBucketService extends IService<SavingsBucket, TableNames.SavingsBuckets> {
   useFindByAccountId: (accountId?: string) => ReturnType<typeof useQuery<SavingsBucket[]>>;
@@ -37,7 +38,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
 
   const useFindByAccountId = (accountId?: string) => {
     return useQuery<SavingsBucket[]>({
-      queryKey: [TableNames.SavingsBuckets, "byAccount", accountId, tenantId],
+      queryKey: queryKeys.savingsBuckets.byAccount(accountId, tenantId),
       queryFn: async () => {
         return bucketRepo.findByAccountId(accountId!, tenantId);
       },
@@ -47,7 +48,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
 
   const useGetTotalAllocated = (accountId?: string) => {
     return useQuery<number>({
-      queryKey: [TableNames.SavingsBuckets, "totalAllocated", accountId, tenantId],
+      queryKey: queryKeys.savingsBuckets.totalAllocated(accountId, tenantId),
       queryFn: async () => {
         return bucketRepo.getTotalAllocated(accountId!, tenantId);
       },
@@ -56,7 +57,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
   };
   const useFindAllGroupedByAccount = () => {
     return useQuery<Record<string, SavingsBucket[]>>({
-      queryKey: [TableNames.SavingsBuckets, "grouped", tenantId],
+      queryKey: queryKeys.savingsBuckets.grouped(tenantId),
       queryFn: async () => {
         const allBuckets = await bucketRepo.findAll(tenantId);
         return allBuckets.reduce(
@@ -104,7 +105,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
         );
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.SavingsBuckets] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.savingsBuckets.all });
       },
     });
   };
@@ -140,8 +141,8 @@ export function useSavingsBucketService(): ISavingsBucketService {
         );
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.SavingsBuckets] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.savingsBuckets.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
       },
     });
   };

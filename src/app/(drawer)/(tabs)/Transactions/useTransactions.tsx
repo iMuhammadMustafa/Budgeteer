@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 import useBackAction from "@/src/utils/useBackAction";
 
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { TransactionsView } from "@/src/types/database/Tables.Types";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
@@ -109,9 +110,9 @@ export default function useTransactions() {
         await addMutation.mutateAsync(newTransaction, {
           onSuccess: async () => {
             console.log({ message: "Transaction Created Successfully", type: "success" });
-            await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-            await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-            await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
           },
         });
       }
@@ -227,10 +228,10 @@ export default function useTransactions() {
 
   const refreshTransactions = async () => {
     // resetInfiniteQueryPagination();
-    // await queryClient.removeQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
-    await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView], exact: false });
-    await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-    await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
+    // await queryClient.removeQueries({ queryKey: queryKeys.transactions.viewAll, exact: false });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll, exact: false });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
   };
   const resetInfiniteQueryPagination = (): void => {
     queryClient.setQueryData([ViewNames.TransactionsView], (oldData: any) => {

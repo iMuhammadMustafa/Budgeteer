@@ -1,4 +1,5 @@
 import { TableNames } from "@/src/types/database/TableNames";
+import { queryKeys } from "@/src/services/queryKeys";
 import { MyTab } from "@/src/components/ui";
 import { useTransactionGroupService } from "@/src/services/TransactionGroups.Service";
 
@@ -10,7 +11,7 @@ export default function RestoreTransactionGroups() {
       title="Deleted Transaction Groups"
       showTitle={false}
       service={service}
-      queryKey={[TableNames.TransactionGroups]}
+      queryKey={queryKeys.transactionGroups.all}
       detailsUrl={"/" as any}
       showDeleted
       showRestore

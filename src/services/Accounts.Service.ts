@@ -1,5 +1,5 @@
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { TableNames, ViewNames } from "@/src/types/database//TableNames";
+import { TableNames } from "@/src/types/database//TableNames";
 import { Account, Inserts, Updates } from "@/src/types/database//Tables.Types";
 import { Session } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { queryClient } from "../providers/QueryProvider";
 import createServiceHooks from "./BaseService";
 import { createAccountRepoHelper, updateAccountRepoHelper } from "./helpers/accounts.helpers";
 import { IService } from "./IService";
+import { queryKeys } from "./queryKeys";
 
 export interface IAccountService extends IService<Account, TableNames.Accounts> {
   useFindAllWithCategory: (isDeleted?: boolean) => ReturnType<typeof useQuery<Account[]>>;
@@ -33,7 +34,7 @@ export function useAccountService(): IAccountService {
 
   const useFindAllWithCategory = (isDeleted?: boolean) => {
     return useQuery<Account[]>({
-      queryKey: [TableNames.Accounts, "WithCategory", tenantId, isDeleted],
+      queryKey: queryKeys.accounts.withCategory(tenantId, isDeleted),
       queryFn: async () => {
         return accountRepo.findAllWithCategory(tenantId, { isDeleted: isDeleted ?? false });
       },
@@ -43,7 +44,7 @@ export function useAccountService(): IAccountService {
 
   const useGetTotalAccountsBalance = () => {
     return useQuery<{ totalbalance: number } | null>({
-      queryKey: [TableNames.Accounts, "TotalBalance", tenantId],
+      queryKey: queryKeys.accounts.totalBalance(tenantId),
       queryFn: async () => {
         return accountRepo.getTotalAccountBalance(tenantId);
       },
@@ -53,7 +54,7 @@ export function useAccountService(): IAccountService {
 
   const useGetAccountOpenedTransaction = (id?: string) => {
     return useQuery<any>({
-      queryKey: [TableNames.Transactions, id, tenantId],
+      queryKey: queryKeys.transactions.detail(id, tenantId),
       queryFn: async () => {
         return accountRepo.getAccountOpenedTransaction(id!, tenantId);
       },
@@ -63,7 +64,7 @@ export function useAccountService(): IAccountService {
 
   const useGetAccountRunningBalance = (id?: string) => {
     return useQuery<number | null>({
-      queryKey: [TableNames.Accounts, id, "RunningBalance", tenantId],
+      queryKey: queryKeys.accounts.runningBalance(id, tenantId),
       queryFn: async () => {
         const result = await accountRepo.getAccountRunningBalance(id!, tenantId);
         return result?.runningbalance ?? null;
@@ -78,9 +79,9 @@ export function useAccountService(): IAccountService {
         return await accountRepo.updateAccountBalance(accountId, amount, tenantId);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
       },
     });
   };
@@ -98,9 +99,9 @@ export function useAccountService(): IAccountService {
         return await transactionRepo.update(id, transaction, tenantId);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
       },
     });
   };
@@ -111,9 +112,9 @@ export function useAccountService(): IAccountService {
         return await createAccountRepoHelper(form, session, accountRepo, transactionRepo, configRepo);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
       },
     });
   };
@@ -142,9 +143,9 @@ export function useAccountService(): IAccountService {
         );
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
       },
     });
   };
@@ -188,10 +189,10 @@ export function useAccountService(): IAccountService {
         );
       },
       onSuccess: async (_, data) => {
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Transactions] });
-        await queryClient.invalidateQueries({ queryKey: [ViewNames.TransactionsView] });
-        await queryClient.invalidateQueries({ queryKey: [TableNames.Accounts, _?.id, "RunningBalance", tenantId] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.viewAll });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts.runningBalance(_?.id, tenantId) });
       },
       onError: (error, variables, context) => {
         throw new Error(JSON.stringify(error));
