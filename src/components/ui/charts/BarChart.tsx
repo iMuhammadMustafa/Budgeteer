@@ -11,14 +11,15 @@ import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { Badge } from "../Badge";
 import { Pulse } from "../Pulse";
 import { Text } from "../Text";
 import { seriesColor } from "../theme/tokens";
 import { cn } from "../utils/cn";
-import { XLabels, YGrid, Y_AXIS_PAD, buildScale, type YTickMode } from "./axis";
+import { buildScale, XLabels, Y_AXIS_PAD, YGrid, type YTickMode } from "./axis";
 
 const SKELETON_HEIGHTS = [0.5, 0.78, 0.42, 0.92, 0.6, 0.82, 0.55];
 const BAR_WIDTH = "56%";
@@ -324,11 +325,7 @@ function BarGroup({
       onHoverOut={() => setHovered(null)}
     >
       <View className="w-full items-center justify-end" style={{ height }}>
-        {showValues ? (
-          <Text className="mb-1 font-mono text-[10px] text-ink-faint" numberOfLines={1}>
-            {fmt(d.value)}
-          </Text>
-        ) : null}
+        {showValues ? <Text className="mb-1 text-[10px] text-ink-faint">{fmt(d.value)}</Text> : null}
         <Animated.View
           style={[
             barStyle,

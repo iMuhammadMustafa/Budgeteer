@@ -7,90 +7,21 @@
  *
  * Lives in `components/` (not the Expo Router route dir) so it isn't treated as a route.
  */
-import { type ReactNode } from "react";
 import dayjs from "dayjs";
 
-import type {
-  BarDataType,
-  DoubleBarPoint,
-  LineChartPoint,
-  MyCalendarData,
-  PieData,
-} from "@/src/types/components/Charts.types";
+import type { BarDataType, PieData } from "@/src/types/components/Charts.types";
+import {
+  DashboardChartConfig,
+  DashboardChartsProps,
+  DashboardViewSelectionType,
+} from "@/src/types/pages/dashboard/DashboardConfig.Types";
 import { toBarData, toDonutData, toDoubleBar, toHeatmap, toLineData } from "@/src/utils/chartAdapters";
-import type { ChartCardPeriod } from "@/src/components/ui";
 import { BarChart, CalendarHeatmap, DonutChart, DoubleBarChart, LineChart } from "@/src/components/ui";
 import type { ThemeColors } from "@/src/components/ui/theme/tokens";
-import {
-  DashboardViewSelectionType,
-  type IDetailsViewProps,
-} from "@/src/app/(drawer)/(tabs)/Dashboard/useDashboardViewModel";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
-interface PeriodControl {
-  label: string;
-  prev: () => void;
-  next: () => void;
-  currentDate?: string;
-  /** This chart's query is refetching (e.g. after a period change) — drives the card's skeleton. */
-  loading?: boolean;
-  /** Drill into this chart's whole-period details (the ChartCard "Details" link). */
-  onDetails?: () => void;
-}
-
-export interface DashboardChartsProps {
-  weeklyTransactionTypesData?: BarDataType[];
-  dailyTransactionTypesData?: MyCalendarData;
-  yearlyTransactionsTypes?: DoubleBarPoint[];
-  netWorthGrowth?: LineChartPoint[];
-  monthlyCategories?: PieData[];
-  monthlyGroups?: PieData[];
-  handleDayPress: (day: { dateString: string }, type: DashboardViewSelectionType) => void;
-  handlePiePress: (item: PieData, type: "category" | "group") => void;
-  handleBarPress: (item: DoubleBarPoint, barKey?: "barOne" | "barTwo") => void;
-  /** Tap-to-select highlight state (lifted to the dashboard so the Details link can carry it). */
-  selection?: {
-    weekDate: string | null;
-    category: PieData | null;
-    group: PieData | null;
-    earningsMonth: string | null;
-  };
-  onSelectWeekDay?: (date: string) => void;
-  onSelectPieSlice?: (type: "category" | "group", item: PieData | null) => void;
-  onSelectEarningsMonth?: (month: string) => void;
-  /** Month-at-a-glance data for the panel beside the wide-screen calendar. */
-  calendarSummary?: {
-    income: number;
-    expense: number;
-    net: number;
-    activeDays: number;
-    topDays: { date: string; amount: number }[];
-  };
-  params?: Partial<IDetailsViewProps>;
-  periodControls: {
-    week: PeriodControl;
-    earningsYear: PeriodControl;
-    netWorthYear: PeriodControl;
-    categoriesMonth: PeriodControl;
-    groupsMonth: PeriodControl;
-    calendar: PeriodControl;
-  };
-}
-
-export interface DashboardChartConfig {
-  key: string;
-  detailType: DashboardViewSelectionType;
-  pieType?: "category" | "group";
-  title: string;
-  /** Period bar shown in the ChartCard; omitted for charts that own their own nav (e.g. calendar). */
-  period?: ChartCardPeriod;
-  /** This chart's data is refetching — surfaces the card's body skeleton. */
-  loading?: boolean;
-  /** Drill into the whole-period details (the ChartCard "Details" link); omitted for non-drillable charts. */
-  onDetails?: () => void;
-  node: ReactNode;
-}
-
-const period = (p: PeriodControl): ChartCardPeriod => ({ label: p.label, onPrev: p.prev, onNext: p.next });
+import CalendarSummaryPanel from "./CalendarSummaryPanel";
+import RecentTransactions from "./RecentTransactions";
 
 /** The Sunday-based week start inferred from any populated bar, so even empty bars resolve a date. */
 function weekStart(bars: BarDataType[] = []) {
@@ -98,14 +29,7 @@ function weekStart(bars: BarDataType[] = []) {
   return withDate ? dayjs(withDate.item.date).startOf("week") : null;
 }
 
-export function buildDashboardChartConfigs(
-  props: DashboardChartsProps,
-  colors: ThemeColors,
-  fmtMoney: (n: number) => string,
-  /** Run the charts' entry (grow/draw-on) animations. Callers pass `false` after
-   *  first mount so a period change re-renders data without replaying animations. */
-  animated: boolean = true,
-): DashboardChartConfig[] {
+export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: ThemeColors): DashboardChartConfig[] {
   const {
     weeklyTransactionTypesData = [],
     dailyTransactionTypesData = {},
@@ -123,6 +47,8 @@ export function buildDashboardChartConfigs(
     params = {},
     periodControls,
   } = props;
+  const { formatCurrency } = usePrimaryCurrency();
+  const fmtMoney = (n: number) => formatCurrency(n, false);
 
   const ws = weekStart(weeklyTransactionTypesData);
   // Live tap-selection wins; params.* is the fallback for older item-carrying links.
@@ -138,7 +64,6 @@ export function buildDashboardChartConfigs(
 
   const donut = (data: PieData[], type: "category" | "group") => (
     <DonutChart
-      animated={animated}
       data={toDonutData(data)}
       formatValue={fmtMoney}
       externalLabels
@@ -168,14 +93,14 @@ export function buildDashboardChartConfigs(
   return [
     {
       key: "week",
+      order: 1,
       detailType: DashboardViewSelectionType.BAR,
       title: "Week's Expenses",
-      period: period(periodControls.week),
+      period: periodControls.week.chartCardPeriod,
       loading: periodControls.week.loading,
       onDetails: periodControls.week.onDetails,
       node: (
         <BarChart
-          animated={animated}
           data={toBarData(weeklyTransactionTypesData)}
           showYAxis={false}
           fillHeight
@@ -189,60 +114,51 @@ export function buildDashboardChartConfigs(
           }}
           emptyTitle="No expenses this week"
           showValues
-          formatValue={fmtMoney}
-        />
-      ),
-    },
-    {
-      key: "calendar",
-      detailType: DashboardViewSelectionType.CALENDAR,
-      title: "Calendar",
-      loading: periodControls.calendar.loading,
-      // No period bar — the calendar's own arrows/swipe are the single nav, wired to the data cursor.
-      node: (
-        <CalendarHeatmap
-          markedDates={toHeatmap(dailyTransactionTypesData)}
-          currentDate={periodControls.calendar.currentDate}
-          selectedDate={params.date ?? null}
-          onDayPress={ds => handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
-          onMonthChange={ds => {
-            const cur = dayjs(periodControls.calendar.currentDate);
-            const next = dayjs(ds);
-            if (next.isAfter(cur, "month")) periodControls.calendar.next();
-            else if (next.isBefore(cur, "month")) periodControls.calendar.prev();
+          formatValue={(val: number) => {
+            if (val > 1000) return `${(val / 1000).toFixed(1)}k`;
+            else return fmtMoney(val);
           }}
         />
       ),
     },
     {
+      key: "recent-transactions",
+      order: 2,
+      detailType: DashboardViewSelectionType.RECENT_TRANSACTION,
+      title: "Recent Transactions",
+      node: <RecentTransactions transactions={props.recentTransactions ?? []} onPress={props.handleTransactionPress} />,
+    },
+    {
       key: "categoriesMonth",
+      order: 3,
       detailType: DashboardViewSelectionType.PIE,
       pieType: "category",
       title: "Categories",
-      period: period(periodControls.categoriesMonth),
+      period: periodControls.categoriesMonth.chartCardPeriod,
       loading: periodControls.categoriesMonth.loading,
       onDetails: periodControls.categoriesMonth.onDetails,
       node: donut(monthlyCategories, "category"),
     },
     {
       key: "groupsMonth",
+      order: 4,
       detailType: DashboardViewSelectionType.PIE,
       pieType: "group",
       title: "Groups",
-      period: period(periodControls.groupsMonth),
+      period: periodControls.groupsMonth.chartCardPeriod,
       loading: periodControls.groupsMonth.loading,
       onDetails: periodControls.groupsMonth.onDetails,
       node: donut(monthlyGroups, "group"),
     },
     {
       key: "netWorthYear",
+      order: 5,
       detailType: DashboardViewSelectionType.PIE, // net worth has no dedicated detail view; not routed to
       title: "Net Worth Growth",
-      period: period(periodControls.netWorthYear),
+      period: periodControls.netWorthYear.chartCardPeriod,
       loading: periodControls.netWorthYear.loading,
       node: (
         <LineChart
-          animated={animated}
           data={toLineData(netWorthGrowth)}
           color={colors.income}
           formatValue={fmtMoney}
@@ -254,14 +170,14 @@ export function buildDashboardChartConfigs(
     },
     {
       key: "earningsYear",
+      order: 6,
       detailType: DashboardViewSelectionType.DOUBLE_BAR,
       title: "Net Earnings",
-      period: period(periodControls.earningsYear),
+      period: periodControls.earningsYear.chartCardPeriod,
       loading: periodControls.earningsYear.loading,
       onDetails: periodControls.earningsYear.onDetails,
       node: (
         <DoubleBarChart
-          animated={animated}
           data={earnings.data}
           bar1Label={earnings.bar1Label}
           bar2Label={earnings.bar2Label}
@@ -280,6 +196,41 @@ export function buildDashboardChartConfigs(
           emptyTitle="No earnings data"
           showValues
           formatValue={n => fmtMoney(n).slice(0, -3)}
+        />
+      ),
+    },
+    {
+      key: "calendar",
+      order: 7,
+      detailType: DashboardViewSelectionType.CALENDAR,
+      title: "Calendar",
+      loading: periodControls.calendar.loading,
+      // No period bar — the calendar's own arrows/swipe are the single nav, wired to the data cursor.
+      node: (
+        <CalendarHeatmap
+          markedDates={toHeatmap(dailyTransactionTypesData)}
+          currentDate={periodControls.calendar.currentDate}
+          selectedDate={params.date ?? null}
+          onDayPress={ds => handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
+          onMonthChange={ds => {
+            const cur = dayjs(periodControls.calendar.currentDate);
+            const next = dayjs(ds);
+            if (next.isAfter(cur, "month")) periodControls.calendar.chartCardPeriod.onNext();
+            else if (next.isBefore(cur, "month")) periodControls.calendar.chartCardPeriod.onPrev();
+          }}
+        />
+      ),
+    },
+    {
+      key: "calendar-summary",
+      order: 8,
+      title: periodControls.calendar.chartCardPeriod.label,
+      detailType: DashboardViewSelectionType.CALENDAR_SUMMARY,
+      node: (
+        <CalendarSummaryPanel
+          summary={props.calendarSummary!}
+          fmtMoney={fmtMoney}
+          onDayPress={ds => props.handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
         />
       ),
     },

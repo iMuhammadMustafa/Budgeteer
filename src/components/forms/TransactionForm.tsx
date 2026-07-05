@@ -1,16 +1,11 @@
-import dayjs from "dayjs";
-import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import dayjs from "dayjs";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { useAccountService } from "@/src/services/Accounts.Service";
-import { useConfigurationService } from "@/src/services/Configurations.Service";
-import { useExchangeRate } from "@/src/services/Fx.Service";
-import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
-import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
-import { useTransactionService } from "@/src/services/Transactions.Service";
-import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 import { SearchableDropdownItem } from "@/src/types/components/DropdownField.Types";
 import {
   OptionItem,
@@ -21,14 +16,10 @@ import {
 import { ConfigurationTypes } from "@/src/types/database/Config.Types";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Transaction } from "@/src/types/database/Tables.Types";
-import { useRecentValues } from "@/src/hooks/useRecentValues";
 import { roundToCents } from "@/src/utils/amount.helper";
 import { currencyDropdownOptions, DEFAULT_CURRENCY, formatMoney, getCurrencySymbol } from "@/src/utils/currency";
 import { commonValidationRules, createDateValidation, createDescriptionValidation } from "@/src/utils/form-validation";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import MyIcon from "../elements/MyIcon";
 import {
   AmountKeypadInput,
   Button,
@@ -41,9 +32,19 @@ import {
   SearchableSelect,
   SegmentedControl,
   TagInput,
-  type SearchableSelectOption,
   Text as ThemedText,
+  type SearchableSelectOption,
 } from "@/src/components/ui";
+import { useRecentValues } from "@/src/hooks/useRecentValues";
+import { useAccountService } from "@/src/services/Accounts.Service";
+import { useConfigurationService } from "@/src/services/Configurations.Service";
+import { useExchangeRate } from "@/src/services/Fx.Service";
+import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useTransactionItemService } from "@/src/services/TransactionItems.Service";
+import { useTransactionService } from "@/src/services/Transactions.Service";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+
+import MyIcon from "../elements/MyIcon";
 import FormField from "../form-builder/FormField";
 import FormSection from "../form-builder/FormSection";
 import { useFormState, useFormSubmission } from "../form-builder/hooks";
@@ -181,9 +182,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     categoryRecents.record(id);
   };
   const recentCategoryOptions = useMemo(
-    () => categoryRecents.recent.map(id => categoryOptions.find(o => o.id === id)).filter(Boolean).slice(0, 6),
+    () =>
+      categoryRecents.recent
+        .map(id => categoryOptions.find(o => o.id === id))
+        .filter(Boolean)
+        .slice(0, 6),
     [categoryRecents.recent, categoryOptions],
-  ) as (typeof categoryOptions);
+  ) as typeof categoryOptions;
 
   // Transfer is always visually distinct (info/blue) regardless of the sign toggle; Expense/
   // Income follow the toggled `mode` (danger when minus, success when plus).
@@ -209,7 +214,9 @@ export default function TransactionForm({ transaction }: { transaction: Transact
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-5 p-4"
-        contentContainerStyle={Platform.OS === "web" ? ({ maxWidth: 640, width: "100%", alignSelf: "center" } as any) : undefined}
+        contentContainerStyle={
+          Platform.OS === "web" ? ({ maxWidth: 640, width: "100%", alignSelf: "center" } as any) : undefined
+        }
       >
         <View className="flex-row items-center justify-between">
           <Button
@@ -304,6 +311,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               addNewLabel="Add New Category"
               error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
               testID="field-categoryid"
+              present="auto"
             />
           </View>
 
@@ -385,7 +393,12 @@ export default function TransactionForm({ transaction }: { transaction: Transact
           </View>
         </View>
 
-        <ResponsiveModal visible={addingCategory} onClose={() => setAddingCategory(false)} title="Add Category" size="lg">
+        <ResponsiveModal
+          visible={addingCategory}
+          onClose={() => setAddingCategory(false)}
+          title="Add Category"
+          size="lg"
+        >
           <TransactionCategoryForm
             category={transactionCategoryInitialState}
             onSuccess={(saved: any) => {
@@ -489,7 +502,10 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                   Array.isArray(formState.data.tags)
                     ? formState.data.tags
                     : formState.data.tags
-                      ? String(formState.data.tags).split(",").map(t => t.trim()).filter(Boolean)
+                      ? String(formState.data.tags)
+                          .split(",")
+                          .map(t => t.trim())
+                          .filter(Boolean)
                       : []
                 }
                 onChange={tags => updateField("tags", tags)}
@@ -616,7 +632,13 @@ export default function TransactionForm({ transaction }: { transaction: Transact
 
         <View className="flex-row justify-end gap-3">
           {isDirty ? (
-            <Button label="Reset" variant="outline" onPress={resetForm} disabled={isSubmitting} testID="btn-form-reset" />
+            <Button
+              label="Reset"
+              variant="outline"
+              onPress={resetForm}
+              disabled={isSubmitting}
+              testID="btn-form-reset"
+            />
           ) : null}
           <Button
             label={isSubmitting ? "Saving..." : "Save Transaction"}

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWindowDimensions, View } from "react-native";
+import { useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { DrawerContentScrollView } from "expo-router/build/react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";

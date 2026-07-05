@@ -4,13 +4,13 @@
  * and a responsive stat row (Income · Spending · Net Flow · Savings rate). Pure
  * presentation; all numbers are passed in from the dashboard view-model.
  */
-import { Pressable, View, useWindowDimensions } from "react-native";
-
-import MyIcon from "@/src/components/elements/MyIcon";
-import { Badge, Card, MiniBarChart, Text } from "@/src/components/ui";
-import { useTheme } from "@/src/providers/ThemeProvider";
-import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
+import { Pressable, useWindowDimensions, View } from "react-native";
 import dayjs from "dayjs";
+
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { Badge, Card, MiniBarChart, Text } from "@/src/components/ui";
+import MyIcon from "@/src/components/elements/MyIcon";
+import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
 export interface DashboardOverviewProps {
   totalBalance: number;
@@ -67,15 +67,15 @@ export default function DashboardOverview({
       </View>
 
       {/* Hero balance card */}
-      <Card className="flex-row flex-wrap items-center justify-between gap-4">
-        <View>
+      <Card className={`items-center justify-between gap-4 ${isWide ? "flex-row" : "flex-col"}`}>
+        <View className="gap-2">
           <Text variant="overline">
             Total balance · {accountsCount} {accountsCount === 1 ? "account" : "accounts"}
           </Text>
-          <Text variant="moneyLg" className="mt-2 text-display">
+          <Text variant="moneyLg" className="text-display">
             {formatCurrency(totalBalance, false)}
           </Text>
-          <View className="mt-3 flex-row items-center gap-2.5">
+          <View className={`flex-row items-center gap-2.5 ${isWide ? "" : "justify-center"}`}>
             <Badge
               tone={netFlow >= 0 ? "success" : "danger"}
               iconName={netFlow >= 0 ? "TrendingUp" : "TrendingDown"}
@@ -94,17 +94,34 @@ export default function DashboardOverview({
 
       {/* Stat row */}
       <View className="flex-row flex-wrap gap-3">
-        <StatCard icon="ArrowDownLeft" label="Income" value={formatCurrency(income, true)} caption="This month" tone="income" wide={isWide} />
-        <StatCard icon="ArrowUpRight" label="Spending" value={formatCurrency(-spending, true)} caption="This month" tone="expense" wide={isWide} />
+        <StatCard
+          icon="ArrowDownLeft"
+          label="Income"
+          value={formatCurrency(income, true)}
+          caption="This month"
+          tone="income"
+        />
+        <StatCard
+          icon="ArrowUpRight"
+          label="Spending"
+          value={formatCurrency(-spending, true)}
+          caption="This month"
+          tone="expense"
+        />
         <StatCard
           icon="ArrowRightLeft"
           label="Net flow"
           value={formatCurrency(netFlow, true)}
           caption="Income − spending"
           tone={netFlow >= 0 ? "income" : "expense"}
-          wide={isWide}
         />
-        <StatCard icon="PiggyBank" label="Savings rate" value={`${savingsRate}%`} caption="of income saved" tone="ink" wide={isWide} />
+        <StatCard
+          icon="PiggyBank"
+          label="Savings rate"
+          value={`${savingsRate}%`}
+          caption="of income saved"
+          tone="ink"
+        />
       </View>
     </View>
   );
@@ -116,19 +133,21 @@ function StatCard({
   value,
   caption,
   tone,
-  wide,
 }: {
   icon: string;
   label: string;
   value: string;
   caption: string;
   tone: "income" | "expense" | "ink";
-  wide: boolean;
 }) {
   const { colors } = useTheme();
   const valueClass = tone === "income" ? "text-income" : tone === "expense" ? "text-expense" : "text-ink";
   return (
-    <Card className="flex-1 gap-1.5" style={{ minWidth: wide ? 160 : 140 }} testID={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
+    <Card
+      className="flex-1 gap-1.5"
+      style={{ minWidth: 160 }}
+      testID={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}
+    >
       <View className="flex-row items-center gap-2">
         <MyIcon name={icon} size={15} color={colors.inkMute} />
         <Text variant="overline">{label}</Text>

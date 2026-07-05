@@ -23,6 +23,7 @@ export default function SidebarItem({
       >
         <MyIcon name={item.icon} size={20} color={isActive ? colors.primaryDeep : colors.inkMute} />
         <Text
+          selectable={false}
           className={`text-body ${isActive ? "font-sans-bold text-primary-deep" : "font-sans-medium text-ink-mute"}`}
         >
           {item.label}

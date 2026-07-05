@@ -21,7 +21,7 @@ export interface CalendarSummary {
 
 export interface CalendarSummaryPanelProps {
   summary: CalendarSummary;
-  monthLabel: string;
+  monthLabel?: string;
   fmtMoney: (n: number) => string;
   onDayPress?: (dateString: string) => void;
   className?: string;
@@ -38,8 +38,8 @@ export default function CalendarSummaryPanel({
   const { income, expense, net, activeDays, topDays } = summary;
 
   return (
-    <Card className={cn("my-1.5 gap-3 p-5", className)} testID="calendar-summary-panel">
-      <Text variant="overline">{monthLabel}</Text>
+    <View className={cn("gap-3 h-full", className)} testID="calendar-summary-panel">
+      {monthLabel && <Text variant="overline">{monthLabel}</Text>}
 
       <View className="gap-2">
         <StatRow label="Received" value={fmtMoney(income)} color={colors.income} />
@@ -90,7 +90,7 @@ export default function CalendarSummaryPanel({
         <LegendDot label="Expense" color={colors.expense} />
         <LegendDot label="Transfer" color={colors.primary} />
       </View>
-    </Card>
+    </View>
   );
 }
 

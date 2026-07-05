@@ -1,9 +1,10 @@
-import MyIcon from "@/src/components/elements/MyIcon";
-import { BREAKPOINT_DESKTOP } from "@/src/constants/layout";
-import { useTheme } from "@/src/providers/ThemeProvider";
-import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
+import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { BREAKPOINT_DESKTOP } from "@/src/constants/layout";
+import MyIcon from "@/src/components/elements/MyIcon";
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions();
@@ -57,8 +58,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="AddTransaction"
         options={{
-          title: "New Transaction",
-          tabBarLabel: "New",
+          title: "Add Transaction",
           tabBarButtonTestID: "tab-add-transaction",
           tabBarIcon: ({ color }) => <MyIcon name="ListPlus" color={color as string} size={24} />,
         }}

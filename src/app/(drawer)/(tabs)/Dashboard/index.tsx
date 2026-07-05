@@ -1,12 +1,9 @@
-import { useAccountService } from "@/src/services/Accounts.Service";
-import dayjs from "dayjs";
-import { useMemo } from "react";
 import { RefreshControl, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import DashboardCharts from "@/src/components/dashboard/DashboardCharts";
 import DashboardOverview from "@/src/components/dashboard/DashboardOverview";
-import RecentTransactions from "@/src/components/dashboard/RecentTransactions";
 import DashboardSkeleton from "@/src/components/dashboard/DashboardSkeleton";
+
 import useDashboard from "./useDashboardViewModel";
 
 export default function DashboardIndex() {
@@ -31,60 +28,51 @@ export default function DashboardIndex() {
     selectWeekDay,
     selectPieSlice,
     selectEarningsMonth,
+    income,
+    spending,
+    sparkline,
+    totalbalance,
+    accountsCount,
   } = useDashboard();
-
-  const accountService = useAccountService();
-  const { data: totalBalanceData } = accountService.useGetTotalAccountsBalance();
-  const { data: accounts } = accountService.useFindAllWithCategory();
-
-  const { income, spending, sparkline } = useMemo(() => {
-    const thisMonth = (yearlyTransactionsTypes ?? []).find(d => d.x === dayjs().format("MMM"));
-    return {
-      income: Math.abs(thisMonth?.barOne.value ?? 0),
-      spending: Math.abs(thisMonth?.barTwo.value ?? 0),
-      sparkline: (netWorthGrowth ?? []).map(p => p.y).slice(-9),
-    };
-  }, [yearlyTransactionsTypes, netWorthGrowth]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <SafeAreaView className="flex-1">
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-4 gap-4 w-full self-center"
-        contentContainerStyle={{ maxWidth: 1180 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <DashboardOverview
-          totalBalance={totalBalanceData?.totalbalance ?? 0}
-          accountsCount={accounts?.length ?? 0}
-          income={income}
-          spending={spending}
-          sparkline={sparkline}
-          onRefresh={onRefresh}
-        />
-        <DashboardCharts
-          weeklyTransactionTypesData={weeklyTransactionTypesData}
-          dailyTransactionTypesData={dailyTransactionTypesData}
-          yearlyTransactionsTypes={yearlyTransactionsTypes}
-          netWorthGrowth={netWorthGrowth}
-          monthlyCategories={monthlyCategories}
-          monthlyGroups={monthlyGroups}
-          handleDayPress={handleDayPress}
-          handlePiePress={handlePiePress}
-          handleBarPress={handleBarPress}
-          selection={selection}
-          onSelectWeekDay={selectWeekDay}
-          onSelectPieSlice={selectPieSlice}
-          onSelectEarningsMonth={selectEarningsMonth}
-          calendarSummary={calendarSummary}
-          periodControls={periodControls}
-          recentTransactionsSlot={<RecentTransactions transactions={recentTransactions} onPress={handleTransactionPress} />}
-        />
-      </ScrollView>
-    </SafeAreaView>
+    <ScrollView
+      className="flex-1 custom-scrollbar"
+      contentContainerClassName="p-4 gap-4 w-full self-center"
+      contentContainerStyle={{ maxWidth: 1180 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <DashboardOverview
+        totalBalance={totalbalance}
+        accountsCount={accountsCount}
+        income={income}
+        spending={spending}
+        sparkline={sparkline}
+        onRefresh={onRefresh}
+      />
+      <DashboardCharts
+        weeklyTransactionTypesData={weeklyTransactionTypesData}
+        dailyTransactionTypesData={dailyTransactionTypesData}
+        yearlyTransactionsTypes={yearlyTransactionsTypes}
+        netWorthGrowth={netWorthGrowth}
+        monthlyCategories={monthlyCategories}
+        monthlyGroups={monthlyGroups}
+        recentTransactions={recentTransactions}
+        handleDayPress={handleDayPress}
+        handlePiePress={handlePiePress}
+        handleBarPress={handleBarPress}
+        handleTransactionPress={handleTransactionPress}
+        selection={selection}
+        onSelectWeekDay={selectWeekDay}
+        onSelectPieSlice={selectPieSlice}
+        onSelectEarningsMonth={selectEarningsMonth}
+        calendarSummary={calendarSummary}
+        periodControls={periodControls}
+      />
+    </ScrollView>
   );
 }

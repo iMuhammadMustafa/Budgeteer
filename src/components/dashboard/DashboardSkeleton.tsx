@@ -1,6 +1,7 @@
-import { Pulse, SkeletonBlock } from "@/src/components/ui";
 import { ScrollView, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Pulse, SkeletonBlock } from "@/src/components/ui";
 
 const SKELETON_COLOR = "#e6e6e6";
 
@@ -205,31 +206,34 @@ function CalendarSkeleton() {
  */
 export default function DashboardSkeleton() {
   return (
-    <SafeAreaView className="w-full h-full flex-1">
+    <ScrollView
+      className="flex-1 h-full"
+      contentContainerClassName="p-4 gap-4 w-full self-center"
+      contentContainerStyle={{ maxWidth: 1180 }}
+    >
       {/* Header placeholder */}
+
       <View className="flex-row items-center justify-between px-4 py-2 bg-background">
         <SkeletonBlock width={100} height={18} radius={6} />
         <SkeletonBlock width={24} height={24} radius={12} />
       </View>
-      <ScrollView className="flex-1 h-full" contentContainerClassName="p-4 gap-4 w-full self-center" contentContainerStyle={{ maxWidth: 1180 }}>
-        <Pulse>
-          {/* Explicit rows of two so pairing is deterministic (mirrors DashboardCharts). */}
-          <View className="flex-row items-stretch gap-3">
-            <BarSkeleton />
-            <DoubleBarSkeleton />
-          </View>
-          <View className="mt-3 flex-row items-stretch gap-3">
-            <PieSkeleton />
-            <PieSkeleton />
-          </View>
-          <View className="mt-3 flex-row items-stretch gap-3">
-            <LineSkeleton />
-          </View>
-          <View className="mt-3">
-            <CalendarSkeleton />
-          </View>
-        </Pulse>
-      </ScrollView>
-    </SafeAreaView>
+      <Pulse>
+        {/* Explicit rows of two so pairing is deterministic (mirrors DashboardCharts). */}
+        <View className="flex-row items-stretch gap-3">
+          <BarSkeleton />
+          <DoubleBarSkeleton />
+        </View>
+        <View className="mt-3 flex-row items-stretch gap-3">
+          <PieSkeleton />
+          <PieSkeleton />
+        </View>
+        <View className="mt-3 flex-row items-stretch gap-3">
+          <LineSkeleton />
+        </View>
+        <View className="mt-3">
+          <CalendarSkeleton />
+        </View>
+      </Pulse>
+    </ScrollView>
   );
 }

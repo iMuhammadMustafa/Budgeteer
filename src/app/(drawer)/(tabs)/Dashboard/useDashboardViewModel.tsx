@@ -4,34 +4,15 @@ import dayjs from "dayjs";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { DoubleBarPoint, PieData } from "@/src/types/components/Charts.types";
+import {
+  DashboardViewSelectionType,
+  IDetailsViewProps,
+  PeriodControl,
+  PeriodRange,
+} from "@/src/types/pages/dashboard/DashboardConfig.Types";
+import { useAccountService } from "@/src/services/Accounts.Service";
 import { getStatsDailyTransactionsHelper, useStatsService } from "@/src/services/Stats.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-
-export enum DashboardViewSelectionType {
-  CALENDAR = "calendar",
-  PIE = "pie",
-  BAR = "bar",
-  DOUBLE_BAR = "double_bar",
-}
-
-export interface IDetailsViewProps {
-  type: DashboardViewSelectionType;
-  date?: string;
-  label?: string;
-  startDate?: string;
-  endDate?: string;
-  pieType?: "category" | "group";
-  itemId?: string;
-  itemLabel?: string;
-  month?: string;
-  transactionType?: string;
-  /** The chart's whole-period window (week/month/year), independent of the focused item's window.
-   * Lets the details page toggle between the focused item and "All · <period>". */
-  periodStart?: string;
-  periodEnd?: string;
-}
-
-type PeriodRange = { start: string; end: string };
 
 /** Month cursor boundaries — `YYYY-MM-DD` strings (what the month-bound stat queries expect). */
 const monthRange = (base: dayjs.Dayjs): PeriodRange => ({
@@ -63,11 +44,15 @@ function usePeriodCursor(initial: PeriodRange, unit: "month" | "year") {
 }
 
 export default function useDashboard(options?: { fetchTransactions?: boolean }) {
+  const accountService = useAccountService();
   const statsService = useStatsService();
   const transactionService = useTransactionService();
   const dateRanges = statsService.useGetDateRanges();
   const params = useLocalSearchParams() as Partial<IDetailsViewProps>;
   const fetchTransactions = options?.fetchTransactions ?? false;
+
+  const { data: totalBalanceData } = accountService.useGetTotalAccountsBalance();
+  const { data: accounts } = accountService.useFindAllWithCategory();
 
   const initialMonthFromParams = useMemo(() => {
     if (params.startDate && params.endDate) {
@@ -477,11 +462,20 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     [weekBaseDate],
   );
 
-  const periodControls = {
+  const periodControls: {
+    week: PeriodControl;
+    categoriesMonth: PeriodControl;
+    groupsMonth: PeriodControl;
+    netWorthYear: PeriodControl;
+    earningsYear: PeriodControl;
+    calendar: PeriodControl;
+  } = {
     week: {
-      label: weekLabel,
-      prev: onPrevWeek,
-      next: onNextWeek,
+      chartCardPeriod: {
+        label: weekLabel,
+        onPrev: onPrevWeek,
+        onNext: onNextWeek,
+      },
       loading: isDailyFetching,
       onDetails: () =>
         handleChartDetails({
@@ -499,9 +493,11 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         }),
     },
     categoriesMonth: {
-      label: categories.label,
-      prev: categories.prev,
-      next: categories.next,
+      chartCardPeriod: {
+        label: categories.label,
+        onPrev: categories.prev,
+        onNext: categories.next,
+      },
       loading: isCategoriesFetching,
       onDetails: () =>
         handleChartDetails({
@@ -514,9 +510,11 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         }),
     },
     groupsMonth: {
-      label: groups.label,
-      prev: groups.prev,
-      next: groups.next,
+      chartCardPeriod: {
+        label: groups.label,
+        onPrev: groups.prev,
+        onNext: groups.next,
+      },
       loading: isGroupsFetching,
       onDetails: () =>
         handleChartDetails({
@@ -529,16 +527,20 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         }),
     },
     calendar: {
-      label: daily.label,
-      prev: daily.prev,
-      next: daily.next,
+      chartCardPeriod: {
+        label: daily.label,
+        onPrev: daily.prev,
+        onNext: daily.next,
+      },
       currentDate: daily.range.start,
       loading: isDailyFetching,
     },
     earningsYear: {
-      label: earnings.label,
-      prev: earnings.prev,
-      next: earnings.next,
+      chartCardPeriod: {
+        label: earnings.label,
+        onPrev: earnings.prev,
+        onNext: earnings.next,
+      },
       loading: isYearlyFetching,
       onDetails: () =>
         handleChartDetails({
@@ -549,8 +551,24 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           ...(selection.earningsMonth ? { month: selection.earningsMonth } : {}),
         }),
     },
-    netWorthYear: { label: netWorth.label, prev: netWorth.prev, next: netWorth.next, loading: isNetWorthFetching },
+    netWorthYear: {
+      chartCardPeriod: {
+        label: netWorth.label,
+        onPrev: netWorth.prev,
+        onNext: netWorth.next,
+      },
+      loading: isNetWorthFetching,
+    },
   };
+
+  const { income, spending, sparkline } = useMemo(() => {
+    const thisMonth = (yearlyTransactionsTypes ?? []).find(d => d.x === dayjs().format("MMM"));
+    return {
+      income: Math.abs(thisMonth?.barOne.value ?? 0),
+      spending: Math.abs(thisMonth?.barTwo.value ?? 0),
+      sparkline: (netWorthGrowth ?? []).map(p => p.y).slice(-9),
+    };
+  }, [yearlyTransactionsTypes, netWorthGrowth]);
 
   return {
     ...dashboardData,
@@ -571,5 +589,10 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     selectWeekDay,
     selectPieSlice,
     selectEarningsMonth,
+    income,
+    spending,
+    sparkline,
+    totalbalance: totalBalanceData?.totalbalance ?? 0,
+    accountsCount: accounts?.length ?? 0,
   };
 }

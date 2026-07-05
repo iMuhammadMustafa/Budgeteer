@@ -4,7 +4,7 @@ import { router, useSegments } from "expo-router";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { NAV_SECTIONS } from "@/src/constants/navigation";
-import { StorageMode, StorageModeConfig } from "@/src/types/StorageMode";
+import { StorageModeConfig } from "@/src/types/StorageMode";
 import { Divider } from "@/src/components/ui";
 import MyIcon from "@/src/components/elements/MyIcon";
 
@@ -29,7 +29,7 @@ export default function SidebarBody({ navigation }: { navigation: any }) {
   return (
     <>
       {/* Brand */}
-      <View className="flex-row items-center gap-3 px-4 pb-3 pt-3">
+      <View className="flex-row items-center gap-3 px-4">
         <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary">
           <Text className="font-serif text-h3 text-white">B</Text>
         </View>
@@ -77,9 +77,12 @@ export default function SidebarBody({ navigation }: { navigation: any }) {
         className="mx-2 mb-1 flex-row items-center gap-3 rounded-md px-3 py-2 active:bg-surface-alt"
       >
         <MyIcon name={isDark ? "Sun" : "Moon"} size={18} color={colors.inkMute} />
-        <Text className="font-sans-medium text-sm text-ink-mute">{isDark ? "Light mode" : "Dark mode"}</Text>
+        <Text selectable={false} className="font-sans-medium text-sm text-ink-mute">
+          {isDark ? "Light mode" : "Dark mode"}
+        </Text>
       </Pressable>
 
+      {/* Pushing the footer down */}
       <View className="mx-4 my-2 h-px bg-border" />
       <Footer />
     </>
