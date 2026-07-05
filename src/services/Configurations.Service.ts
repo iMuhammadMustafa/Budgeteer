@@ -16,6 +16,8 @@ export interface IConfigurationService extends IService<Configuration, TableName
   useSetSystemCategory: () => ReturnType<
     typeof useMutation<void, unknown, { configType: ConfigurationTypes; categoryId: string }>
   >;
+  /** Ids of the transaction categories currently reserved by a system mapping. */
+  useSystemCategoryIds: () => ReturnType<typeof useQuery<string[]>>;
 }
 
 export function useConfigurationService(): IConfigurationService {
@@ -36,6 +38,19 @@ export function useConfigurationService(): IConfigurationService {
         // A missing configuration is a valid, expected state (e.g. an unmapped
         // system category) — resolve to null instead of throwing/retrying.
         return configurationRepo.getConfiguration(table, type, key, tenantId).catch(() => null);
+      },
+      enabled: !!tenantId,
+    });
+  };
+
+  const useSystemCategoryIds = () => {
+    return useQuery<string[]>({
+      queryKey: [...queryKeys.configurations.all, "systemCategoryIds", tenantId],
+      queryFn: async () => {
+        const configs = await configurationRepo.findAll(tenantId).catch(() => []);
+        return configs
+          .filter(c => c.table === TableNames.TransactionCategories && c.key === "id")
+          .map(c => c.value);
       },
       enabled: !!tenantId,
     });
@@ -62,5 +77,6 @@ export function useConfigurationService(): IConfigurationService {
     ),
     useGetConfiguration,
     useSetSystemCategory,
+    useSystemCategoryIds,
   };
 }

@@ -62,6 +62,7 @@ function EntityListItemInner<TModel extends EntityLike>({
   customAction,
   itemChildren,
   customRenderItem,
+  isProtected = false,
   testID,
 }: EntityListItemProps<TModel>) {
   const { isDark } = useTheme();
@@ -107,7 +108,20 @@ function EntityListItemInner<TModel extends EntityLike>({
       {onEdit ? (
         <IconButton testID={`edit-btn-${item.id}`} icon="SquarePen" size="sm" accessibilityLabel="Edit" onPress={edit} />
       ) : null}
-      <IconButton testID={`delete-btn-${item.id}`} icon="Trash2" size="sm" accessibilityLabel="Delete" onPress={del} />
+      {isProtected ? (
+        // Protected rows can't be deleted; the lock opens the confirm dialog,
+        // which explains why and keeps its Delete action disabled.
+        <IconButton
+          testID={`delete-btn-${item.id}`}
+          icon="Lock"
+          size="sm"
+          variant="ghost"
+          accessibilityLabel="Protected — can't delete"
+          onPress={del}
+        />
+      ) : (
+        <IconButton testID={`delete-btn-${item.id}`} icon="Trash2" size="sm" accessibilityLabel="Delete" onPress={del} />
+      )}
       {onRestore ? (
         <IconButton
           testID={`restore-btn-${item.id}`}

@@ -116,5 +116,11 @@ export interface EntityListItemProps<TModel extends EntityLike> {
   /** Nested content (e.g. savings buckets). When set, the row gets a chevron and collapses these by default. */
   itemChildren?: (item: TModel) => ReactNode;
   customRenderItem?: (item: TModel, isSelected: boolean, onLongPress: () => void, onPress: () => void) => ReactNode;
+  /**
+   * When true the row is reserved by the system (e.g. a category mapped for
+   * account operations): its delete action is replaced by a non-destructive
+   * "locked" affordance that opens the confirm dialog to explain why.
+   */
+  isProtected?: boolean;
   testID?: string;
 }

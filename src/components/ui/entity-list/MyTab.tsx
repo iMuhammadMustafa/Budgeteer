@@ -63,6 +63,10 @@ export interface MyTabProps<TModel, TTable extends TableNames> {
    * above the row-cards. Default "card". Ignored for ungrouped lists.
    */
   groupStyle?: "card" | "plain";
+  /** Marks rows that can't be deleted (their delete action is locked + explained). */
+  isItemProtected?: (item: TModel) => boolean;
+  /** Message shown in the confirm dialog when a protected row's delete is attempted. */
+  protectedMessage?: string;
 }
 
 export function MyTab<TModel, TTable extends TableNames>({
@@ -88,6 +92,8 @@ export function MyTab<TModel, TTable extends TableNames>({
   isPageLoading,
   columns = "auto",
   groupStyle = "card",
+  isItemProtected,
+  protectedMessage,
 }: MyTabProps<TModel, TTable>) {
   const state = useEntityList<TModel, TTable>({
     service,
@@ -100,6 +106,9 @@ export function MyTab<TModel, TTable extends TableNames>({
 
   const singular = singularize(title);
   const editing = !!(state.upsertModal.currentItem as any)?.id;
+  const deletingProtected = !!(
+    state.deleteModal.itemToDelete && isItemProtected?.(state.deleteModal.itemToDelete as TModel)
+  );
 
   return (
     <EntityListScreen<Renderable>
@@ -140,6 +149,7 @@ export function MyTab<TModel, TTable extends TableNames>({
           customRenderItem={
             customRenderItem as ((item: Renderable, s: boolean, l: () => void, p: () => void) => ReactNode) | undefined
           }
+          isProtected={isItemProtected ? isItemProtected(item as TModel) : false}
         />
       )}
       deleteModalSlot={
@@ -155,6 +165,8 @@ export function MyTab<TModel, TTable extends TableNames>({
           replacementItems={state.deleteModal.replacementItems as any}
           onConfirm={state.deleteModal.handleConfirm}
           allowDeleteDependencies={dependencyConfig?.allowDeleteDependencies}
+          isProtected={deletingProtected}
+          protectedMessage={protectedMessage}
         />
       }
       restoreModalSlot={

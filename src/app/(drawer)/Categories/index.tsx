@@ -1,13 +1,22 @@
+import { useMemo } from "react";
+
 import TransactionCategoryForm, { initialState } from "@/src/components/forms/TransactionCategoryForm";
 import { MyTab } from "@/src/components/ui";
-import { useTransactionCategoryService } from "@/src/services/TransactionCategories.Service";
+import { useConfigurationService } from "@/src/services/Configurations.Service";
+import {
+  SYSTEM_CATEGORY_DELETE_MESSAGE,
+  useTransactionCategoryService,
+} from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { TableNames } from "@/src/types/database/TableNames";
 import { queryKeys } from "@/src/services/queryKeys";
 
 export default function TransactionGroupsTab() {
   const categories = useTransactionCategoryService();
   const transactions = useTransactionService();
+  const configurations = useConfigurationService();
+
+  const { data: systemCategoryIds } = configurations.useSystemCategoryIds();
+  const protectedIds = useMemo(() => new Set(systemCategoryIds ?? []), [systemCategoryIds]);
 
   return (
     <MyTab
@@ -25,6 +34,8 @@ export default function TransactionGroupsTab() {
         dependencyType: "Transactions",
         allowDeleteDependencies: true,
       }}
+      isItemProtected={item => protectedIds.has(item.id)}
+      protectedMessage={SYSTEM_CATEGORY_DELETE_MESSAGE}
       columns={1}
     />
   );
