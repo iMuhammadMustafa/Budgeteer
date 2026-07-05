@@ -31,8 +31,10 @@ interface PeriodControl {
   prev: () => void;
   next: () => void;
   currentDate?: string;
-  /** This chart's query is refetching (e.g. after a period change) — drives the card's spinner. */
+  /** This chart's query is refetching (e.g. after a period change) — drives the card's skeleton. */
   loading?: boolean;
+  /** Drill into this chart's whole-period details (the ChartCard "Details" link). */
+  onDetails?: () => void;
 }
 
 export interface DashboardChartsProps {
@@ -63,8 +65,10 @@ export interface DashboardChartConfig {
   title: string;
   /** Period bar shown in the ChartCard; omitted for charts that own their own nav (e.g. calendar). */
   period?: ChartCardPeriod;
-  /** This chart's data is refetching — surfaces a subtle spinner in the card header. */
+  /** This chart's data is refetching — surfaces the card's body skeleton. */
   loading?: boolean;
+  /** Drill into the whole-period details (the ChartCard "Details" link); omitted for non-drillable charts. */
+  onDetails?: () => void;
   node: ReactNode;
 }
 
@@ -116,7 +120,7 @@ export function buildDashboardChartConfigs(
       fillHeight
       legendPosition="bottom"
       legendMaxHeight={120}
-      onSlicePress={d => {
+      onSliceLongPress={d => {
         if (d.label === "Other") return;
         const orig = data.find(p => p.x === d.label);
         if (orig) handlePiePress(orig, type);
@@ -135,6 +139,7 @@ export function buildDashboardChartConfigs(
       title: "Week's Expenses",
       period: period(periodControls.week),
       loading: periodControls.week.loading,
+      onDetails: periodControls.week.onDetails,
       node: (
         <BarChart
           animated={animated}
@@ -142,7 +147,7 @@ export function buildDashboardChartConfigs(
           showYAxis={false}
           fillHeight
           selectedIndex={barSelectedIndex >= 0 ? barSelectedIndex : undefined}
-          onBarPress={(_d, i) => {
+          onBarLongPress={(_d, i) => {
             if (!ws) return;
             handleDayPress({ dateString: ws.add(i, "day").format("YYYY-MM-DD") }, DashboardViewSelectionType.BAR);
           }}
@@ -180,6 +185,7 @@ export function buildDashboardChartConfigs(
       title: "Categories",
       period: period(periodControls.categoriesMonth),
       loading: periodControls.categoriesMonth.loading,
+      onDetails: periodControls.categoriesMonth.onDetails,
       node: donut(monthlyCategories, "category"),
     },
     {
@@ -189,6 +195,7 @@ export function buildDashboardChartConfigs(
       title: "Groups",
       period: period(periodControls.groupsMonth),
       loading: periodControls.groupsMonth.loading,
+      onDetails: periodControls.groupsMonth.onDetails,
       node: donut(monthlyGroups, "group"),
     },
     {
@@ -215,6 +222,7 @@ export function buildDashboardChartConfigs(
       title: "Net Earnings",
       period: period(periodControls.earningsYear),
       loading: periodControls.earningsYear.loading,
+      onDetails: periodControls.earningsYear.onDetails,
       node: (
         <DoubleBarChart
           animated={animated}
@@ -225,7 +233,7 @@ export function buildDashboardChartConfigs(
           bar2Color={earnings.bar2Color}
           fillHeight
           selectedIndex={doubleBarSelectedIndex >= 0 ? doubleBarSelectedIndex : undefined}
-          onBarPress={(_d, i) => {
+          onBarLongPress={(_d, i) => {
             const point = yearlyTransactionsTypes[i];
             if (point) handleBarPress(point);
           }}

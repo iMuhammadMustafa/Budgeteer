@@ -25,6 +25,10 @@ export interface IDetailsViewProps {
   itemLabel?: string;
   month?: string;
   transactionType?: string;
+  /** The chart's whole-period window (week/month/year), independent of the focused item's window.
+   * Lets the details page toggle between the focused item and "All · <period>". */
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 type PeriodRange = { start: string; end: string };
@@ -235,6 +239,9 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     const dateString = dayjs(day.dateString).local().format("YYYY-MM-DD");
     const startOfDay = dayjs(day.dateString).utc().startOf("day").toISOString();
     const endOfDay = dayjs(day.dateString).utc().endOf("day").toISOString();
+    // The whole period around this day: the week for a bar-day, the month for a calendar-day.
+    const d = dayjs(day.dateString).utc();
+    const periodUnit = type === DashboardViewSelectionType.BAR ? "week" : "month";
 
     router.push({
       pathname: "/Dashboard/Details",
@@ -244,6 +251,8 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
         label: dateString,
         startDate: startOfDay,
         endDate: endOfDay,
+        periodStart: d.startOf(periodUnit).toISOString(),
+        periodEnd: d.endOf(periodUnit).toISOString(),
       },
     });
   }, []);
@@ -265,6 +274,9 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           label: `${type === "category" ? "Category" : "Group"}: ${item.x}`,
           startDate: startOfMonth,
           endDate: endOfMonth,
+          // Period = the whole month (the toggle's "All · <month>" scope).
+          periodStart: startOfMonth,
+          periodEnd: endOfMonth,
         },
       });
     },
@@ -297,10 +309,39 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
           startDate: startOfMonth,
           endDate: endOfMonth,
           transactionType: transactionTypeStr,
+          // Period = the whole year (the toggle's "All · <year>" scope).
+          periodStart: earnings.range.start,
+          periodEnd: earnings.range.end,
         },
       });
     },
     [earnings.range],
+  );
+
+  // The "Details" link on a chart card: drill into the whole period (no focused item), so the
+  // details page opens on its "All · <period>" scope. Item-level drill-in is long-press instead.
+  const handleChartDetails = useCallback(
+    (opts: {
+      type: DashboardViewSelectionType;
+      pieType?: "category" | "group";
+      periodStart: string;
+      periodEnd: string;
+      label: string;
+    }) => {
+      router.push({
+        pathname: "/Dashboard/Details",
+        params: {
+          type: opts.type,
+          pieType: opts.pieType,
+          label: opts.label,
+          startDate: opts.periodStart,
+          endDate: opts.periodEnd,
+          periodStart: opts.periodStart,
+          periodEnd: opts.periodEnd,
+        },
+      });
+    },
+    [],
   );
 
   const handleBackToOverview = useCallback(() => {
@@ -366,19 +407,55 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   const onPrevWeek = useCallback(() => stepWeek(-1), [stepWeek]);
   const onNextWeek = useCallback(() => stepWeek(1), [stepWeek]);
 
+  const weekPeriod = useMemo(
+    () => ({
+      start: dayjs(weekBaseDate).utc().startOf("week").toISOString(),
+      end: dayjs(weekBaseDate).utc().endOf("week").toISOString(),
+    }),
+    [weekBaseDate],
+  );
+
   const periodControls = {
-    week: { label: weekLabel, prev: onPrevWeek, next: onNextWeek, loading: isDailyFetching },
+    week: {
+      label: weekLabel,
+      prev: onPrevWeek,
+      next: onNextWeek,
+      loading: isDailyFetching,
+      onDetails: () =>
+        handleChartDetails({
+          type: DashboardViewSelectionType.BAR,
+          periodStart: weekPeriod.start,
+          periodEnd: weekPeriod.end,
+          label: weekLabel,
+        }),
+    },
     categoriesMonth: {
       label: categories.label,
       prev: categories.prev,
       next: categories.next,
       loading: isCategoriesFetching,
+      onDetails: () =>
+        handleChartDetails({
+          type: DashboardViewSelectionType.PIE,
+          pieType: "category",
+          periodStart: categories.range.start,
+          periodEnd: categories.range.end,
+          label: `Categories · ${categories.label}`,
+        }),
     },
     groupsMonth: {
       label: groups.label,
       prev: groups.prev,
       next: groups.next,
       loading: isGroupsFetching,
+      onDetails: () =>
+        handleChartDetails({
+          type: DashboardViewSelectionType.PIE,
+          pieType: "group",
+          periodStart: groups.range.start,
+          periodEnd: groups.range.end,
+          label: `Groups · ${groups.label}`,
+        }),
     },
     calendar: {
       label: daily.label,
@@ -387,7 +464,19 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       currentDate: daily.range.start,
       loading: isDailyFetching,
     },
-    earningsYear: { label: earnings.label, prev: earnings.prev, next: earnings.next, loading: isYearlyFetching },
+    earningsYear: {
+      label: earnings.label,
+      prev: earnings.prev,
+      next: earnings.next,
+      loading: isYearlyFetching,
+      onDetails: () =>
+        handleChartDetails({
+          type: DashboardViewSelectionType.DOUBLE_BAR,
+          periodStart: earnings.range.start,
+          periodEnd: earnings.range.end,
+          label: `Net Earnings · ${earnings.label}`,
+        }),
+    },
     netWorthYear: { label: netWorth.label, prev: netWorth.prev, next: netWorth.next, loading: isNetWorthFetching },
   };
 
