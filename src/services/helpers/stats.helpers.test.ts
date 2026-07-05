@@ -2,8 +2,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { describe, expect, it } from "vitest";
 
-// getStatsDailyTransactionsHelper (week mode) calls `.local()`, which the app
-// enables globally via dayjs.extend(utc) in src/app/_layout.tsx. Replicate here.
+// The app enables the dayjs utc plugin globally (dayjs.extend(utc) in
+// src/app/_layout.tsx); replicate here so parsing/formatting matches the app.
 dayjs.extend(utc);
 
 import {
@@ -25,17 +25,32 @@ describe("getStatsDailyTransactionsHelper", () => {
         expect(calendarData["2026-01-05"]!.dots!.map((d: any) => d.color)).toEqual(["green", "red"]);
     });
 
-    it("produces a 7-day week series with a 'Today' label and zero-filled gaps", () => {
+    it("buckets rows onto the correct calendar day and zero-fills the rest (no false 'Today')", () => {
         const { barsData } = getStatsDailyTransactionsHelper(
             [{ date: "2026-01-07", type: "Expense", sum: -40 }] as any,
             true,
-            "2026-01-07", // Wednesday
+            "2026-01-07", // a Wednesday, not the real current day
         );
         expect(barsData).toHaveLength(7);
-        const today = barsData!.find((b) => b.x === "Today");
-        expect(today?.y).toBe(40); // absolute value
-        // days with no data are zeroed
-        expect(barsData!.filter((b) => b.y === 0).length).toBe(6);
+        // Sunday-based week of 2026-01-07 is 2026-01-04..2026-01-10, so Wed is index 3.
+        expect(barsData![3]).toMatchObject({ x: "Wed", y: 40 }); // absolute value, correct day
+        // A base that isn't today must not fabricate a "Today" marker.
+        expect(barsData!.some((b) => b.x === "Today")).toBe(false);
+        expect(barsData!.filter((b) => b.y === 0)).toHaveLength(6);
+        // Every slot carries its real date so an empty-day bar can still drill into details.
+        expect(barsData!.every((b) => typeof b.item?.date === "string")).toBe(true);
+    });
+
+    it("marks only the real current day as 'Today'", () => {
+        const todayKey = dayjs().format("YYYY-MM-DD");
+        const { barsData } = getStatsDailyTransactionsHelper(
+            [{ date: todayKey, type: "Expense", sum: -25 }] as any,
+            true,
+            dayjs().toISOString(),
+        );
+        const today = barsData!.filter((b) => b.x === "Today");
+        expect(today).toHaveLength(1);
+        expect(today[0].y).toBe(25);
     });
 });
 
