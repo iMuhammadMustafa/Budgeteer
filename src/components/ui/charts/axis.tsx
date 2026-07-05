@@ -40,19 +40,52 @@ export function compactTick(n: number): string {
 export type AxisScale = { min: number; max: number; ticks: number[] };
 export type YTickMode = "nice" | "count";
 
-/** Round a rough step up to the nearest 1/2/5 × 10ⁿ ("nice" number). */
+/** Round a rough step up to the nearest 1/2/2.5/5 × 10ⁿ ("nice" number). */
 function niceStep(rough: number): number {
   if (rough <= 0 || !isFinite(rough)) return 1;
   const pow = Math.pow(10, Math.floor(Math.log10(rough)));
   const n = rough / pow;
-  const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
   return m * pow;
 }
 
-/** Human-friendly scale: rounds the domain outward to nice numbers, ~`count` steps. */
+/**
+ * Human-friendly scale: snaps the domain to nice round numbers with ~`count` steps. Rather than
+ * always taking the coarsest step for `count`, it evaluates the neighbouring finer nice steps too
+ * and keeps whichever leaves the LEAST empty headroom above `max` while staying within a sane
+ * gridline budget — so the tallest bar/point sits near the top of the plot instead of floating
+ * low under a half-empty axis. Ties break toward the tick count closest to `count`.
+ */
 export function niceScale(min: number, max: number, count = 4): AxisScale {
   if (!(max > min)) max = min + 1;
-  const step = niceStep((max - min) / Math.max(1, count));
+  const target = Math.max(1, count);
+  const base = niceStep((max - min) / target);
+  // Candidate steps: the target-derived nice step and two finer ones below it.
+  const candidates = [base, niceStep(base * 0.6), niceStep(base * 0.35)].filter(
+    (s, i, a) => s > 0 && a.indexOf(s) === i,
+  );
+
+  let best: AxisScale | null = null;
+  let bestScore = Infinity;
+  for (const step of candidates) {
+    const niceMin = Math.floor(min / step) * step;
+    const niceMax = Math.ceil(max / step) * step;
+    const nTicks = Math.round((niceMax - niceMin) / step) + 1;
+    if (nTicks < 3 || nTicks > 8) continue; // keep the gridline count readable
+    const headroom = (niceMax - max) / (niceMax - niceMin || 1); // fraction of the axis left empty
+    // Prefer little headroom, then a tick count near `count`.
+    const score = headroom * 100 + Math.abs(nTicks - (target + 1));
+    if (score < bestScore) {
+      bestScore = score;
+      const ticks: number[] = [];
+      for (let v = niceMin; v <= niceMax + step / 2; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+      best = { min: niceMin, max: niceMax, ticks };
+    }
+  }
+
+  if (best) return best;
+  // Fallback: original single-step behaviour (e.g. when no candidate fit the tick budget).
+  const step = base;
   const niceMin = Math.floor(min / step) * step;
   const niceMax = Math.ceil(max / step) * step;
   const ticks: number[] = [];
