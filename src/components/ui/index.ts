@@ -49,6 +49,8 @@ export { ResponsiveModal, type ResponsiveModalProps } from "./overlay/Responsive
 export { useConfirm, useAlert, type ConfirmOptions, type AlertOptions } from "./overlay/useConfirm";
 export { useOverlayApi, type OverlayApi } from "./overlay/context";
 export { type Anchor } from "./overlay/panels";
+export { useNotify, type NotifyType, type NotifyOptions, type NotificationApi } from "./notifications/context";
+export { ToastHost } from "./notifications/ToastHost";
 export { Select, type SelectProps, type SelectOption, type SelectPresent } from "./Select";
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";

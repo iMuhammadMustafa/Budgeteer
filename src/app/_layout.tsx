@@ -14,6 +14,7 @@ import { BrandSplash, useBudgeteerFonts } from "@/src/components/ui";
 import AppInitializer from "@/src/providers/AppInitalizer";
 import AuthProvider from "@/src/providers/AuthProvider";
 import CloudSyncProvider from "@/src/providers/CloudSyncProvider";
+import NotificationProvider from "@/src/providers/NotificationProvider";
 import OverlayProvider from "@/src/providers/OverlayProvider";
 import QueryProvider from "@/src/providers/QueryProvider";
 import StorageModeProvider from "@/src/providers/StorageModeProvider";
@@ -72,7 +73,7 @@ export default function RootLayout() {
     <Suspense fallback={<ActivityIndicator />}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
-          {/* <NotificationsProvider> */}
+          <NotificationProvider>
           {fontsLoaded ? (
             <StorageModeProvider>
               <AuthProvider>
@@ -95,7 +96,7 @@ export default function RootLayout() {
           ) : (
             <BrandSplash />
           )}
-          {/* </NotificationsProvider> */}
+          </NotificationProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </Suspense>
