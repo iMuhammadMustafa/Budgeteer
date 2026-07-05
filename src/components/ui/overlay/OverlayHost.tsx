@@ -42,7 +42,16 @@ export function OverlayHost({ entries }: { entries: OverlayEntry[] }) {
 
   if (Platform.OS === "web") {
     if (!active || !createPortal || typeof document === "undefined") return null;
-    return createPortal(<View style={WEB_ROOT_STYLE}>{content}</View>, document.body);
+    // `box-none`: the fixed full-viewport root must not itself capture pointer/wheel
+    // events (it lives on document.body, outside the app's scroll container, so
+    // capturing here would lock page scroll behind anchored popovers). Only real
+    // child surfaces — dialog/sheet backdrops and popover panels — capture events.
+    return createPortal(
+      <View style={WEB_ROOT_STYLE} pointerEvents="box-none">
+        {content}
+      </View>,
+      document.body,
+    );
   }
 
   return (

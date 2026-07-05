@@ -10,7 +10,7 @@
  * ScrollView in RN), so long content scrolls instead of clipping. Pass
  * `scrollable={false}` when the child manages its own scroll (e.g. Select).
  */
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -218,12 +218,39 @@ export function AnchoredPanel({
 }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const { left, width, maxHeight, pos } = resolveAnchoredPlacement(anchor, winW, winH, matchWidth, minWidth);
+  const surfaceRef = useRef<View>(null);
+
+  // Web: a full-screen scrim would swallow wheel events and lock page scroll while
+  // a dropdown / date-picker is open. Instead skip the blocking scrim and dismiss
+  // on outside pointer-down or on scroll — scrolling would otherwise leave the
+  // popover drifting away from its (absolutely-positioned) anchor. Interactions
+  // *inside* the surface (selecting an option, scrolling a long list) are ignored.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const insideSurface = (target: EventTarget | null) => {
+      const node = surfaceRef.current as unknown as HTMLElement | null;
+      return !!node && target instanceof Node && node.contains(target);
+    };
+    const onPointerDown = (e: MouseEvent) => {
+      if (!insideSurface(e.target)) onClose?.();
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!insideSurface(e.target)) onClose?.();
+    };
+    window.addEventListener("mousedown", onPointerDown, true);
+    window.addEventListener("wheel", onWheel, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown, true);
+      window.removeEventListener("wheel", onWheel, true);
+    };
+  }, [onClose]);
 
   return (
-    <View className="absolute inset-0">
-      <Backdrop onPress={onClose} transparent />
+    <View className="absolute inset-0" pointerEvents={Platform.OS === "web" ? "box-none" : "auto"}>
+      {Platform.OS === "web" ? null : <Backdrop onPress={onClose} transparent />}
       <Fade style={{ position: "absolute", left, width, maxHeight, ...pos }}>
         <View
+          ref={surfaceRef}
           testID={testID}
           className="overflow-hidden rounded-xl border border-border bg-surface"
           style={[SURFACE_SHADOW, { maxHeight }]}
