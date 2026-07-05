@@ -21,32 +21,36 @@ export const getStatsDailyTransactionsHelper = (
 } => {
   let barsData: BarDataType[] | undefined = undefined;
   if (week) {
+    // Build the 7 slots by ACTUAL date (Sunday-based week of `base`), and bucket the daily
+    // rows into them by calendar day (YYYY-MM-DD) — not by weekday string, which could bucket a
+    // row onto the wrong day. Row keys and slot keys are both formatted the same way (matching the
+    // calendar branch below) so they line up regardless of timezone.
     const base = baseDate ? dayjs(baseDate) : dayjs();
-    const todayLabel = base.format("ddd");
-    const start = base.startOf("week").local();
-    const end = base.endOf("week").local();
+    const weekStart = base.startOf("week");
+    const todayKey = dayjs().format("YYYY-MM-DD");
 
-    const thisWeekData = data
-      .filter((item: any) => {
-        const d = dayjs(item.date).local();
-        return d >= start && d <= end;
-      })
-      .map((item: any) => {
-        const x = dayjs(item.date).format("ddd");
-        const y = Math.abs(item.sum ?? 0);
-        const color = (item.sum ?? 0) > 0 ? "rgba(76, 175, 80, 0.6)" : "rgba(244, 67, 54, 0.6)";
-        return { x, y, color, item };
-      });
+    const sumByDay = new Map<string, number>();
+    const rowByDay = new Map<string, any>();
+    for (const item of data as any[]) {
+      const key = dayjs(item.date).format("YYYY-MM-DD");
+      sumByDay.set(key, (sumByDay.get(key) ?? 0) + (item.sum ?? 0));
+      rowByDay.set(key, item);
+    }
 
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    barsData = daysOfWeek.map(day => {
-      const dayData = thisWeekData.find((x: any) => x.x === day);
-      const x = todayLabel === day ? "Today" : day;
+    barsData = Array.from({ length: 7 }, (_, i) => {
+      const dayDate = weekStart.add(i, "day");
+      const key = dayDate.format("YYYY-MM-DD");
+      const sum = sumByDay.get(key) ?? 0;
+      // "Today" only when the slot is the real current day (not `base`'s weekday), so a past/future
+      // week shows no "Today" and the marker never lands a day off.
+      const isToday = key === todayKey;
       return {
-        x,
-        y: dayData?.y ?? 0,
-        color: dayData?.color ?? "rgba(255, 255, 255, 0.6)",
-        item: dayData?.item,
+        x: isToday ? "Today" : dayDate.format("ddd"),
+        y: Math.abs(sum),
+        color: sum > 0 ? "rgba(76, 175, 80, 0.6)" : sum < 0 ? "rgba(244, 67, 54, 0.6)" : "rgba(255, 255, 255, 0.6)",
+        // Always carry the slot's real date so a bar long-press can drill to that day even when it
+        // has no transactions (keeps `weekStart()` resolvable for an empty week too).
+        item: rowByDay.get(key) ?? { date: key },
       };
     });
   }
