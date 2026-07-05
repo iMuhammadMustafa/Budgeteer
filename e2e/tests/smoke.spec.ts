@@ -19,6 +19,14 @@ test.describe("@smoke @mobile app entry", () => {
     await expect(page.getByTestId("mode-local")).toBeVisible();
     await expect(page.getByTestId("mode-cloud")).toBeVisible();
     await expect(page.getByTestId("mode-demo")).toBeVisible();
+    // Theme toggle is present on the landing shell.
+    await expect(page.getByTestId("btn-theme-toggle").first()).toBeVisible();
+  });
+
+  test("choosing Cloud mode routes to the Login screen", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("mode-cloud").first().click();
+    await expect(page).toHaveURL(/\/Login/);
   });
 
   test("enters the app seeded and lands on the Dashboard", async ({ page }) => {
