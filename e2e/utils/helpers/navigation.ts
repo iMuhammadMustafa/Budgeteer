@@ -39,6 +39,10 @@ export async function navigateToCategories(page: Page) {
   await navigate(page, "Categories", /\/Categories/);
 }
 
+export async function navigateToSummary(page: Page) {
+  await navigate(page, "Summary", /\/Summary/);
+}
+
 export async function navigateToSettings(page: Page) {
   await navigate(page, "Settings", /\/Settings/);
 }
