@@ -62,6 +62,7 @@ function DashboardCharts({
         title={c.title}
         period={c.period}
         loading={c.loading}
+        onDetails={c.onDetails}
         className="my-0 h-full"
         testID={`chart-card-${c.key}`}
       >
