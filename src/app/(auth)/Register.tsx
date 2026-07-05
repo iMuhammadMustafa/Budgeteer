@@ -1,11 +1,12 @@
-import { Button, Input, Select, Text as ThemedText } from "@/src/components/ui";
+import { useState } from "react";
+import { View } from "react-native";
+import { Link, router } from "expo-router";
+
 import supabase from "@/src/providers/Supabase";
 import { CURRENCIES, DEFAULT_CURRENCY } from "@/src/utils/currency";
 import { storage } from "@/src/utils/storageUtils";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { Link, router } from "expo-router";
-import { useState } from "react";
-import { View } from "react-native";
+import { Button, Input, Select, Text as ThemedText, useNotify } from "@/src/components/ui";
 
 const initailRegisterState = {
   id: GenerateUuid(),
@@ -24,6 +25,7 @@ const currencyOptions = CURRENCIES.map(c => ({
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export default function Register() {
+  const { notify } = useNotify();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initailRegisterState);
   const isValid = !!(
@@ -33,9 +35,6 @@ export default function Register() {
     user.confirmPassword &&
     user.password === user.confirmPassword &&
     (!user.tenantId || (user.tenantId.trim().length > 2 && uuidRegex.test(user.tenantId)))
-  );
-  const [error, setError] = useState<string | null>(
-    "Registeration is currently disabled. Please contact the administrator.",
   );
 
   const signUpWithEmail = async () => {
@@ -59,8 +58,9 @@ export default function Register() {
     });
 
     if (error) {
-      setError(error.message);
+      notify({ message: error.message, type: "error" });
     } else {
+      notify({ message: "Registered successfully", type: "success" });
       router.navigate("/Login");
     }
     setLoading(false);
@@ -68,12 +68,6 @@ export default function Register() {
 
   return (
     <View className="justify-center m-auto p-4 h-full w-full md:w-[50%]">
-      {error && (
-        <View className="flex-row items-center rounded-lg p-2 bg-red-100 border border-red-200">
-          <ThemedText className="text-red-800 font-medium mr-2 flex-1">{error}</ThemedText>
-          <Button variant="ghost" label="" onPress={() => setError(null)} leadingIcon="X" />
-        </View>
-      )}
       <Button
         variant="ghost"
         label="Back"

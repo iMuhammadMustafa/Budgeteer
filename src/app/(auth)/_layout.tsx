@@ -1,21 +1,24 @@
-import { useAuth } from "@/src/providers/AuthProvider";
 import { router, Stack } from "expo-router";
-import { ActivityIndicator } from "react-native";
+
+import { useAuth } from "@/src/providers/AuthProvider";
+import { Loader } from "@/src/components/ui";
 
 export default function AuthLayout() {
   const { session, isLoading } = useAuth();
 
   if (isLoading) {
-    return <ActivityIndicator />;
+    return <Loader size="full" label="Loading…" />;
   }
   if (session) {
     router.navigate("/Dashboard");
   }
 
   return (
-    <Stack screenOptions={{
-      headerShown: false
-    }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="Login" />
       <Stack.Screen name="Register" />
     </Stack>

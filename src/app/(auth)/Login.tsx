@@ -1,17 +1,19 @@
-import { Button, Input, Text as ThemedText } from "@/src/components/ui";
+import { useState } from "react";
+import { View } from "react-native";
+import { Link, router } from "expo-router";
+
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
 import supabase from "@/src/providers/Supabase";
 import { StorageMode } from "@/src/types/StorageMode";
-import { Link, router } from "expo-router";
-import { useState } from "react";
-import { Alert, View } from "react-native";
+import { Button, Input, Text as ThemedText, useNotify } from "@/src/components/ui";
 
 export default function Login() {
   const [user, setUser] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const { setStorageMode } = useStorageMode();
   const { setSession } = useAuth();
+  const { notify } = useNotify();
 
   const isValid = !loading && user.email.length > 0 && user.password.length > 0;
 
@@ -27,7 +29,7 @@ export default function Login() {
     });
 
     if (error) {
-      Alert.alert(error.message);
+      notify({ message: error.message, type: "error" });
       setLoading(false);
       return;
     }
@@ -38,6 +40,7 @@ export default function Login() {
     } = await supabase.auth.getSession();
     setSession(session, StorageMode.Cloud);
     setLoading(false);
+    notify({ message: "Logged in successfully", type: "success" });
     router.navigate("/Dashboard");
   };
 
@@ -48,7 +51,7 @@ export default function Login() {
         label="Back to mode selection"
         onPress={() => router.navigate("/")}
         leadingIcon="ArrowLeft"
-        className="self-start text-blue-600 text-center px-0"
+        className="self-start text-center px-0"
       />
 
       <View className="flex-row items-center mb-2">
