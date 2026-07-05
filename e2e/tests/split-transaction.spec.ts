@@ -1,5 +1,5 @@
 import { gotoApp, test } from "../fixtures/app";
-import { createAccount, fillTransactionForm, listItem } from "../utils/forms";
+import { createAccount, fillTransactionForm, listItem, selectTransaction, transactionRow } from "../utils/forms";
 import { expect } from "@playwright/test";
 import { navigateToAccounts, navigateToAddTransaction, navigateToTransactions } from "../utils/helpers/navigation";
 
@@ -12,7 +12,8 @@ import { navigateToAccounts, navigateToAddTransaction, navigateToTransactions } 
  * The modal seeds two children ("… (Part 1)" full amount + "… (Part 2)" zero);
  * children inherit the source account + category, so a balanced split only
  * needs the amounts. The children replace the original, so the account balance
- * is conserved.
+ * is conserved. The split affordance is single-selection-only (see
+ * `PageHeader.isSingleNonVoidTransfer`), asserted by the second test.
  */
 test.describe("split transaction", () => {
   test("splits a transaction into two balanced children", async ({ page }) => {
@@ -57,5 +58,32 @@ test.describe("split transaction", () => {
 
     await navigateToAccounts(page);
     await expect(listItem(page, account)).toContainText("$900.00");
+  });
+
+  test("hides the split affordance when multiple transactions are selected", async ({ page }) => {
+    await gotoApp(page);
+
+    const account = `Multi Acct ${Date.now()}`;
+    await navigateToAccounts(page);
+    await createAccount(page, { name: account, categoryName: "Cash", balance: "1000" });
+
+    const stamp = Date.now();
+    const first = `First Exp ${stamp}`;
+    const second = `Second Exp ${stamp}`;
+    for (const name of [first, second]) {
+      await navigateToAddTransaction(page);
+      await fillTransactionForm(page, { type: "Expense", amount: "25", categoryName: "Fuel", accountName: account, name });
+    }
+
+    await navigateToTransactions(page);
+
+    // One selected → split is available.
+    await selectTransaction(page, first);
+    await expect(page.getByTestId("btn-split-transaction")).toBeVisible();
+
+    // Add the second to the selection → split disappears, but batch delete stays.
+    await transactionRow(page, second).first().click();
+    await expect(page.getByTestId("btn-split-transaction")).toHaveCount(0);
+    await expect(page.getByTestId("btn-delete-selected")).toBeVisible();
   });
 });

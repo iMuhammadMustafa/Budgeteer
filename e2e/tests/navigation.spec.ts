@@ -5,9 +5,13 @@ import {
   navigateToAccounts,
   navigateToAddTransaction,
   navigateToDashboard,
+  navigateToRestoreAccountCategories,
   navigateToRestoreAccounts,
+  navigateToRestoreTransactionCategories,
   navigateToRestoreTransactionGroups,
+  navigateToRestoreTransactions,
   navigateToSettings,
+  navigateToTransactionCategories,
   navigateToTransactionGroups,
   navigateToTransactions,
 } from "../utils/helpers/navigation";
@@ -57,5 +61,31 @@ test.describe("navigation", () => {
 
     await navigateToRestoreTransactionGroups(page);
     await expect(page).toHaveURL(/\/Restore\/TransactionGroups/);
+  });
+
+  test("navigates to every Restore sub-tab", async ({ page }) => {
+    await navigateToRestoreAccounts(page);
+    await expect(page).toHaveURL(/\/Restore\/Accounts/);
+
+    await navigateToRestoreAccountCategories(page);
+    await expect(page).toHaveURL(/\/Restore\/AccountCategories/);
+
+    await navigateToRestoreTransactions(page);
+    await expect(page).toHaveURL(/\/Restore\/Transactions/);
+
+    await navigateToRestoreTransactionCategories(page);
+    await expect(page).toHaveURL(/\/Restore\/TransactionCategories/);
+
+    await navigateToRestoreTransactionGroups(page);
+    await expect(page).toHaveURL(/\/Restore\/TransactionGroups/);
+  });
+
+  test("switches between the Categories and Groups sub-tabs", async ({ page }) => {
+    await navigateToTransactionGroups(page);
+    await expect(page).toHaveURL(/\/Categories\/Groups/);
+
+    // Back to the Categories index (which IS Transaction Categories).
+    await navigateToTransactionCategories(page);
+    await expect(page).toHaveURL(/\/Categories$/);
   });
 });
