@@ -5,10 +5,12 @@
   "cleanUrls": true,
   "framework": null,
   "rewrites": [
-    {
-      "source": "/:path*",
-      "destination": "/"
-    }
+    { "source": "/Accounts/Categories/:id", "destination": "/Accounts/Categories/[id]" },
+    { "source": "/Accounts/:id", "destination": "/Accounts/[id]" },
+    { "source": "/Categories/Groups/:id", "destination": "/Categories/Groups/[id]" },
+    { "source": "/Categories/:id", "destination": "/Categories/[id]" },
+    { "source": "/Recurrings/:id", "destination": "/Recurrings/[id]" },
+    { "source": "/:path*", "destination": "/" }
   ],
   "headers": [
     {
