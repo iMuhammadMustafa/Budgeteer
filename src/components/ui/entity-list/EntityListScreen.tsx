@@ -288,9 +288,9 @@ export function EntityListScreen<TModel extends { id: string }>({
           // Wide desktop: height-balanced two columns (non-virtualized — the
           // memoized distribution keeps the columns even without dead space).
           <ScrollView className="custom-scrollbar mt-1 flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
-            <View className="flex-row gap-4 px-4 pb-4 lg:px-6">
+            <View className="flex-row gap-5 px-4 pb-4 lg:px-6">
               {balancedColumns.map((colRows, i) => (
-                <View key={i} className="flex-1 gap-3">
+                <View key={i} className="flex-1 gap-5">
                   {colRows.map(row => (
                     <Fragment key={row.key}>{renderRow(row)}</Fragment>
                   ))}

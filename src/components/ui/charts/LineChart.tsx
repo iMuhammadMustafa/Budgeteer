@@ -478,6 +478,7 @@ export function LineChartSkeleton({
           selectedIndex={null}
           xPositions={pts.map(p => p.x)}
           width={w}
+          isLoading
         />
         {legendSpace ? <View style={{ height: legendSpace }} /> : null}
       </View>

@@ -5,7 +5,11 @@
  */
 import { useState } from "react";
 import { View } from "react-native";
-import { Button, ResponsiveModal, Select, Text } from "@/src/components/ui";
+
+import { Button } from "@/src/components/ui/Button";
+import { ResponsiveModal } from "@/src/components/ui/overlay/ResponsiveModal";
+import { Select } from "@/src/components/ui/Select";
+import { Text } from "@/src/components/ui/Text";
 
 interface DeleteConfirmModalProps<TModel> {
   isOpen: boolean;
@@ -72,8 +76,7 @@ export default function DeleteConfirmModal<TModel extends { id: string; name?: s
             Can’t delete this {itemName}
           </Text>
           <Text variant="caption" className="text-ink-mute">
-            {protectedMessage ??
-              `“${itemToDelete?.name || itemName}” is reserved by the system and can’t be deleted.`}
+            {protectedMessage ?? `“${itemToDelete?.name || itemName}” is reserved by the system and can’t be deleted.`}
           </Text>
         </View>
       ) : (

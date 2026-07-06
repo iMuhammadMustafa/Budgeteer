@@ -246,8 +246,7 @@ export function DoubleBarChartSkeleton({
     <Pulse duration={2400} minOpacity={0.35} maxOpacity={0.85} style={fillHeight ? { flex: 1 } : undefined}>
       <View testID={testID} className={cn("w-full", fillHeight && "flex-1", className)}>
         <View
-          className="flex-row items-end gap-0.5"
-          style={fillHeight ? { flex: 1, paddingLeft: leftPad } : { height: effectiveHeight, paddingLeft: leftPad }}
+          style={fillHeight ? { flex: 1 } : { height: effectiveHeight }}
           onLayout={fillHeight ? e => setMeasuredHeight(e.nativeEvent.layout.height) : undefined}
         >
           <YGrid
@@ -257,32 +256,42 @@ export function DoubleBarChartSkeleton({
             showYGrid={false}
             showLabels={false}
           />
-          {Array.from({ length: n }).map((_, i) => (
-            <View key={i} className="flex-1 flex-row items-end justify-center gap-0.5" style={{ height }}>
-              <View
-                style={{
-                  height: Math.max(2, SKELETON[i % SKELETON.length] * height),
-                  width: "35%",
-                  backgroundColor: inc,
-                  opacity: 0.3,
-                  borderTopLeftRadius: 4,
-                  borderTopRightRadius: 4,
-                }}
-              />
-              <View
-                style={{
-                  height: Math.max(2, SKELETON[(i + 3) % SKELETON.length] * height),
-                  width: "35%",
-                  backgroundColor: exp,
-                  opacity: 0.3,
-                  borderTopLeftRadius: 4,
-                  borderTopRightRadius: 4,
-                }}
-              />
-            </View>
-          ))}
+          <View
+            className="flex-row items-end gap-0.5"
+            style={fillHeight ? { flex: 1, paddingLeft: leftPad + 10 } : { height: effectiveHeight, paddingLeft: leftPad + 10 }}
+          >
+            {Array.from({ length: n }).map((_, i) => (
+              <View key={i} className="flex-1 flex-row items-end justify-center gap-0.5" style={{ height }}>
+                <View
+                  style={{
+                    height: Math.max(2, SKELETON[i % SKELETON.length] * height),
+                    width: "35%",
+                    backgroundColor: inc,
+                    opacity: 0.3,
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4,
+                  }}
+                />
+                <View
+                  style={{
+                    height: Math.max(2, SKELETON[(i + 3) % SKELETON.length] * height),
+                    width: "35%",
+                    backgroundColor: exp,
+                    opacity: 0.3,
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4,
+                  }}
+                />
+              </View>
+            ))}
+          </View>
         </View>
-        <XLabels labels={Array.from({ length: n }).map((_, i) => String(i))} selectedIndex={null} leftPad={leftPad} />
+        <XLabels
+          labels={Array.from({ length: n }).map((_, i) => String(i))}
+          selectedIndex={null}
+          leftPad={leftPad}
+          isLoading
+        />
       </View>
       {isEmpty && (
         <View className="absolute inset-0 items-center justify-center">

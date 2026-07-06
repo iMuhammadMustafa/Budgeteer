@@ -114,6 +114,7 @@ export function XLabels({
   leftPad = 0,
   xPositions,
   width,
+  isLoading = false,
 }: {
   labels: string[];
   selectedIndex?: number | null;
@@ -122,6 +123,7 @@ export function XLabels({
   /** Absolute pixel centers per label — point-aligned mode (line chart). Requires `width`. */
   xPositions?: number[];
   width?: number;
+  isLoading?: boolean;
 }) {
   const isAngled = angled ?? labels.length > X_LABEL_ANGLE_THRESHOLD;
 
@@ -131,6 +133,22 @@ export function XLabels({
       <View style={{ height: xLabelsHeight(isAngled), width }}>
         {labels.map((l, i) => {
           const cx = xPositions[i] ?? 0;
+          if (isLoading) {
+            return (
+              <View
+                key={i}
+                className={cn(
+                  "absolute text-[10px] text-ink-mute",
+                  selectedIndex === i && "font-sans-semibold text-ink",
+                )}
+                style={
+                  isAngled
+                    ? { left: cx - 23, width: 46, top: 8, transform: [{ rotate: "-45deg" }] }
+                    : { left: cx - 24, width: 48, top: 4 }
+                }
+              />
+            );
+          }
           return (
             <Text
               key={`${l}-${i}`}
@@ -154,14 +172,21 @@ export function XLabels({
     return (
       <View className="mt-1 flex-row" style={{ height: 30, paddingLeft: leftPad }}>
         {labels.map((l, i) => (
-          <View key={`${l}-${i}`} className="flex-1 items-center">
-            <Text
-              numberOfLines={1}
-              className={cn("text-[10px] text-ink-mute", selectedIndex === i && "font-sans-semibold text-ink")}
-              style={{ transform: [{ rotate: "-45deg" }], width: 46, textAlign: "center" }}
-            >
-              {l}
-            </Text>
+          <View key={isLoading ? i : `${l}-${i}`} className="flex-1 items-center">
+            {isLoading ? (
+              <View
+                className={cn("text-[10px] text-ink-mute", selectedIndex === i && "font-sans-semibold text-ink")}
+                style={{ transform: [{ rotate: "-45deg" }], width: 46 }}
+              />
+            ) : (
+              <Text
+                numberOfLines={1}
+                className={cn("text-[10px] text-ink-mute", selectedIndex === i && "font-sans-semibold text-ink")}
+                style={{ transform: [{ rotate: "-45deg" }], width: 46, textAlign: "center" }}
+              >
+                {l}
+              </Text>
+            )}
           </View>
         ))}
       </View>
@@ -169,18 +194,24 @@ export function XLabels({
   }
   return (
     <View className="mt-1.5 flex-row gap-2" style={{ paddingLeft: leftPad }}>
-      {labels.map((l, i) => (
-        <Text
-          key={`${l}-${i}`}
-          className={cn(
-            "flex-1 text-center text-xs text-ink-mute",
-            selectedIndex === i && "font-sans-semibold text-ink",
-          )}
-          numberOfLines={1}
-        >
-          {l}
-        </Text>
-      ))}
+      {labels.map((l, i) =>
+        isLoading ? (
+          <View key={i} className="flex-1 items-center justify-center pt-1">
+            <View className="h-1.5 w-6 rounded-full bg-surface-alt" />
+          </View>
+        ) : (
+          <Text
+            key={`${l}-${i}`}
+            className={cn(
+              "flex-1 text-center text-xs text-ink-mute",
+              selectedIndex === i && "font-sans-semibold text-ink",
+            )}
+            numberOfLines={1}
+          >
+            {l}
+          </Text>
+        ),
+      )}
     </View>
   );
 }
