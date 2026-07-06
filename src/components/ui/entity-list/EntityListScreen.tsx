@@ -212,10 +212,7 @@ export function EntityListScreen<TModel extends { id: string }>({
     [renderItem, groupStyle],
   );
 
-  const flatRenderItem = useCallback(
-    ({ item }: { item: EntityRow<TModel> }) => <>{renderRow(item)}</>,
-    [renderRow],
-  );
+  const flatRenderItem = useCallback(({ item }: { item: EntityRow<TModel> }) => <>{renderRow(item)}</>, [renderRow]);
 
   // Wide two-column layout: distribute rows into height-balanced columns.
   const balancedColumns = useMemo(

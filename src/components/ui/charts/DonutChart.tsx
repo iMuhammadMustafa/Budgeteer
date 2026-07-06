@@ -93,7 +93,7 @@ export function DonutChart({
   centerLabel,
   centerValue,
   externalLabels = false,
-  minExternalLabels = 4,
+  minExternalLabels = 5,
   showLegend = true,
   legendPosition = "auto",
   legendHeight,
@@ -225,7 +225,7 @@ export function DonutChart({
   // a ring of uniformly-small slices from rendering with no labels at all.
   const LABEL_MIN_PCT = maxSlices;
   const LABEL_ROW_H = 14; // min vertical gap between two labels on the same side
-  const LABEL_MAX_CHARS = 11;
+  const LABEL_MAX_CHARS = 20;
   const rawLabels =
     externalLabels && !single
       ? segs

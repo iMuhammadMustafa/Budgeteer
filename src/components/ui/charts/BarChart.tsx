@@ -127,6 +127,7 @@ export function BarChart({
         height={effectiveHeight}
         fillHeight={fillHeight}
         color={color}
+        showAxis={showYAxis}
       />
     );
   }

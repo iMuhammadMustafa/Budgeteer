@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 
-import TransactionCategoryForm, { initialState } from "@/src/components/forms/TransactionCategoryForm";
 import { MyTab } from "@/src/components/ui";
+import TransactionCategoryForm, { initialState } from "@/src/components/forms/TransactionCategoryForm";
 import { useConfigurationService } from "@/src/services/Configurations.Service";
+import { queryKeys } from "@/src/services/queryKeys";
 import {
   SYSTEM_CATEGORY_DELETE_MESSAGE,
   useTransactionCategoryService,
 } from "@/src/services/TransactionCategories.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { queryKeys } from "@/src/services/queryKeys";
 
 export default function TransactionGroupsTab() {
   const categories = useTransactionCategoryService();
@@ -25,6 +25,7 @@ export default function TransactionGroupsTab() {
       queryKey={queryKeys.transactionCategories.all}
       service={categories}
       groupBy="group.name"
+      groupStyle="plain"
       customFindAll={categories.useFindAllWithGroup}
       UpsertModal={item => <TransactionCategoryForm category={item} />}
       initialState={initialState}

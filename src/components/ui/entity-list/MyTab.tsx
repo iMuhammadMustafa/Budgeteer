@@ -7,10 +7,11 @@
  */
 import { type ReactNode } from "react";
 
-import ConfirmRestoreModal from "@/src/components/ConfirmRestoreModal";
-import DeleteConfirmModal from "./DeleteConfirmModal";
-import { IService } from "@/src/services/IService";
 import { TableNames } from "@/src/types/database/TableNames";
+import ConfirmRestoreModal from "@/src/components/ConfirmRestoreModal";
+import { IService } from "@/src/services/IService";
+
+import DeleteConfirmModal from "./DeleteConfirmModal";
 import { EntityListItem } from "./EntityListItem";
 import { EntityListScreen } from "./EntityListScreen";
 import { DependencyConfig, EntityLike } from "./types";

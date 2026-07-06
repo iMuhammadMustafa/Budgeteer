@@ -44,6 +44,7 @@ function DashboardCharts({ ...chartProps }: DashboardChartsProps) {
                 period={c.period}
                 loading={c.loading}
                 onDetails={c.onDetails}
+                bodyHeight={c.bodyHeight}
                 className="my-0 flex-1"
                 testID={`chart-card-${c.key}`}
               >

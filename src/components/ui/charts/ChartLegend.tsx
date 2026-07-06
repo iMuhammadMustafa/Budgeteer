@@ -63,7 +63,7 @@ export function ChartLegend({
       <View
         key={`${it.label}-${i}`}
         className="flex-row items-center gap-2"
-        style={{ flexGrow: 1, minWidth: '30%' }}
+        style={{ flexGrow: 1, minWidth: "30%" }}
         onLayout={onLayout}
       >
         <View style={{ backgroundColor: it.color }} className="h-2.5 w-2.5 rounded-full" />
@@ -102,7 +102,7 @@ export function ChartLegend({
         <ScrollableHorizontalLegend
           testID={testID}
           className={className}
-          maxLines={2}
+          maxLines={1}
           items={items}
           renderChip={renderChip}
         />
@@ -200,7 +200,7 @@ function ScrollableHorizontalLegend({
   const [rowHeight, setRowHeight] = useState<number | null>(null);
 
   // Measure one chip to derive row height (chip height + gap-y-1 = 4px).
-  const GAP_Y = 4; // gap-y-1
+  const GAP_Y = 1; // gap-y-1
   const onFirstChipLayout = useCallback(
     (e: LayoutChangeEvent) => {
       if (rowHeight != null) return; // already measured
@@ -210,9 +210,7 @@ function ScrollableHorizontalLegend({
   );
 
   // While we haven't measured yet, render invisibly to get the measurement.
-  const wrappedChips = items.map((it, i) =>
-    renderChip(it, i, i === 0 ? onFirstChipLayout : undefined),
-  );
+  const wrappedChips = items.map((it, i) => renderChip(it, i, i === 0 ? onFirstChipLayout : undefined));
 
   const capHeight = rowHeight != null ? rowHeight * maxLines + GAP_Y : undefined;
 

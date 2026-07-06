@@ -124,6 +124,7 @@ export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: 
     {
       key: "recent-transactions",
       order: 2,
+      bodyHeight: "auto",
       detailType: DashboardViewSelectionType.RECENT_TRANSACTION,
       title: "Recent Transactions",
       node: <RecentTransactions transactions={props.recentTransactions ?? []} onPress={props.handleTransactionPress} />,

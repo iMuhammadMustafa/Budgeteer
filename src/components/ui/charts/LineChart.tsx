@@ -168,9 +168,7 @@ export function LineChart({
     const xs = pts.map(p => p.x);
     const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
     const areaPath =
-      n > 1
-        ? `${linePath} L ${pts[n - 1].x.toFixed(1)} ${h - PAD_Y} L ${pts[0].x.toFixed(1)} ${h - PAD_Y} Z`
-        : "";
+      n > 1 ? `${linePath} L ${pts[n - 1].x.toFixed(1)} ${h - PAD_Y} L ${pts[0].x.toFixed(1)} ${h - PAD_Y} Z` : "";
     const angled = n > X_LABEL_ANGLE_THRESHOLD;
 
     // Cumulative polyline length per point → total length (for the stroke-dash draw)

@@ -70,6 +70,7 @@ function ChartCardInner({
 }: ChartCardProps) {
   const { colors } = useTheme();
   const auto = cardHeight === "auto";
+  const autoBodyHeight = bodyHeight === "auto";
   return (
     <Card
       className={cn("my-1.5 gap-2 p-5 pb-1", className)}
@@ -98,7 +99,11 @@ function ChartCardInner({
       {/* A fixed-height body gives fill-height charts (BarChart's `fillHeight`, etc.) a stable
           box to grow into and keeps every card the same height; `"auto"` falls back to the old
           flex-1 grow-to-fill behaviour for cards that manage their own height (e.g. Calendar). */}
-      <View className={cn("relative", "flex-1 overflow-hidden")}>
+      {/* <View className={cn("relative", "flex-1 overflow-hidden")} style={auto ? undefined : { height: bodyHeight }}> */}
+      <View
+        className={cn("relative", autoBodyHeight && "flex-1")}
+        style={autoBodyHeight ? undefined : { height: bodyHeight }}
+      >
         {children}
         {loading ? <ChartBodySkeleton testID={`${testID}-loading`} /> : null}
       </View>

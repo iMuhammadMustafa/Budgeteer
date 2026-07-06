@@ -1,14 +1,15 @@
+import { useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
+
+import { TableNames } from "@/src/types/database/TableNames";
 import { AccountSelecterDropdown, Button, GroupedInput, IconButton, MyTab, ResponsiveModal } from "@/src/components/ui";
 import AccountForm, { initialState } from "@/src/components/forms/AccountForm";
 import SavingsBucketsList from "@/src/components/SavingsBucketsList";
 import { useAccountService } from "@/src/services/Accounts.Service";
+import { queryKeys } from "@/src/services/queryKeys";
 import { useSavingsBucketService } from "@/src/services/SavingsBuckets.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { TableNames } from "@/src/types/database/TableNames";
-import { queryKeys } from "@/src/services/queryKeys";
-import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
 
 export default function AccountsIndex() {
   const accountService = useAccountService();
@@ -55,7 +56,7 @@ export default function AccountsIndex() {
         isPageLoading={isLoadingBucketsByAccountId}
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
-          <View className="flex-row items-center gap-2">
+          <View className="flex-row items-center">
             <IconButton
               testID={`transfer-btn-${item.id}`}
               icon="ArrowLeftRight"

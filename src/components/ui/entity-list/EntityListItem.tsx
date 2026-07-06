@@ -23,15 +23,16 @@
  * be stable refs (see `EntityListItemProps`), and per-row closures are built with
  * `useCallback`, so toggling one row's selection does not re-render the others.
  */
-import { Link, useRouter } from "expo-router";
 import { memo, useCallback, useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { Link, useRouter } from "expo-router";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
+
 import { Divider } from "../Divider";
 import { IconButton } from "../IconButton";
 import { ListRow } from "../ListRow";
-import { accentFor, type AccentSwatch, swatchForHex, type ThemeName } from "../theme/tokens";
+import { accentFor, swatchForHex, type AccentSwatch, type ThemeName } from "../theme/tokens";
 import { cn } from "../utils/cn";
 import { EntityLike, EntityListItemProps } from "./types";
 
@@ -92,9 +93,7 @@ function EntityListItemInner<TModel extends EntityLike>({
   // ── Action buttons (right slot) ──
   const actions = (
     <View className="flex-row items-center gap-0.5">
-      {customAction ? (
-        <View>{typeof customAction === "function" ? customAction(item) : customAction}</View>
-      ) : null}
+      {customAction ? <View>{typeof customAction === "function" ? customAction(item) : customAction}</View> : null}
       {hasChildren ? (
         <IconButton
           testID={`expand-btn-${item.id}`}
@@ -106,7 +105,13 @@ function EntityListItemInner<TModel extends EntityLike>({
         />
       ) : null}
       {onEdit ? (
-        <IconButton testID={`edit-btn-${item.id}`} icon="SquarePen" size="sm" accessibilityLabel="Edit" onPress={edit} />
+        <IconButton
+          testID={`edit-btn-${item.id}`}
+          icon="SquarePen"
+          size="sm"
+          accessibilityLabel="Edit"
+          onPress={edit}
+        />
       ) : null}
       {isProtected ? (
         // Protected rows can't be deleted; the lock opens the confirm dialog,
@@ -120,7 +125,13 @@ function EntityListItemInner<TModel extends EntityLike>({
           onPress={del}
         />
       ) : (
-        <IconButton testID={`delete-btn-${item.id}`} icon="Trash2" size="sm" accessibilityLabel="Delete" onPress={del} />
+        <IconButton
+          testID={`delete-btn-${item.id}`}
+          icon="Trash2"
+          size="sm"
+          accessibilityLabel="Delete"
+          onPress={del}
+        />
       )}
       {onRestore ? (
         <IconButton

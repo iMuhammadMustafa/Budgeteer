@@ -105,7 +105,7 @@ export function SummaryGrid({
 
   return (
     <View className="flex-1 px-4 pt-2" onLayout={e => setContainerW(e.nativeEvent.layout.width)}>
-      <View className="overflow-hidden rounded-xl border border-border">
+      <View className="flex-1 overflow-hidden rounded-xl border border-border">
         {/* ── sticky period header ── */}
         <View className="flex-row border-b border-border bg-surface-alt">
           <View style={{ width: legendWidth, height: HEADER_H }} className="justify-center px-3">
