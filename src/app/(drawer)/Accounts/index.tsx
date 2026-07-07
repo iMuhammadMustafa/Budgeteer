@@ -56,11 +56,11 @@ export default function AccountsIndex() {
         isPageLoading={isLoadingBucketsByAccountId}
         customFindAll={accountService.useFindAllWithCategory}
         customAction={(item: any) => (
-          <View className="flex-row items-center">
+          <>
             <IconButton
               testID={`transfer-btn-${item.id}`}
               icon="ArrowLeftRight"
-              size="md"
+              size="sm"
               variant="ghost"
               onPress={() => openTransferModal(item)}
               accessibilityLabel="Transfer"
@@ -68,12 +68,12 @@ export default function AccountsIndex() {
             <IconButton
               testID={`buckets-btn-${item.id}`}
               icon="PiggyBank"
-              size="md"
+              size="sm"
               variant="ghost"
               onPress={() => setBucketsModal({ open: true, account: item })}
               accessibilityLabel="Savings Buckets"
             />
-          </View>
+          </>
         )}
         itemChildren={(item: any) => (
           <SavingsBucketsList

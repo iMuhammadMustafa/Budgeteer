@@ -226,6 +226,8 @@ export function DonutChart({
   const LABEL_MIN_PCT = maxSlices;
   const LABEL_ROW_H = 14; // min vertical gap between two labels on the same side
   const LABEL_MAX_CHARS = 20;
+  // Radial distance for the first segment (the stem) to extend outward from the ring.
+  const STEM_R = rOuter + 12;
   const rawLabels =
     externalLabels && !single
       ? segs
@@ -242,9 +244,14 @@ export function DonutChart({
             return {
               key: s.label,
               right,
+              // Point on the outer ring edge where the leader originates.
               x0: cx + rOuter * cos,
               y0: cy + rOuter * sin,
-              ty: Math.min(Math.max(cy + (rOuter + 12) * sin, 12), size - 8),
+              // The tip of the short radial stem that matches the slice's exact angle.
+              stemX: cx + STEM_R * cos,
+              stemY: cy + STEM_R * sin,
+              // ty starts at the stem's y; the de-collider may shift it vertically to avoid overlap.
+              ty: Math.min(Math.max(cy + STEM_R * sin, 12), size - 8),
               text: `${shortLabel} ${Math.round(s.pct)}%`,
               color: s.color,
             };
@@ -263,13 +270,18 @@ export function DonutChart({
     if (overflow > 0) for (const l of arr) l.ty = Math.max(12, l.ty - overflow);
     return arr;
   };
+  
+  // Fixed horizontal coordinate for the elbow (safely outside the pie)
+  const ELBOW_X_OFFSET = rOuter + 24;
   const labelEls = [...spread(rawLabels.filter(l => l.right)), ...spread(rawLabels.filter(l => !l.right))].map(l => {
-    const xElbow = l.right ? cx + rOuter + 6 : cx - rOuter - 6;
-    const x2 = l.right ? cx + rOuter + 16 : cx - rOuter - 16;
+    const sign = l.right ? 1 : -1;
+    const elbowX = cx + ELBOW_X_OFFSET * sign;
+    const xTail = elbowX + 8 * sign;
     return {
       key: l.key,
-      leader: `M ${l.x0.toFixed(1)} ${l.y0.toFixed(1)} L ${xElbow.toFixed(1)} ${l.ty.toFixed(1)} L ${x2.toFixed(1)} ${l.ty.toFixed(1)}`,
-      tx: l.right ? x2 + 4 : x2 - 4,
+      // 4-point leader: ring edge → radial stem tip → diagonal to safe column → horizontal tail
+      leader: `M ${l.x0.toFixed(1)} ${l.y0.toFixed(1)} L ${l.stemX.toFixed(1)} ${l.stemY.toFixed(1)} L ${elbowX.toFixed(1)} ${l.ty.toFixed(1)} L ${xTail.toFixed(1)} ${l.ty.toFixed(1)}`,
+      tx: l.right ? xTail + 4 : xTail - 4,
       ty: l.ty,
       anchor: l.right ? ("start" as const) : ("end" as const),
       text: l.text,

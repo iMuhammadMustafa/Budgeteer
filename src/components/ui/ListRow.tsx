@@ -42,6 +42,13 @@ export interface ListRowProps {
   onPress?: () => void;
   onLongPress?: () => void;
   right?: ReactNode;
+  /**
+   * Wrap ONLY the body region (icon + title/subtitle) — not the `right` slot — in
+   * a caller-supplied node, e.g. an expo-router `<Link>`/`<Pressable>`. This lets
+   * a tap on the body navigate while taps on `right` actions stay independent (no
+   * bubbling into the row's link). Mutually exclusive with `onPress`.
+   */
+  bodyWrapper?: (body: ReactNode) => ReactNode;
   /** Drop the card chrome (border/bg/radius) so the row can sit inside another container. */
   bare?: boolean;
   /** Whether the title/subtitle text can be selected (long-press copy). Default false. */
@@ -64,6 +71,7 @@ export function ListRow({
   onPress,
   onLongPress,
   right,
+  bodyWrapper,
   bare = false,
   selectable = false,
   className,
@@ -75,42 +83,64 @@ export function ListRow({
     tone !== "auto" ? tone : amount == null ? "neutral" : amount > 0 ? "income" : amount < 0 ? "expense" : "neutral";
   const display = amountText ?? (amount != null ? formatCurrency(amount) : "");
 
-  const inner = (
-    <>
-      {iconName ? (
-        <View
-          style={{ backgroundColor: iconBg ?? colors.surfaceAlt }}
-          className={`h-[42px] w-[42px] items-center justify-center ${iconShape === "circle" ? "rounded-full" : "rounded-lg"}`}
-        >
-          <MyIcon name={iconName} size={19} color={iconColor ?? colors.inkMute} />
-        </View>
-      ) : null}
-      <View className={`min-w-0 flex-1 ${iconName ? "ml-[13px]" : ""}`}>
-        <Text className="font-sans-semibold text-body" numberOfLines={1} selectable={selectable}>
-          {title}
+  const iconTile = iconName ? (
+    <View
+      style={{ backgroundColor: iconBg ?? colors.surfaceAlt }}
+      className={`h-[42px] w-[42px] items-center justify-center ${iconShape === "circle" ? "rounded-full" : "rounded-lg"}`}
+    >
+      <MyIcon name={iconName} size={19} color={iconColor ?? colors.inkMute} />
+    </View>
+  ) : null;
+
+  const textCol = (
+    <View className={`min-w-0 flex-1 ${iconName ? "ml-[13px]" : ""}`}>
+      <Text className="font-sans-semibold text-body" numberOfLines={1} selectable={selectable}>
+        {title}
+      </Text>
+      {typeof subtitle === "string" ? (
+        <Text className="mt-[2px] text-xs text-ink-mute" numberOfLines={1} selectable={selectable}>
+          {subtitle}
         </Text>
-        {typeof subtitle === "string" ? (
-          <Text className="mt-[2px] text-xs text-ink-mute" numberOfLines={1} selectable={selectable}>
-            {subtitle}
-          </Text>
-        ) : subtitle ? (
-          <View className="mt-[2px]">{subtitle}</View>
-        ) : null}
-      </View>
-      {right ? (
-        <View className="ml-[10px] items-end">{right}</View>
-      ) : display ? (
-        <View className="ml-[10px] items-end">
-          <Text className={`font-mono-semibold text-body ${TONE_CLASS[resolvedTone]}`} selectable={selectable}>
-            {display}
-          </Text>
-          {subAmount ? (
-            <Text className="mt-[2px] font-mono text-xs text-ink-mute" selectable={selectable}>
-              {subAmount}
-            </Text>
-          ) : null}
-        </View>
+      ) : subtitle ? (
+        <View className="mt-[2px]">{subtitle}</View>
       ) : null}
+    </View>
+  );
+
+  const trailing = right ? (
+    <View className="ml-[10px] items-end">{right}</View>
+  ) : display ? (
+    <View className="ml-[10px] items-end">
+      <Text className={`font-mono-semibold text-body ${TONE_CLASS[resolvedTone]}`} selectable={selectable}>
+        {display}
+      </Text>
+      {subAmount ? (
+        <Text className="mt-[2px] font-mono text-xs text-ink-mute" selectable={selectable}>
+          {subAmount}
+        </Text>
+      ) : null}
+    </View>
+  ) : null;
+
+  // With `bodyWrapper`, the icon+text region is grouped into one flex child so the
+  // caller can wrap just that region (e.g. a Link) while `trailing` stays a
+  // non-nested sibling. Without it, icon/text render as direct children exactly as
+  // before (byte-identical layout for the many plain ListRow usages).
+  const inner = bodyWrapper ? (
+    <>
+      {bodyWrapper(
+        <View className="min-w-0 flex-1 flex-row items-center">
+          {iconTile}
+          {textCol}
+        </View>,
+      )}
+      {trailing}
+    </>
+  ) : (
+    <>
+      {iconTile}
+      {textCol}
+      {trailing}
     </>
   );
 

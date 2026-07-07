@@ -6,8 +6,9 @@
  */
 import { ActivityIndicator, Pressable } from "react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import MyIcon from "@/src/components/elements/MyIcon";
+
 import { cn } from "./utils/cn";
 import { type HapticType } from "./utils/haptic";
 import { usePressableAction } from "./utils/usePressableAction";
@@ -21,7 +22,7 @@ const CONTAINER: Record<IconButtonVariant, string> = {
   surface: "bg-surface-alt",
   destructive: "bg-danger",
 };
-const PAD: Record<IconButtonSize, string> = { xs: "p-1", sm: "p-1.5", md: "p-2", lg: "p-2.5" };
+const PAD: Record<IconButtonSize, string> = { xs: "p-0.5", sm: "p-1", md: "p-1.5", lg: "p-2" };
 const ICON_PX: Record<IconButtonSize, number> = { xs: 16, sm: 18, md: 20, lg: 24 };
 
 export interface IconButtonProps {

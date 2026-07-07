@@ -90,10 +90,12 @@ function EntityListItemInner<TModel extends EntityLike>({
 
   const hasChildren = !!itemChildren;
 
-  // ── Action buttons (right slot) ──
+  // ── Action buttons (ListRow `right` slot) ──
+  // `customAction` should return a bare fragment of IconButtons so they flow in as
+  // direct siblings of the built-in actions, sharing this single row + gap.
   const actions = (
-    <View className="flex-row items-center gap-0.5">
-      {customAction ? <View>{typeof customAction === "function" ? customAction(item) : customAction}</View> : null}
+    <View className="flex-row items-center">
+      {customAction ? (typeof customAction === "function" ? customAction(item) : customAction) : null}
       {hasChildren ? (
         <IconButton
           testID={`expand-btn-${item.id}`}
@@ -145,12 +147,67 @@ function EntityListItemInner<TModel extends EntityLike>({
     </View>
   );
 
-  // ── Row body: custom render bypass, or the standard ListRow (bare; the
-  //    container below provides the single border). Actions are NOT included
-  //    here — they render as a SIBLING of the press target (below) so tapping
-  //    an action button never bubbles into the row press / Link navigation. ──
-  const rowInner = customRenderItem ? (
-    <View className="min-w-0 flex-1 px-[15px] py-[13px]">{customRenderItem(item, selected, longPress, press)}</View>
+  // ── Body press target — wraps ONLY the icon/title/subtitle region so actions
+  //    (in the ListRow `right` slot) sit outside it and their taps never bubble
+  //    into navigation. On web it's a `<Link>` (hover URL + middle/⌘-click);
+  //    `detailHref` navigates to the detail page (tap toggles selection in
+  //    selection mode), `detailsUrl` is the legacy "tap opens the upsert modal"
+  //    mode, and with neither it's a plain press. ──
+  const navHref = detailHref ? `${detailHref}${item.id}` : detailsUrl ? `${detailsUrl}${item.id}` : undefined;
+  const wrapBody = useCallback(
+    (body: ReactNode): ReactNode => {
+      // No link: a plain pressable body. (The Link branch below owns the press via
+      // its own onPress — the child pressable must NOT set one, or `asChild`
+      // prop-merging clobbers the Link's navigation handler.)
+      if (!navHref) {
+        return (
+          <Pressable
+            testID={`${rowTestID}-press`}
+            onPress={press}
+            onLongPress={longPress}
+            className="min-w-0 flex-1 active:opacity-80"
+            accessibilityRole="button"
+          >
+            {body}
+          </Pressable>
+        );
+      }
+      return (
+        <Link
+          href={navHref as never}
+          asChild
+          // Intercept so web does a client-side navigation instead of hard-navigating
+          // the bare <a> href. detailHref navigates (unless selecting); detailsUrl presses.
+          onPress={(e: { preventDefault?: () => void }) => {
+            e.preventDefault?.();
+            if (detailHref && !selectionMode) router.push(navHref as never);
+            else press();
+          }}
+          onLongPress={longPress}
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          <Pressable
+            testID={`${rowTestID}-press`}
+            onLongPress={longPress}
+            className="min-w-0 flex-1 active:opacity-80"
+            accessibilityRole="button"
+          >
+            {body}
+          </Pressable>
+        </Link>
+      );
+    },
+    [navHref, detailHref, rowTestID, selectionMode, press, longPress, router],
+  );
+
+  // ── Row: custom-render bypass, or the standard ListRow. Either way the actions
+  //    sit in the trailing slot with matching spacing (`ml-[10px]`) so custom and
+  //    standard rows read identically. ──
+  const row = customRenderItem ? (
+    <View className="flex-row items-center px-[15px] py-[13px]">
+      {wrapBody(<View className="min-w-0 flex-1">{customRenderItem(item, selected, longPress, press)}</View>)}
+      <View className="ml-[10px] items-end">{actions}</View>
+    </View>
   ) : (
     <ListRow
       testID={`${rowTestID}-row`}
@@ -160,74 +217,14 @@ function EntityListItemInner<TModel extends EntityLike>({
       iconName={icons ? item.icon : undefined}
       iconColor={swatch.fg}
       iconBg={swatch.soft}
+      bodyWrapper={wrapBody}
+      right={actions}
     />
   );
 
-  // ── Press target (link on web for hover URL + middle-click; plain otherwise) ──
-  // Two link modes:
-  //  - detailHref: a real detail-page navigation. A normal tap navigates (Link
-  //    default); only in selection mode do we intercept to toggle selection.
-  //  - detailsUrl: the legacy "row opens the upsert modal" mode — the Link exists
-  //    for hover URL / middle-click, but a normal tap is intercepted to run onPress.
-  const navHref = detailHref ? `${detailHref}${item.id}` : undefined;
-  const pressTarget = navHref ? (
-    <Link
-      href={navHref as never}
-      asChild
-      // Always intercept the click so web does a client-side navigation instead
-      // of a full-page reload (the bare <a> href would otherwise hard-navigate).
-      onPress={(e: { preventDefault?: () => void }) => {
-        e.preventDefault?.();
-        if (selectionMode) press();
-        else router.push(navHref as never);
-      }}
-      onLongPress={longPress}
-      style={{ flex: 1, minWidth: 0 }}
-    >
-      <Pressable
-        testID={`${rowTestID}-press`}
-        onLongPress={longPress}
-        className="min-w-0 flex-1 active:opacity-80"
-        accessibilityRole="button"
-      >
-        {rowInner}
-      </Pressable>
-    </Link>
-  ) : detailsUrl ? (
-    <Link
-      href={`${detailsUrl}${item.id}` as never}
-      asChild
-      onPress={(e: { preventDefault?: () => void }) => {
-        e.preventDefault?.();
-        press();
-      }}
-      onLongPress={longPress}
-      style={{ flex: 1, minWidth: 0 }}
-    >
-      <Pressable
-        testID={`${rowTestID}-press`}
-        onLongPress={longPress}
-        className="min-w-0 flex-1 active:opacity-80"
-        accessibilityRole="button"
-      >
-        {rowInner}
-      </Pressable>
-    </Link>
-  ) : (
-    <Pressable
-      testID={`${rowTestID}-press`}
-      onPress={press}
-      onLongPress={longPress}
-      className="min-w-0 flex-1 active:opacity-80"
-      accessibilityRole="button"
-    >
-      {rowInner}
-    </Pressable>
-  );
-
   // ── Bordered container: constant border box, only color/tint changes on
-  //    selection (no layout shift). Row + actions sit in a flex-row; expanded
-  //    children (e.g. savings buckets) render below. ──
+  //    selection (no layout shift). Expanded children (e.g. savings buckets)
+  //    render below the row — matches `ui/ExpandableRow`. ──
   return (
     <View
       testID={rowTestID}
@@ -236,10 +233,7 @@ function EntityListItemInner<TModel extends EntityLike>({
         selected ? "border-primary bg-primary/10" : "border-border",
       )}
     >
-      <View className="flex-row items-center">
-        {pressTarget}
-        <View className="pr-[13px]">{actions}</View>
-      </View>
+      {row}
       {hasChildren && expanded ? (
         <View>
           <Divider />

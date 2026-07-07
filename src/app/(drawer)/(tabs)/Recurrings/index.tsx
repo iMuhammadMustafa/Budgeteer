@@ -1,13 +1,14 @@
-import { Button, GroupedInput, IconButton, ResponsiveModal, Text as ThemedText, MyTab } from "@/src/components/ui";
-import { RecurringDetails } from "@/src/components/recurrings/RecurringStatusBadges";
-import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
-import { useRecurringService } from "@/src/services/Recurrings.Service";
-import { TableNames } from "@/src/types/database/TableNames";
-import { queryKeys } from "@/src/services/queryKeys";
-import { Recurring } from "@/src/types/database/Tables.Types";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { View } from "react-native";
+import dayjs from "dayjs";
+
+import { TableNames } from "@/src/types/database/TableNames";
+import { Recurring } from "@/src/types/database/Tables.Types";
+import { Button, GroupedInput, IconButton, MyTab, ResponsiveModal, Text as ThemedText } from "@/src/components/ui";
+import RecurringForm, { initialRecurringState } from "@/src/components/forms/RecurringForm";
+import { RecurringDetails } from "@/src/components/recurrings/RecurringStatusBadges";
+import { queryKeys } from "@/src/services/queryKeys";
+import { useRecurringService } from "@/src/services/Recurrings.Service";
 
 export default function RecurringsScreen() {
   const {
@@ -43,11 +44,11 @@ export default function RecurringsScreen() {
         customAction={item => {
           const canSkip = !item.isdateflexible && !!item.nextoccurrencedate && !!item.recurrencerule;
           return (
-            <View className="flex-row items-center gap-1">
+            <>
               <IconButton
                 icon="Check"
                 variant="ghost"
-                size="md"
+                size="sm"
                 haptic="light"
                 onPress={() => {
                   if (
@@ -69,14 +70,14 @@ export default function RecurringsScreen() {
               <IconButton
                 icon="SkipForward"
                 variant="ghost"
-                size="md"
+                size="sm"
                 haptic="warning"
                 onPress={() => handleSkipRecurring(item)}
                 disabled={!canSkip || isLoading}
                 accessibilityLabel="Skip this occurrence"
                 testID={`btn-skip-recurring-${item.id}`}
               />
-            </View>
+            </>
           );
         }}
       />

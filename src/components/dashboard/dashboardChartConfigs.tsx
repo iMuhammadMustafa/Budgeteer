@@ -114,10 +114,7 @@ export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: 
           }}
           emptyTitle="No expenses this week"
           showValues
-          formatValue={(val: number) => {
-            if (val > 1000) return `${(val / 1000).toFixed(1)}k`;
-            else return fmtMoney(val);
-          }}
+          formatValue={fmtMoney}
         />
       ),
     },
