@@ -7,6 +7,11 @@ import { useCallback } from "react";
 import { FlatList, Pressable, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useTheme } from "@/src/providers/ThemeProvider";
+import { CONTENT_MAX_WIDTH } from "@/src/constants/layout";
+import { TransactionListRow } from "@/src/types/components/Transactions.types";
+import { DashboardViewSelectionType } from "@/src/types/pages/dashboard/DashboardConfig.Types";
+import { toBarData, toDonutData, toDoubleBar, toHeatmap } from "@/src/utils/chartAdapters";
 import {
   BarChart,
   Button,
@@ -17,17 +22,13 @@ import {
   SkeletonGroup,
   Text,
 } from "@/src/components/ui";
+import { cn } from "@/src/components/ui/utils/cn";
 import DayHeader from "@/src/components/Transactions/DayHeader";
 import DaySkeleton from "@/src/components/Transactions/DaySkeleton";
 import EmptyListComponent from "@/src/components/Transactions/EmptyListComponent";
 import TransactionItem from "@/src/components/Transactions/TransactionItem";
-import { CONTENT_MAX_WIDTH } from "@/src/constants/layout";
-import { useTheme } from "@/src/providers/ThemeProvider";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
-import { toBarData, toDonutData, toDoubleBar, toHeatmap } from "@/src/utils/chartAdapters";
-import { TransactionListRow } from "@/src/types/components/Transactions.types";
-import { cn } from "@/src/components/ui/utils/cn";
-import { DashboardViewSelectionType } from "./useDashboardViewModel";
+
 import useDetailsViewModel from "./useDetailsViewModel";
 
 export default function DetailView() {

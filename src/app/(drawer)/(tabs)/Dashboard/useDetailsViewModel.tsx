@@ -14,12 +14,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import dayjs from "dayjs";
 
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
-import { TransactionType, TransactionsView } from "@/src/types/database/Tables.Types";
+import { TransactionListRow } from "@/src/types/components/Transactions.types";
+import { TransactionsView, TransactionType } from "@/src/types/database/Tables.Types";
+import { DashboardViewSelectionType, IDetailsViewProps } from "@/src/types/pages/dashboard/DashboardConfig.Types";
+import { groupTransactions } from "@/src/utils/transactions.helper";
 import { getStatsDailyTransactionsHelper, useStatsService } from "@/src/services/Stats.Service";
 import { useTransactionService } from "@/src/services/Transactions.Service";
-import { groupTransactions } from "@/src/utils/transactions.helper";
-import { TransactionListRow } from "@/src/types/components/Transactions.types";
-import { DashboardViewSelectionType, type IDetailsViewProps } from "./useDashboardViewModel";
 
 export type DetailsScope = "focused" | "period";
 
@@ -147,7 +147,20 @@ export default function useDetailsViewModel() {
       f.endDate = params.endDate;
     }
     return f;
-  }, [isPie, isDayish, isDouble, focused, sel, periodStart, periodEnd, params.pieType, params.transactionType, params.month, params.startDate, params.endDate]);
+  }, [
+    isPie,
+    isDayish,
+    isDouble,
+    focused,
+    sel,
+    periodStart,
+    periodEnd,
+    params.pieType,
+    params.transactionType,
+    params.month,
+    params.startDate,
+    params.endDate,
+  ]);
 
   const { data: transactions, isLoading } = transactionService.useFindAllView(filters);
 

@@ -1,4 +1,5 @@
-import { DashboardViewSelectionType } from "@/src/app/(drawer)/(tabs)/Dashboard/useDashboardViewModel";
+import { DashboardViewSelectionType } from "@/src/types/pages/dashboard/DashboardConfig.Types";
+
 import Bar from "./Bar";
 import ChartsContainer from "./ChartsContainer";
 import DoubleBar from "./DoubleBar";
