@@ -13,12 +13,12 @@ import { DashboardChartsProps } from "@/src/types/pages/dashboard/DashboardConfi
 import { ChartCard } from "@/src/components/ui";
 import { usePrimaryCurrency } from "@/src/services/UserPreferences.Service";
 
-import { buildDashboardChartConfigs } from "./dashboardChartConfigs";
+import { useDashboardChartConfigs } from "./dashboardChartConfigs";
 
 export default function ChartSwitcher(props: DashboardChartsProps) {
   const { colors } = useTheme();
   const params = props.params ?? {};
-  const configs = buildDashboardChartConfigs(props, colors);
+  const configs = useDashboardChartConfigs(props, colors);
 
   const match = configs.find(
     c => c.detailType === params.type && (c.pieType ? c.pieType === params.pieType : params.type !== "pie"),

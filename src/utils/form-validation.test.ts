@@ -1,13 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-
-// form-validation.ts imports `RecurringType` from Recurrings.Service, which
-// transitively pulls in the entire provider/React-Query graph (native modules).
-// Stub just the enum so this pure-logic file loads in Node. (Coupling flagged in
-// TESTING-STRATEGY findings — RecurringType ideally lives in a types module.)
-vi.mock("@/src/services/Recurrings.Service", () => ({
-    RecurringType: { Standard: "Standard", Transfer: "Transfer", CreditCardPayment: "CreditCardPayment" },
-}));
-
 import {
     createAmountValidation,
     createDescriptionValidation,
@@ -29,6 +20,14 @@ import {
     validateField,
     validateForm,
 } from "./form-validation";
+
+// form-validation.ts imports `RecurringType` from Recurrings.Service, which
+// transitively pulls in the entire provider/React-Query graph (native modules).
+// Stub just the enum so this pure-logic file loads in Node. (Coupling flagged in
+// TESTING-STRATEGY findings — RecurringType ideally lives in a types module.)
+vi.mock("@/src/services/Recurrings.Service", () => ({
+    RecurringType: { Standard: "Standard", Transfer: "Transfer", CreditCardPayment: "CreditCardPayment" },
+}));
 
 describe("requiredValidator", () => {
     it.each([

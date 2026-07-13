@@ -3,7 +3,7 @@ import { resolveTenantId } from "@/src/utils/tenant";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import ImportService from "@/src/services/Import.Service";
+import { ImportService } from "@/src/services/Import.Service";
 import { ExportData, ImportResult, ImportValidationResult } from "@/src/types/ImportExport.Types";
 import { formatTableName } from "@/src/utils/importExport.helper";
 import { useState } from "react";

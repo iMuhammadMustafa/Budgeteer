@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fetchFallback, fetchPrimary, loadRates } from "./Fx.Service";
 
 // storageUtils imports AsyncStorage + react-native; back it with an in-memory store.
 const { store } = vi.hoisted(() => ({ store: new Map<string, string>() }));
@@ -9,8 +10,6 @@ vi.mock("@/src/utils/storageUtils", () => ({
         removeItem: async (k: string) => void store.delete(k),
     },
 }));
-
-import { fetchFallback, fetchPrimary, loadRates } from "./Fx.Service";
 
 const okJson = (body: any) => ({ ok: true, status: 200, json: async () => body });
 const httpErr = (status: number) => ({ ok: false, status, json: async () => ({}) });

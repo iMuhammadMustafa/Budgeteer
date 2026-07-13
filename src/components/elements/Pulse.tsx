@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { Animated, ViewStyle } from "react-native";
 
 type Props = {
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function Pulse({ children, style, duration = 2000, minOpacity = 0.4, maxOpacity = 1 }: Props) {
-  const opacity = useRef(new Animated.Value(maxOpacity)).current;
+  const opacity = useMemo(() => new Animated.Value(maxOpacity), []);
 
   useEffect(() => {
     const anim = Animated.loop(

@@ -13,7 +13,7 @@ export default function ErrorStateComponent({ error, onRetry }: { error: Error; 
       </View>
 
       <ThemedText variant="h3" className="text-xl font-semibold text-center">
-        Couldn't load transactions
+        Couldn{"'"}t load transactions
       </ThemedText>
 
       <ThemedText variant="caption" className="text-center px-10 text-base">

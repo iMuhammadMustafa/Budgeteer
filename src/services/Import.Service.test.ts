@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+import { ImportService } from "./Import.Service";
 
 // Import.Service imports native modules at module top-level; stub them so the
 // pure parseImportFile is loadable in Node.
 vi.mock("expo-document-picker", () => ({}));
 vi.mock("expo-file-system", () => ({}));
 vi.mock("react-native", () => ({ Platform: { OS: "web" } }));
-
-import { ImportService } from "./Import.Service";
 
 const validFile = JSON.stringify({
     version: "1.0.0",

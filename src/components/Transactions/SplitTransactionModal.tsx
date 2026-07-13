@@ -4,7 +4,7 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, Transaction, TransactionCategory, TransactionsView } from "@/src/types/database/Tables.Types";
 import { getAmountMode, roundToCents } from "@/src/utils/amount.helper";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import {
   Button,
@@ -91,10 +91,11 @@ export default function SplitTransactionModal({
   }, [source, originalAmount, existingItems]);
 
   const [splits, setSplits] = useState<SplitChildInsert[]>(initialSplits);
-
-  useEffect(() => {
+  const prevInitialSplitsRef = useRef(initialSplits);
+  if (prevInitialSplitsRef.current !== initialSplits) {
+    prevInitialSplitsRef.current = initialSplits;
     setSplits(initialSplits);
-  }, [initialSplits]);
+  }
 
   const splitsTotal = useMemo(() => roundToCents(splits.reduce((sum, item) => sum + (item.amount ?? 0), 0)), [splits]);
 

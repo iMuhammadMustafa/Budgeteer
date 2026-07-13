@@ -1,6 +1,6 @@
 /**
  * DashboardCharts — renders the dashboard's charts (new ui/charts) by mapping the
- * shared `buildDashboardChartConfigs` descriptor list into ChartCards, two across
+ * shared `useDashboardChartConfigs` descriptor list into ChartCards, two across
  * on wide screens.
  */
 import { memo } from "react";
@@ -11,14 +11,14 @@ import { BREAKPOINT_DESKTOP, BREAKPOINT_MD } from "@/src/constants/layout";
 import { DashboardChartsProps } from "@/src/types/pages/dashboard/DashboardConfig.Types";
 import { ChartCard } from "@/src/components/ui";
 
-import { buildDashboardChartConfigs } from "./dashboardChartConfigs";
+import { useDashboardChartConfigs } from "./dashboardChartConfigs";
 
 function DashboardCharts({ ...chartProps }: DashboardChartsProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= BREAKPOINT_MD;
 
-  const configs = buildDashboardChartConfigs(chartProps, colors);
+  const configs = useDashboardChartConfigs(chartProps, colors);
 
   // `flexBasis:0` (a length, not `flex:1`'s `0%`) + `minWidth:0` + `overflow:hidden` forces equal
   // columns regardless of a chart's intrinsic content width. Rows of two (not one flex-wrap row)

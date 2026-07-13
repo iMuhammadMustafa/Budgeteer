@@ -3,7 +3,7 @@ import { resolveTenantId } from "@/src/utils/tenant";
 import MyIcon from "@/src/components/elements/MyIcon";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import ExportService from "@/src/services/Export.Service";
+import { ExportService } from "@/src/services/Export.Service";
 import { TableNames, ViewNames } from "@/src/types/database/TableNames";
 import { EXPORTABLE_TABLES, EXPORTABLE_VIEWS, ExportFormat } from "@/src/types/ImportExport.Types";
 import { formatTableName, formatViewName, getTableIcon } from "@/src/utils/importExport.helper";

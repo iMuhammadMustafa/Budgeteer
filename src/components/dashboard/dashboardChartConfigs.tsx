@@ -1,6 +1,6 @@
 /**
  * dashboardChartConfigs — single source of truth for the dashboard's six charts.
- * `buildDashboardChartConfigs` returns a typed descriptor list (title, period bar,
+ * `useDashboardChartConfigs` returns a typed descriptor list (title, period bar,
  * detail-routing metadata, and the ready-to-render new `ui/charts` node with its
  * data adapted + callbacks wired). `DashboardCharts` maps the whole list. (The drill-down page
  * no longer uses this builder — it renders its one chart directly from `useDetailsViewModel`.)
@@ -29,7 +29,7 @@ function weekStart(bars: BarDataType[] = []) {
   return withDate ? dayjs(withDate.item.date).startOf("week") : null;
 }
 
-export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: ThemeColors): DashboardChartConfig[] {
+export function useDashboardChartConfigs(props: DashboardChartsProps, colors: ThemeColors): DashboardChartConfig[] {
   const {
     weeklyTransactionTypesData = [],
     dailyTransactionTypesData = {},
@@ -119,12 +119,17 @@ export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: 
       ),
     },
     {
-      key: "recent-transactions",
+      key: "calendar-summary",
       order: 2,
-      bodyHeight: "auto",
-      detailType: DashboardViewSelectionType.RECENT_TRANSACTION,
-      title: "Recent Transactions",
-      node: <RecentTransactions transactions={props.recentTransactions ?? []} onPress={props.handleTransactionPress} />,
+      title: periodControls.calendar.chartCardPeriod.label,
+      detailType: DashboardViewSelectionType.CALENDAR_SUMMARY,
+      node: (
+        <CalendarSummaryPanel
+          summary={props.calendarSummary!}
+          fmtMoney={fmtMoney}
+          onDayPress={ds => props.handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
+        />
+      ),
     },
     {
       key: "categoriesMonth",
@@ -220,17 +225,12 @@ export function buildDashboardChartConfigs(props: DashboardChartsProps, colors: 
       ),
     },
     {
-      key: "calendar-summary",
+      key: "recent-transactions",
       order: 8,
-      title: periodControls.calendar.chartCardPeriod.label,
-      detailType: DashboardViewSelectionType.CALENDAR_SUMMARY,
-      node: (
-        <CalendarSummaryPanel
-          summary={props.calendarSummary!}
-          fmtMoney={fmtMoney}
-          onDayPress={ds => props.handleDayPress({ dateString: ds }, DashboardViewSelectionType.CALENDAR)}
-        />
-      ),
+      bodyHeight: "auto",
+      detailType: DashboardViewSelectionType.RECENT_TRANSACTION,
+      title: "Recent Transactions",
+      node: <RecentTransactions transactions={props.recentTransactions ?? []} onPress={props.handleTransactionPress} />,
     },
   ];
 }

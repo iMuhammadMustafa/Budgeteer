@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -124,14 +124,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const hasInitializedCurrencyRef = useRef(false);
 
   // One-shot init only — never overwrite an explicit user pick (incl. USD).
-  useEffect(() => {
-    if (hasInitializedCurrencyRef.current) return;
-    if (!primaryCurrency) return;
+  if (!hasInitializedCurrencyRef.current && primaryCurrency) {
     hasInitializedCurrencyRef.current = true;
     if (transactionCurrency !== primaryCurrency) {
       setTransactionCurrency(primaryCurrency);
     }
-  }, [primaryCurrency, transactionCurrency]);
+  }
 
   const isSplitMode = !!transaction && transaction.splitfromid !== null;
   const isForeignCurrency = !isSplitMode && transactionCurrency !== primaryCurrency;
@@ -176,14 +174,14 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   // Initialize mode and maxAmount when transaction changes. A brand-new (non-split, zero-amount)
   // form has no sign to infer, so fall back to the type's usual sign (Expense → minus) instead of
   // always defaulting to "plus" — otherwise a fresh Expense form shows a green "+" total.
-  useEffect(() => {
-    if (transaction) {
-      const signedAmount = parseFloat(transaction.amount?.toString() || "0");
-      const amount = Math.abs(signedAmount);
-      setMode(signedAmount !== 0 ? (signedAmount < 0 ? "minus" : "plus") : transaction.type === "Income" ? "plus" : "minus");
-      setMaxAmount(amount);
-    }
-  }, [transaction]);
+  const prevTransactionRef = useRef(transaction);
+  if (transaction && prevTransactionRef.current !== transaction) {
+    prevTransactionRef.current = transaction;
+    const signedAmount = parseFloat(transaction.amount?.toString() || "0");
+    const amount = Math.abs(signedAmount);
+    setMode(signedAmount !== 0 ? (signedAmount < 0 ? "minus" : "plus") : transaction.type === "Income" ? "plus" : "minus");
+    setMaxAmount(amount);
+  }
 
   // Keep the total-amount sign in step with a sensible default when the type changes — the user
   // can still flip it with the mode chip afterward.

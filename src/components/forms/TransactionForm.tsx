@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -695,14 +695,12 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
 
   // One-shot init: when primaryCurrency loads after mount, adopt it.
   // After the first sync we never overwrite the user's explicit choice (incl. picking USD).
-  useEffect(() => {
-    if (hasInitializedCurrencyRef.current) return;
-    if (!primaryCurrency) return;
+  if (!hasInitializedCurrencyRef.current && primaryCurrency) {
     hasInitializedCurrencyRef.current = true;
     if (transactionCurrency !== primaryCurrency) {
       setTransactionCurrency(primaryCurrency);
     }
-  }, [primaryCurrency, transactionCurrency]);
+  }
 
   const isForeignCurrency = transactionCurrency !== primaryCurrency;
   const { rate: fxRate, isLoading: isFxLoading } = useExchangeRate(transactionCurrency, primaryCurrency);
@@ -731,19 +729,19 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
     setRateOverride(isNaN(parsed) ? null : parsed);
   }, []);
 
-  useEffect(() => {
-    if (existingItems && existingItems.length > 0) {
-      setSubItems(
-        existingItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          amount: item.amount,
-          categoryid: item.categoryid,
-          notes: item.notes,
-        })),
-      );
-    }
-  }, [existingItems]);
+  const prevExistingItemsRef = useRef(existingItems);
+  if (existingItems && existingItems.length > 0 && prevExistingItemsRef.current !== existingItems) {
+    prevExistingItemsRef.current = existingItems;
+    setSubItems(
+      existingItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        amount: item.amount,
+        categoryid: item.categoryid,
+        notes: item.notes,
+      })),
+    );
+  }
 
   const removeSubItem = useCallback((index: number) => {
     setSubItems(prev => prev.filter((_, i) => i !== index));
@@ -781,9 +779,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   // Seed transactionCurrency + rateOverride from the stored original_* fields exactly once
   // when editing. After that the user is in control.
   const hasSeededFromOriginalRef = useRef(false);
-  useEffect(() => {
-    if (hasSeededFromOriginalRef.current) return;
-    if (!transaction?.id) return;
+  if (!hasSeededFromOriginalRef.current && transaction?.id) {
     const origCurrency = (transaction as any).original_currency as string | undefined;
     const origRate = (transaction as any).exchange_rate as number | undefined;
     if (origCurrency) {
@@ -793,7 +789,7 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         setRateOverride(origRate);
       }
     }
-  }, [transaction]);
+  }
 
   const [transactionType, setTransactionType] = useState<string>(initialFormData.type);
 
@@ -950,10 +946,13 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   }, [validateForm, submit, formState.data, setFormData]);
 
   // Synchronize mode state with form data
-  useEffect(() => {
+  const prevModeDataRef = useRef({ mode: formState.data.mode, amount: transaction.amount });
+  const currentModeData = { mode: formState.data.mode, amount: transaction.amount };
+  if (prevModeDataRef.current.mode !== currentModeData.mode || prevModeDataRef.current.amount !== currentModeData.amount) {
+    prevModeDataRef.current = currentModeData;
     const currentMode = formState.data.mode || (transaction.amount && transaction.amount < 0 ? "minus" : "plus");
     setMode(currentMode);
-  }, [formState.data.mode, transaction.amount]);
+  }
 
   // Enhanced transaction type change handling
   const handleTypeChange = useCallback(

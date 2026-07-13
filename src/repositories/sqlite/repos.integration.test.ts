@@ -11,6 +11,15 @@ import { TableNames } from "@/src/types/database/TableNames";
 import { BaseSqliteRepository } from "@/src/repositories/BaseSqliteRepository";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createNodeSqliteDb, type ExpoLikeSqliteDb } from "@/src/test-utils/nodeSqliteAdapter";
+import { AccountCategorySqliteRepository } from "./AccountCategories.sqlite";
+import { AccountSqliteRepository } from "./Accounts.sqlite";
+import { ConfigurationSqliteRepository } from "./Configurations.sqlite";
+import { RecurringSqliteRepository } from "./Recurrings.sqlite";
+import { SavingsBucketSqliteRepository } from "./SavingsBuckets.sqlite";
+import { TransactionCategorySqliteRepository } from "./TransactionCategories.sqlite";
+import { TransactionGroupSqliteRepository } from "./TransactionGroups.sqlite";
+import { TransactionItemSqliteRepository } from "./TransactionItems.sqlite";
+import { TransactionSqliteRepository } from "./Transactions.sqlite";
 
 let uuidSeq = 0;
 vi.mock("@/src/utils/uuid.Helper", () => ({
@@ -23,18 +32,6 @@ vi.mock("@/src/types/database/sqlite", () => ({
     createViewsAsync: async () => {},
     resetSqliteDBConnection: () => {},
 }));
-
-// Repos import the module singleton lazily via getSqliteDB(), so importing them
-// after the mock is registered is safe.
-import { AccountCategorySqliteRepository } from "./AccountCategories.sqlite";
-import { AccountSqliteRepository } from "./Accounts.sqlite";
-import { ConfigurationSqliteRepository } from "./Configurations.sqlite";
-import { RecurringSqliteRepository } from "./Recurrings.sqlite";
-import { SavingsBucketSqliteRepository } from "./SavingsBuckets.sqlite";
-import { TransactionCategorySqliteRepository } from "./TransactionCategories.sqlite";
-import { TransactionGroupSqliteRepository } from "./TransactionGroups.sqlite";
-import { TransactionItemSqliteRepository } from "./TransactionItems.sqlite";
-import { TransactionSqliteRepository } from "./Transactions.sqlite";
 
 const A = "tenant-A";
 const B = "tenant-B";

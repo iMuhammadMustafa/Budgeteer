@@ -1,17 +1,16 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { describe, expect, it } from "vitest";
-
-// The app enables the dayjs utc plugin globally (dayjs.extend(utc) in
-// src/app/_layout.tsx); replicate here so parsing/formatting matches the app.
-dayjs.extend(utc);
-
 import {
     getStatsDailyTransactionsHelper,
     getStatsMonthlyCategoriesTransactionsDashboardHelper,
     getStatsMonthlyTransactionsTypesHelper,
     getStatsNetWorthGrowthHelper,
 } from "./stats.helpers";
+
+// The app enables the dayjs utc plugin globally (dayjs.extend(utc) in
+// src/app/_layout.tsx); replicate here so parsing/formatting matches the app.
+dayjs.extend(utc);
 
 describe("getStatsDailyTransactionsHelper", () => {
     it("builds calendar dots grouped by day, de-duped per type", () => {

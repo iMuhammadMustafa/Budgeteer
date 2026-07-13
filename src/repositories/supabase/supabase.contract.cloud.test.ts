@@ -16,6 +16,9 @@ import {
     type TestUser,
 } from "@/src/test-utils/supabaseHarness";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { AccountCategorySupaRepository } from "./AccountCategories.supa";
+import { AccountSupaRepository } from "./Accounts.supa";
+import { TransactionSupaRepository } from "./Transactions.supa";
 
 // The repos import a module-singleton supabase client. Proxy it to a swappable
 // authed client so tests drive which user (tenant) is making requests.
@@ -33,10 +36,6 @@ vi.mock("@/src/providers/Supabase", () => ({
         },
     ),
 }));
-
-import { AccountCategorySupaRepository } from "./AccountCategories.supa";
-import { AccountSupaRepository } from "./Accounts.supa";
-import { TransactionSupaRepository } from "./Transactions.supa";
 
 const TENANT_A = "11111111-1111-1111-1111-111111111111";
 

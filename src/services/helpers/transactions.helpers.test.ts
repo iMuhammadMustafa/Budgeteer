@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createFakeAccountRepo, createInMemoryRepo, fakeSession } from "@/src/test-utils/fakeRepo";
+import { createTransactionHelper, updateTransactionHelper } from "./transactions.helpers";
 
 // Deterministic ids + avoid the react-native-get-random-values polyfill import.
 const { uuidMock } = vi.hoisted(() => {
@@ -8,9 +10,6 @@ const { uuidMock } = vi.hoisted(() => {
     };
 });
 vi.mock("@/src/utils/uuid.Helper", () => ({ default: uuidMock }));
-
-import { createFakeAccountRepo, createInMemoryRepo, fakeSession } from "@/src/test-utils/fakeRepo";
-import { createTransactionHelper, updateTransactionHelper } from "./transactions.helpers";
 
 const session = fakeSession({ tenantid: "t1", userId: "u1" });
 
