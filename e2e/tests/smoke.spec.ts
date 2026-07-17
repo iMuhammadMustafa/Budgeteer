@@ -39,6 +39,7 @@ test.describe("@smoke @mobile app entry", () => {
     await gotoApp(page, "demo");
     await expect(page).toHaveURL(/Dashboard/);
     await awaitAppReady(page);
+    // TODO : Verify Test Data
   });
 });
 
