@@ -25,7 +25,7 @@ import {
   Button,
   Chip,
   DateTimePicker,
-  GroupedIconSelect,
+  GroupedSelect,
   IconButton,
   Input,
   ResponsiveModal,
@@ -301,7 +301,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
                 ))}
               </ScrollView>
             ) : null}
-            <GroupedIconSelect
+            <GroupedSelect
               label="Category"
               options={categoryOptions}
               value={formState.data.categoryid}
@@ -312,6 +312,7 @@ export default function TransactionForm({ transaction }: { transaction: Transact
               error={formState.touched.categoryid ? formState.errors.categoryid : undefined}
               testID="field-categoryid"
               present="auto"
+              scrollableHorizontal
             />
           </View>
 
@@ -948,7 +949,10 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
   // Synchronize mode state with form data
   const prevModeDataRef = useRef({ mode: formState.data.mode, amount: transaction.amount });
   const currentModeData = { mode: formState.data.mode, amount: transaction.amount };
-  if (prevModeDataRef.current.mode !== currentModeData.mode || prevModeDataRef.current.amount !== currentModeData.amount) {
+  if (
+    prevModeDataRef.current.mode !== currentModeData.mode ||
+    prevModeDataRef.current.amount !== currentModeData.amount
+  ) {
     prevModeDataRef.current = currentModeData;
     const currentMode = formState.data.mode || (transaction.amount && transaction.amount < 0 ? "minus" : "plus");
     setMode(currentMode);
@@ -1065,8 +1069,16 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         icon: item.icon,
         color: item.color,
         group: item.group?.name || "Uncategorized",
+        groupOrder: item.group?.displayorder ?? Number.MAX_SAFE_INTEGER,
+        displayOrder: item.displayorder ?? Number.MAX_SAFE_INTEGER,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically
+      .sort((a, b) => {
+        // Sort by group display order then by display order then by group name then by category name
+        if (a.groupOrder !== b.groupOrder) return a.groupOrder - b.groupOrder;
+        if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+        if (a.group !== b.group) return a.group.localeCompare(b.group);
+        return a.label.localeCompare(b.label);
+      });
   }, [categories]);
 
   const accountOptions = useMemo(() => {
@@ -1083,12 +1095,14 @@ const useTransactionForm = ({ transaction }: { transaction: TransactionFormType 
         balance: item.balance,
         // Accounts do not have categoryname, fallback to "Other"
         group: item.category?.name ?? "Other",
+        groupOrder: item.category?.displayorder ?? Number.MAX_SAFE_INTEGER,
+        displayOrder: item.displayorder ?? Number.MAX_SAFE_INTEGER,
       }))
       .sort((a, b) => {
-        // Sort by group first, then by name
-        if (a.group !== b.group) {
-          return a.group.localeCompare(b.group);
-        }
+        // Sort by group display order then by display order then by group name then by category name
+        if (a.groupOrder !== b.groupOrder) return a.groupOrder - b.groupOrder;
+        if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+        if (a.group !== b.group) return a.group.localeCompare(b.group);
         return a.label.localeCompare(b.label);
       });
   }, [accounts]);

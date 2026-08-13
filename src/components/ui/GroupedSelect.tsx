@@ -14,13 +14,14 @@
 import { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 
-import MyIcon from "@/src/components/elements/MyIcon";
 import { useTheme } from "@/src/providers/ThemeProvider";
-import { usePresentedOverlay, type OverlayPresent } from "./overlay/usePresentedOverlay";
-import { Text } from "./Text";
-import { cn } from "./utils/cn";
+import MyIcon from "@/src/components/elements/MyIcon";
 
-export interface GroupedIconOption {
+import { usePresentedOverlay, type OverlayPresent } from "./overlay/usePresentedOverlay";
+import { cn } from "./utils/cn";
+import { Text } from "./Text";
+
+export interface GroupedOption {
   id: string;
   label: string;
   icon?: string | null;
@@ -28,10 +29,10 @@ export interface GroupedIconOption {
   group: string;
 }
 
-export interface GroupedIconSelectProps {
+export interface GroupedSelectProps {
   value?: string | null;
   onChange: (id: string) => void;
-  options: GroupedIconOption[];
+  options: GroupedOption[];
   /** Group names, most-recently-used first — reorders group headings (not items within a group). */
   recentGroups?: string[];
   label?: string;
@@ -44,6 +45,7 @@ export interface GroupedIconSelectProps {
   disabled?: boolean;
   className?: string;
   testID?: string;
+  scrollableHorizontal?: boolean;
 }
 
 /** Only real hex is a valid CSS/icon color; legacy token fragments (e.g. "info-100") aren't. */
@@ -51,7 +53,7 @@ function hexOrUndefined(c?: string | null): string | undefined {
   return c && c.startsWith("#") ? c : undefined;
 }
 
-export function GroupedIconSelect({
+export function GroupedSelect({
   value,
   onChange,
   options,
@@ -65,9 +67,12 @@ export function GroupedIconSelect({
   disabled = false,
   className,
   testID = "grouped-icon-select",
-}: GroupedIconSelectProps) {
+  scrollableHorizontal = false,
+}: GroupedSelectProps) {
   const { colors } = useTheme();
   const [query, setQuery] = useState("");
+
+  console.log("options", options);
 
   const selected = useMemo(() => options.find(o => o.id === value) ?? null, [options, value]);
 
@@ -78,7 +83,7 @@ export function GroupedIconSelect({
   }, [options, query]);
 
   const groups = useMemo(() => {
-    const map = new Map<string, GroupedIconOption[]>();
+    const map = new Map<string, GroupedOption[]>();
     for (const o of filtered) {
       const g = o.group || "Other";
       if (!map.has(g)) map.set(g, []);
@@ -94,6 +99,39 @@ export function GroupedIconSelect({
   }, [filtered, recentGroups]);
 
   const showSearch = options.length > 8;
+
+  const optionsRender = (items: GroupedOption[]) => {
+    return items.map(o => {
+      const isSelected = o.id === value;
+      return (
+        <Pressable
+          key={o.id}
+          onPress={() => {
+            onChange(o.id);
+            close();
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isSelected }}
+          testID={`${testID}-option-${o.id}`}
+          className={cn(
+            "flex-row items-center gap-2 rounded-full border px-3.5 py-2 active:opacity-80",
+            isSelected ? "border-primary bg-primary-soft" : "border-border bg-surface",
+          )}
+        >
+          {o.icon ? (
+            <MyIcon
+              name={o.icon}
+              size={16}
+              color={hexOrUndefined(o.color) ?? (isSelected ? colors.primary : colors.inkMute)}
+            />
+          ) : null}
+          <Text className={cn("text-sm", isSelected ? "text-primary" : "text-ink")} numberOfLines={1}>
+            {o.label}
+          </Text>
+        </Pressable>
+      );
+    });
+  };
 
   const { triggerRef, openOverlay, isOpen } = usePresentedOverlay({
     present,
@@ -140,38 +178,13 @@ export function GroupedIconSelect({
                 <Text variant="label" className="px-4 pb-2">
                   {g}
                 </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-4">
-                  {items.map(o => {
-                    const isSelected = o.id === value;
-                    return (
-                      <Pressable
-                        key={o.id}
-                        onPress={() => {
-                          onChange(o.id);
-                          close();
-                        }}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: isSelected }}
-                        testID={`${testID}-option-${o.id}`}
-                        className={cn(
-                          "flex-row items-center gap-2 rounded-full border px-3.5 py-2 active:opacity-80",
-                          isSelected ? "border-primary bg-primary-soft" : "border-border bg-surface",
-                        )}
-                      >
-                        {o.icon ? (
-                          <MyIcon
-                            name={o.icon}
-                            size={16}
-                            color={hexOrUndefined(o.color) ?? (isSelected ? colors.primary : colors.inkMute)}
-                          />
-                        ) : null}
-                        <Text className={cn("text-sm", isSelected ? "text-primary" : "text-ink")} numberOfLines={1}>
-                          {o.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
+                {scrollableHorizontal ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2 px-4">
+                    {optionsRender(items)}
+                  </ScrollView>
+                ) : (
+                  <View className="flex-row flex-wrap gap-2 px-4">{optionsRender(items)}</View>
+                )}
               </View>
             ))
           )}

@@ -35,7 +35,13 @@ export { Chip, type ChipProps } from "./Chip";
 export { Pager, type PagerProps } from "./Pager";
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { Pulse, type PulseProps } from "./Pulse";
-export { SkeletonBlock, SkeletonRow, SkeletonGroup, type SkeletonBlockProps, type SkeletonGroupProps } from "./Skeleton";
+export {
+  SkeletonBlock,
+  SkeletonRow,
+  SkeletonGroup,
+  type SkeletonBlockProps,
+  type SkeletonGroupProps,
+} from "./Skeleton";
 export { Loader, type LoaderProps, type LoaderTone } from "./Loader";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { ErrorState, type ErrorStateProps } from "./ErrorState";
@@ -55,7 +61,7 @@ export { Select, type SelectProps, type SelectOption, type SelectPresent } from 
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
 export { QuickPills, type QuickPillsProps, type QuickPillOption } from "./QuickPills";
-export { GroupedIconSelect, type GroupedIconSelectProps, type GroupedIconOption } from "./GroupedIconSelect";
+export { GroupedSelect, type GroupedSelectProps, type GroupedOption } from "./GroupedSelect";
 export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
 export { DatePicker, type DatePickerProps } from "./DatePicker";
 export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
