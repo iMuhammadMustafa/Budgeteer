@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -113,9 +113,19 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const submitAllMutation = transactionService.useCreateMultipleTransactions();
   const splitMutation = transactionService.useSplitTransaction();
 
-  // State for tracking amounts and mode
-  const [mode, setMode] = useState<"plus" | "minus">("minus");
-  const [maxAmount, setMaxAmount] = useState(0);
+  // State for tracking amounts and mode. The component remounts when switching
+  // inline tabs, so derive the initial values directly from the supplied row.
+  const initialSignedAmount = parseFloat(transaction?.amount?.toString() || "0");
+  const [mode, setMode] = useState<"plus" | "minus">(() =>
+    initialSignedAmount !== 0
+      ? initialSignedAmount < 0
+        ? "minus"
+        : "plus"
+      : transaction?.type === "Income"
+        ? "plus"
+        : "minus",
+  );
+  const [maxAmount, setMaxAmount] = useState(() => Math.abs(initialSignedAmount));
 
   // Multi-currency state
   const { primaryCurrency } = usePrimaryCurrency();
@@ -124,12 +134,12 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
   const hasInitializedCurrencyRef = useRef(false);
 
   // One-shot init only — never overwrite an explicit user pick (incl. USD).
-  if (!hasInitializedCurrencyRef.current && primaryCurrency) {
-    hasInitializedCurrencyRef.current = true;
-    if (transactionCurrency !== primaryCurrency) {
+  useEffect(() => {
+    if (!hasInitializedCurrencyRef.current && primaryCurrency) {
+      hasInitializedCurrencyRef.current = true;
       setTransactionCurrency(primaryCurrency);
     }
-  }
+  }, [primaryCurrency]);
 
   const isSplitMode = !!transaction && transaction.splitfromid !== null;
   const isForeignCurrency = !isSplitMode && transactionCurrency !== primaryCurrency;
@@ -170,18 +180,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
     useFormState<MultipleTransactionsFormData>(initialFormData, validationSchema);
 
   const isDataLoading = isCategoriesLoading || isAccountsLoading;
-
-  // Initialize mode and maxAmount when transaction changes. A brand-new (non-split, zero-amount)
-  // form has no sign to infer, so fall back to the type's usual sign (Expense → minus) instead of
-  // always defaulting to "plus" — otherwise a fresh Expense form shows a green "+" total.
-  const prevTransactionRef = useRef(transaction);
-  if (transaction && prevTransactionRef.current !== transaction) {
-    prevTransactionRef.current = transaction;
-    const signedAmount = parseFloat(transaction.amount?.toString() || "0");
-    const amount = Math.abs(signedAmount);
-    setMode(signedAmount !== 0 ? (signedAmount < 0 ? "minus" : "plus") : transaction.type === "Income" ? "plus" : "minus");
-    setMaxAmount(amount);
-  }
 
   // Keep the total-amount sign in step with a sensible default when the type changes — the user
   // can still flip it with the mode chip afterward.
@@ -225,7 +223,6 @@ function MultipleTransactions({ transaction }: { transaction: TransactionFormTyp
           type: data.type as any,
           isvoid: childIsVoid,
           accountid: data.accountid,
-          groupid: data.groupid,
           categoryid: trans.categoryid,
           amount: convertedAmount,
           original_amount: roundToCents(originalAmount),

@@ -190,6 +190,22 @@ export default function TransactionForm({ transaction }: { transaction: Transact
     [categoryRecents.recent, categoryOptions],
   ) as typeof categoryOptions;
 
+  // Keep recently-used accounts within this transaction form, matching the category
+  // quick-pick strip while leaving the full grouped account picker unchanged.
+  const accountRecents = useRecentValues("transaction:account");
+  const handleAccountChange = (id: string) => {
+    updateField("accountid", id);
+    accountRecents.record(id);
+  };
+  const recentAccountOptions = useMemo(
+    () =>
+      accountRecents.recent
+        .map(id => accountOptions.find(o => o.id === id))
+        .filter(Boolean)
+        .slice(0, 6),
+    [accountRecents.recent, accountOptions],
+  ) as typeof accountOptions;
+
   // Transfer is always visually distinct (info/blue) regardless of the sign toggle; Expense/
   // Income follow the toggled `mode` (danger when minus, success when plus).
   const amountTone = formState.data.type === "Transfer" ? "info" : undefined;
@@ -316,81 +332,104 @@ export default function TransactionForm({ transaction }: { transaction: Transact
             />
           </View>
 
-          <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
-            <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
-              <FormField
-                config={{
-                  name: "accountid",
-                  label: "Account",
-                  type: "select",
-                  required: true,
-                  options: accountOptions,
-                  group: "category.name",
-                  popUp: Platform.OS !== "web",
-                  addNew: {
-                    entityType: "Account",
-                    label: "Add New Account",
-                    renderForm: ({ onSuccess, onCancel }) => (
-                      <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
-                    ),
-                  },
-                }}
-                value={formState.data.accountid}
-                error={formState.errors.accountid}
-                touched={formState.touched.accountid}
-                onChange={value => updateField("accountid", value)}
-                onBlur={() => setFieldTouched("accountid")}
-              />
-              {selectedAccount ? (
-                <Text className="mt-1.5 text-caption text-ink-mute">
-                  Balance: {formatCurrency(selectedAccount.balance, false)}
-                </Text>
-              ) : null}
-            </View>
-
-            {formState.data.type === "Transfer" && (
-              <>
-                <IconButton
-                  variant="ghost"
-                  icon="ArrowUpDown"
-                  haptic="selection"
-                  onPress={handleSwitchAccounts}
-                  className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
-                  accessibilityLabel="Switch source and destination accounts"
-                  testID="btn-switch-accounts"
-                />
-
-                <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
-                  <FormField
-                    config={{
-                      name: "transferaccountid",
-                      label: "Destination Account",
-                      type: "select",
-                      required: true,
-                      options: transferAccountOptions,
-                      group: "category.name",
-                      addNew: {
-                        entityType: "Account",
-                        label: "Add New Account",
-                        renderForm: ({ onSuccess, onCancel }) => (
-                          <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
-                        ),
-                      },
-                    }}
-                    value={formState.data.transferaccountid}
-                    error={formState.errors.transferaccountid}
-                    touched={formState.touched.transferaccountid}
-                    onChange={value => updateField("transferaccountid", value)}
-                    onBlur={() => setFieldTouched("transferaccountid")}
+          <View className="gap-2">
+            {recentAccountOptions.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerClassName="gap-2 pb-0.5"
+                testID="account-recents"
+              >
+                {recentAccountOptions.map(o => (
+                  <Chip
+                    key={o.id}
+                    label={o.label}
+                    iconName={o.icon ?? undefined}
+                    selected={o.id === formState.data.accountid}
+                    onPress={() => handleAccountChange(o.id)}
+                    testID={`account-recent-${o.id}`}
                   />
-                  {selectedTransferAccount ? (
-                    <Text className="mt-1.5 text-caption text-ink-mute">
-                      Balance: {formatCurrency(selectedTransferAccount.balance, false)}
-                    </Text>
-                  ) : null}
-                </View>
-              </>
-            )}
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View className={`${Platform.OS === "web" ? "flex flex-row items-center" : ""}`}>
+              <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                <FormField
+                  config={{
+                    name: "accountid",
+                    label: "Account",
+                    type: "select",
+                    required: true,
+                    options: accountOptions,
+                    group: "category.name",
+                    popUp: Platform.OS !== "web",
+                    addNew: {
+                      entityType: "Account",
+                      label: "Add New Account",
+                      renderForm: ({ onSuccess, onCancel }) => (
+                        <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
+                      ),
+                    },
+                  }}
+                  value={formState.data.accountid}
+                  error={formState.errors.accountid}
+                  touched={formState.touched.accountid}
+                  onChange={handleAccountChange}
+                  onBlur={() => setFieldTouched("accountid")}
+                />
+                {selectedAccount ? (
+                  <Text className="mt-1.5 text-caption text-ink-mute">
+                    Balance: {formatCurrency(selectedAccount.balance, false)}
+                  </Text>
+                ) : null}
+              </View>
+
+              {formState.data.type === "Transfer" && (
+                <>
+                  <IconButton
+                    variant="ghost"
+                    icon="ArrowUpDown"
+                    haptic="selection"
+                    onPress={handleSwitchAccounts}
+                    className={`${Platform.OS === "web" ? "mx-2 mt-5" : "my-2"} p-2 self-center`}
+                    accessibilityLabel="Switch source and destination accounts"
+                    testID="btn-switch-accounts"
+                  />
+
+                  <View className={`${Platform.OS === "web" ? "flex-1" : ""}`}>
+                    <FormField
+                      config={{
+                        name: "transferaccountid",
+                        label: "Destination Account",
+                        type: "select",
+                        required: true,
+                        options: transferAccountOptions,
+                        group: "category.name",
+                        addNew: {
+                          entityType: "Account",
+                          label: "Add New Account",
+                          renderForm: ({ onSuccess, onCancel }) => (
+                            <AccountForm account={accountInitialState} onSuccess={onSuccess} onCancel={onCancel} />
+                          ),
+                        },
+                      }}
+                      value={formState.data.transferaccountid}
+                      error={formState.errors.transferaccountid}
+                      touched={formState.touched.transferaccountid}
+                      onChange={value => updateField("transferaccountid", value)}
+                      onBlur={() => setFieldTouched("transferaccountid")}
+                    />
+                    {selectedTransferAccount ? (
+                      <Text className="mt-1.5 text-caption text-ink-mute">
+                        Balance: {formatCurrency(selectedTransferAccount.balance, false)}
+                      </Text>
+                    ) : null}
+                  </View>
+                </>
+              )}
+            </View>
           </View>
         </View>
 
