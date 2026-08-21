@@ -61,7 +61,12 @@ export { Select, type SelectProps, type SelectOption, type SelectPresent } from 
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export { IconPicker, FINANCE_ICONS, type IconPickerProps } from "./IconPicker";
 export { QuickPills, type QuickPillsProps, type QuickPillOption } from "./QuickPills";
-export { GroupedSelect, type GroupedSelectProps, type GroupedOption } from "./GroupedSelect";
+export {
+  GroupedSelect,
+  GroupedSelect as GroupedIconSelect,
+  type GroupedSelectProps,
+  type GroupedOption,
+} from "./GroupedSelect";
 export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOption } from "./SearchableSelect";
 export { DatePicker, type DatePickerProps } from "./DatePicker";
 export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";

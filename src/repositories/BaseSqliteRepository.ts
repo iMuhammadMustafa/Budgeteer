@@ -12,6 +12,11 @@ export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
     protected abstract tableName: TableNames;
     protected orderByFieldsDesc?: string[];
 
+    /** Quote schema-derived columns, including reserved words such as `table`. */
+    private quoteColumn(column: string): string {
+        return `"${column.replace(/"/g, '""')}"`;
+    }
+
     /**
      * Map a database row to the model type
      * Override in subclass if custom mapping is needed
@@ -181,7 +186,7 @@ export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
         const values = columns.map((col) => record[col]) as SQLiteBindValue[];
 
         await db.runAsync(
-            `INSERT INTO ${this.tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
+            `INSERT INTO ${this.tableName} (${columns.map((column) => this.quoteColumn(column)).join(", ")}) VALUES (${placeholders})`,
             values
         );
 
@@ -208,7 +213,7 @@ export abstract class BaseSqliteRepository<TModel, TTable extends TableNames>
             return this.findById(id, tenantId);
         }
 
-        const setClause = columns.map((col) => `${col} = ?`).join(", ");
+        const setClause = columns.map((col) => `${this.quoteColumn(col)} = ?`).join(", ");
         const values = [...columns.map((col) => record[col]), id, tenantId] as SQLiteBindValue[];
 
         const result = await db.runAsync(

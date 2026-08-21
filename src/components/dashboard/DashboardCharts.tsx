@@ -45,7 +45,7 @@ function DashboardCharts({ ...chartProps }: DashboardChartsProps) {
                 loading={c.loading}
                 onDetails={c.onDetails}
                 bodyHeight={c.bodyHeight}
-                className="my-0 flex-1"
+                className="my-0 flex-1 overflow-hidden"
                 testID={`chart-card-${c.key}`}
               >
                 {c.node}

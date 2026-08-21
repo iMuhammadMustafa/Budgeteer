@@ -108,9 +108,7 @@ export async function deleteItemById(page: Page, id: string) {
   if (await cascade.count()) {
     await cascade.first().click();
   }
-  await overlay(page)
-    .getByRole("button", { name: "Delete", exact: true })
-    .click();
+  await overlay(page).getByRole("button", { name: "Delete", exact: true }).click();
   await waitForOverlayClosed(page);
 }
 
@@ -162,10 +160,42 @@ export async function createTransactionGroup(page: Page, opts: { name: string })
 export async function createTransactionCategory(page: Page, opts: { name: string }): Promise<string> {
   await openAddForm(page);
   await page.getByTestId("transactioncategory-name").fill(opts.name);
-  await page.getByTestId(/^transactioncategory-group-pill-/).first().click();
+  await page
+    .getByTestId(/^transactioncategory-group-pill-/)
+    .first()
+    .click();
   await page.getByTestId("transactioncategory-save").click();
   await waitForOverlayClosed(page);
   await expect(listItem(page, opts.name)).toBeVisible();
+  return opts.name;
+}
+
+/** Create a fixed-amount standard recurring transaction. */
+export async function createRecurring(
+  page: Page,
+  opts: { name: string; amount: string; categoryName: string; accountName: string },
+): Promise<string> {
+  await openAddForm(page);
+  await page.getByTestId("recurring-name").fill(opts.name);
+  await page.getByTestId("recurring-amount-input").fill(opts.amount);
+
+  await page.getByTestId("recurring-category").click();
+  await page
+    .locator('[data-testid^="recurring-category-option-"]')
+    .filter({ hasText: opts.categoryName })
+    .first()
+    .click();
+
+  await page.getByTestId("field-sourceaccountid").click();
+  await page
+    .locator('[data-testid^="field-sourceaccountid-option-"]')
+    .filter({ hasText: opts.accountName })
+    .first()
+    .click();
+
+  await page.getByTestId("btn-recurring-submit").click();
+  await page.waitForURL(/\/Recurrings/);
+  await expect(listItem(page, opts.name).filter({ visible: true })).toBeVisible();
   return opts.name;
 }
 
@@ -261,19 +291,11 @@ export async function fillTransactionForm(
 
   if (categoryName) {
     await page.getByTestId("field-categoryid").click();
-    await page
-      .locator('[data-testid^="field-categoryid-option-"]')
-      .filter({ hasText: categoryName })
-      .first()
-      .click();
+    await page.locator('[data-testid^="field-categoryid-option-"]').filter({ hasText: categoryName }).first().click();
   }
 
   await page.getByTestId("field-accountid").click();
-  await page
-    .locator('[data-testid^="field-accountid-option-"]')
-    .filter({ hasText: accountName })
-    .first()
-    .click();
+  await page.locator('[data-testid^="field-accountid-option-"]').filter({ hasText: accountName }).first().click();
 
   if (type === "Transfer" && transferAccountName) {
     await page.getByTestId("field-transferaccountid").click();

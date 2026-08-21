@@ -1,27 +1,36 @@
-import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { resolveTenantId } from "@/src/utils/tenant";
-import { TableNames } from "@/src/types/database//TableNames";
-import { Inserts, Recurring } from "@/src/types/database//Tables.Types";
-import { Session } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import dayjs from "dayjs";
+
+import { useStorageMode } from "@/src/providers/StorageModeProvider";
+import { TableNames } from "@/src/types/database//TableNames";
+import { Recurring } from "@/src/types/database//Tables.Types";
+import { resolveTenantId } from "@/src/utils/tenant";
+
 import { useAuth } from "../providers/AuthProvider";
 import { queryClient } from "../providers/QueryProvider";
-import { IAccountRepository } from "../repositories/interfaces/IAccountRepository";
-import { IRecurringRepository } from "../repositories/interfaces/IRecurringRepository";
-import { ITransactionRepository } from "../repositories/interfaces/ITransactionRepository";
-import GenerateUuid from "../utils/uuid.Helper";
+import {
+  ApplyResult,
+  executeRecurringHelper,
+  ExecutionOverrides,
+  getNextOccurrence,
+} from "./helpers/recurrings.helpers";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
 import { queryKeys } from "./queryKeys";
+
+export {
+  executeRecurringHelper,
+  getNextOccurrence,
+  parseRecurrenceRule,
+  RecurringType,
+} from "./helpers/recurrings.helpers";
+export type { ApplyResult, ExecutionOverrides, RecurrenceFrequency } from "./helpers/recurrings.helpers";
 
 export interface IRecurringService extends IService<Recurring, TableNames.Recurrings> {
   useExecuteRecurring: () => ReturnType<
     typeof useMutation<ApplyResult, Error, { recurring: Recurring; overrides?: ExecutionOverrides }>
   >;
-  useSkipRecurring: () => ReturnType<
-    typeof useMutation<Recurring, Error, { recurring: Recurring }>
-  >;
+  useSkipRecurring: () => ReturnType<typeof useMutation<Recurring, Error, { recurring: Recurring }>>;
 }
 
 export function useRecurringService(): IRecurringService {
@@ -63,10 +72,7 @@ export function useRecurringService(): IRecurringService {
           throw new Error("Cannot skip: recurring has no next occurrence date or recurrence rule");
         }
 
-        const nextDate = getNextOccurrence(
-          recurring.nextoccurrencedate,
-          recurring.recurrencerule,
-        ).toISOString();
+        const nextDate = getNextOccurrence(recurring.nextoccurrencedate, recurring.recurrencerule).toISOString();
 
         const updateData: any = {
           nextoccurrencedate: nextDate,
@@ -93,174 +99,4 @@ export function useRecurringService(): IRecurringService {
     useExecuteRecurring,
     useSkipRecurring,
   };
-}
-
-export const executeRecurringHelper = async (
-  recurring: Recurring,
-  overrides: ExecutionOverrides | undefined,
-  session: Session,
-  recurringRepo: IRecurringRepository,
-  transactionRepo: ITransactionRepository,
-  accountRepo: IAccountRepository,
-): Promise<ApplyResult> => {
-  const userId = session.user.id;
-  const tenantId = resolveTenantId(session);
-
-  let updatedReucrring: Recurring | null = { ...recurring };
-  try {
-    const transactions: Inserts<TableNames.Transactions>[] = [];
-    const transactionId = GenerateUuid();
-    const transferTransactionId = GenerateUuid();
-
-    let transaction: Inserts<TableNames.Transactions> = {
-      id: transactionId,
-      name: recurring.name,
-      description: overrides?.description ?? recurring.description,
-      amount: overrides?.amount ?? recurring.amount ?? 0,
-      date: overrides?.date ?? recurring.nextoccurrencedate ?? dayjs().toISOString(),
-      accountid: recurring.sourceaccountid,
-      payee: recurring.payeename,
-      notes: overrides?.notes ?? recurring.notes,
-      type: recurring.type,
-      categoryid: recurring.categoryid!,
-      tenantid: tenantId,
-      createdby: userId,
-      createdat: dayjs().toISOString(),
-      updatedby: userId,
-      updatedat: dayjs().toISOString(),
-      isvoid: false,
-      isdeleted: false,
-    };
-    let transferTransaction: Inserts<TableNames.Transactions> = {
-      ...transaction,
-      id: transferTransactionId,
-      accountid: recurring.transferaccountid!,
-      transferaccountid: transaction.accountid,
-      amount: -(transaction.amount ?? 0),
-      transferid: transaction.id,
-      date: dayjs(transaction.date).add(-1, "second").toISOString(),
-    };
-
-    if (recurring.recurringtype === RecurringType.Transfer && recurring.transferaccountid) {
-      transaction.transferid = transferTransactionId;
-      transaction.transferaccountid = recurring.transferaccountid;
-      transactions.push(transferTransaction);
-    }
-    //TODO: Handle CreditCardPayment
-    //else if (recurring.recurringtype === RecurringType.CreditCardPayment) {
-    // const liabilityAccount = await accountRepo.findById(recurring.transferaccountid!, tenantId);
-    // const currentBalance = liabilityAccount.balance || 0;
-    // const paymentAmount = overrideAmount ?? Math.abs(Math.min(currentBalance, 0));
-
-    // if (currentBalance >= 0) {
-    //   console.log(`Credit card payment skipped - account has positive balance: ${currentBalance}`);
-    //   return { transactions: [], paymentAmount: 0 };
-    //}
-    transactions.push(transaction);
-
-    await transactionRepo.createMultiple(transactions, tenantId);
-    await accountRepo.updateAccountBalance(recurring.sourceaccountid, transaction.amount ?? 0, tenantId);
-    if (recurring.recurringtype === RecurringType.Transfer && recurring.transferaccountid) {
-      await accountRepo.updateAccountBalance(recurring.transferaccountid, transferTransaction.amount ?? 0, tenantId);
-    }
-
-    let updateData: any = {
-      lastexecutedat: transaction.date,
-      lastautoappliedat: dayjs().toISOString(),
-      failedattempts: 0,
-      updatedby: userId,
-      updatedat: dayjs().toISOString(),
-    };
-
-    if (!recurring.isdateflexible && recurring.nextoccurrencedate && recurring.recurrencerule) {
-      updateData.nextoccurrencedate = getNextOccurrence(
-        recurring.nextoccurrencedate,
-        recurring.recurrencerule,
-      ).toISOString();
-    }
-
-    updatedReucrring = await recurringRepo.update(recurring.id, updateData, tenantId);
-
-    return {
-      success: true,
-      transactionId: transactions[0].id,
-      recurring: updatedReucrring!,
-    };
-  } catch (error) {
-    // Increment failed attempts on error
-    updatedReucrring = await recurringRepo.update(
-      recurring.id,
-      {
-        failedattempts: recurring.failedattempts ? recurring.failedattempts + 1 : 1,
-      },
-      tenantId,
-    );
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-      recurring,
-    };
-  }
-};
-
-const getNextOccurrence = (date: string, rule: string) => {
-  const { freq, interval } = parseRecurrenceRule(rule);
-  let next = dayjs(date);
-
-  switch (freq) {
-    case "DAILY":
-      next = next.add(interval, "day");
-      break;
-
-    case "WEEKLY":
-      next = next.add(interval, "week"); // same weekday
-      break;
-
-    case "MONTHLY":
-      {
-        const day = next.date();
-        next = next.add(interval, "month");
-        next = next.date(Math.min(day, next.daysInMonth()));
-      }
-      break;
-
-    case "YEARLY":
-      {
-        const day = next.date();
-        const month = next.month();
-        next = next.add(interval, "year").month(month);
-        next = next.date(Math.min(day, next.daysInMonth()));
-      }
-      break;
-
-    default:
-      throw new Error(`Unsupported frequency: ${freq}`);
-  }
-
-  return next.toDate();
-};
-
-export const parseRecurrenceRule = (rule: string): { freq: RecurrenceFrequency; interval: number } => {
-  const parts = rule.split(";");
-  const freq = parts.find(p => p.startsWith("FREQ="))?.split("=")[1] || "MONTHLY";
-  const interval = parseInt(parts.find(p => p.startsWith("INTERVAL="))?.split("=")[1] || "1", 10);
-  return { freq: freq as RecurrenceFrequency, interval };
-};
-export type RecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-export enum RecurringType {
-  Standard = "Standard",
-  Transfer = "Transfer",
-  CreditCardPayment = "CreditCardPayment",
-}
-export interface ApplyResult {
-  success: boolean;
-  transactionId?: string;
-  error?: string;
-  recurring: Recurring;
-}
-export interface ExecutionOverrides {
-  amount?: number;
-  date?: string;
-  description?: string;
-  notes?: string;
 }

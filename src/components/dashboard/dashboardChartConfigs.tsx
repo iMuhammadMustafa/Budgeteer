@@ -121,8 +121,10 @@ export function useDashboardChartConfigs(props: DashboardChartsProps, colors: Th
     {
       key: "calendar-summary",
       order: 2,
-      title: periodControls.calendar.chartCardPeriod.label,
+      title: "Calendar Summary",
       detailType: DashboardViewSelectionType.CALENDAR_SUMMARY,
+      period: periodControls.calendarSummary.chartCardPeriod,
+      loading: periodControls.calendarSummary.loading,
       node: (
         <CalendarSummaryPanel
           summary={props.calendarSummary!}

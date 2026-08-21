@@ -4,12 +4,14 @@
  * identical to the originals; repositories are injected as parameters.
  */
 import { Session } from "@supabase/supabase-js";
-import { resolveTenantId } from "@/src/utils/tenant";
 import dayjs from "dayjs";
-import GenerateUuid from "@/src/utils/uuid.Helper";
+
 import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, Transaction, Updates } from "@/src/types/database/Tables.Types";
+import { resolveTenantId } from "@/src/utils/tenant";
+import GenerateUuid from "@/src/utils/uuid.Helper";
 import { IAccountRepository } from "@/src/repositories/interfaces/IAccountRepository";
+import { ITransactionItemRepository } from "@/src/repositories/interfaces/ITransactionItemRepository";
 import { ITransactionRepository } from "@/src/repositories/interfaces/ITransactionRepository";
 
 export const createTransactionHelper = async (
@@ -73,6 +75,52 @@ export const createTransactionHelper = async (
   }
 
   return newTransactions[0];
+};
+
+/**
+ * Create a batch of independent transactions and apply their active balance
+ * contributions once per account. The multiple-transaction form only emits
+ * Expense/Income rows; transfers continue through createTransactionHelper so
+ * their paired-row invariant stays centralized there.
+ */
+export const createMultipleTransactionsHelper = async (
+  formTransactions: Inserts<TableNames.Transactions>[],
+  session: Session,
+  transactionRepo: ITransactionRepository,
+  accountRepo: IAccountRepository,
+) => {
+  const tenantId = resolveTenantId(session);
+  if (!tenantId) throw new Error("Tenant ID not found in session");
+
+  const userId = session.user.id;
+  const now = new Date().toISOString();
+  const transactions = formTransactions.map(transaction => ({
+    ...transaction,
+    id: transaction.id || GenerateUuid(),
+    tenantid: tenantId,
+    createdat: transaction.createdat || now,
+    createdby: transaction.createdby || userId,
+    updatedby: transaction.updatedby || userId,
+  }));
+
+  const created = await transactionRepo.createMultiple!(transactions, tenantId);
+  const balanceDeltas = new Map<string, number>();
+
+  for (const transaction of transactions) {
+    if (transaction.isvoid === true || !transaction.accountid) continue;
+    balanceDeltas.set(
+      transaction.accountid,
+      (balanceDeltas.get(transaction.accountid) ?? 0) + (Number(transaction.amount) || 0),
+    );
+  }
+
+  for (const [accountId, delta] of balanceDeltas) {
+    if (delta !== 0) {
+      await accountRepo.updateAccountBalance(accountId, delta, tenantId);
+    }
+  }
+
+  return created;
 };
 
 export const updateTransactionHelper = async (
@@ -180,6 +228,64 @@ export const updateTransactionHelper = async (
   for (const [accountId, delta] of deltas) {
     if (delta !== 0) {
       await accountRepo.updateAccountBalance(accountId, delta, tenantId);
+    }
+  }
+};
+
+/**
+ * Soft-delete a transaction and its line items, reversing every active balance
+ * contribution. Transfer rows are deleted as a pair.
+ */
+export const softDeleteTransactionHelper = async (
+  id: string,
+  item: Transaction | undefined,
+  tenantId: string,
+  transactionRepo: ITransactionRepository,
+  transactionItemRepo: ITransactionItemRepository,
+  accountRepo: IAccountRepository,
+) => {
+  await transactionItemRepo.deleteByTransactionId(id, tenantId);
+  await transactionRepo.softDelete(id, tenantId);
+
+  if (!item) return;
+  if (item.isvoid !== true && item.accountid && item.amount) {
+    await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
+  }
+
+  if (item.transferid) {
+    await transactionItemRepo.deleteByTransactionId(item.transferid, tenantId);
+    await transactionRepo.softDelete(item.transferid, tenantId);
+    if (item.isvoid !== true && item.transferaccountid && item.amount) {
+      await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
+    }
+  }
+};
+
+/**
+ * Restore a transaction and its line items, re-applying every active balance
+ * contribution. Transfer rows are restored as a pair.
+ */
+export const restoreTransactionHelper = async (
+  id: string,
+  item: Transaction | undefined,
+  tenantId: string,
+  transactionRepo: ITransactionRepository,
+  transactionItemRepo: ITransactionItemRepository,
+  accountRepo: IAccountRepository,
+) => {
+  await transactionRepo.restore(id, tenantId);
+  await transactionItemRepo.restoreByTransactionId(id, tenantId);
+
+  if (!item) return;
+  if (item.isvoid !== true && item.accountid && item.amount) {
+    await accountRepo.updateAccountBalance(item.accountid, item.amount, tenantId);
+  }
+
+  if (item.transferid) {
+    await transactionRepo.restore(item.transferid, tenantId);
+    await transactionItemRepo.restoreByTransactionId(item.transferid, tenantId);
+    if (item.isvoid !== true && item.transferaccountid && item.amount) {
+      await accountRepo.updateAccountBalance(item.transferaccountid, -item.amount, tenantId);
     }
   }
 };

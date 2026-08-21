@@ -7,17 +7,25 @@
  * Skips unless `cloudEnabled` (local stack + keys in env). See supabaseHarness.
  * Run with: npm run test:integration:cloud
  */
-import { beforeAll, afterAll, describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
 import {
-    cloudEnabled,
     clientFor,
+    cloudEnabled,
     makeServiceClient,
     provisionUser,
     type TestUser,
 } from "@/src/test-utils/supabaseHarness";
-import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { AccountCategorySupaRepository } from "./AccountCategories.supa";
 import { AccountSupaRepository } from "./Accounts.supa";
+import { ConfigurationSupaRepository } from "./Configurations.supa";
+import { RecurringSupaRepository } from "./Recurrings.api.supa";
+import { SavingsBucketSupaRepository } from "./SavingsBuckets.supa";
+import { TransactionCategorySupaRepository } from "./TransactionCategories.supa";
+import { TransactionGroupSupaRepository } from "./TransactionGroups.supa";
+import { TransactionItemSupaRepository } from "./TransactionItems.supa";
 import { TransactionSupaRepository } from "./Transactions.supa";
 
 // The repos import a module-singleton supabase client. Proxy it to a swappable
@@ -38,6 +46,17 @@ vi.mock("@/src/providers/Supabase", () => ({
 }));
 
 const TENANT_A = "11111111-1111-1111-1111-111111111111";
+const CLEANUP_TABLES = [
+    "transactionitems",
+    "recurrings",
+    "savingsbuckets",
+    "transactions",
+    "configurations",
+    "transactioncategories",
+    "transactiongroups",
+    "accounts",
+    "accountcategories",
+];
 
 describe.skipIf(!cloudEnabled)("Supabase repository contract (live local stack)", () => {
     const admin = cloudEnabled ? makeServiceClient() : (null as any);
@@ -47,13 +66,13 @@ describe.skipIf(!cloudEnabled)("Supabase repository contract (live local stack)"
         userA = await provisionUser(admin, "contract-a@test.local", TENANT_A);
         H.client = await clientFor(userA);
         // Clean any prior rows in this tenant (service bypasses RLS).
-        for (const t of ["transactions", "accounts", "accountcategories"]) {
+        for (const t of CLEANUP_TABLES) {
             await admin.from(t).delete().eq("tenantid", TENANT_A);
         }
     });
 
     afterAll(async () => {
-        for (const t of ["transactions", "accounts", "accountcategories"]) {
+        for (const t of CLEANUP_TABLES) {
             await admin.from(t).delete().eq("tenantid", TENANT_A);
         }
         if (userA) await admin.auth.admin.deleteUser(userA.userId);
@@ -114,8 +133,12 @@ describe.skipIf(!cloudEnabled)("Supabase repository contract (live local stack)"
             const acctRepo = new AccountSupaRepository();
             const acct: any = await acctRepo.create(
                 {
-                    id: "acct-1", name: "Checking", categoryid: "ac-2", balance: 100,
-                    tenantid: TENANT_A, createdat: "2026-01-01",
+                    id: "acct-1",
+                    name: "Checking",
+                    categoryid: "ac-2",
+                    balance: 100,
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
                 } as any,
                 TENANT_A,
             );
@@ -126,22 +149,160 @@ describe.skipIf(!cloudEnabled)("Supabase repository contract (live local stack)"
         it("Transaction create round-trips through PostgREST", async () => {
             // group + category first (FK chain)
             await admin.from("transactiongroups").insert({
-                id: "grp-1", name: "Food", type: "Expense", tenantid: TENANT_A, createdat: "2026-01-01",
+                id: "grp-1",
+                name: "Food",
+                type: "Expense",
+                tenantid: TENANT_A,
+                createdat: "2026-01-01",
             });
             await admin.from("transactioncategories").insert({
-                id: "cat-1", name: "Groceries", groupid: "grp-1", type: "Expense",
-                tenantid: TENANT_A, createdat: "2026-01-01",
+                id: "cat-1",
+                name: "Groceries",
+                groupid: "grp-1",
+                type: "Expense",
+                tenantid: TENANT_A,
+                createdat: "2026-01-01",
             });
             const txRepo = new TransactionSupaRepository();
             const tx: any = await txRepo.create(
                 {
-                    id: "tx-1", name: "Coffee", amount: -4.5, date: "2026-01-15", type: "Expense",
-                    accountid: "acct-1", categoryid: "cat-1", tenantid: TENANT_A, createdat: "2026-01-01",
+                    id: "tx-1",
+                    name: "Coffee",
+                    amount: -4.5,
+                    date: "2026-01-15",
+                    type: "Expense",
+                    accountid: "acct-1",
+                    categoryid: "cat-1",
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
                 } as any,
                 TENANT_A,
             );
             expect(tx.id).toBe("tx-1");
             expect(tx.isvoid).toBe(false);
+        });
+
+        it("all FK-bearing repositories complete update / soft-delete / restore round-trips", async () => {
+            const accountRepo = new AccountSupaRepository();
+            const groupRepo = new TransactionGroupSupaRepository();
+            const categoryRepo = new TransactionCategorySupaRepository();
+            const txRepo = new TransactionSupaRepository();
+            const configRepo = new ConfigurationSupaRepository();
+            const recurringRepo = new RecurringSupaRepository();
+            const bucketRepo = new SavingsBucketSupaRepository();
+            const itemRepo = new TransactionItemSupaRepository();
+
+            expect((await accountRepo.update("acct-1", { name: "Cloud Checking" } as any, TENANT_A))?.name).toBe(
+                "Cloud Checking",
+            );
+            await accountRepo.softDelete("acct-1", TENANT_A);
+            expect(await accountRepo.findById("acct-1", TENANT_A)).toBeNull();
+            await accountRepo.restore("acct-1", TENANT_A);
+
+            const group: any = await groupRepo.create(
+                { id: "grp-crud", name: "Bills", type: "Expense", tenantid: TENANT_A, createdat: "2026-01-01" } as any,
+                TENANT_A,
+            );
+            expect((await groupRepo.update(group.id, { name: "Dining" } as any, TENANT_A))?.name).toBe("Dining");
+            await groupRepo.softDelete(group.id, TENANT_A);
+            expect(await groupRepo.findById(group.id, TENANT_A)).toBeNull();
+            await groupRepo.restore(group.id, TENANT_A);
+
+            const category: any = await categoryRepo.create(
+                {
+                    id: "cat-crud",
+                    name: "Restaurants",
+                    groupid: group.id,
+                    type: "Expense",
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
+                } as any,
+                TENANT_A,
+            );
+            expect((await categoryRepo.update(category.id, { name: "Cafes" } as any, TENANT_A))?.name).toBe("Cafes");
+            await categoryRepo.softDelete(category.id, TENANT_A);
+            expect(await categoryRepo.findById(category.id, TENANT_A)).toBeNull();
+            await categoryRepo.restore(category.id, TENANT_A);
+
+            expect((await txRepo.update("tx-1", { amount: -5 } as any, TENANT_A))?.amount).toBe(-5);
+            await txRepo.softDelete("tx-1", TENANT_A);
+            expect(await txRepo.findById("tx-1", TENANT_A)).toBeNull();
+            await txRepo.restore("tx-1", TENANT_A);
+
+            const config: any = await configRepo.create(
+                {
+                    id: "cfg-1",
+                    key: "id",
+                    value: "cat-1",
+                    type: "AccountOpertationsCategory",
+                    table: "transactioncategories",
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
+                } as any,
+                TENANT_A,
+            );
+            expect((await configRepo.update(config.id, { value: "cat-1" } as any, TENANT_A))?.value).toBe("cat-1");
+            await configRepo.softDelete(config.id, TENANT_A);
+            expect(await configRepo.findById(config.id, TENANT_A)).toBeNull();
+            await configRepo.restore(config.id, TENANT_A);
+
+            const recurring: any = await recurringRepo.create(
+                {
+                    id: "rec-1",
+                    name: "Rent",
+                    amount: -100,
+                    type: "Expense",
+                    recurringtype: "Standard",
+                    recurrencerule: "FREQ=MONTHLY;INTERVAL=1",
+                    categoryid: "cat-1",
+                    sourceaccountid: "acct-1",
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
+                } as any,
+                TENANT_A,
+            );
+            expect((await recurringRepo.update(recurring.id, { name: "Mortgage" } as any, TENANT_A))?.name).toBe(
+                "Mortgage",
+            );
+            await recurringRepo.softDelete(recurring.id, TENANT_A);
+            expect(await recurringRepo.findById(recurring.id, TENANT_A)).toBeNull();
+            await recurringRepo.restore(recurring.id, TENANT_A);
+
+            const bucket: any = await bucketRepo.create(
+                {
+                    id: "bucket-1",
+                    name: "Emergency",
+                    accountid: "acct-1",
+                    currentamount: 50,
+                    targetamount: 500,
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
+                } as any,
+                TENANT_A,
+            );
+            expect((await bucketRepo.update(bucket.id, { currentamount: 75 } as any, TENANT_A))?.currentamount).toBe(
+                75,
+            );
+            await bucketRepo.softDelete(bucket.id, TENANT_A);
+            expect(await bucketRepo.findById(bucket.id, TENANT_A)).toBeNull();
+            await bucketRepo.restore(bucket.id, TENANT_A);
+
+            const item: any = await itemRepo.create(
+                {
+                    id: "item-1",
+                    transactionid: "tx-1",
+                    name: "Coffee",
+                    amount: 5,
+                    tenantid: TENANT_A,
+                    createdat: "2026-01-01",
+                } as any,
+                TENANT_A,
+            );
+            expect((await itemRepo.update(item.id, { amount: 6 } as any, TENANT_A))?.amount).toBe(6);
+            await itemRepo.deleteByTransactionId("tx-1", TENANT_A);
+            expect(await itemRepo.findByTransactionId("tx-1", TENANT_A)).toHaveLength(0);
+            await itemRepo.restoreByTransactionId("tx-1", TENANT_A);
+            expect(await itemRepo.findByTransactionId("tx-1", TENANT_A)).toHaveLength(1);
         });
     });
 });

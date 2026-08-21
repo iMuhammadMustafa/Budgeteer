@@ -31,6 +31,10 @@ export async function navigateToAddTransaction(page: Page) {
   await navigate(page, "New Transaction", /\/AddTransaction/);
 }
 
+export async function navigateToRecurrings(page: Page) {
+  await navigate(page, "Recurrings", /\/Recurrings$/);
+}
+
 export async function navigateToAccounts(page: Page) {
   await navigate(page, "Accounts", /\/Accounts$/);
 }
@@ -66,11 +70,7 @@ export async function navigateToRestore(page: Page) {
 
 /** Click a `SecondaryTabBar` tab by its label and wait for the route. */
 async function clickTab(page: Page, tabName: string, urlPattern: RegExp): Promise<void> {
-  await page
-    .getByTestId("secondary-tabbar")
-    .getByRole("link", { name: tabName, exact: true })
-    .first()
-    .click();
+  await page.getByTestId("secondary-tabbar").getByRole("link", { name: tabName, exact: true }).first().click();
   await page.waitForURL(urlPattern);
 }
 
@@ -120,6 +120,11 @@ export async function navigateToRestoreTransactionGroups(page: Page) {
 export async function navigateToRestoreTransactionCategories(page: Page) {
   await navigateToRestore(page);
   await clickTab(page, "Transaction Categories", /\/Restore\/TransactionCategories/);
+}
+
+export async function navigateToRestoreRecurrings(page: Page) {
+  await navigateToRestore(page);
+  await clickTab(page, "Recurrings", /\/Restore\/Recurrings/);
 }
 
 // Back-compat aliases used by legacy specs.

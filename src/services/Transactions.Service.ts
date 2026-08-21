@@ -1,5 +1,8 @@
+import { Session } from "@supabase/supabase-js";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+
 import { useAuth } from "@/src/providers/AuthProvider";
-import { resolveTenantId } from "@/src/utils/tenant";
 import { queryClient } from "@/src/providers/QueryProvider";
 import { TransactionFilters } from "@/src/types/apis/TransactionFilters";
 import { TableNames } from "@/src/types/database/TableNames";
@@ -10,13 +13,18 @@ import {
   TransactionsView,
   Updates,
 } from "@/src/types/database/Tables.Types";
+import { resolveTenantId } from "@/src/utils/tenant";
 import GenerateUuid from "@/src/utils/uuid.Helper";
-import { Session } from "@supabase/supabase-js";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
+
 import { useStorageMode } from "../providers/StorageModeProvider";
+import {
+  createMultipleTransactionsHelper,
+  createTransactionHelper,
+  restoreTransactionHelper,
+  softDeleteTransactionHelper,
+  updateTransactionHelper,
+} from "./helpers/transactions.helpers";
 import createServiceHooks from "./BaseService";
-import { createTransactionHelper, updateTransactionHelper } from "./helpers/transactions.helpers";
 import { IService } from "./IService";
 import { queryKeys } from "./queryKeys";
 
@@ -84,7 +92,7 @@ export function useTransactionService(): ITransactionService {
   const useCreateMultipleTransactions = () => {
     return useMutation({
       mutationFn: async (transactions: Inserts<TableNames.Transactions>[]) => {
-        return await transactionRepo.createMultiple!(transactions, tenantId);
+        return await createMultipleTransactionsHelper(transactions, session, transactionRepo, accountRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
@@ -187,20 +195,7 @@ export function useTransactionService(): ITransactionService {
   const useSoftDelete = () => {
     return useMutation({
       mutationFn: async ({ id, item }: { id: string; item?: any }) => {
-        // Cascade soft-delete transaction items
-        await transactionItemRepo.deleteByTransactionId(id, tenantId);
-        await transactionRepo.softDelete(id, tenantId);
-        if (!item) return;
-        if (item.isvoid !== true && item.accountid && item.amount) {
-          await accountRepo.updateAccountBalance(item.accountid, -item.amount, tenantId);
-        }
-        if (item.transferid) {
-          await transactionItemRepo.deleteByTransactionId(item.transferid, tenantId);
-          await transactionRepo.softDelete(item.transferid, tenantId);
-          if (item.isvoid !== true && item.transferaccountid && item.amount) {
-            await accountRepo.updateAccountBalance(item.transferaccountid, item.amount, tenantId);
-          }
-        }
+        await softDeleteTransactionHelper(id, item, tenantId, transactionRepo, transactionItemRepo, accountRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
@@ -214,18 +209,7 @@ export function useTransactionService(): ITransactionService {
   const useRestore = () => {
     return useMutation({
       mutationFn: async ({ id, item }: { id: string; item?: any }) => {
-        await transactionRepo.restore(id, tenantId);
-        if (item) {
-          if (item.isvoid !== true && item.accountid && item.amount) {
-            await accountRepo.updateAccountBalance(item.accountid, item.amount, tenantId);
-          }
-          if (item.transferid) {
-            await transactionRepo.restore(item.transferid, tenantId);
-            if (item.isvoid !== true && item.transferaccountid && item.amount) {
-              await accountRepo.updateAccountBalance(item.transferaccountid, -item.amount, tenantId);
-            }
-          }
-        }
+        await restoreTransactionHelper(id, item, tenantId, transactionRepo, transactionItemRepo, accountRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });

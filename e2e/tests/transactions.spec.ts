@@ -1,15 +1,23 @@
+import { expect } from "@playwright/test";
+
 import { gotoApp, test } from "../fixtures/app";
 import {
   createAccount,
   deleteSelectedTransactions,
   fillTransactionForm,
+  getItemId,
   listItem,
+  restoreItemById,
   selectTransaction,
   setSelectedVoid,
   transactionRow,
 } from "../utils/forms";
-import { expect } from "@playwright/test";
-import { navigateToAccounts, navigateToAddTransaction, navigateToTransactions } from "../utils/helpers/navigation";
+import {
+  navigateToAccounts,
+  navigateToAddTransaction,
+  navigateToRestoreTransactions,
+  navigateToTransactions,
+} from "../utils/helpers/navigation";
 
 /**
  * Transaction create/edit/delete journeys against the redesigned keypad form
@@ -128,11 +136,7 @@ test.describe("transactions", () => {
     await transactionRow(page, txnName).first().click();
     await page.waitForURL(/\/AddTransaction/);
     await page.getByTestId("field-accountid").click();
-    await page
-      .locator('[data-testid^="field-accountid-option-"]')
-      .filter({ hasText: to })
-      .first()
-      .click();
+    await page.locator('[data-testid^="field-accountid-option-"]').filter({ hasText: to }).first().click();
     await page.getByTestId("btn-form-submit").click();
     await page.waitForURL(/\/Transactions/);
 
@@ -197,5 +201,36 @@ test.describe("transactions", () => {
 
     await navigateToAccounts(page);
     await expect(listItem(page, account)).toContainText("$1,000.00");
+  });
+
+  test("restoring a deleted transaction re-applies the account balance", async ({ page }) => {
+    const account = `Restore Txn Acct ${Date.now()}`;
+    await navigateToAccounts(page);
+    await createAccount(page, { name: account, categoryName: "Cash", balance: "1000" });
+
+    const txnName = `Restorable Expense ${Date.now()}`;
+    await navigateToAddTransaction(page);
+    await fillTransactionForm(page, {
+      type: "Expense",
+      amount: "100",
+      categoryName: "Fuel",
+      accountName: account,
+      name: txnName,
+    });
+    await selectTransaction(page, txnName);
+    await deleteSelectedTransactions(page);
+
+    await navigateToAccounts(page);
+    await expect(listItem(page, account)).toContainText("$1,000.00");
+
+    await navigateToRestoreTransactions(page);
+    await expect(listItem(page, txnName).filter({ visible: true })).toBeVisible();
+    const id = await getItemId(page, txnName);
+    await restoreItemById(page, id);
+
+    await navigateToAccounts(page);
+    await expect(listItem(page, account)).toContainText("$900.00");
+    await navigateToTransactions(page);
+    await expect(transactionRow(page, txnName)).toBeVisible();
   });
 });

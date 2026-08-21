@@ -1,10 +1,12 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+
+import { IconButton, ResponsiveModal, useConfirm } from "@/src/components/ui";
+
 import { useSavingsBucketService } from "../services/SavingsBuckets.Service";
 import { usePrimaryCurrency } from "../services/UserPreferences.Service";
 import { SavingsBucket } from "../types/database/Tables.Types";
-import { IconButton, ResponsiveModal } from "@/src/components/ui";
 import MyIcon from "./elements/MyIcon";
 import SavingsBucketForm, { initialBucketState } from "./forms/SavingsBucketForm";
 
@@ -27,7 +29,8 @@ export default function SavingsBucketsList({
     prefetchedBuckets ? undefined : accountId,
   );
   const { mutate: allocate, isPending: isAllocating } = bucketService.useAllocate();
-  const { mutate: deleteBucket } = bucketService.useSoftDelete();
+  const { mutateAsync: deleteBucket, isPending: isDeleting } = bucketService.useSoftDelete();
+  const confirm = useConfirm();
 
   const buckets = prefetchedBuckets ?? fetchedBuckets;
 
@@ -57,6 +60,16 @@ export default function SavingsBucketsList({
         },
       },
     );
+  };
+
+  const handleDelete = async (bucket: SavingsBucket) => {
+    const confirmed = await confirm({
+      title: "Delete savings bucket?",
+      message: `“${bucket.name}” will be removed. The account balance is not affected.`,
+      confirmLabel: "Delete bucket",
+      tone: "danger",
+    });
+    if (confirmed) await deleteBucket({ id: bucket.id, item: bucket });
   };
 
   const getProgressPercent = (bucket: SavingsBucket) => {
@@ -220,6 +233,7 @@ export default function SavingsBucketsList({
       {buckets?.map(bucket => (
         <View key={bucket.id} className="px-4 py-2 border-t border-border">
           <Pressable
+            testID={`savings-bucket-${bucket.id}`}
             onPress={() => {
               setEditBucket(bucket);
               setShowForm(true);
@@ -260,6 +274,15 @@ export default function SavingsBucketsList({
                   setAllocateAmount(String(bucket.currentamount));
                 }}
               />
+              <IconButton
+                testID={`delete-bucket-btn-${bucket.id}`}
+                icon="Trash2"
+                variant="ghost"
+                size="xs"
+                accessibilityLabel="Delete savings bucket"
+                onPress={() => handleDelete(bucket)}
+                disabled={isDeleting}
+              />
             </View>
           </Pressable>
 
@@ -267,6 +290,7 @@ export default function SavingsBucketsList({
           {allocatingBucketId === bucket.id && (
             <View className="flex-row items-center gap-2 mt-2 pl-7">
               <TextInput
+                testID={`allocate-input-${bucket.id}`}
                 className="flex-1 border border-border rounded-md px-2 py-1 text-sm text-foreground"
                 value={allocateAmount}
                 onChangeText={setAllocateAmount}

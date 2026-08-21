@@ -9,6 +9,7 @@ import { View } from "react-native";
 import { Calendar } from "react-native-calendars";
 
 import { useTheme } from "@/src/providers/ThemeProvider";
+
 import { Pulse } from "../Pulse";
 import { cn } from "../utils/cn";
 

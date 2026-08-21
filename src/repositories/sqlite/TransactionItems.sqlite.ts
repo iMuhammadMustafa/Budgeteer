@@ -1,6 +1,7 @@
+import { getSqliteDB } from "@/src/types/database/sqlite";
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionItem } from "@/src/types/database/Tables.Types";
-import { getSqliteDB } from "@/src/types/database/sqlite";
+
 import { BaseSqliteRepository } from "../BaseSqliteRepository";
 import { ITransactionItemRepository } from "../interfaces/ITransactionItemRepository";
 
@@ -24,6 +25,14 @@ export class TransactionItemSqliteRepository
     const db = await getSqliteDB();
     await db.runAsync(
       `UPDATE ${TableNames.TransactionItems} SET isdeleted = 1 WHERE transactionid = ? AND tenantid = ?`,
+      [transactionId, tenantId],
+    );
+  }
+
+  async restoreByTransactionId(transactionId: string, tenantId: string): Promise<void> {
+    const db = await getSqliteDB();
+    await db.runAsync(
+      `UPDATE ${TableNames.TransactionItems} SET isdeleted = 0 WHERE transactionid = ? AND tenantid = ?`,
       [transactionId, tenantId],
     );
   }

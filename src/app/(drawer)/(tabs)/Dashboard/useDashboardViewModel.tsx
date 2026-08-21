@@ -76,9 +76,11 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
   }, [params, dateRanges]);
 
   // Period cursors (independent per-chart). The week cursor is bespoke (it also nudges the daily
-  // month cursor when a week crosses a month); the rest are uniform month/year cursors.
+  // month cursor when a week crosses a month); the rest are uniform month/year cursors. The
+  // calendar summary intentionally owns a separate month cursor/query from the calendar itself.
   const [weekBaseDate, setWeekBaseDate] = useState<string>(params.startDate ?? dayjs().toISOString());
   const daily = usePeriodCursor(initialMonthFromParams, "month"); // calendar + weekly-bar month bound
+  const calendarSummaryPeriod = usePeriodCursor(initialMonthFromParams, "month");
   const categories = usePeriodCursor(initialMonthFromParams, "month");
   const groups = usePeriodCursor(initialMonthFromParams, "month");
   const earnings = usePeriodCursor(initialYearFromParams, "year");
@@ -116,6 +118,17 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     isLoading: isDailyLoading,
     isFetching: isDailyFetching,
   } = statsService.useGetStatsDailyTransactionsRaw(daily.range.start, daily.range.end);
+
+  // The summary has its own query so paging it never changes the heatmap or the weekly chart's
+  // month-bound source data. TanStack Query can still reuse the cache while both show one month.
+  const {
+    data: calendarSummaryTransactionsRaw = [],
+    isLoading: isCalendarSummaryLoading,
+    isFetching: isCalendarSummaryFetching,
+  } = statsService.useGetStatsDailyTransactionsRaw(
+    calendarSummaryPeriod.range.start,
+    calendarSummaryPeriod.range.end,
+  );
 
   // Fetch monthly categories (month-bound)
   const {
@@ -226,14 +239,18 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     ],
   );
 
-  // Month-at-a-glance summary for the panel beside the (otherwise sparse, full-width) calendar on
-  // wide screens. Derived from the same raw daily rows the heatmap already uses — no extra query.
+  // Month-at-a-glance summary for the panel beside the calendar on wide screens. It is derived
+  // from the summary's independent raw query so its period control cannot move other charts.
   const calendarSummary = useMemo(() => {
     let income = 0;
     let expense = 0;
     const spendByDay = new Map<string, number>();
     const activeDays = new Set<string>();
-    for (const r of dailyTransactionsRaw as { date: string | null; sum: number | null; type: string | null }[]) {
+    for (const r of calendarSummaryTransactionsRaw as {
+      date: string | null;
+      sum: number | null;
+      type: string | null;
+    }[]) {
       if (!r.date) continue;
       const key = dayjs(r.date).format("YYYY-MM-DD");
       activeDays.add(key);
@@ -249,12 +266,13 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       .slice(0, 3)
       .map(([date, amount]) => ({ date, amount }));
     return { income, expense, net: income - expense, activeDays: activeDays.size, topDays };
-  }, [dailyTransactionsRaw]);
+  }, [calendarSummaryTransactionsRaw]);
 
   const [isLocalLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isLoading =
     isDailyLoading ||
+    isCalendarSummaryLoading ||
     isCategoriesLoading ||
     isGroupsLoading ||
     isYearlyLoading ||
@@ -469,6 +487,7 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
     netWorthYear: PeriodControl;
     earningsYear: PeriodControl;
     calendar: PeriodControl;
+    calendarSummary: PeriodControl;
   } = {
     week: {
       chartCardPeriod: {
@@ -534,6 +553,14 @@ export default function useDashboard(options?: { fetchTransactions?: boolean }) 
       },
       currentDate: daily.range.start,
       loading: isDailyFetching,
+    },
+    calendarSummary: {
+      chartCardPeriod: {
+        label: calendarSummaryPeriod.label,
+        onPrev: calendarSummaryPeriod.prev,
+        onNext: calendarSummaryPeriod.next,
+      },
+      loading: isCalendarSummaryFetching,
     },
     earningsYear: {
       chartCardPeriod: {

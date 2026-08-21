@@ -100,7 +100,7 @@ export function GroupedSelect({
 
   const showSearch = options.length > 8;
 
-  const optionsRender = (items: GroupedOption[]) => {
+  const optionsRender = (items: GroupedOption[], closeOverlay: () => void) => {
     return items.map(o => {
       const isSelected = o.id === value;
       return (
@@ -108,7 +108,7 @@ export function GroupedSelect({
           key={o.id}
           onPress={() => {
             onChange(o.id);
-            close();
+            closeOverlay();
           }}
           accessibilityRole="button"
           accessibilityState={{ selected: isSelected }}
@@ -180,10 +180,10 @@ export function GroupedSelect({
                 </Text>
                 {scrollableHorizontal ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2 px-4">
-                    {optionsRender(items)}
+                    {optionsRender(items, close)}
                   </ScrollView>
                 ) : (
-                  <View className="flex-row flex-wrap gap-2 px-4">{optionsRender(items)}</View>
+                  <View className="flex-row flex-wrap gap-2 px-4">{optionsRender(items, close)}</View>
                 )}
               </View>
             ))

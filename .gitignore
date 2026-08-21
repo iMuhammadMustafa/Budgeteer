@@ -59,3 +59,4 @@ e2e/.auth/
 .env.test
 
 anti/
+AGENTS.md

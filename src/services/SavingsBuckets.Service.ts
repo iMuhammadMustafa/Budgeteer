@@ -1,12 +1,14 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+
 import { useStorageMode } from "@/src/providers/StorageModeProvider";
-import { resolveTenantId } from "@/src/utils/tenant";
 import { TableNames } from "@/src/types/database/TableNames";
 import { Inserts, SavingsBucket, Updates } from "@/src/types/database/Tables.Types";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import { resolveTenantId } from "@/src/utils/tenant";
+
 import { useAuth } from "../providers/AuthProvider";
 import { queryClient } from "../providers/QueryProvider";
 import { ISavingsBucketRepository } from "../repositories/interfaces/ISavingsBucketRepository";
+import { allocateSavingsBucketHelper, upsertSavingsBucketHelper } from "./helpers/savingsBuckets.helpers";
 import createServiceHooks from "./BaseService";
 import { IService } from "./IService";
 import { queryKeys } from "./queryKeys";
@@ -77,33 +79,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
   const useAllocate = () => {
     return useMutation<SavingsBucket | null, Error, { bucketId: string; amount: number; accountBalance: number }>({
       mutationFn: async ({ bucketId, amount, accountBalance }) => {
-        const bucket = await bucketRepo.findById(bucketId, tenantId);
-        if (!bucket) throw new Error("Bucket not found");
-
-        const totalAllocated = await bucketRepo.getTotalAllocated(bucket.accountid, tenantId);
-        const otherBucketsTotal = totalAllocated - bucket.currentamount;
-        const newTotal = otherBucketsTotal + amount;
-
-        if (newTotal > accountBalance) {
-          throw new Error(
-            `Allocation exceeds account balance. Available: ${(accountBalance - otherBucketsTotal).toFixed(2)}`,
-          );
-        }
-
-        if (amount < 0) {
-          throw new Error("Allocation amount cannot be negative");
-        }
-
-        const userId = session.user.id;
-        return bucketRepo.update(
-          bucketId,
-          {
-            currentamount: amount,
-            updatedby: userId,
-            updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-          },
-          tenantId,
-        );
+        return allocateSavingsBucketHelper(bucketId, amount, accountBalance, tenantId, session.user.id, bucketRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.savingsBuckets.all });
@@ -120,26 +96,7 @@ export function useSavingsBucketService(): ISavingsBucketService {
       { form: Inserts<TableNames.SavingsBuckets> | Updates<TableNames.SavingsBuckets>; original?: SavingsBucket }
     >({
       mutationFn: async ({ form, original }) => {
-        if (form.id && original) {
-          return bucketRepo.update(
-            form.id,
-            {
-              ...form,
-              updatedby: userId,
-              updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-            },
-            tenantId,
-          );
-        }
-        return bucketRepo.create(
-          {
-            ...form,
-            tenantid: tenantId,
-            createdby: userId,
-            createdat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-          } as Inserts<TableNames.SavingsBuckets>,
-          tenantId,
-        );
+        return upsertSavingsBucketHelper(form, original, tenantId, userId, bucketRepo);
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: queryKeys.savingsBuckets.all });

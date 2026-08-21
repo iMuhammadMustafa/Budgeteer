@@ -75,6 +75,7 @@ export interface DashboardChartsProps {
     categoriesMonth: PeriodControl;
     groupsMonth: PeriodControl;
     calendar: PeriodControl;
+    calendarSummary: PeriodControl;
   };
 }
 

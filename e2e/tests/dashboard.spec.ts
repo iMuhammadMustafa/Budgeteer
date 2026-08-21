@@ -29,4 +29,34 @@ test.describe("dashboard", () => {
     await page.getByTestId("chart-card-week-next").click();
     await expect(label).toHaveText(before);
   });
+
+  test("calendar summary can navigate between months", async ({ page }) => {
+    const label = page.getByTestId("chart-card-calendar-summary-period");
+    const calendar = page.getByTestId("calendar-heatmap");
+    await expect(label).toBeVisible();
+    const before = (await label.textContent())?.trim() ?? "";
+    const calendarBefore = (await calendar.textContent()) ?? "";
+
+    await page.getByTestId("chart-card-calendar-summary-prev").click();
+    await expect(label).not.toHaveText(before);
+    await expect(calendar).toHaveText(calendarBefore);
+
+    await page.getByTestId("chart-card-calendar-summary-next").click();
+    await expect(label).toHaveText(before);
+  });
+
+  test("an authenticated auth route redirects without updating navigation during render", async ({ page }) => {
+    const renderWarnings: string[] = [];
+    page.on("console", message => {
+      if (message.type() === "error" && message.text().includes("Cannot update a component")) {
+        renderWarnings.push(message.text());
+      }
+    });
+
+    await page.goto("/Login");
+    await page.waitForURL("**/Dashboard");
+    await expect(page.getByTestId("app-ready")).toBeVisible();
+
+    expect(renderWarnings).toEqual([]);
+  });
 });

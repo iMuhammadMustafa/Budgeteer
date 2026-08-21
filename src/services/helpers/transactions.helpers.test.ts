@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { createFakeAccountRepo, createInMemoryRepo, fakeSession } from "@/src/test-utils/fakeRepo";
-import { createTransactionHelper, updateTransactionHelper } from "./transactions.helpers";
+
+import {
+    createMultipleTransactionsHelper,
+    createTransactionHelper,
+    restoreTransactionHelper,
+    softDeleteTransactionHelper,
+    updateTransactionHelper,
+} from "./transactions.helpers";
 
 // Deterministic ids + avoid the react-native-get-random-values polyfill import.
 const { uuidMock } = vi.hoisted(() => {
@@ -33,6 +41,42 @@ describe("createTransactionHelper — non-transfer", () => {
         expect(accRepo.callsTo("updateAccountBalance")).toHaveLength(1);
         expect(accRepo.balanceDelta("acc-1")).toBe(-50);
         expect(created).toBeTruthy();
+    });
+});
+
+describe("createMultipleTransactionsHelper", () => {
+    it("creates the batch with ownership metadata and applies one summed balance delta per account", async () => {
+        const txRepo = createInMemoryRepo();
+        const accRepo = createFakeAccountRepo([
+            { id: "acc-1", tenantid: "t1", balance: 1000 },
+            { id: "acc-2", tenantid: "t1", balance: 500 },
+        ]);
+
+        const created = await createMultipleTransactionsHelper(
+            [
+                { type: "Expense", amount: -60, accountid: "acc-1", categoryid: "cat-1", date: "2026-01-01" },
+                { type: "Expense", amount: -40, accountid: "acc-1", categoryid: "cat-1", date: "2026-01-01" },
+                {
+                    type: "Income",
+                    amount: 25,
+                    accountid: "acc-2",
+                    categoryid: "cat-2",
+                    date: "2026-01-01",
+                    isvoid: true,
+                },
+            ] as any,
+            session,
+            txRepo as any,
+            accRepo as any,
+        );
+
+        expect(created).toHaveLength(3);
+        const rows = txRepo.callsTo("createMultiple")[0].args[0];
+        expect(rows).toHaveLength(3);
+        expect(rows.every((row: any) => row.id && row.tenantid === "t1" && row.createdby === "u1")).toBe(true);
+        expect(accRepo.callsTo("updateAccountBalance")).toHaveLength(1);
+        expect(accRepo.balanceDelta("acc-1")).toBe(-100);
+        expect(accRepo.balanceDelta("acc-2")).toBe(0);
     });
 });
 
@@ -235,5 +279,81 @@ describe("updateTransactionHelper — transfer balance-delta matrix", () => {
         const [srcUpdate, dstUpdate] = txRepo.callsTo("update");
         expect(srcUpdate.args[1].description).toBe("Updated note");
         expect(dstUpdate.args[1].description).toBe("Updated note");
+    });
+});
+
+const createFakeTransactionItemRepo = () => {
+    const calls: { method: string; args: any[] }[] = [];
+    return {
+        calls,
+        async deleteByTransactionId(...args: any[]) {
+            calls.push({ method: "deleteByTransactionId", args });
+        },
+        async restoreByTransactionId(...args: any[]) {
+            calls.push({ method: "restoreByTransactionId", args });
+        },
+    };
+};
+
+describe("transaction soft-delete / restore balance lifecycle", () => {
+    it("deleting and restoring an expense reverses and reapplies its balance and line items", async () => {
+        const tx: any = { id: "tx-1", amount: -50, accountid: "acc-1", isvoid: false, tenantid: "t1" };
+        const txRepo = createInMemoryRepo([tx]);
+        const itemRepo = createFakeTransactionItemRepo();
+        const accRepo = createFakeAccountRepo([{ id: "acc-1", tenantid: "t1", balance: 50 }]);
+
+        await softDeleteTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+        expect(txRepo.callsTo("softDelete")).toHaveLength(1);
+        expect(itemRepo.calls.map(c => c.method)).toEqual(["deleteByTransactionId"]);
+        expect(accRepo.balanceDelta("acc-1")).toBe(50);
+
+        await restoreTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+        expect(txRepo.callsTo("restore")).toHaveLength(1);
+        expect(itemRepo.calls.map(c => c.method)).toEqual(["deleteByTransactionId", "restoreByTransactionId"]);
+        expect(accRepo.balanceDelta("acc-1")).toBe(0);
+    });
+
+    it("deleting and restoring a transfer handles both rows, accounts, and line-item sets", async () => {
+        const tx: any = {
+            id: "tx-src",
+            transferid: "tx-dst",
+            amount: -100,
+            accountid: "acc-src",
+            transferaccountid: "acc-dst",
+            isvoid: false,
+            tenantid: "t1",
+        };
+        const txRepo = createInMemoryRepo([tx, { ...tx, id: "tx-dst", transferid: "tx-src" }]);
+        const itemRepo = createFakeTransactionItemRepo();
+        const accRepo = createFakeAccountRepo([
+            { id: "acc-src", tenantid: "t1", balance: 900 },
+            { id: "acc-dst", tenantid: "t1", balance: 100 },
+        ]);
+
+        await softDeleteTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+        expect(txRepo.callsTo("softDelete").map(c => c.args[0])).toEqual(["tx-src", "tx-dst"]);
+        expect(accRepo.balanceDelta("acc-src")).toBe(100);
+        expect(accRepo.balanceDelta("acc-dst")).toBe(-100);
+
+        await restoreTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+        expect(txRepo.callsTo("restore").map(c => c.args[0])).toEqual(["tx-src", "tx-dst"]);
+        expect(itemRepo.calls.filter(c => c.method === "restoreByTransactionId").map(c => c.args[0])).toEqual([
+            "tx-src",
+            "tx-dst",
+        ]);
+        expect(accRepo.balanceDelta("acc-src")).toBe(0);
+        expect(accRepo.balanceDelta("acc-dst")).toBe(0);
+    });
+
+    it("does not touch balances when deleting or restoring a void transaction", async () => {
+        const tx: any = { id: "tx-void", amount: -50, accountid: "acc-1", isvoid: true, tenantid: "t1" };
+        const txRepo = createInMemoryRepo([tx]);
+        const itemRepo = createFakeTransactionItemRepo();
+        const accRepo = createFakeAccountRepo([{ id: "acc-1", tenantid: "t1", balance: 0 }]);
+
+        await softDeleteTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+        await restoreTransactionHelper(tx.id, tx, "t1", txRepo as any, itemRepo as any, accRepo as any);
+
+        expect(accRepo.callsTo("updateAccountBalance")).toHaveLength(0);
     });
 });

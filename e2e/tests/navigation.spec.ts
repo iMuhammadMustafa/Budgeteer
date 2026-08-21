@@ -1,16 +1,22 @@
-import { gotoApp, test } from "../fixtures/app";
 import { expect } from "@playwright/test";
+
+import { gotoApp, test } from "../fixtures/app";
 import {
   navigateToAccountCategories,
   navigateToAccounts,
   navigateToAddTransaction,
+  navigateToCategories,
   navigateToDashboard,
+  navigateToRecurrings,
+  navigateToRestore,
   navigateToRestoreAccountCategories,
   navigateToRestoreAccounts,
+  navigateToRestoreRecurrings,
   navigateToRestoreTransactionCategories,
   navigateToRestoreTransactionGroups,
   navigateToRestoreTransactions,
   navigateToSettings,
+  navigateToSummary,
   navigateToTransactionCategories,
   navigateToTransactionGroups,
   navigateToTransactions,
@@ -39,11 +45,23 @@ test.describe("navigation", () => {
     await navigateToAddTransaction(page);
     await expect(page).toHaveURL(/\/AddTransaction/);
 
+    await navigateToRecurrings(page);
+    await expect(page).toHaveURL(/\/Recurrings/);
+
+    await navigateToSummary(page);
+    await expect(page).toHaveURL(/\/Summary/);
+
     await navigateToAccounts(page);
     await expect(page).toHaveURL(/\/Accounts$/);
 
+    await navigateToCategories(page);
+    await expect(page).toHaveURL(/\/Categories/);
+
     await navigateToSettings(page);
     await expect(page).toHaveURL(/\/Settings/);
+
+    await navigateToRestore(page);
+    await expect(page).toHaveURL(/\/Restore/);
 
     await navigateToDashboard(page);
     await expect(page).toHaveURL(/\/Dashboard/);
@@ -61,6 +79,9 @@ test.describe("navigation", () => {
 
     await navigateToRestoreTransactionGroups(page);
     await expect(page).toHaveURL(/\/Restore\/TransactionGroups/);
+
+    await navigateToRestoreRecurrings(page);
+    await expect(page).toHaveURL(/\/Restore\/Recurrings/);
   });
 
   test("navigates to every Restore sub-tab", async ({ page }) => {
@@ -78,6 +99,9 @@ test.describe("navigation", () => {
 
     await navigateToRestoreTransactionGroups(page);
     await expect(page).toHaveURL(/\/Restore\/TransactionGroups/);
+
+    await navigateToRestoreRecurrings(page);
+    await expect(page).toHaveURL(/\/Restore\/Recurrings/);
   });
 
   test("switches between the Categories and Groups sub-tabs", async ({ page }) => {

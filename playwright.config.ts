@@ -58,6 +58,7 @@ export default defineConfig({
     {
       name: "chromium-cloud",
       use: { ...devices["Desktop Chrome"] },
+      grep: /@cloud-only/,
       grepInvert: /@local-only/,
     },
     // Mobile viewport smoke — a thin, viewport-agnostic slice tagged

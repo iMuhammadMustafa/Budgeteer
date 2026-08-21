@@ -7,10 +7,12 @@
  * identical object graph; every read/write path is asserted to only ever touch
  * the caller's tenant.
  */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { TableNames } from "@/src/types/database/TableNames";
 import { BaseSqliteRepository } from "@/src/repositories/BaseSqliteRepository";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createNodeSqliteDb, type ExpoLikeSqliteDb } from "@/src/test-utils/nodeSqliteAdapter";
+
 import { AccountCategorySqliteRepository } from "./AccountCategories.sqlite";
 import { AccountSqliteRepository } from "./Accounts.sqlite";
 import { ConfigurationSqliteRepository } from "./Configurations.sqlite";
@@ -40,11 +42,11 @@ const NOW = "2026-01-01T00:00:00.000Z";
 /** Insert an arbitrary row with dynamic columns (quotes the reserved word). */
 async function ins(table: string, row: Record<string, unknown>): Promise<void> {
     const cols = Object.keys(row);
-    const quoted = cols.map((c) => (c === "table" ? `"table"` : c));
+    const quoted = cols.map(c => (c === "table" ? `"table"` : c));
     const placeholders = cols.map(() => "?").join(", ");
     await h.db.runAsync(
         `INSERT INTO ${table} (${quoted.join(", ")}) VALUES (${placeholders})`,
-        cols.map((c) => row[c]),
+        cols.map(c => row[c]),
     );
 }
 
@@ -55,22 +57,51 @@ async function ins(table: string, row: Record<string, unknown>): Promise<void> {
 async function seedTenant(t: string) {
     const s = t === A ? "A" : "B";
     await ins(TableNames.AccountCategories, {
-        id: `ac-${s}`, name: "Bank", type: "Asset", tenantid: t, isdeleted: 0, createdat: NOW,
+        id: `ac-${s}`,
+        name: "Bank",
+        type: "Asset",
+        tenantid: t,
+        isdeleted: 0,
+        createdat: NOW,
     });
     await ins(TableNames.Accounts, {
-        id: `acct-${s}`, name: "Checking", balance: 100, categoryid: `ac-${s}`,
-        tenantid: t, isdeleted: 0, createdat: NOW,
+        id: `acct-${s}`,
+        name: "Checking",
+        balance: 100,
+        categoryid: `ac-${s}`,
+        tenantid: t,
+        isdeleted: 0,
+        createdat: NOW,
     });
     await ins(TableNames.TransactionGroups, {
-        id: `grp-${s}`, name: "Food", type: "Expense", tenantid: t, isdeleted: 0, createdat: NOW,
+        id: `grp-${s}`,
+        name: "Food",
+        type: "Expense",
+        tenantid: t,
+        isdeleted: 0,
+        createdat: NOW,
     });
     await ins(TableNames.TransactionCategories, {
-        id: `cat-${s}`, name: "Groceries", groupid: `grp-${s}`, type: "Expense",
-        tenantid: t, isdeleted: 0, createdat: NOW,
+        id: `cat-${s}`,
+        name: "Groceries",
+        groupid: `grp-${s}`,
+        type: "Expense",
+        tenantid: t,
+        isdeleted: 0,
+        createdat: NOW,
     });
     await ins(TableNames.Transactions, {
-        id: `tx-${s}`, name: `Coffee ${s}`, amount: -10, date: "2026-01-15", type: "Expense",
-        accountid: `acct-${s}`, categoryid: `cat-${s}`, isvoid: 0, tenantid: t, isdeleted: 0, createdat: NOW,
+        id: `tx-${s}`,
+        name: `Coffee ${s}`,
+        amount: -10,
+        date: "2026-01-15",
+        type: "Expense",
+        accountid: `acct-${s}`,
+        categoryid: `cat-${s}`,
+        isvoid: 0,
+        tenantid: t,
+        isdeleted: 0,
+        createdat: NOW,
     });
 }
 
@@ -100,10 +131,7 @@ describe("AccountCategorySqliteRepository (base CRUD + isolation)", () => {
     });
 
     it("create → update → softDelete → restore round trip stays in tenant", async () => {
-        const created = await repo.create(
-            { name: "Cash", type: "Asset" } as any,
-            A,
-        );
+        const created = await repo.create({ name: "Cash", type: "Asset" } as any, A);
         expect(created.tenantid).toBe(A);
 
         const updated = await repo.update(created.id, { name: "Wallet" } as any, A);
@@ -124,6 +152,16 @@ describe("AccountCategorySqliteRepository (base CRUD + isolation)", () => {
 
 describe("AccountSqliteRepository", () => {
     const repo = new AccountSqliteRepository();
+
+    it("create → update → softDelete → restore round-trips with a valid category FK", async () => {
+        const created = await repo.create({ name: "Savings", categoryid: "ac-A", balance: 25 } as any, A);
+        expect(created).toMatchObject({ name: "Savings", tenantid: A });
+        expect((await repo.update(created.id, { name: "Emergency" } as any, A))?.name).toBe("Emergency");
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect((await repo.findById(created.id, A))?.name).toBe("Emergency");
+    });
 
     it("findAllWithCategory attaches the joined category and is tenant-scoped", async () => {
         const rows = await repo.findAllWithCategory(A);
@@ -166,11 +204,25 @@ describe("TransactionGroupSqliteRepository", () => {
         const g = await repo.create({ name: "Bills", type: "Expense" } as any, A);
         expect(g.tenantid).toBe(A);
         expect(await repo.findById(g.id, B)).toBeNull();
+        expect((await repo.update(g.id, { name: "Monthly Bills" } as any, A))?.name).toBe("Monthly Bills");
+        await repo.softDelete(g.id, A);
+        expect(await repo.findById(g.id, A)).toBeNull();
+        await repo.restore(g.id, A);
+        expect(await repo.findById(g.id, A)).not.toBeNull();
     });
 });
 
 describe("TransactionCategorySqliteRepository", () => {
     const repo = new TransactionCategorySqliteRepository();
+
+    it("create → update → softDelete → restore round-trips with a valid group FK", async () => {
+        const created = await repo.create({ name: "Restaurants", groupid: "grp-A", type: "Expense" } as any, A);
+        expect((await repo.update(created.id, { name: "Dining" } as any, A))?.name).toBe("Dining");
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect(await repo.findById(created.id, A)).not.toBeNull();
+    });
 
     it("findAllWithGroup attaches the joined group, tenant-scoped", async () => {
         const rows = await repo.findAllWithGroup(A);
@@ -184,6 +236,26 @@ describe("TransactionCategorySqliteRepository", () => {
 
 describe("TransactionSqliteRepository", () => {
     const repo = new TransactionSqliteRepository();
+
+    it("create → update → softDelete → restore round-trips with valid account/category FKs", async () => {
+        const created = await repo.create(
+            {
+                name: "Dinner",
+                amount: -40,
+                date: "2026-02-01",
+                type: "Expense",
+                accountid: "acct-A",
+                categoryid: "cat-A",
+                isvoid: false,
+            } as any,
+            A,
+        );
+        expect((await repo.update(created.id, { amount: -45 } as any, A))?.amount).toBe(-45);
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect((await repo.findById(created.id, A))?.amount).toBe(-45);
+    });
 
     it("findAllFromView is tenant-scoped and maps isvoid to boolean", async () => {
         const rows = await repo.findAllFromView(A, {} as any);
@@ -216,21 +288,39 @@ describe("TransactionSqliteRepository", () => {
 
     it("findBySplitFromId returns only children of the given parent, tenant-scoped", async () => {
         await ins(TableNames.Transactions, {
-            id: "split-A", name: "Split", amount: -3, date: "2026-01-16", type: "Expense",
-            accountid: "acct-A", categoryid: "cat-A", splitfromid: "tx-A", isvoid: 0,
-            tenantid: A, isdeleted: 0, createdat: NOW,
+            id: "split-A",
+            name: "Split",
+            amount: -3,
+            date: "2026-01-16",
+            type: "Expense",
+            accountid: "acct-A",
+            categoryid: "cat-A",
+            splitfromid: "tx-A",
+            isvoid: 0,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
         });
         const kids = await repo.findBySplitFromId("tx-A", A);
-        expect(kids.map((r) => r.id)).toEqual(["split-A"]);
+        expect(kids.map(r => r.id)).toEqual(["split-A"]);
         expect(await repo.findBySplitFromId("tx-A", B)).toHaveLength(0);
     });
 
     it("findByTransferId returns the matching transfer leg, throws when absent", async () => {
         // transferid is a self-FK to transactions(id), so it must point at a real row.
         await ins(TableNames.Transactions, {
-            id: "xfer-A", name: "Transfer", amount: 25, date: "2026-01-17", type: "Transfer",
-            accountid: "acct-A", categoryid: "cat-A", transferid: "tx-A", isvoid: 0,
-            tenantid: A, isdeleted: 0, createdat: NOW,
+            id: "xfer-A",
+            name: "Transfer",
+            amount: 25,
+            date: "2026-01-17",
+            type: "Transfer",
+            accountid: "acct-A",
+            categoryid: "cat-A",
+            transferid: "tx-A",
+            isvoid: 0,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
         });
         const leg = await repo.findByTransferId("tx-A", A);
         expect(leg.id).toBe("xfer-A");
@@ -240,8 +330,13 @@ describe("TransactionSqliteRepository", () => {
     it("mapFromRow round-trips tags JSON through a real create", async () => {
         const created = await repo.create(
             {
-                name: "Tagged", amount: -1, date: "2026-01-20", type: "Expense",
-                accountid: "acct-A", categoryid: "cat-A", tags: ["x", "y"],
+                name: "Tagged",
+                amount: -1,
+                date: "2026-01-20",
+                type: "Expense",
+                accountid: "acct-A",
+                categoryid: "cat-A",
+                tags: ["x", "y"],
             } as any,
             A,
         );
@@ -259,12 +354,24 @@ describe("TransactionSqliteRepository", () => {
             repo.createMultiple(
                 [
                     {
-                        id: "tx-new-1", name: "Valid", amount: -5, date: "2026-02-01", type: "Expense",
-                        accountid: "acct-A", categoryid: "cat-A", isvoid: false,
+                        id: "tx-new-1",
+                        name: "Valid",
+                        amount: -5,
+                        date: "2026-02-01",
+                        type: "Expense",
+                        accountid: "acct-A",
+                        categoryid: "cat-A",
+                        isvoid: false,
                     } as any,
                     {
-                        id: "tx-new-2", name: "Invalid", amount: -5, date: "2026-02-01", type: "Expense",
-                        accountid: "does-not-exist", categoryid: "cat-A", isvoid: false,
+                        id: "tx-new-2",
+                        name: "Invalid",
+                        amount: -5,
+                        date: "2026-02-01",
+                        type: "Expense",
+                        accountid: "does-not-exist",
+                        categoryid: "cat-A",
+                        isvoid: false,
                     } as any,
                 ],
                 A,
@@ -278,16 +385,22 @@ describe("TransactionSqliteRepository", () => {
 
     it("updateMultiple rolls back every update in the batch when one violates a FK constraint", async () => {
         await ins(TableNames.Transactions, {
-            id: "tx-A2", name: "Lunch A", amount: -20, date: "2026-01-16", type: "Expense",
-            accountid: "acct-A", categoryid: "cat-A", isvoid: 0, tenantid: A, isdeleted: 0, createdat: NOW,
+            id: "tx-A2",
+            name: "Lunch A",
+            amount: -20,
+            date: "2026-01-16",
+            type: "Expense",
+            accountid: "acct-A",
+            categoryid: "cat-A",
+            isvoid: 0,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
         });
 
         await expect(
             repo.updateMultiple(
-                [
-                    { id: "tx-A", name: "Renamed" } as any,
-                    { id: "tx-A2", accountid: "does-not-exist" } as any,
-                ],
+                [{ id: "tx-A", name: "Renamed" } as any, { id: "tx-A2", accountid: "does-not-exist" } as any],
                 A,
             ),
         ).rejects.toThrow();
@@ -302,8 +415,14 @@ describe("ConfigurationSqliteRepository", () => {
     const repo = new ConfigurationSqliteRepository();
     beforeEach(async () => {
         await ins(TableNames.Configurations, {
-            id: "cfg-A", key: "id", value: "val-A", type: "Ops",
-            table: TableNames.TransactionCategories, tenantid: A, isdeleted: 0, createdat: NOW,
+            id: "cfg-A",
+            key: "id",
+            value: "val-A",
+            type: "Ops",
+            table: TableNames.TransactionCategories,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
         });
     });
 
@@ -313,9 +432,21 @@ describe("ConfigurationSqliteRepository", () => {
     });
 
     it("getConfiguration throws off-tenant or when missing", async () => {
-        await expect(
-            repo.getConfiguration(TableNames.TransactionCategories, "Ops", "id", B),
-        ).rejects.toThrow("Configuration not found");
+        await expect(repo.getConfiguration(TableNames.TransactionCategories, "Ops", "id", B)).rejects.toThrow(
+            "Configuration not found",
+        );
+    });
+
+    it("create → update → softDelete → restore round-trips", async () => {
+        const created = await repo.create(
+            { key: "currency", value: "USD", type: "Preference", table: "profiles" } as any,
+            A,
+        );
+        expect((await repo.update(created.id, { value: "EUR" } as any, A))?.value).toBe("EUR");
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect((await repo.findById(created.id, A))?.value).toBe("EUR");
     });
 });
 
@@ -324,14 +455,22 @@ describe("RecurringSqliteRepository", () => {
     it("CRUD + isolation with FK-valid refs", async () => {
         const rec = await repo.create(
             {
-                name: "Rent", type: "Expense", recurrencerule: "FREQ=MONTHLY",
-                categoryid: "cat-A", sourceaccountid: "acct-A",
+                name: "Rent",
+                type: "Expense",
+                recurrencerule: "FREQ=MONTHLY",
+                categoryid: "cat-A",
+                sourceaccountid: "acct-A",
             } as any,
             A,
         );
         expect(rec.tenantid).toBe(A);
         expect((await repo.findAll(A)).map((r: any) => r.id)).toEqual([rec.id]);
         expect(await repo.findById(rec.id, B)).toBeNull();
+        expect((await repo.update(rec.id, { name: "Mortgage" } as any, A))?.name).toBe("Mortgage");
+        await repo.softDelete(rec.id, A);
+        expect(await repo.findById(rec.id, A)).toBeNull();
+        await repo.restore(rec.id, A);
+        expect(await repo.findById(rec.id, A)).not.toBeNull();
     });
 });
 
@@ -339,22 +478,40 @@ describe("SavingsBucketSqliteRepository", () => {
     const repo = new SavingsBucketSqliteRepository();
     beforeEach(async () => {
         await ins(TableNames.SavingsBuckets, {
-            id: "sb-A1", name: "Vacation", accountid: "acct-A", currentamount: 40,
-            tenantid: A, isdeleted: 0, createdat: NOW, displayorder: 1,
+            id: "sb-A1",
+            name: "Vacation",
+            accountid: "acct-A",
+            currentamount: 40,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
+            displayorder: 1,
         });
         await ins(TableNames.SavingsBuckets, {
-            id: "sb-A2", name: "Car", accountid: "acct-A", currentamount: 60,
-            tenantid: A, isdeleted: 0, createdat: NOW, displayorder: 2,
+            id: "sb-A2",
+            name: "Car",
+            accountid: "acct-A",
+            currentamount: 60,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
+            displayorder: 2,
         });
         await ins(TableNames.SavingsBuckets, {
-            id: "sb-B1", name: "Other", accountid: "acct-B", currentamount: 999,
-            tenantid: B, isdeleted: 0, createdat: NOW, displayorder: 1,
+            id: "sb-B1",
+            name: "Other",
+            accountid: "acct-B",
+            currentamount: 999,
+            tenantid: B,
+            isdeleted: 0,
+            createdat: NOW,
+            displayorder: 1,
         });
     });
 
     it("findByAccountId returns only the account's buckets in the caller's tenant", async () => {
         const buckets = await repo.findByAccountId("acct-A", A);
-        expect(buckets.map((b) => b.id).sort()).toEqual(["sb-A1", "sb-A2"]);
+        expect(buckets.map(b => b.id).sort()).toEqual(["sb-A1", "sb-A2"]);
         expect(await repo.findByAccountId("acct-B", A)).toHaveLength(0);
     });
 
@@ -362,24 +519,48 @@ describe("SavingsBucketSqliteRepository", () => {
         expect(await repo.getTotalAllocated("acct-A", A)).toBe(100);
         expect(await repo.getTotalAllocated("acct-B", A)).toBe(0);
     });
+
+    it("create → update → softDelete → restore round-trips with a valid account FK", async () => {
+        const created = await repo.create(
+            { name: "House", accountid: "acct-A", currentamount: 0, targetamount: 5000 } as any,
+            A,
+        );
+        expect((await repo.update(created.id, { currentamount: 200 } as any, A))?.currentamount).toBe(200);
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect((await repo.findById(created.id, A))?.currentamount).toBe(200);
+    });
 });
 
 describe("TransactionItemSqliteRepository", () => {
     const repo = new TransactionItemSqliteRepository();
     beforeEach(async () => {
         await ins(TableNames.TransactionItems, {
-            id: "ti-A1", transactionid: "tx-A", name: "Item1", amount: 5,
-            tenantid: A, isdeleted: 0, createdat: NOW, displayorder: 1,
+            id: "ti-A1",
+            transactionid: "tx-A",
+            name: "Item1",
+            amount: 5,
+            tenantid: A,
+            isdeleted: 0,
+            createdat: NOW,
+            displayorder: 1,
         });
         await ins(TableNames.TransactionItems, {
-            id: "ti-B1", transactionid: "tx-B", name: "ItemB", amount: 7,
-            tenantid: B, isdeleted: 0, createdat: NOW, displayorder: 1,
+            id: "ti-B1",
+            transactionid: "tx-B",
+            name: "ItemB",
+            amount: 7,
+            tenantid: B,
+            isdeleted: 0,
+            createdat: NOW,
+            displayorder: 1,
         });
     });
 
     it("findByTransactionId is tenant-scoped", async () => {
         const items = await repo.findByTransactionId("tx-A", A);
-        expect(items.map((i) => i.id)).toEqual(["ti-A1"]);
+        expect(items.map(i => i.id)).toEqual(["ti-A1"]);
         expect(await repo.findByTransactionId("tx-A", B)).toHaveLength(0);
     });
 
@@ -388,6 +569,10 @@ describe("TransactionItemSqliteRepository", () => {
         expect(await repo.findByTransactionId("tx-A", A)).toHaveLength(1);
         await repo.deleteByTransactionId("tx-A", A);
         expect(await repo.findByTransactionId("tx-A", A)).toHaveLength(0);
+        await repo.restoreByTransactionId("tx-A", B); // wrong tenant → no effect
+        expect(await repo.findByTransactionId("tx-A", A)).toHaveLength(0);
+        await repo.restoreByTransactionId("tx-A", A);
+        expect(await repo.findByTransactionId("tx-A", A)).toHaveLength(1);
     });
 
     it("voidByTransactionId sets isvoid only within tenant", async () => {
@@ -395,6 +580,15 @@ describe("TransactionItemSqliteRepository", () => {
         expect(((await repo.findByTransactionId("tx-A", A))[0] as any).isvoid).toBe(false);
         await repo.voidByTransactionId("tx-A", A);
         expect(((await repo.findByTransactionId("tx-A", A))[0] as any).isvoid).toBe(true);
+    });
+
+    it("create → update → softDelete → restore round-trips with a valid transaction FK", async () => {
+        const created = await repo.create({ transactionid: "tx-A", name: "Tip", amount: 2, displayorder: 2 } as any, A);
+        expect((await repo.update(created.id, { amount: 3 } as any, A))?.amount).toBe(3);
+        await repo.softDelete(created.id, A);
+        expect(await repo.findById(created.id, A)).toBeNull();
+        await repo.restore(created.id, A);
+        expect((await repo.findById(created.id, A))?.amount).toBe(3);
     });
 });
 

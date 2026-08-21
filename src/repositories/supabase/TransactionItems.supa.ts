@@ -1,7 +1,9 @@
+import dayjs from "dayjs";
+
 import supabase from "@/src/providers/Supabase";
 import { TableNames } from "@/src/types/database/TableNames";
 import { TransactionItem } from "@/src/types/database/Tables.Types";
-import dayjs from "dayjs";
+
 import { SupaRepository } from "../BaseSupaRepository";
 import { ITransactionItemRepository } from "../interfaces/ITransactionItemRepository";
 
@@ -30,6 +32,19 @@ export class TransactionItemSupaRepository
       .from(TableNames.TransactionItems)
       .update({
         isdeleted: true,
+        updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+      })
+      .eq("transactionid", transactionId)
+      .eq("tenantid", tenantId);
+
+    if (error) throw new Error(error.message);
+  }
+
+  async restoreByTransactionId(transactionId: string, tenantId: string): Promise<void> {
+    const { error } = await supabase
+      .from(TableNames.TransactionItems)
+      .update({
+        isdeleted: false,
         updatedat: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
       })
       .eq("transactionid", transactionId)
